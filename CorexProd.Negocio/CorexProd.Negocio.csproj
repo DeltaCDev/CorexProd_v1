@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CorexProd.Datos\CorexProd.Datos.csproj" />
+    <ProjectReference Include="..\CorexProd.Entidad\CorexProd.Entidad.csproj" />
+  </ItemGroup>
+
 </Project>

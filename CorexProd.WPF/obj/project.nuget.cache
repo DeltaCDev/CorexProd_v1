@@ -1,8 +1,17 @@
 {
   "version": 2,
-  "dgSpecHash": "ddl+mbs95lE=",
+  "dgSpecHash": "Sz1R7X0O5Ow=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Luis Solis B\\source\\repos\\CorexProd\\CorexProd.WPF\\CorexProd.WPF.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "D:\\CorexProd_v1\\CorexProd.WPF\\CorexProd.WPF.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.win-x64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.win-x86.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x86.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\system.configuration.configurationmanager\\10.0.7\\system.configuration.configurationmanager.10.0.7.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\system.data.sqlclient\\4.9.1\\system.data.sqlclient.4.9.1.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\system.diagnostics.eventlog\\10.0.7\\system.diagnostics.eventlog.10.0.7.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\system.security.cryptography.protecteddata\\10.0.7\\system.security.cryptography.protecteddata.10.0.7.nupkg.sha512"
+  ],
   "logs": []
 }

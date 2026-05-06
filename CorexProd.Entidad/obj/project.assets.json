@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Luis Solis B\\source\\repos\\CorexProd\\CorexProd.Entidad\\CorexProd.Entidad.csproj",
+      "projectUniqueName": "D:\\CorexProd_v1\\CorexProd.Entidad\\CorexProd.Entidad.csproj",
       "projectName": "CorexProd.Entidad",
-      "projectPath": "C:\\Users\\Luis Solis B\\source\\repos\\CorexProd\\CorexProd.Entidad\\CorexProd.Entidad.csproj",
+      "projectPath": "D:\\CorexProd_v1\\CorexProd.Entidad\\CorexProd.Entidad.csproj",
       "packagesPath": "C:\\Users\\Luis Solis B\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Luis Solis B\\source\\repos\\CorexProd\\CorexProd.Entidad\\obj\\",
+      "outputPath": "D:\\CorexProd_v1\\CorexProd.Entidad\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

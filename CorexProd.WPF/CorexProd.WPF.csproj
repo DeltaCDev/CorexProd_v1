@@ -8,4 +8,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CorexProd.Entidad\CorexProd.Entidad.csproj" />
+    <ProjectReference Include="..\CorexProd.Negocio\CorexProd.Negocio.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\Luis Solis B\source\repos\CorexProd\CorexProd.WPF\obj\Debug\net8.0-windows\
+D:\CorexProd_v1\CorexProd.WPF\obj\Debug\net8.0-windows\
 CorexProd.WPF
 none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
-C:\Users\Luis Solis B\source\repos\CorexProd\CorexProd.WPF\App.xaml
-11407045341
+D:\CorexProd_v1\CorexProd.WPF\App.xaml
+21727942632
 
-6-1742188569
-198-416154975
-MainWindow.xaml;
+11-233267265
+202-125383410
+MainWindow.xaml;Views\LoginView.xaml;
 
-False
+True
 
