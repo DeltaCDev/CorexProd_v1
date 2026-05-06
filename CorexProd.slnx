@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CorexProd.Datos/CorexProd.Datos.csproj" Id="f31f4d57-34bc-4077-908a-9025558ed5c7" />
+  <Project Path="CorexProd.Entidad/CorexProd.Entidad.csproj" Id="8ee0e108-d5f2-4b20-9d41-55acead8bee4" />
+  <Project Path="CorexProd.Negocio/CorexProd.Negocio.csproj" Id="ce159168-27d7-4ee8-9c5f-05883ee50c53" />
+  <Project Path="CorexProd.WPF/CorexProd.WPF.csproj" />
+</Solution>
