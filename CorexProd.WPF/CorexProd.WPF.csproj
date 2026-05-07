@@ -6,10 +6,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\CorexProd.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\CorexProd.ico" />
     <None Remove="Images\LOGO.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\CorexProd1.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +24,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\CorexProd.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\CorexProd1.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Images\LOGO.png" />
   </ItemGroup>
 
