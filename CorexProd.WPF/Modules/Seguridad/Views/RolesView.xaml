@@ -107,19 +107,54 @@
                     CornerRadius="10"
                     Padding="15">
 
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock Text="Permisos del Rol"
+                    <TextBlock Grid.Row="0"
+                               Text="Permisos del Rol"
                                FontSize="18"
                                FontWeight="Bold"
                                Margin="0,0,0,10"/>
 
-                    <TextBlock Text="Seleccione un rol y marque los módulos que podrá visualizar."
+                    <TextBlock Grid.Row="1"
+                               Text="Seleccione un rol y marque los módulos que podrá visualizar."
                                Foreground="Gray"
                                TextWrapping="Wrap"
-                               Margin="0,0,0,15"/>
+                               Margin="0,0,0,12"/>
 
-                    <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto">
+                    <!-- COPIAR ROL -->
+                    <Grid Grid.Row="2"
+                          Margin="0,0,0,10">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="110"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding RolesParaCopiar}"
+                                  SelectedItem="{Binding RolOrigenSeleccionado}"
+                                  DisplayMemberPath="NombreRol"
+                                  Height="32"/>
+
+                        <Button Grid.Column="2"
+                                Content="Copiar Rol"
+                                Height="32"
+                                Command="{Binding CopiarPermisosCommand}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="3"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Margin="0,0,0,10">
 
                         <TreeView ItemsSource="{Binding Menus}"
                                   BorderThickness="0"
@@ -147,7 +182,9 @@
 
                     </ScrollViewer>
 
-                    <Grid Margin="0,15,0,0">
+                    <Grid Grid.Row="4"
+                          Margin="0,0,0,10">
+
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="10"/>
@@ -165,16 +202,16 @@
                                 Command="{Binding QuitarSeleccionCommand}"/>
                     </Grid>
 
-                    <Button Content="Guardar Permisos"
+                    <Button Grid.Row="5"
+                            Content="Guardar Permisos"
                             Height="38"
-                            Margin="0,20,0,0"
                             Background="#16A34A"
                             Foreground="White"
                             BorderThickness="0"
                             FontWeight="Bold"
                             Command="{Binding GuardarPermisosCommand}"/>
 
-                </StackPanel>
+                </Grid>
             </Border>
 
         </Grid>

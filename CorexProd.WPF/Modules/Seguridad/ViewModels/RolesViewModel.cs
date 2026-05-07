@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
@@ -24,6 +25,22 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand GuardarPermisosCommand { get; }
         public ICommand SeleccionarTodoCommand { get; }
         public ICommand QuitarSeleccionCommand { get; }
+
+        private Rol? _rolOrigenSeleccionado;
+
+        public ObservableCollection<Rol> RolesParaCopiar { get; set; } = [];
+
+        public Rol? RolOrigenSeleccionado
+        {
+            get => _rolOrigenSeleccionado;
+            set
+            {
+                _rolOrigenSeleccionado = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand CopiarPermisosCommand { get; }
 
         public int IdRol
         {
@@ -95,6 +112,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             QuitarSeleccionCommand = 
                 new RelayCommand(_ => QuitarSeleccion());
 
+            CopiarPermisosCommand = 
+                new RelayCommand(_ => CopiarPermisos());
+
             CargarRoles();
         }
 
@@ -108,6 +128,13 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Roles.Add(item);
             }
+
+            RolesParaCopiar.Clear();
+
+            foreach (var item in lista)
+            {
+                RolesParaCopiar.Add(item);
+            }
         }
 
         private void Guardar()
@@ -120,6 +147,13 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             };
 
             _rolNegocio.Guardar(rol);
+
+            MessageBox.Show(
+                IdRol == 0 ? "Rol registrado correctamente." : "Rol actualizado correctamente.",
+                "CorexProd",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
 
             Limpiar();
             CargarRoles();
@@ -185,6 +219,12 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 IdRol,
                 menusGuardar
             );
+            MessageBox.Show(
+                      "Permisos guardados correctamente.",
+                      "CorexProd",
+                      MessageBoxButton.OK,
+                      MessageBoxImage.Information
+                  );
         }
 
         private void SeleccionarTodo()
@@ -213,6 +253,56 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     hijo.TienePermiso = false;
                 }
             }
+
+            OnPropertyChanged(nameof(Menus));
+        }
+
+        private void CopiarPermisos()
+        {
+            if (RolOrigenSeleccionado == null)
+            {
+                MessageBox.Show(
+                    "Seleccione un rol origen para copiar permisos.",
+                    "CorexProd",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+
+                return;
+            }
+
+            var permisosOrigen =
+                _permisoMenuRolNegocio
+                .ListarMenusPorRol(RolOrigenSeleccionado.IdRol);
+
+            foreach (var padre in Menus)
+            {
+                var permisoPadre =
+                    permisosOrigen.FirstOrDefault(x => x.IdMenu == padre.IdMenu);
+
+                if (permisoPadre != null)
+                {
+                    padre.TienePermiso = permisoPadre.TienePermiso;
+                }
+
+                foreach (var hijo in padre.Hijos)
+                {
+                    var permisoHijo =
+                        permisosOrigen.FirstOrDefault(x => x.IdMenu == hijo.IdMenu);
+
+                    if (permisoHijo != null)
+                    {
+                        hijo.TienePermiso = permisoHijo.TienePermiso;
+                    }
+                }
+            }
+
+            MessageBox.Show(
+                        $"Permisos copiados desde el rol {RolOrigenSeleccionado.NombreRol}. Recuerde presionar Guardar Permisos.",
+                        "CorexProd",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
 
             OnPropertyChanged(nameof(Menus));
         }
