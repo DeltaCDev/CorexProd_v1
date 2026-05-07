@@ -56,22 +56,31 @@ namespace CorexProd.WPF.ViewModels
 
                 string clave = passwordBox.Password;
 
-                var usuarioLogueado =
-                    _usuarioNegocio.Login(Usuario, clave);
+                var usuarioLogueado = _usuarioNegocio.Login(Usuario, clave);
+
+                if (usuarioLogueado == null)
+                {
+                    Mensaje = "Usuario o contraseña incorrectos";
+                    return;
+                }
+
+                if (!usuarioLogueado.Estado)
+                {
+                    Mensaje = "El usuario se encuentra inactivo";
+                    return;
+                }
 
                 SessionManager.UsuarioActual = usuarioLogueado;
-                MenuPermitidoDatos permisoDatos =
-                new MenuPermitidoDatos();
+
+                MenuPermitidoDatos permisoDatos = new();
 
                 SessionManager.MenusPermitidos =
-                    permisoDatos.ObtenerMenusPorRol(
-                        usuarioLogueado.IdRol
-                    );
+                    permisoDatos.ObtenerMenusPorRol(usuarioLogueado.IdRol);
 
-                MainWindow mainWindow = new MainWindow();
+                MainWindow mainWindow = new();
                 mainWindow.Show();
 
-                Application.Current.Windows[0].Close();
+                Application.Current.Windows[0]?.Close();
             }
             catch (Exception ex)
             {

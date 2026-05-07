@@ -16,6 +16,7 @@ namespace CorexProd.WPF.Helpers
         public static void CerrarSesion()
         {
             UsuarioActual = null;
+            MenusPermitidos = null;
         }
     }
 }

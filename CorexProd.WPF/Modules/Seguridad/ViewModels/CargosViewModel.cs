@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows;
-using CorexProd.WPF.Helpers;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {

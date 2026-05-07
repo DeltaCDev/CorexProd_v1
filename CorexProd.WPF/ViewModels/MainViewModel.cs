@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows;
 
 namespace CorexProd.WPF.ViewModels
 {
@@ -20,6 +21,19 @@ namespace CorexProd.WPF.ViewModels
         private UserControl _vistaActual = null!;
         private string _titulo = string.Empty;
         private string _nombreUsuario = string.Empty;
+        private string _nombreRol = string.Empty;
+
+        public string NombreRol
+        {
+            get => _nombreRol;
+            set
+            {
+                _nombreRol = value;
+                OnPropertyChanged();
+            }
+        }
+
+
 
         public ObservableCollection<MenuItemSistema> SidebarMenus { get; set; } = [];
 
@@ -55,10 +69,15 @@ namespace CorexProd.WPF.ViewModels
 
         public ICommand IrInicioCommand { get; }
         public ICommand IrVistaCommand { get; }
+        public ICommand CerrarSesionCommand { get; }
+        public ICommand CambiarClaveCommand { get; }
 
         public MainViewModel()
         {
             NombreUsuario = SessionManager.UsuarioActual?.NombreCompleto ?? "Usuario";
+            NombreRol = SessionManager.UsuarioActual?.NombreRol ?? "Sin rol";
+            CerrarSesionCommand = new RelayCommand(_ => CerrarSesion());
+            CambiarClaveCommand = new RelayCommand(_ => CambiarClave());
 
             IrInicioCommand = new RelayCommand(_ => IrInicio());
             IrVistaCommand = new RelayCommand(parametro => IrVista(parametro?.ToString() ?? string.Empty));
@@ -66,6 +85,30 @@ namespace CorexProd.WPF.ViewModels
             CargarMenus();
 
             IrInicio();
+        }
+        private void CerrarSesion()
+        {
+            bool confirmar = ConfirmDialogService.Confirmar(
+                "¿Desea cerrar sesión?",
+                "Cerrar sesión");
+
+            if (!confirmar)
+            {
+                return;
+            }
+
+            SessionManager.CerrarSesion();
+
+            LoginView loginView = new();
+            loginView.Show();
+
+            Application.Current.MainWindow?.Close();
+            Application.Current.MainWindow = loginView;
+        }
+        private void CambiarClave()
+        {
+            Titulo = "Cambiar Clave";
+            VistaActual = new CambiarClaveView();
         }
 
         private void CargarMenus()
@@ -337,7 +380,7 @@ namespace CorexProd.WPF.ViewModels
 
                 case "Usuarios":
                     Titulo = "Usuarios";
-                    VistaActual = new SeguridadView();
+                    VistaActual = new UsuariosView();
                     break;
 
                 case "Empleados":

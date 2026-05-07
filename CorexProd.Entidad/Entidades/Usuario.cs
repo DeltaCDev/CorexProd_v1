@@ -8,6 +8,7 @@ namespace CorexProd.Entidad.Entidades
 
         public int IdEmpleado { get; set; }
         public string NombreEmpleado { get; set; } = string.Empty;
+        public string NombreCompleto { get; set; } = string.Empty;
 
         public string NombreUsuario { get; set; } = string.Empty;
         public string Clave { get; set; } = string.Empty;

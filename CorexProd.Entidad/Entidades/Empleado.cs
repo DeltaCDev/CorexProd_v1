@@ -18,5 +18,13 @@ namespace CorexProd.Entidad.Entidades
         public DateTime? FechaNacimiento { get; set; }
         public DateTime FechaRegistro { get; set; }
         public bool Estado { get; set; }
+
+        public string NombreCompleto
+        {
+            get
+            {
+                return $"{Nombre} {Apellido}".Trim();
+            }
+        }
     }
 }
