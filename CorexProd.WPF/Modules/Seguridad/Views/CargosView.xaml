@@ -1,0 +1,100 @@
+﻿<UserControl x:Class="CorexProd.WPF.Modules.Seguridad.Views.CargosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Background="White"
+                CornerRadius="10"
+                Padding="20"
+                Margin="0,0,0,15">
+
+            <StackPanel>
+                <TextBlock Text="Gestión de Cargos"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Margin="0,0,0,20"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Grid.Column="0"
+                             Height="35"
+                             Margin="0,0,10,0"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NombreCargo, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <CheckBox Grid.Column="1"
+                              Content="Activo"
+                              IsChecked="{Binding Estado}"
+                              VerticalAlignment="Center"
+                              Margin="0,0,15,0"/>
+
+                    <Button Grid.Column="2"
+                            Content="Guardar"
+                            Width="100"
+                            Height="35"
+                            Margin="0,0,10,0"
+                            Command="{Binding GuardarCommand}"/>
+
+                    <Button Grid.Column="3"
+                            Content="Limpiar"
+                            Width="100"
+                            Height="35"
+                            Command="{Binding LimpiarCommand}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Background="White"
+                CornerRadius="10"
+                Padding="20">
+
+            <DataGrid ItemsSource="{Binding Cargos}"
+                      SelectedItem="{Binding CargoSeleccionado}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True">
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID"
+                                        Binding="{Binding IdCargo}"
+                                        Width="80"/>
+
+                    <DataGridTextColumn Header="Cargo"
+                                        Binding="{Binding NombreCargo}"
+                                        Width="*"/>
+
+                    <DataGridCheckBoxColumn Header="Activo"
+                                            Binding="{Binding Estado}"
+                                            Width="100"/>
+
+                    <DataGridTextColumn Header="Fecha Registro"
+                                        Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}"
+                                        Width="160"/>
+
+                    <DataGridTemplateColumn Header="Acción"
+                                            Width="120">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="Eliminar"
+                                        Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding IdCargo}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>

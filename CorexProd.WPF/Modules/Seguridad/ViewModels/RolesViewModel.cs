@@ -1,12 +1,14 @@
 ﻿using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
+using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
+using CorexProd.WPF.Helpers;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
@@ -139,6 +141,18 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         private void Guardar()
         {
+            if (IdRol > 0)
+            {
+                bool confirmar = ConfirmDialogService.Confirmar(
+                    "¿Desea actualizar la información del rol?",
+                    "Confirmar actualización");
+
+                if (!confirmar)
+                {
+                    return;
+                }
+            }
+
             Rol rol = new()
             {
                 IdRol = IdRol,
@@ -148,11 +162,10 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
             _rolNegocio.Guardar(rol);
 
-            MessageBox.Show(
-                IdRol == 0 ? "Rol registrado correctamente." : "Rol actualizado correctamente.",
-                "CorexProd",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information
+            NotificationService.Success(
+                IdRol == 0
+                    ? "Rol registrado correctamente."
+                    : "Rol actualizado correctamente."
             );
 
             Limpiar();
@@ -200,6 +213,16 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         {
             if (IdRol == 0)
             {
+                NotificationService.Warning("Primero seleccione un rol.");
+                return;
+            }
+
+            bool confirmar = ConfirmDialogService.Confirmar(
+                "¿Desea guardar los permisos asignados a este rol?",
+                "Confirmar permisos");
+
+            if (!confirmar)
+            {
                 return;
             }
 
@@ -219,14 +242,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 IdRol,
                 menusGuardar
             );
-            MessageBox.Show(
-                      "Permisos guardados correctamente.",
-                      "CorexProd",
-                      MessageBoxButton.OK,
-                      MessageBoxImage.Information
-                  );
-        }
 
+            NotificationService.Success("Permisos guardados correctamente.");
+        }
         private void SeleccionarTodo()
         {
             foreach (var padre in Menus)
@@ -259,13 +277,28 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         private void CopiarPermisos()
         {
+            if (IdRol == 0)
+            {
+                NotificationService.Warning(
+                    "Primero seleccione el rol al que desea copiar permisos."
+                );
+
+                return;
+            }
+
             if (RolOrigenSeleccionado == null)
             {
-                MessageBox.Show(
-                    "Seleccione un rol origen para copiar permisos.",
-                    "CorexProd",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning
+                NotificationService.Warning(
+                    "Seleccione un rol origen para copiar permisos."
+                );
+
+                return;
+            }
+
+            if (RolOrigenSeleccionado.IdRol == IdRol)
+            {
+                NotificationService.Warning(
+                    "No puede copiar permisos desde el mismo rol seleccionado."
                 );
 
                 return;
@@ -297,12 +330,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 }
             }
 
-            MessageBox.Show(
-                        $"Permisos copiados desde el rol {RolOrigenSeleccionado.NombreRol}. Recuerde presionar Guardar Permisos.",
-                        "CorexProd",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information
-                    );
+            NotificationService.Success(
+                $"Permisos copiados desde el rol {RolOrigenSeleccionado.NombreRol}. Recuerde guardar permisos."
+            );
 
             OnPropertyChanged(nameof(Menus));
         }

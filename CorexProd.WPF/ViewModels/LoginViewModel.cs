@@ -11,8 +11,8 @@ namespace CorexProd.WPF.ViewModels
 {
     public class LoginViewModel : BaseViewModel
     {
-        private string _usuario;
-        private string _mensaje;
+        private string _usuario = string.Empty;
+        private string _mensaje = string.Empty;
 
         public string Usuario
         {
@@ -44,11 +44,16 @@ namespace CorexProd.WPF.ViewModels
             LoginCommand = new RelayCommand(Login);
         }
 
-        private void Login(object parametro)
+        private void Login(object? parametro)
         {
             try
             {
-                PasswordBox passwordBox = parametro as PasswordBox;
+                if (parametro is not PasswordBox passwordBox)
+                {
+                    Mensaje = "No se pudo obtener la contraseña";
+                    return;
+                }
+
                 string clave = passwordBox.Password;
 
                 var usuarioLogueado =

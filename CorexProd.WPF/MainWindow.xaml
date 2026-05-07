@@ -58,18 +58,20 @@
                                           Margin="10,3"
                                           IsExpanded="False">
 
-                                    <ItemsControl ItemsSource="{Binding Hijos}">
+                                    <ItemsControl ItemsSource="{Binding Hijos}"
+                                                  Margin="10,4,0,4">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Button Content="{Binding Titulo}"
                                                         Command="{Binding DataContext.IrVistaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding Vista}"
                                                         Height="34"
-                                                        Margin="10,2,0,2"
-                                                        Padding="18,0"
+                                                        Margin="12,2,8,2"
+                                                        Padding="14,0,0,0"
                                                         Background="#111827"
                                                         Foreground="White"
                                                         BorderThickness="0"
+                                                        HorizontalAlignment="Stretch"
                                                         HorizontalContentAlignment="Left"
                                                         Cursor="Hand"/>
                                             </DataTemplate>

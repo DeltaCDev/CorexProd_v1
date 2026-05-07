@@ -154,7 +154,8 @@
                     <ScrollViewer Grid.Row="3"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
-                                  Margin="0,0,0,10">
+                                  Margin="0,0,0,10"
+                                  PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
 
                         <TreeView ItemsSource="{Binding Menus}"
                                   BorderThickness="0"

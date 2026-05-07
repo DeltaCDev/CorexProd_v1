@@ -24,7 +24,7 @@ namespace CorexProd.Negocio.Negocio
                 throw new Exception("Ingrese la contraseña.");
             }
 
-            Usuario usuarioEncontrado =
+            Usuario? usuarioEncontrado =
                 _usuarioDatos.Login(usuario, clave);
 
             if (usuarioEncontrado == null)

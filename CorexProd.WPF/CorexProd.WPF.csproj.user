@@ -5,6 +5,12 @@
     <Compile Update="Modules\Almacen\Views\AlmacenView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Modules\Seguridad\Views\CargosView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Modules\Seguridad\Views\EmpleadosView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Modules\Seguridad\Views\RolesView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

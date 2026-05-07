@@ -1,7 +1,7 @@
 ﻿using CorexProd.Entidad.Entidades;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace CorexProd.Datos.Datos

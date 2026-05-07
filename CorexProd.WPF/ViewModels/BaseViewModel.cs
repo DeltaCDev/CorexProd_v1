@@ -5,9 +5,9 @@ namespace CorexProd.WPF.ViewModels
 {
     public class BaseViewModel : INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected void OnPropertyChanged([CallerMemberName] string propiedad = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propiedad = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propiedad));
         }

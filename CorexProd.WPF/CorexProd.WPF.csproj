@@ -29,4 +29,8 @@
     <Folder Include="Modules\Ventas\ViewModels\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="HandyControl" Version="3.5.1" />
+  </ItemGroup>
+
 </Project>

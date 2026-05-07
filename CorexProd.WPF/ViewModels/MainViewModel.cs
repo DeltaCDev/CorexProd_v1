@@ -304,6 +304,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Cargos"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Cargos",
+                    Vista = "Cargos"
+                });
+            }
+
             if (menusPermitidos.Contains("Seguridad") && seguridad.Hijos.Count > 0)
             {
                 SidebarMenus.Add(seguridad);
@@ -320,6 +329,7 @@ namespace CorexProd.WPF.ViewModels
         {
             switch (vista)
             {
+                // SEGURIDAD
                 case "Roles":
                     Titulo = "Roles";
                     VistaActual = new RolesView();
@@ -332,9 +342,15 @@ namespace CorexProd.WPF.ViewModels
 
                 case "Empleados":
                     Titulo = "Empleados";
-                    VistaActual = new SeguridadView();
+                    VistaActual = new EmpleadosView();
                     break;
 
+                case "Cargos":
+                    Titulo = "Cargos";
+                    VistaActual = new CargosView();
+                    break;
+
+                // VENTAS
                 case "Ventas":
                 case "Proformas":
                 case "OCI":
@@ -343,6 +359,7 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new VentasView();
                     break;
 
+                // ALMACÉN
                 case "Almacén":
                 case "UnidadesMedida":
                 case "Insumos":
@@ -351,12 +368,14 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new AlmacenView();
                     break;
 
+                // PRODUCTOS
                 case "Productos":
                 case "CategoriasProducto":
                     Titulo = vista;
                     VistaActual = new ProductosView();
                     break;
 
+                // PRODUCCIÓN
                 case "Producción":
                 case "AreasProduccion":
                 case "OT":
@@ -365,6 +384,7 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new ProduccionView();
                     break;
 
+                // REPORTES
                 case "Reportes":
                 case "StockProductos":
                 case "StockInsumos":
