@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="CorexProd.WPF.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="White">
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+
+            <TextBlock Text="Bienvenido a CorexProd"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"/>
+
+            <TextBlock Text="Sistema de producción, ventas, almacén e inventario"
+                       FontSize="16"
+                       Foreground="Gray"
+                       Margin="0,10,0,0"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

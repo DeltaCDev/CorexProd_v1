@@ -1,10 +1,12 @@
 ﻿using CorexProd.Entidad.Entidades;
+using System.Collections.Generic;
 
 namespace CorexProd.WPF.Helpers
 {
     public static class SessionManager
     {
         public static Usuario UsuarioActual { get; set; }
+        public static List<string> MenusPermitidos { get; set; }
 
         public static bool EstaLogueado()
         {

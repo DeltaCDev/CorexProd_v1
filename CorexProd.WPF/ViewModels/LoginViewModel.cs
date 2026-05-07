@@ -1,6 +1,7 @@
 ﻿using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.Datos.Datos;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,6 +55,13 @@ namespace CorexProd.WPF.ViewModels
                     _usuarioNegocio.Login(Usuario, clave);
 
                 SessionManager.UsuarioActual = usuarioLogueado;
+                PermisoMenuDatos permisoDatos =
+                new PermisoMenuDatos();
+
+                SessionManager.MenusPermitidos =
+                    permisoDatos.ObtenerMenusPorRol(
+                        usuarioLogueado.IdRol
+                    );
 
                 MainWindow mainWindow = new MainWindow();
                 mainWindow.Show();

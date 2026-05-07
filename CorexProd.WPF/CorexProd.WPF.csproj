@@ -9,8 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Images\LOGO.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CorexProd.Entidad\CorexProd.Entidad.csproj" />
     <ProjectReference Include="..\CorexProd.Negocio\CorexProd.Negocio.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\LOGO.png" />
   </ItemGroup>
 
 </Project>

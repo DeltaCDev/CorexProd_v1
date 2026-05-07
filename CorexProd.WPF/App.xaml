@@ -5,9 +5,13 @@
              StartupUri="Views/LoginView.xaml">
     <Application.Resources>
         <ResourceDictionary>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles/Buttons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,0 +1,12 @@
+﻿<UserControl x:Class="CorexProd.WPF.Views.VentasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="White">
+        <TextBlock Text="Módulo de Ventas"
+                   FontSize="28"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"/>
+    </Grid>
+</UserControl>

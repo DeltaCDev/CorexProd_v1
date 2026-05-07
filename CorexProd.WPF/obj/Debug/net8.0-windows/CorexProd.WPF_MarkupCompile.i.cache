@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 D:\CorexProd_v1\CorexProd.WPF\App.xaml
-31804923661
+10327500912
 
-11-233267265
+191626389365
 202-125383410
-MainWindow.xaml;Styles\Buttons.xaml;Views\LoginView.xaml;
+MainWindow.xaml;Styles\Buttons.xaml;Views\AlmacenView.xaml;Views\HomeView.xaml;Views\LoginView.xaml;Views\ProduccionView.xaml;Views\ProductosView.xaml;Views\ReportesView.xaml;Views\SeguridadView.xaml;Views\VentasView.xaml;
 
 False
 
