@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace CorexProd.WPF.Views
+namespace CorexProd.WPF.Modules.Productos.Views
 {
     /// <summary>
     /// Lógica de interacción para ProductosView.xaml

@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace CorexProd.WPF.Views
+namespace CorexProd.WPF.Modules.Ventas.Views
 {
     /// <summary>
-    /// Lógica de interacción para ProduccionView.xaml
+    /// Lógica de interacción para VentasView.xaml
     /// </summary>
-    public partial class ProduccionView : UserControl
+    public partial class VentasView : UserControl
     {
-        public ProduccionView()
+        public VentasView()
         {
             InitializeComponent();
         }

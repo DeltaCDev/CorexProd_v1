@@ -1,48 +1,24 @@
 ﻿using CorexProd.Entidad.Entidades;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace CorexProd.Datos.Datos
 {
     public class UsuarioDatos
     {
-        public Usuario Login(string usuario, string clave)
+        public Usuario? Login(string usuario, string clave)
         {
-            Usuario usuarioEncontrado = null;
+            Usuario? usuarioEncontrado = null;
 
             using (SqlConnection cn = Conexion.ObtenerConexion())
             {
                 cn.Open();
 
-                string query = @"
-                               SELECT
-                                   u.IdUsuario,
-                                   u.NombreUsuario,
-                                   u.Clave,
-
-                                   e.Nombre + ' ' + e.Apellido AS NombreCompleto,
-
-                                   u.IdRol,
-                                   r.NombreRol,
-                                   u.Estado
-
-                               FROM Usuarios u
-
-                               INNER JOIN Empleados e
-                                   ON e.IdEmpleado = u.IdEmpleado
-
-                               INNER JOIN Roles r
-                                   ON r.IdRol = u.IdRol
-
-                               WHERE
-                                   u.NombreUsuario = @Usuario
-                                   AND u.Clave = @Clave
-                                   AND u.Estado = 1";
-
-                using (SqlCommand cmd = new SqlCommand(query, cn))
+                using (SqlCommand cmd = new SqlCommand( "USP_SEG_USUARIO_LOGIN", cn))
                 {
-                    cmd.Parameters.AddWithValue("@Usuario", usuario);
-                    cmd.Parameters.AddWithValue("@Clave", clave);
-
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue( "@Usuario", usuario);
+                    cmd.Parameters.AddWithValue( "@Clave", clave);
                     using (SqlDataReader dr = cmd.ExecuteReader())
                     {
                         if (dr.Read())
@@ -50,11 +26,11 @@ namespace CorexProd.Datos.Datos
                             usuarioEncontrado = new Usuario
                             {
                                 IdUsuario = Convert.ToInt32(dr["IdUsuario"]),
-                                NombreUsuario = dr["NombreUsuario"].ToString(),
-                                Clave = dr["Clave"].ToString(),
-                                NombreCompleto = dr["NombreCompleto"].ToString(),
+                                NombreUsuario =  dr["NombreUsuario"].ToString() ?? string.Empty,
+                                Clave = dr["Clave"].ToString() ?? string.Empty,
+                                NombreCompleto = dr["NombreCompleto"].ToString() ?? string.Empty,
                                 IdRol = Convert.ToInt32(dr["IdRol"]),
-                                NombreRol = dr["NombreRol"].ToString(),
+                                NombreRol = dr["NombreRol"].ToString() ?? string.Empty,
                                 Estado = Convert.ToBoolean(dr["Estado"])
                             };
                         }

@@ -21,4 +21,12 @@
     <Resource Include="Images\LOGO.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Modules\Almacen\ViewModels\" />
+    <Folder Include="Modules\Productos\ViewModels\" />
+    <Folder Include="Modules\Produccion\ViewModels\" />
+    <Folder Include="Modules\Reportes\ViewModels\" />
+    <Folder Include="Modules\Ventas\ViewModels\" />
+  </ItemGroup>
+
 </Project>

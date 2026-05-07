@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace CorexProd.Datos.Datos
 {
@@ -9,33 +10,38 @@ namespace CorexProd.Datos.Datos
     {
         public List<Rol> Listar()
         {
-            List<Rol> lista = new List<Rol>();
+            List<Rol> lista = [];
 
             using (SqlConnection cn = Conexion.ObtenerConexion())
             {
                 cn.Open();
 
-                string query = @"
-                    SELECT 
-                        IdRol,
-                        NombreRol,
-                        Estado,
-                        FechaRegistro
-                    FROM Roles
-                    ORDER BY IdRol DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, cn))
+                using (SqlCommand cmd = new SqlCommand(
+                    "USP_SEG_ROL_LISTAR", cn))
                 {
-                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    cmd.CommandType =
+                        CommandType.StoredProcedure;
+
+                    using (SqlDataReader dr =
+                        cmd.ExecuteReader())
                     {
                         while (dr.Read())
                         {
                             lista.Add(new Rol
                             {
-                                IdRol = Convert.ToInt32(dr["IdRol"]),
-                                NombreRol = dr["NombreRol"].ToString(),
-                                Estado = Convert.ToBoolean(dr["Estado"]),
-                                FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                                IdRol =
+                                    Convert.ToInt32(dr["IdRol"]),
+
+                                NombreRol =
+                                    dr["NombreRol"].ToString()
+                                    ?? string.Empty,
+
+                                Estado =
+                                    Convert.ToBoolean(dr["Estado"]),
+
+                                FechaRegistro =
+                                    Convert.ToDateTime(
+                                        dr["FechaRegistro"])
                             });
                         }
                     }
@@ -47,18 +53,23 @@ namespace CorexProd.Datos.Datos
 
         public void Registrar(Rol rol)
         {
-            using (SqlConnection cn = Conexion.ObtenerConexion())
+            using (SqlConnection cn =
+                Conexion.ObtenerConexion())
             {
                 cn.Open();
 
-                string query = @"
-                    INSERT INTO Roles (NombreRol, Estado)
-                    VALUES (@NombreRol, @Estado)";
-
-                using (SqlCommand cmd = new SqlCommand(query, cn))
+                using (SqlCommand cmd = new SqlCommand(
+                    "USP_SEG_ROL_REGISTRAR", cn))
                 {
-                    cmd.Parameters.AddWithValue("@NombreRol", rol.NombreRol);
-                    cmd.Parameters.AddWithValue("@Estado", rol.Estado);
+                    cmd.CommandType =
+                        CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue(
+                        "@NombreRol", rol.NombreRol);
+
+                    cmd.Parameters.AddWithValue(
+                        "@Estado", rol.Estado);
+
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -66,22 +77,26 @@ namespace CorexProd.Datos.Datos
 
         public void Editar(Rol rol)
         {
-            using (SqlConnection cn = Conexion.ObtenerConexion())
+            using (SqlConnection cn =
+                Conexion.ObtenerConexion())
             {
                 cn.Open();
 
-                string query = @"
-                    UPDATE Roles
-                    SET 
-                        NombreRol = @NombreRol,
-                        Estado = @Estado
-                    WHERE IdRol = @IdRol";
-
-                using (SqlCommand cmd = new SqlCommand(query, cn))
+                using (SqlCommand cmd = new SqlCommand(
+                    "USP_SEG_ROL_EDITAR", cn))
                 {
-                    cmd.Parameters.AddWithValue("@IdRol", rol.IdRol);
-                    cmd.Parameters.AddWithValue("@NombreRol", rol.NombreRol);
-                    cmd.Parameters.AddWithValue("@Estado", rol.Estado);
+                    cmd.CommandType =
+                        CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue(
+                        "@IdRol", rol.IdRol);
+
+                    cmd.Parameters.AddWithValue(
+                        "@NombreRol", rol.NombreRol);
+
+                    cmd.Parameters.AddWithValue(
+                        "@Estado", rol.Estado);
+
                     cmd.ExecuteNonQuery();
                 }
             }

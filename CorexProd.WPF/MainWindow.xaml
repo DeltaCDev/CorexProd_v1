@@ -9,62 +9,33 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230"/>
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- MENÚ LATERAL -->
+        <!-- SIDEBAR -->
         <Border Grid.Column="0" Background="#000000">
             <DockPanel>
 
-                <StackPanel DockPanel.Dock="Top" Margin="0,25,0,0">
-                    <Image  Source="/Images/LOGO.png"
-                            Height="120"
-                            Margin="10,10,10,25"
-                            Stretch="Uniform"/>
+                <!-- LOGO -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,15,0,0">
+                    <Image Source="/Images/LOGO.png"
+                           Height="110"
+                           Margin="10,0,10,20"
+                           Stretch="Uniform"/>
 
                     <Button Content="Inicio"
                             Style="{StaticResource MenuButtonStyle}"
                             Command="{Binding IrInicioCommand}"/>
-
-                    <Button Content="Ventas"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrVentasCommand}"
-                            Visibility="{Binding VerVentas, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Button Content="Almacén"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrAlmacenCommand}"
-                            Visibility="{Binding VerAlmacen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Button Content="Productos"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrProductosCommand}"
-                            Visibility="{Binding VerProductos, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Button Content="Producción"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrProduccionCommand}"
-                            Visibility="{Binding VerProduccion, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Button Content="Reportes"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrReportesCommand}"
-                            Visibility="{Binding VerReportes, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                    <Button Content="Seguridad"
-                            Style="{StaticResource MenuButtonStyle}"
-                            Command="{Binding IrSeguridadCommand}"
-                            Visibility="{Binding VerSeguridad, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </StackPanel>
 
+                <!-- USUARIO -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="15">
                     <TextBlock Text="Usuario:"
                                Foreground="#9CA3AF"
                                FontSize="12"/>
 
-                    <TextBlock x:Name="TxtUsuario"
-                               Text="{Binding NombreUsuario}"
+                    <TextBlock Text="{Binding NombreUsuario}"
                                Foreground="White"
                                FontWeight="Bold"
                                Margin="0,5,0,15"/>
@@ -75,6 +46,41 @@
                             Foreground="White"
                             BorderThickness="0"/>
                 </StackPanel>
+
+                <!-- MENÚ DINÁMICO -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding SidebarMenus}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Expander Header="{Binding Titulo}"
+                                          Foreground="White"
+                                          Background="#000000"
+                                          Margin="10,3"
+                                          IsExpanded="False">
+
+                                    <ItemsControl ItemsSource="{Binding Hijos}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Titulo}"
+                                                        Command="{Binding DataContext.IrVistaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding Vista}"
+                                                        Height="34"
+                                                        Margin="10,2,0,2"
+                                                        Padding="18,0"
+                                                        Background="#111827"
+                                                        Foreground="White"
+                                                        BorderThickness="0"
+                                                        HorizontalContentAlignment="Left"
+                                                        Cursor="Hand"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
 
             </DockPanel>
         </Border>
@@ -97,9 +103,9 @@
 
             <!-- ÁREA CENTRAL -->
             <Border Grid.Row="1"
-        Margin="20"
-        Background="White"
-        CornerRadius="10">
+                    Margin="20"
+                    Background="White"
+                    CornerRadius="10">
 
                 <ContentControl Content="{Binding VistaActual}"/>
 

@@ -55,8 +55,8 @@ namespace CorexProd.WPF.ViewModels
                     _usuarioNegocio.Login(Usuario, clave);
 
                 SessionManager.UsuarioActual = usuarioLogueado;
-                PermisoMenuDatos permisoDatos =
-                new PermisoMenuDatos();
+                MenuPermitidoDatos permisoDatos =
+                new MenuPermitidoDatos();
 
                 SessionManager.MenusPermitidos =
                     permisoDatos.ObtenerMenusPorRol(

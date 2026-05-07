@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="CorexProd.WPF.Views.ProduccionView"
+﻿<UserControl x:Class="CorexProd.WPF.Modules.Reportes.Views.ReportesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Grid Background="White">
-        <TextBlock Text="Módulo de Producciòn"
+        <TextBlock Text="Módulo de Reportes"
                    FontSize="28"
                    FontWeight="Bold"
                    VerticalAlignment="Center"

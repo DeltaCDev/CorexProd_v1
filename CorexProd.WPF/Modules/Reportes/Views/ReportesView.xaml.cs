@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace CorexProd.WPF.Views
+namespace CorexProd.WPF.Modules.Reportes.Views
 {
     /// <summary>
-    /// Lógica de interacción para SeguridadView.xaml
+    /// Lógica de interacción para ReportesView.xaml
     /// </summary>
-    public partial class SeguridadView : UserControl
+    public partial class ReportesView : UserControl
     {
-        public SeguridadView()
+        public ReportesView()
         {
             InitializeComponent();
         }
