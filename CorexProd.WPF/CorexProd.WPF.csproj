@@ -15,19 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\CorexProd1.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\CorexProd.Entidad\CorexProd.Entidad.csproj" />
     <ProjectReference Include="..\CorexProd.Negocio\CorexProd.Negocio.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\CorexProd.ico">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Assets\CorexProd1.ico">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Images\LOGO.png" />
