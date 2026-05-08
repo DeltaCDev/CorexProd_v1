@@ -12,6 +12,8 @@ namespace CorexProd.Entidad.Entidades
 
         public string NombreInsumo { get; set; } = string.Empty;
 
+        public string CodigoInsumo { get; set; } = string.Empty;
+
         public decimal Cantidad { get; set; }
 
         public int IdUnidadMedida { get; set; }
