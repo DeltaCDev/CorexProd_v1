@@ -3,12 +3,12 @@ using System.Windows.Controls;
 
 namespace CorexProd.WPF.Modules.Productos.Views
 {
-    public partial class ProductosView : UserControl
+    public partial class CategoriasProductosView : UserControl
     {
-        public ProductosView()
+        public CategoriasProductosView()
         {
             InitializeComponent();
-            DataContext = new ProductosViewModel();
+            DataContext = new CategoriasProductosViewModel();
         }
     }
 }

@@ -5,6 +5,15 @@
     <Compile Update="Modules\Almacen\Views\AlmacenView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Modules\Almacen\Views\CategoriasInsumoView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Modules\Almacen\Views\UnidadesMedidaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Modules\Productos\Views\CategoriasProductosView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Modules\Seguridad\Views\CambiarClaveView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -12,6 +21,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Modules\Seguridad\Views\EmpleadosView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Modules\Seguridad\Views\ParametrosView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Modules\Seguridad\Views\RolesView.xaml.cs">

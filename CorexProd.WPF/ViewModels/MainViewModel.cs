@@ -356,6 +356,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Parámetros"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Parámetros",
+                    Vista = "Parametros"
+                });
+            }
+
             if (menusPermitidos.Contains("Seguridad") && seguridad.Hijos.Count > 0)
             {
                 SidebarMenus.Add(seguridad);
@@ -393,6 +402,11 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new CargosView();
                     break;
 
+                case "Parametros":
+                    Titulo = "Parámetros";
+                    VistaActual = new ParametrosView();
+                    break;
+
                 // VENTAS
                 case "Ventas":
                 case "Proformas":
@@ -403,8 +417,12 @@ namespace CorexProd.WPF.ViewModels
                     break;
 
                 // ALMACÉN
-                case "Almacén":
                 case "UnidadesMedida":
+                    Titulo = "Unidades de Medida";
+                    VistaActual = new UnidadesMedidaView();
+                    break;
+
+                case "Almacén":
                 case "Insumos":
                 case "FichaTecnica":
                     Titulo = vista;
@@ -412,9 +430,13 @@ namespace CorexProd.WPF.ViewModels
                     break;
 
                 // PRODUCTOS
-                case "Productos":
                 case "CategoriasProducto":
-                    Titulo = vista;
+                    Titulo = "Categorías de Productos";
+                    VistaActual = new CategoriasProductosView();
+                    break;
+
+                case "Productos":
+                    Titulo = "Productos";
                     VistaActual = new ProductosView();
                     break;
 
