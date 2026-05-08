@@ -1,4 +1,6 @@
-﻿using System.Windows.Controls;
+﻿using CorexProd.WPF.Modules.Produccion.ViewModels;
+using System.ComponentModel;
+using System.Windows.Controls;
 
 namespace CorexProd.WPF.Modules.Produccion.Views
 {
@@ -7,6 +9,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         public FichaTecnicaView()
         {
             InitializeComponent();
+
+            if (!DesignerProperties.GetIsInDesignMode(this))
+            {
+                DataContext = new FichaTecnicaViewModel();
+            }
         }
     }
 }

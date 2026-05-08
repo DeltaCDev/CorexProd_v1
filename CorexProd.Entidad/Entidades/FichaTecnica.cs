@@ -14,6 +14,8 @@ namespace CorexProd.Entidad.Entidades
 
         public int Version { get; set; }
 
+        public int CantidadInsumos { get; set; }
+
         public string? Observacion { get; set; }
 
         public bool Estado { get; set; }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CorexProd.WPF")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0ed4377c311a8e3bdb832f92c405e2b248a17198")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+090819e0e667e042dd2eacf9fc37d7f8a0d0d7c1")]
 [assembly: System.Reflection.AssemblyProductAttribute("CorexProd.WPF")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CorexProd.WPF")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

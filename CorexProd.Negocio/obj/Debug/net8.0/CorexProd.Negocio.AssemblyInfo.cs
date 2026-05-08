@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+154fabf564cb5b1ef42b546832dd585dd354df10")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+090819e0e667e042dd2eacf9fc37d7f8a0d0d7c1")]
 [assembly: System.Reflection.AssemblyProductAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
