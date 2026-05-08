@@ -31,6 +31,7 @@ namespace CorexProd.Datos.Datos
                             CodigoProducto = dr["Codigo"].ToString() ?? "",
                             NombreProducto = dr["NombreProducto"].ToString() ?? "",
                             Version = Convert.ToInt32(dr["Version"]),
+                            CantidadInsumos = ObtenerCantidadInsumos(dr),
                             Observacion = dr["Observacion"] == DBNull.Value ? null : dr["Observacion"].ToString(),
                             Estado = Convert.ToBoolean(dr["Estado"]),
                             FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
@@ -261,6 +262,19 @@ namespace CorexProd.Datos.Datos
             }
 
             return resultado;
+        }
+
+        private static int ObtenerCantidadInsumos(SqlDataReader dr)
+        {
+            try
+            {
+                int indice = dr.GetOrdinal("CantidadInsumos");
+                return dr.IsDBNull(indice) ? 0 : Convert.ToInt32(dr.GetValue(indice));
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return 0;
+            }
         }
     }
 }

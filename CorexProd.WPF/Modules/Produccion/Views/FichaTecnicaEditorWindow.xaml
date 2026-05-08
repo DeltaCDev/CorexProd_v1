@@ -27,7 +27,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
                         <TextBlock Text="Producto"/>
-                        <ComboBox ItemsSource="{Binding Productos}" SelectedItem="{Binding ProductoSeleccionado}" DisplayMemberPath="NombreProducto" Height="32"/>
+                        <TextBox Text="{Binding ProductoSeleccionado.NombreProducto}" Height="32" IsReadOnly="True"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="0,0,10,0">
                         <TextBlock Text="Versión"/>

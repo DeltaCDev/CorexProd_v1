@@ -45,7 +45,19 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                 _insumoSeleccionado = value;
                 OnPropertyChanged();
                 if (_insumoSeleccionado != null)
-                    UnidadSeleccionada = UnidadesMedida.FirstOrDefault(x => x.IdUnidadMedida == _insumoSeleccionado.IdUnidadMedida);
+                {
+                    var detalleExistente = Detalles.FirstOrDefault(x => x.IdInsumo == _insumoSeleccionado.IdInsumo);
+                    if (detalleExistente != null)
+                    {
+                        Cantidad = detalleExistente.Cantidad;
+                        UnidadSeleccionada = UnidadesMedida.FirstOrDefault(x => x.IdUnidadMedida == detalleExistente.IdUnidadMedida);
+                    }
+                    else
+                    {
+                        Cantidad = 0;
+                        UnidadSeleccionada = UnidadesMedida.FirstOrDefault(x => x.IdUnidadMedida == _insumoSeleccionado.IdUnidadMedida);
+                    }
+                }
             }
         }
 
@@ -69,10 +81,17 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
             }
         }
 
-        public int Version { get; set; }
-        public string Observacion { get; set; } = string.Empty;
-        public bool Estado { get; set; }
-        public decimal Cantidad { get; set; }
+        private int _version;
+        public int Version { get => _version; set { _version = value; OnPropertyChanged(); } }
+
+        private string _observacion = string.Empty;
+        public string Observacion { get => _observacion; set { _observacion = value; OnPropertyChanged(); } }
+
+        private bool _estado;
+        public bool Estado { get => _estado; set { _estado = value; OnPropertyChanged(); } }
+
+        private decimal _cantidad;
+        public decimal Cantidad { get => _cantidad; set { _cantidad = value; OnPropertyChanged(); } }
 
         public FichaTecnicaEditorViewModel(FichaTecnica fichaSeleccionada)
         {

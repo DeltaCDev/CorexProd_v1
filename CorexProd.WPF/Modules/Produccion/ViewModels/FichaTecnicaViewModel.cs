@@ -186,7 +186,10 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
             UnidadesMedida.Clear();
 
             foreach (var item in _fichaNegocio.Listar())
+            {
+                item.CantidadInsumos = _fichaNegocio.ListarDetalle(item.IdFichaTecnica).Count;
                 FichasTecnicas.Add(item);
+            }
 
             foreach (var item in _productoNegocio.Listar())
                 Productos.Add(item);

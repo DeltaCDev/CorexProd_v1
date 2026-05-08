@@ -32,6 +32,7 @@
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="120"/>
                     <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*"/>
                     <DataGridTextColumn Header="Versión" Binding="{Binding Version}" Width="80"/>
+                    <DataGridTextColumn Header="Cant. insumos" Binding="{Binding CantidadInsumos}" Width="110"/>
                     <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="80"/>
                 </DataGrid.Columns>
             </DataGrid>
