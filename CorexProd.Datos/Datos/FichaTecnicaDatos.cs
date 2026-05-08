@@ -24,17 +24,18 @@ namespace CorexProd.Datos.Datos
                 {
                     while (dr.Read())
                     {
-                        lista.Add(new FichaTecnica
+                        lista.Add(new FichaTecnicaDetalle
                         {
+                            IdFichaTecnicaDetalle = Convert.ToInt32(dr["IdFichaTecnicaDetalle"]),
                             IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
-                            IdProducto = Convert.ToInt32(dr["IdProducto"]),
-                            CodigoProducto = dr["Codigo"].ToString() ?? "",
-                            NombreProducto = dr["NombreProducto"].ToString() ?? "",
-                            Version = Convert.ToInt32(dr["Version"]),
-                            CantidadInsumos = ObtenerCantidadInsumos(dr),
-                            Observacion = dr["Observacion"] == DBNull.Value ? null : dr["Observacion"].ToString(),
-                            Estado = Convert.ToBoolean(dr["Estado"]),
-                            FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                            IdInsumo = Convert.ToInt32(dr["IdInsumo"]),
+                            NombreInsumo = dr["NombreInsumo"].ToString() ?? "",
+                            CodigoInsumo = ObtenerTextoOpcional(dr, "CodigoInsumo", "Codigo"),
+                            Cantidad = Convert.ToDecimal(dr["Cantidad"]),
+                            IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                            NombreUnidad = dr["NombreUnidad"].ToString() ?? "",
+                            Abreviatura = dr["Abreviatura"].ToString() ?? "",
+                            Estado = Convert.ToBoolean(dr["Estado"])
                         });
                     }
                 }
@@ -141,6 +142,7 @@ namespace CorexProd.Datos.Datos
                             IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
                             IdInsumo = Convert.ToInt32(dr["IdInsumo"]),
                             NombreInsumo = dr["NombreInsumo"].ToString() ?? "",
+                            CodigoInsumo = ObtenerTextoOpcional(dr, "CodigoInsumo", "Codigo"),
                             Cantidad = Convert.ToDecimal(dr["Cantidad"]),
                             IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
                             NombreUnidad = dr["NombreUnidad"].ToString() ?? "",
@@ -191,6 +193,27 @@ namespace CorexProd.Datos.Datos
 
             return resultado;
         }
+
+
+
+
+        private static string ObtenerTextoOpcional(SqlDataReader dr, params string[] nombresColumnas)
+        {
+            foreach (var nombreColumna in nombresColumnas)
+            {
+                try
+                {
+                    int indice = dr.GetOrdinal(nombreColumna);
+                    return dr.IsDBNull(indice) ? string.Empty : dr.GetValue(indice)?.ToString() ?? string.Empty;
+                }
+                catch (IndexOutOfRangeException)
+                {
+                }
+            }
+
+            return string.Empty;
+        }
+
 
         public bool EditarDetalle(FichaTecnicaDetalle detalle, out string mensaje)
         {
@@ -262,19 +285,6 @@ namespace CorexProd.Datos.Datos
             }
 
             return resultado;
-        }
-
-        private static int ObtenerCantidadInsumos(SqlDataReader dr)
-        {
-            try
-            {
-                int indice = dr.GetOrdinal("CantidadInsumos");
-                return dr.IsDBNull(indice) ? 0 : Convert.ToInt32(dr.GetValue(indice));
-            }
-            catch (IndexOutOfRangeException)
-            {
-                return 0;
-            }
         }
     }
 }

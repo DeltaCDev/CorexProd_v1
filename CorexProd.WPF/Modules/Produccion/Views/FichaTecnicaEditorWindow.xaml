@@ -74,7 +74,8 @@
 
             <DataGrid Grid.Row="3" ItemsSource="{Binding Detalles}" SelectedItem="{Binding DetalleSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" MinHeight="220" Margin="0,0,0,12">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdFichaTecnicaDetalle}" Width="60"/>
+                    <DataGridTextColumn Header="ID Insumo" Binding="{Binding IdInsumo}" Width="90"/>
+                    <DataGridTextColumn Header="Código" Binding="{Binding CodigoInsumo}" Width="120"/>
                     <DataGridTextColumn Header="Insumo" Binding="{Binding NombreInsumo}" Width="*"/>
                     <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="120"/>
                     <DataGridTextColumn Header="U.M" Binding="{Binding Abreviatura}" Width="100"/>
