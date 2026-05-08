@@ -100,7 +100,31 @@ namespace CorexProd.Negocio.Negocio
 
             return _datos.RegistrarDetalle(detalle, out mensaje);
         }
+        public List<FichaTecnicaConsumo> CalcularConsumo(int idProducto, decimal cantidadProducir, out string mensaje)
+        {
+            mensaje = string.Empty;
 
+            if (idProducto <= 0)
+            {
+                mensaje = "Debe seleccionar un producto.";
+                return new List<FichaTecnicaConsumo>();
+            }
+
+            if (cantidadProducir <= 0)
+            {
+                mensaje = "La cantidad a producir debe ser mayor a cero.";
+                return new List<FichaTecnicaConsumo>();
+            }
+
+            var lista = _datos.CalcularConsumo(idProducto, cantidadProducir);
+
+            if (lista.Count == 0)
+            {
+                mensaje = "El producto seleccionado no tiene ficha técnica activa.";
+            }
+
+            return lista;
+        }
         public bool EditarDetalle(FichaTecnicaDetalle detalle, out string mensaje)
         {
             mensaje = string.Empty;

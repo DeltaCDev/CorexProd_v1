@@ -283,5 +283,45 @@ namespace CorexProd.Datos.Datos
 
             return resultado;
         }
+        public List<FichaTecnicaConsumo> CalcularConsumo(int idProducto, decimal cantidadProducir)
+        {
+            var lista = new List<FichaTecnicaConsumo>();
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_CALCULAR_CONSUMO", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdProducto", idProducto);
+                cmd.Parameters.AddWithValue("@CantidadProducir", cantidadProducir);
+
+                cn.Open();
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        lista.Add(new FichaTecnicaConsumo
+                        {
+                            IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
+                            IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                            CodigoProducto = dr["CodigoProducto"].ToString() ?? "",
+                            NombreProducto = dr["NombreProducto"].ToString() ?? "",
+                            IdInsumo = Convert.ToInt32(dr["IdInsumo"]),
+                            NombreInsumo = dr["NombreInsumo"].ToString() ?? "",
+                            CantidadPorUnidad = Convert.ToDecimal(dr["CantidadPorUnidad"]),
+                            CantidadProducir = Convert.ToDecimal(dr["CantidadProducir"]),
+                            CantidadTotalRequerida = Convert.ToDecimal(dr["CantidadTotalRequerida"]),
+                            IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                            NombreUnidad = dr["NombreUnidad"].ToString() ?? "",
+                            Abreviatura = dr["Abreviatura"].ToString() ?? ""
+                        });
+                    }
+                }
+            }
+
+            return lista;
+        }
     }
+
 }
