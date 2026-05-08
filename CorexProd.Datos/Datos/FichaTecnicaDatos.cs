@@ -24,17 +24,14 @@ namespace CorexProd.Datos.Datos
                 {
                     while (dr.Read())
                     {
-                        lista.Add(new FichaTecnicaDetalle
+                        lista.Add(new FichaTecnica
                         {
-                            IdFichaTecnicaDetalle = Convert.ToInt32(dr["IdFichaTecnicaDetalle"]),
                             IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
-                            IdInsumo = Convert.ToInt32(dr["IdInsumo"]),
-                            NombreInsumo = dr["NombreInsumo"].ToString() ?? "",
-                            CodigoInsumo = ObtenerTextoOpcional(dr, "CodigoInsumo", "Codigo"),
-                            Cantidad = Convert.ToDecimal(dr["Cantidad"]),
-                            IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
-                            NombreUnidad = dr["NombreUnidad"].ToString() ?? "",
-                            Abreviatura = dr["Abreviatura"].ToString() ?? "",
+                            IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                            CodigoProducto = ObtenerTextoOpcional(dr, "CodigoProducto", "Codigo"),
+                            NombreProducto = ObtenerTextoOpcional(dr, "NombreProducto", "Producto"),
+                            Version = Convert.ToInt32(dr["Version"]),
+                            Observacion = ObtenerTextoOpcional(dr, "Observacion"),
                             Estado = Convert.ToBoolean(dr["Estado"])
                         });
                     }
