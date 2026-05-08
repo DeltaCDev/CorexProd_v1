@@ -1,0 +1,90 @@
+﻿<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.FichaTecnicaEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Editar Ficha Técnica"
+        Height="680"
+        Width="980"
+        WindowStartupLocation="CenterOwner">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Editar ficha técnica" FontSize="22" FontWeight="Bold" Margin="0,0,0,15"/>
+
+            <Border Grid.Row="1" Padding="12" Margin="0,0,0,12" BorderBrush="#DDD" BorderThickness="1" CornerRadius="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="120"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Producto"/>
+                        <ComboBox ItemsSource="{Binding Productos}" SelectedItem="{Binding ProductoSeleccionado}" DisplayMemberPath="NombreProducto" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                        <TextBlock Text="Versión"/>
+                        <TextBox Text="{Binding Version}" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                        <TextBlock Text="Observación"/>
+                        <TextBox Text="{Binding Observacion}" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3">
+                        <TextBlock Text="Estado"/>
+                        <CheckBox Content="Activo" IsChecked="{Binding Estado}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Padding="12" Margin="0,0,0,12" BorderBrush="#DDD" BorderThickness="1" CornerRadius="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Insumo"/>
+                        <ComboBox ItemsSource="{Binding Insumos}" SelectedItem="{Binding InsumoSeleccionado}" DisplayMemberPath="NombreInsumo" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                        <TextBlock Text="Cantidad"/>
+                        <TextBox Text="{Binding Cantidad}" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                        <TextBlock Text="Unidad"/>
+                        <ComboBox ItemsSource="{Binding UnidadesMedida}" SelectedItem="{Binding UnidadSeleccionada}" DisplayMemberPath="Abreviatura" Height="32"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button Content="Agregar" Width="90" Height="32" Margin="0,0,8,0" Command="{Binding AgregarDetalleCommand}"/>
+                        <Button Content="Editar" Width="90" Height="32" Margin="0,0,8,0" Command="{Binding EditarDetalleCommand}"/>
+                        <Button Content="Quitar" Width="90" Height="32" Command="{Binding QuitarDetalleCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <DataGrid Grid.Row="3" ItemsSource="{Binding Detalles}" SelectedItem="{Binding DetalleSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" MinHeight="220" Margin="0,0,0,12">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdFichaTecnicaDetalle}" Width="60"/>
+                    <DataGridTextColumn Header="Insumo" Binding="{Binding NombreInsumo}" Width="*"/>
+                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="120"/>
+                    <DataGridTextColumn Header="U.M" Binding="{Binding Abreviatura}" Width="100"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cerrar" Width="100" Height="32" Margin="0,0,8,0" Command="{Binding CancelarCommand}"/>
+                <Button Content="Guardar cabecera" Width="150" Height="32" Command="{Binding GuardarCommand}"/>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Window>

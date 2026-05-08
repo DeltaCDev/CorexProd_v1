@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 D:\CorexProd_v1\CorexProd.WPF\App.xaml
-21654703876
+221133293184
 
-44316702341
+46-513449519
 217252324082
-MainWindow.xaml;Modules\Almacen\Views\AlmacenView.xaml;Modules\Almacen\Views\CategoriasInsumoView.xaml;Modules\Almacen\Views\InsumosView.xaml;Modules\Almacen\Views\UnidadesMedidaView.xaml;Modules\Produccion\Views\FichaTecnicaView.xaml;Modules\Produccion\Views\ProduccionView.xaml;Modules\Productos\Views\CategoriasProductosView.xaml;Modules\Productos\Views\ProductosView.xaml;Modules\Reportes\Views\ReportesView.xaml;Modules\Seguridad\Views\CambiarClaveView.xaml;Modules\Seguridad\Views\CargosView.xaml;Modules\Seguridad\Views\EmpleadosView.xaml;Modules\Seguridad\Views\ParametrosView.xaml;Modules\Seguridad\Views\RolesView.xaml;Modules\Seguridad\Views\SeguridadView.xaml;Modules\Seguridad\Views\UsuariosView.xaml;Modules\Ventas\Views\VentasView.xaml;Styles\Buttons.xaml;Views\HomeView.xaml;Views\LoginView.xaml;
+MainWindow.xaml;Modules\Almacen\Views\AlmacenView.xaml;Modules\Almacen\Views\CategoriasInsumoView.xaml;Modules\Almacen\Views\InsumosView.xaml;Modules\Almacen\Views\UnidadesMedidaView.xaml;Modules\Produccion\Views\FichaTecnicaEditorWindow.xaml;Modules\Produccion\Views\FichaTecnicaView.xaml;Modules\Produccion\Views\ProduccionView.xaml;Modules\Productos\Views\CategoriasProductosView.xaml;Modules\Productos\Views\ProductosView.xaml;Modules\Reportes\Views\ReportesView.xaml;Modules\Seguridad\Views\CambiarClaveView.xaml;Modules\Seguridad\Views\CargosView.xaml;Modules\Seguridad\Views\EmpleadosView.xaml;Modules\Seguridad\Views\ParametrosView.xaml;Modules\Seguridad\Views\RolesView.xaml;Modules\Seguridad\Views\SeguridadView.xaml;Modules\Seguridad\Views\UsuariosView.xaml;Modules\Ventas\Views\VentasView.xaml;Styles\Buttons.xaml;Views\HomeView.xaml;Views\LoginView.xaml;
 
-True
+False
 

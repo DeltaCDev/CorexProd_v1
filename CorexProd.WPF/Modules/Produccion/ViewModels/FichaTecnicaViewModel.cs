@@ -3,6 +3,8 @@ using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
+using CorexProd.WPF.Modules.Produccion.Views;
+using System.Windows;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -161,6 +163,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         public ICommand EditarDetalleCommand { get; }
         public ICommand QuitarDetalleCommand { get; }
         public ICommand RefrescarCommand { get; }
+        public ICommand EditarFichaCommand { get; }
 
         public FichaTecnicaViewModel()
         {
@@ -170,6 +173,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
             EditarDetalleCommand = new RelayCommand(_ => EditarDetalle());
             QuitarDetalleCommand = new RelayCommand(_ => QuitarDetalle());
             RefrescarCommand = new RelayCommand(_ => CargarDatos());
+            EditarFichaCommand = new RelayCommand(_ => EditarFicha());
 
             CargarDatos();
         }
@@ -343,6 +347,27 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
             {
                 NotificationService.Warning(mensaje);
             }
+        }
+        private void EditarFicha()
+        {
+            if (FichaSeleccionada == null)
+            {
+                NotificationService.Warning("Seleccione una ficha técnica para editar.");
+                return;
+            }
+
+            var ventana = new FichaTecnicaEditorWindow(FichaSeleccionada)
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            ventana.ViewModel.GuardadoExitoso = () =>
+            {
+                CargarDatos();
+                FichaSeleccionada = FichasTecnicas.FirstOrDefault(x => x.IdFichaTecnica == IdFichaTecnica);
+            };
+
+            ventana.ShowDialog();
         }
 
         private void LimpiarDetalle()

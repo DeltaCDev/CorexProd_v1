@@ -14,6 +14,9 @@
     <Compile Update="Modules\Almacen\Views\UnidadesMedidaView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Modules\Produccion\Views\FichaTecnicaEditorWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Modules\Produccion\Views\FichaTecnicaView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
