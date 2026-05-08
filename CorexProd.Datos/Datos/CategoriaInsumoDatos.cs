@@ -1,8 +1,8 @@
-﻿using CorexProd.Entidad;
+﻿using CorexProd.Entidad.Entidades;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace CorexProd.Datos
+namespace CorexProd.Datos.Datos
 {
     public class CategoriaInsumoDatos
     {

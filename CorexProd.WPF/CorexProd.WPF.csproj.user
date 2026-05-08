@@ -8,7 +8,13 @@
     <Compile Update="Modules\Almacen\Views\CategoriasInsumoView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Modules\Almacen\Views\InsumosView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Modules\Almacen\Views\UnidadesMedidaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Modules\Produccion\Views\FichaTecnicaView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Modules\Productos\Views\CategoriasProductosView.xaml.cs">

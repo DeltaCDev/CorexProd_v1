@@ -1,4 +1,4 @@
-﻿namespace CorexProd.Entidad
+﻿namespace CorexProd.Entidad.Entidades
 {
     public class CategoriaInsumo
     {

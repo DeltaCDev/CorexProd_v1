@@ -1,5 +1,5 @@
-﻿using CorexProd.Entidad;
-using CorexProd.Negocio;
+﻿using CorexProd.Entidad.Entidades;
+using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using System.Collections.ObjectModel;
@@ -11,18 +11,9 @@ namespace CorexProd.WPF.ViewModels
     {
         private readonly CategoriaInsumoNegocio _categoriaNegocio = new();
 
-        private ObservableCollection<CategoriaInsumo> _categorias;
-        public ObservableCollection<CategoriaInsumo> Categorias
-        {
-            get => _categorias;
-            set
-            {
-                _categorias = value;
-                OnPropertyChanged();
-            }
-        }
+        public ObservableCollection<CategoriaInsumo> Categorias { get; set; } = [];
 
-        private CategoriaInsumo _categoriaSeleccionada;
+        private CategoriaInsumo? _categoriaSeleccionada;
         public CategoriaInsumo CategoriaSeleccionada
         {
             get => _categoriaSeleccionada;
@@ -45,44 +36,28 @@ namespace CorexProd.WPF.ViewModels
         public int IdCategoriaInsumo
         {
             get => _idCategoriaInsumo;
-            set
-            {
-                _idCategoriaInsumo = value;
-                OnPropertyChanged();
-            }
+            set { _idCategoriaInsumo = value; OnPropertyChanged(); }
         }
 
-        private string _nombreCategoria;
+        private string _nombreCategoria = string.Empty;
         public string NombreCategoria
         {
             get => _nombreCategoria;
-            set
-            {
-                _nombreCategoria = value;
-                OnPropertyChanged();
-            }
+            set { _nombreCategoria = value; OnPropertyChanged(); }
         }
 
-        private string _descripcion;
+        private string _descripcion = string.Empty;
         public string Descripcion
         {
             get => _descripcion;
-            set
-            {
-                _descripcion = value;
-                OnPropertyChanged();
-            }
+            set { _descripcion = value; OnPropertyChanged(); }
         }
 
         private bool _estado = true;
         public bool Estado
         {
             get => _estado;
-            set
-            {
-                _estado = value;
-                OnPropertyChanged();
-            }
+            set { _estado = value; OnPropertyChanged(); }
         }
 
         public ICommand NuevoCommand { get; }
@@ -103,6 +78,7 @@ namespace CorexProd.WPF.ViewModels
         private void CargarCategorias()
         {
             Categorias = new ObservableCollection<CategoriaInsumo>(_categoriaNegocio.Listar());
+            OnPropertyChanged(nameof(Categorias));
         }
 
         private void Guardar()
@@ -138,7 +114,7 @@ namespace CorexProd.WPF.ViewModels
                     return;
                 }
 
-                bool confirma = ConfirmDialogService.Confirm(
+                bool confirma = ConfirmDialogService.Confirmar(
                     "Editar categoría",
                     "¿Está seguro de editar esta categoría?"
                 );
@@ -176,7 +152,7 @@ namespace CorexProd.WPF.ViewModels
                     return;
                 }
 
-                bool confirma = ConfirmDialogService.Confirm(
+                bool confirma = ConfirmDialogService.Confirmar(
                     "Eliminar categoría",
                     "¿Está seguro de eliminar esta categoría?"
                 );

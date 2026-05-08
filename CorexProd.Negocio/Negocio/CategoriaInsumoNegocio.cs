@@ -1,7 +1,7 @@
-﻿using CorexProd.Datos;
-using CorexProd.Entidad;
+﻿using CorexProd.Datos.Datos;
+using CorexProd.Entidad.Entidades;
 
-namespace CorexProd.Negocio
+namespace CorexProd.Negocio.Negocio
 {
     public class CategoriaInsumoNegocio
     {

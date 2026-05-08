@@ -173,6 +173,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Categorías de Insumos"))
+            {
+                almacen.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Categorías de Insumos",
+                    Vista = "CategoriasInsumo"
+                });
+            }
+
             if (menusPermitidos.Contains("Insumos"))
             {
                 almacen.Hijos.Add(new MenuItemSistema
@@ -181,7 +190,6 @@ namespace CorexProd.WPF.ViewModels
                     Vista = "Insumos"
                 });
             }
-
             if (menusPermitidos.Contains("Ficha Técnica"))
             {
                 almacen.Hijos.Add(new MenuItemSistema
@@ -422,12 +430,23 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new UnidadesMedidaView();
                     break;
 
-                case "Almacén":
-                case "Insumos":
-                case "FichaTecnica":
-                    Titulo = vista;
-                    VistaActual = new AlmacenView();
+                case "CategoriasInsumo":
+                    Titulo = "Categorías de Insumos";
+                    VistaActual = new CategoriasInsumoView();
                     break;
+
+                case "Insumos":
+                    Titulo = "Insumos";
+                    VistaActual = new InsumosView();
+                    break;
+
+                case "Almacén":
+
+                case "FichaTecnica":
+                    Titulo = "Ficha Técnica";
+                    VistaActual = new FichaTecnicaView();
+                    break;
+
 
                 // PRODUCTOS
                 case "CategoriasProducto":

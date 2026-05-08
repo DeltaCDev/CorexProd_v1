@@ -1,0 +1,266 @@
+﻿using CorexProd.Entidad;
+using CorexProd.Entidad.Entidades;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+
+namespace CorexProd.Datos.Datos
+{
+    public class FichaTecnicaDatos
+    {
+        public List<FichaTecnica> Listar()
+        {
+            var lista = new List<FichaTecnica>();
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_LISTAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cn.Open();
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        lista.Add(new FichaTecnica
+                        {
+                            IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
+                            IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                            CodigoProducto = dr["Codigo"].ToString() ?? "",
+                            NombreProducto = dr["NombreProducto"].ToString() ?? "",
+                            Version = Convert.ToInt32(dr["Version"]),
+                            Observacion = dr["Observacion"] == DBNull.Value ? null : dr["Observacion"].ToString(),
+                            Estado = Convert.ToBoolean(dr["Estado"]),
+                            FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                        });
+                    }
+                }
+            }
+
+            return lista;
+        }
+
+        public bool Registrar(FichaTecnica ficha, out string mensaje)
+        {
+            bool resultado = false;
+            mensaje = string.Empty;
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_REGISTRAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdProducto", ficha.IdProducto);
+                cmd.Parameters.AddWithValue("@Version", ficha.Version);
+                cmd.Parameters.AddWithValue("@Observacion", (object?)ficha.Observacion ?? DBNull.Value);
+
+                SqlParameter pResultado = new SqlParameter("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(pResultado);
+                cmd.Parameters.Add(pMensaje);
+
+                cn.Open();
+                cmd.ExecuteNonQuery();
+
+                resultado = Convert.ToBoolean(pResultado.Value);
+                mensaje = pMensaje.Value.ToString() ?? "";
+            }
+
+            return resultado;
+        }
+
+        public bool Editar(FichaTecnica ficha, out string mensaje)
+        {
+            bool resultado = false;
+            mensaje = string.Empty;
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_EDITAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdFichaTecnica", ficha.IdFichaTecnica);
+                cmd.Parameters.AddWithValue("@IdProducto", ficha.IdProducto);
+                cmd.Parameters.AddWithValue("@Version", ficha.Version);
+                cmd.Parameters.AddWithValue("@Observacion", (object?)ficha.Observacion ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Estado", ficha.Estado);
+
+                SqlParameter pResultado = new SqlParameter("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(pResultado);
+                cmd.Parameters.Add(pMensaje);
+
+                cn.Open();
+                cmd.ExecuteNonQuery();
+
+                resultado = Convert.ToBoolean(pResultado.Value);
+                mensaje = pMensaje.Value.ToString() ?? "";
+            }
+
+            return resultado;
+        }
+
+        public List<FichaTecnicaDetalle> ListarDetalle(int idFichaTecnica)
+        {
+            var lista = new List<FichaTecnicaDetalle>();
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_DETALLE_LISTAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@IdFichaTecnica", idFichaTecnica);
+
+                cn.Open();
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        lista.Add(new FichaTecnicaDetalle
+                        {
+                            IdFichaTecnicaDetalle = Convert.ToInt32(dr["IdFichaTecnicaDetalle"]),
+                            IdFichaTecnica = Convert.ToInt32(dr["IdFichaTecnica"]),
+                            IdInsumo = Convert.ToInt32(dr["IdInsumo"]),
+                            NombreInsumo = dr["NombreInsumo"].ToString() ?? "",
+                            Cantidad = Convert.ToDecimal(dr["Cantidad"]),
+                            IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                            NombreUnidad = dr["NombreUnidad"].ToString() ?? "",
+                            Abreviatura = dr["Abreviatura"].ToString() ?? "",
+                            Estado = Convert.ToBoolean(dr["Estado"])
+                        });
+                    }
+                }
+            }
+
+            return lista;
+        }
+
+        public bool RegistrarDetalle(FichaTecnicaDetalle detalle, out string mensaje)
+        {
+            bool resultado = false;
+            mensaje = string.Empty;
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_DETALLE_REGISTRAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdFichaTecnica", detalle.IdFichaTecnica);
+                cmd.Parameters.AddWithValue("@IdInsumo", detalle.IdInsumo);
+                cmd.Parameters.AddWithValue("@Cantidad", detalle.Cantidad);
+                cmd.Parameters.AddWithValue("@IdUnidadMedida", detalle.IdUnidadMedida);
+
+                SqlParameter pResultado = new SqlParameter("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(pResultado);
+                cmd.Parameters.Add(pMensaje);
+
+                cn.Open();
+                cmd.ExecuteNonQuery();
+
+                resultado = Convert.ToBoolean(pResultado.Value);
+                mensaje = pMensaje.Value.ToString() ?? "";
+            }
+
+            return resultado;
+        }
+
+        public bool EditarDetalle(FichaTecnicaDetalle detalle, out string mensaje)
+        {
+            bool resultado = false;
+            mensaje = string.Empty;
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_DETALLE_EDITAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdFichaTecnicaDetalle", detalle.IdFichaTecnicaDetalle);
+                cmd.Parameters.AddWithValue("@Cantidad", detalle.Cantidad);
+                cmd.Parameters.AddWithValue("@IdUnidadMedida", detalle.IdUnidadMedida);
+
+                SqlParameter pResultado = new SqlParameter("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(pResultado);
+                cmd.Parameters.Add(pMensaje);
+
+                cn.Open();
+                cmd.ExecuteNonQuery();
+
+                resultado = Convert.ToBoolean(pResultado.Value);
+                mensaje = pMensaje.Value.ToString() ?? "";
+            }
+
+            return resultado;
+        }
+
+        public bool EliminarDetalle(int idFichaTecnicaDetalle, out string mensaje)
+        {
+            bool resultado = false;
+            mensaje = string.Empty;
+
+            using (SqlConnection cn = Conexion.ObtenerConexion())
+            {
+                SqlCommand cmd = new SqlCommand("USP_PROD_FICHA_TECNICA_DETALLE_ELIMINAR", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@IdFichaTecnicaDetalle", idFichaTecnicaDetalle);
+
+                SqlParameter pResultado = new SqlParameter("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(pResultado);
+                cmd.Parameters.Add(pMensaje);
+
+                cn.Open();
+                cmd.ExecuteNonQuery();
+
+                resultado = Convert.ToBoolean(pResultado.Value);
+                mensaje = pMensaje.Value.ToString() ?? "";
+            }
+
+            return resultado;
+        }
+    }
+}

@@ -1,16 +1,16 @@
-﻿namespace CorexProd.Entidad
+﻿namespace CorexProd.Entidad.Entidades
 {
     public class Insumo
     {
         public int IdInsumo { get; set; }
 
-        public string Codigo { get; set; }  = string.Empty;
+        public string Codigo { get; set; } = string.Empty;
 
         public string NombreInsumo { get; set; } = string.Empty;
 
         public string Descripcion { get; set; } = string.Empty;
 
-        public int IdCategoriaInsumo { get; set; }  
+        public int IdCategoriaInsumo { get; set; }
 
         public string NombreCategoria { get; set; } = string.Empty;
 
