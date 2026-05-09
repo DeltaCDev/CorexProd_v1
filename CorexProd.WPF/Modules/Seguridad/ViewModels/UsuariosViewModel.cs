@@ -75,7 +75,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     IdUsuario = _usuarioSeleccionado.IdUsuario;
                     IdEmpleado = _usuarioSeleccionado.IdEmpleado;
                     NombreUsuario = _usuarioSeleccionado.NombreUsuario;
-                    Clave = _usuarioSeleccionado.Clave;
+                    Clave = string.Empty;
                     IdRol = _usuarioSeleccionado.IdRol;
                     Estado = _usuarioSeleccionado.Estado;
                 }
@@ -157,7 +157,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 Estado = Estado
             };
 
-            string mensaje = _usuarioNegocio.Guardar(usuario);
+            string usuarioAuditoria = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
+
+            string mensaje = _usuarioNegocio.Guardar(usuario, usuarioAuditoria);
 
             if (mensaje.Contains("correctamente"))
             {

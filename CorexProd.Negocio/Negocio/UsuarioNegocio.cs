@@ -1,5 +1,6 @@
 ﻿using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
+using CorexProd.Negocio.Servicios;
 using System.Collections.Generic;
 
 namespace CorexProd.Negocio.Negocio
@@ -16,7 +17,52 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(clave))
                 return null;
 
-            return _usuarioDatos.Login(usuario.Trim(), clave.Trim());
+            string usuarioLimpio = usuario.Trim();
+
+            Usuario? usuarioDB = _usuarioDatos.Login(usuarioLimpio);
+
+            if (usuarioDB == null)
+            {
+                AuditoriaService.Registrar(
+                    usuarioLimpio,
+                    "LOGIN FALLIDO",
+                    "SEGURIDAD",
+                    "Intento de inicio de sesión con usuario inexistente");
+
+                return null;
+            }
+
+            bool claveCorrecta = PasswordService.VerifyPassword(clave.Trim(), usuarioDB.Clave);
+
+            if (!claveCorrecta)
+            {
+                AuditoriaService.Registrar(
+                    usuarioLimpio,
+                    "LOGIN FALLIDO",
+                    "SEGURIDAD",
+                    "Contraseña incorrecta");
+
+                return null;
+            }
+
+            if (!usuarioDB.Estado)
+            {
+                AuditoriaService.Registrar(
+                    usuarioLimpio,
+                    "LOGIN FALLIDO",
+                    "SEGURIDAD",
+                    "Usuario inactivo intentó iniciar sesión");
+
+                return null;
+            }
+
+            AuditoriaService.Registrar(
+                usuarioDB.NombreUsuario,
+                "LOGIN",
+                "SEGURIDAD",
+                "Inicio de sesión correcto");
+
+            return usuarioDB;
         }
 
         public List<Usuario> Listar()
@@ -24,10 +70,10 @@ namespace CorexProd.Negocio.Negocio
             return _usuarioDatos.Listar();
         }
 
-        public string Guardar(Usuario usuario)
+        public string Guardar(Usuario usuario, string usuarioAuditoria)
         {
             usuario.NombreUsuario = usuario.NombreUsuario.Trim();
-            usuario.Clave = usuario.Clave.Trim();
+            usuario.Clave = usuario.Clave?.Trim() ?? string.Empty;
 
             if (usuario.IdEmpleado <= 0)
                 return "Debe seleccionar un empleado";
@@ -35,16 +81,47 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(usuario.NombreUsuario))
                 return "El nombre de usuario es obligatorio";
 
-            if (string.IsNullOrWhiteSpace(usuario.Clave))
+            if (usuario.IdUsuario == 0 && string.IsNullOrWhiteSpace(usuario.Clave))
                 return "La clave es obligatoria";
 
             if (usuario.IdRol <= 0)
                 return "Debe seleccionar un rol";
 
             if (usuario.IdUsuario == 0)
-                return _usuarioDatos.Registrar(usuario);
+            {
+                usuario.Clave = PasswordService.HashPassword(usuario.Clave);
 
-            return _usuarioDatos.Editar(usuario);
+                string mensajeRegistro = _usuarioDatos.Registrar(usuario);
+
+                if (mensajeRegistro.Contains("correctamente"))
+                {
+                    AuditoriaService.Registrar(
+                        usuarioAuditoria,
+                        "CREAR",
+                        "USUARIOS",
+                        $"Se registró el usuario: {usuario.NombreUsuario}");
+                }
+
+                return mensajeRegistro;
+            }
+
+            if (!string.IsNullOrWhiteSpace(usuario.Clave))
+            {
+                usuario.Clave = PasswordService.HashPassword(usuario.Clave);
+            }
+
+            string mensajeEdicion = _usuarioDatos.Editar(usuario);
+
+            if (mensajeEdicion.Contains("correctamente"))
+            {
+                AuditoriaService.Registrar(
+                    usuarioAuditoria,
+                    "EDITAR",
+                    "USUARIOS",
+                    $"Se actualizó el usuario: {usuario.NombreUsuario}");
+            }
+
+            return mensajeEdicion;
         }
 
         public string Eliminar(int idUsuario)
@@ -81,7 +158,9 @@ namespace CorexProd.Negocio.Negocio
             if (claveActual == claveNueva)
                 return "La nueva clave debe ser diferente a la clave actual.";
 
-            return _usuarioDatos.CambiarClave(idUsuario, claveActual, claveNueva);
+            string claveNuevaHash = PasswordService.HashPassword(claveNueva);
+
+            return _usuarioDatos.CambiarClave(idUsuario, claveActual, claveNuevaHash);
         }
     }
 }

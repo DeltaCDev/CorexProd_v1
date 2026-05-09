@@ -8,16 +8,16 @@ namespace CorexProd.Datos.Datos
 {
     public class UsuarioDatos
     {
-        public Usuario? Login(string usuario, string clave)
+        public Usuario? Login(string usuario)
         {
             Usuario? obj = null;
 
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_SEG_USUARIO_LOGIN", conexion);
+
             cmd.CommandType = CommandType.StoredProcedure;
 
             cmd.Parameters.AddWithValue("@Usuario", usuario);
-            cmd.Parameters.AddWithValue("@Clave", clave);
 
             conexion.Open();
 
