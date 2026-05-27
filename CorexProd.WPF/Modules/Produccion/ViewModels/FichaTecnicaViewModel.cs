@@ -4,6 +4,7 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
 using CorexProd.WPF.Modules.Produccion.Views;
+using System;
 using System.Windows;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -359,18 +360,27 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                 return;
             }
 
-            var ventana = new FichaTecnicaEditorWindow(FichaSeleccionada)
+            try
             {
-                Owner = Application.Current.MainWindow
-            };
+                var idFichaActual = FichaSeleccionada.IdFichaTecnica;
 
-            ventana.ViewModel.GuardadoExitoso = () =>
+                var ventana = new FichaTecnicaEditorWindow(FichaSeleccionada)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+
+                ventana.ViewModel.GuardadoExitoso = () =>
+                {
+                    CargarDatos();
+                    FichaSeleccionada = FichasTecnicas.FirstOrDefault(x => x.IdFichaTecnica == idFichaActual);
+                };
+
+                ventana.ShowDialog();
+            }
+            catch (Exception ex)
             {
-                CargarDatos();
-                FichaSeleccionada = FichasTecnicas.FirstOrDefault(x => x.IdFichaTecnica == IdFichaTecnica);
-            };
-
-            ventana.ShowDialog();
+                NotificationService.Error($"No se pudo abrir el editor de ficha técnica.\n{ex.Message}");
+            }
         }
 
         private void LimpiarDetalle()
