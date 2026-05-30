@@ -2,6 +2,7 @@
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Almacen.Views;
+using CorexProd.WPF.Modules.DestajoPagos.Views;
 using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.Modules.Produccion.Views;
 using CorexProd.WPF.Modules.Reportes.Views;
@@ -22,6 +23,7 @@ namespace CorexProd.WPF.ViewModels
         private string _titulo = string.Empty;
         private string _nombreUsuario = string.Empty;
         private string _nombreRol = string.Empty;
+        private bool _isSidebarCollapsed;
 
         public string NombreRol
         {
@@ -36,6 +38,31 @@ namespace CorexProd.WPF.ViewModels
 
 
         public ObservableCollection<MenuItemSistema> SidebarMenus { get; set; } = [];
+
+        public bool IsSidebarCollapsed
+        {
+            get => _isSidebarCollapsed;
+            set
+            {
+                _isSidebarCollapsed = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SidebarWidth));
+                OnPropertyChanged(nameof(SidebarExpandedVisibility));
+                OnPropertyChanged(nameof(SidebarCollapsedVisibility));
+                OnPropertyChanged(nameof(SidebarToggleText));
+                OnPropertyChanged(nameof(SidebarToggleToolTip));
+            }
+        }
+
+        public GridLength SidebarWidth => IsSidebarCollapsed ? new GridLength(64) : new GridLength(250);
+
+        public Visibility SidebarExpandedVisibility => IsSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
+
+        public Visibility SidebarCollapsedVisibility => IsSidebarCollapsed ? Visibility.Visible : Visibility.Collapsed;
+
+        public string SidebarToggleText => IsSidebarCollapsed ? ">>" : "<<";
+
+        public string SidebarToggleToolTip => IsSidebarCollapsed ? "Expandir menu" : "Minimizar menu";
 
         public UserControl VistaActual
         {
@@ -71,6 +98,7 @@ namespace CorexProd.WPF.ViewModels
         public ICommand IrVistaCommand { get; }
         public ICommand CerrarSesionCommand { get; }
         public ICommand CambiarClaveCommand { get; }
+        public ICommand ToggleSidebarCommand { get; }
 
         public MainViewModel()
         {
@@ -78,6 +106,7 @@ namespace CorexProd.WPF.ViewModels
             NombreRol = SessionManager.UsuarioActual?.NombreRol ?? "Sin rol";
             CerrarSesionCommand = new RelayCommand(_ => CerrarSesion());
             CambiarClaveCommand = new RelayCommand(_ => CambiarClave());
+            ToggleSidebarCommand = new RelayCommand(_ => ToggleSidebar());
 
             IrInicioCommand = new RelayCommand(_ => IrInicio());
             IrVistaCommand = new RelayCommand(parametro => IrVista(parametro?.ToString() ?? string.Empty));
@@ -109,6 +138,11 @@ namespace CorexProd.WPF.ViewModels
         {
             Titulo = "Cambiar Clave";
             VistaActual = new CambiarClaveView();
+        }
+
+        private void ToggleSidebar()
+        {
+            IsSidebarCollapsed = !IsSidebarCollapsed;
         }
 
         private void CargarMenus()
@@ -271,6 +305,72 @@ namespace CorexProd.WPF.ViewModels
             if (menusPermitidos.Contains("Producción") && produccion.Hijos.Count > 0)
             {
                 SidebarMenus.Add(produccion);
+            }
+
+            // DESTAJO Y PAGOS
+            MenuItemSistema destajoPagos = new()
+            {
+                Titulo = "Destajo y Pagos",
+                EsPadre = true
+            };
+
+            if (menusPermitidos.Contains("Panel de Destajo"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Panel de Destajo",
+                    Vista = "PanelDestajo"
+                });
+            }
+
+            if (menusPermitidos.Contains("Periodos de Pago"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Periodos de Pago",
+                    Vista = "PeriodosPago"
+                });
+            }
+
+            if (menusPermitidos.Contains("Movimientos Operativos"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Movimientos Operativos",
+                    Vista = "MovimientosOperativos"
+                });
+            }
+
+            if (menusPermitidos.Contains("Prestamos y Cuotas") || menusPermitidos.Contains("Préstamos y Cuotas"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Prestamos y Cuotas",
+                    Vista = "PrestamosCuotas"
+                });
+            }
+
+            if (menusPermitidos.Contains("Lotes de Pago"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Lotes de Pago",
+                    Vista = "LotesPago"
+                });
+            }
+
+            if (menusPermitidos.Contains("Reportes de Pagos"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Reportes de Pagos",
+                    Vista = "ReportesPagos"
+                });
+            }
+
+            if (menusPermitidos.Contains("Destajo y Pagos") && destajoPagos.Hijos.Count > 0)
+            {
+                SidebarMenus.Add(destajoPagos);
             }
 
             // REPORTES
@@ -466,6 +566,42 @@ namespace CorexProd.WPF.ViewModels
                 case "SeguimientoOT":
                     Titulo = vista;
                     VistaActual = new ProduccionView();
+                    break;
+
+                // DESTAJO Y PAGOS
+                case "PanelDestajo":
+                    Titulo = "Panel de Destajo";
+                    VistaActual = new DestajoPagosView(1);
+                    break;
+
+                case "PeriodosPago":
+                    Titulo = "Periodos de Pago";
+                    VistaActual = new DestajoPagosView(0);
+                    break;
+
+                case "MovimientosOperativos":
+                    Titulo = "Movimientos Operativos";
+                    VistaActual = new DestajoPagosView(1);
+                    break;
+
+                case "PrestamosCuotas":
+                    Titulo = "Prestamos y Cuotas";
+                    VistaActual = new DestajoPagosView(2);
+                    break;
+
+                case "LotesPago":
+                    Titulo = "Lotes de Pago";
+                    VistaActual = new DestajoPagosView(3);
+                    break;
+
+                case "ReportesPagos":
+                    Titulo = "Reportes de Pagos";
+                    VistaActual = new DestajoPagosView(4);
+                    break;
+
+                case "DestajoPagos":
+                    Titulo = "Control de Destajo y Pagos Operativos";
+                    VistaActual = new DestajoPagosView();
                     break;
 
                 // REPORTES
