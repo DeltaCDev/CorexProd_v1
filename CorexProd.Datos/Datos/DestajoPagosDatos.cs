@@ -581,6 +581,27 @@ namespace CorexProd.Datos.Datos
             });
         }
 
+        public string RegistrarPagoTrabajador(
+            int idPeriodoPago,
+            int idTrabajadorOperativo,
+            int? idLotePagoDetalle,
+            string medioPago,
+            decimal montoPagado,
+            string observacion,
+            string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PAGO_TRABAJADOR_REGISTRAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+                cmd.Parameters.AddWithValue("@IdTrabajadorOperativo", idTrabajadorOperativo);
+                cmd.Parameters.AddWithValue("@IdLotePagoDetalle", ValorDb(idLotePagoDetalle));
+                cmd.Parameters.AddWithValue("@MedioPago", medioPago);
+                cmd.Parameters.AddWithValue("@MontoPagado", montoPagado);
+                cmd.Parameters.AddWithValue("@Observacion", observacion);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
         private static string EjecutarConMensaje(string procedimiento, Action<SqlCommand> configurar)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();

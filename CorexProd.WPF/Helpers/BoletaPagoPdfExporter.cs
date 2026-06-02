@@ -10,34 +10,32 @@ namespace CorexProd.WPF.Helpers
 {
     internal static class BoletaPagoPdfExporter
     {
-        private const double PageWidth = 595;
-        private const double PageHeight = 842;
-        private const double PageMarginX = 29;
-        private const double PageMarginY = 28;
-        private const double SlotGap = 22;
-        private const double SlotHeight = (PageHeight - (PageMarginY * 2) - SlotGap) / 2;
-        private const double TableWidth = 537;
-        private const double TableHeaderHeight = 16;
-        private const double TableTotalsReserve = 84;
-        private const double TableContinuationReserve = 24;
-        private const double RowFontSize = 6.2;
-        private const double RowLineHeight = 7.2;
+        private const double PageWidth = 420;
+        private const double PageHeight = 595;
+        private const double PageMarginX = 14;
+        private const double PageMarginY = 14;
+        private const double SlotHeight = PageHeight - (PageMarginY * 2);
+        private const double TableWidth = PageWidth - (PageMarginX * 2);
+        private const double TableHeaderHeight = 14;
+        private const double TableTotalsReserve = 70;
+        private const double TableContinuationReserve = 18;
+        private const double RowFontSize = 5.6;
+        private const double RowLineHeight = 6.4;
 
         private static readonly PdfColumn[] Columns =
         [
-            new("Fecha", 45, false, 1),
-            new("Concepto", 78, false, 2),
-            new("Descripcion", 164, false, 2),
-            new("Cant.", 38, true, 1),
-            new("Tarifa", 42, true, 1),
-            new("Ingreso", 57, true, 1),
-            new("Desc.", 57, true, 1),
-            new("Pago", 56, true, 1)
+            new("Fecha", 38, false, 1),
+            new("Concepto", 68, false, 1),
+            new("Descripcion", 112, false, 1),
+            new("Cant.", 30, true, 1),
+            new("Tarifa", 36, true, 1),
+            new("Ingreso", 36, true, 1),
+            new("Desc.", 36, true, 1),
+            new("Pago", 36, true, 1)
         ];
 
         private static readonly BoletaSlot[] Slots =
         [
-            new(PageMarginX, PageHeight - PageMarginY - SlotHeight, TableWidth, SlotHeight),
             new(PageMarginX, PageMarginY, TableWidth, SlotHeight)
         ];
 
@@ -155,19 +153,19 @@ namespace CorexProd.WPF.Helpers
             string titulo = continuacion ? "BOLETA DE PAGO (CONT.)" : "BOLETA DE PAGO";
 
             canvas.Rectangle(slot.X, slot.Bottom, slot.Width, slot.Height);
-            canvas.Text("CorexProd", slot.X + 8, top - 20, 11, true);
-            canvas.Text(titulo, slot.X + slot.Width - 136, top - 20, 10.5, true);
-            canvas.Line(slot.X + 8, top - 29, slot.X + slot.Width - 8, top - 29);
+            canvas.Text("CorexProd", slot.X + 6, top - 15, 9.5, true);
+            canvas.Text(titulo, slot.X + slot.Width - 110, top - 15, 8.8, true);
+            canvas.Line(slot.X + 6, top - 21, slot.X + slot.Width - 6, top - 21);
 
-            canvas.Text($"Trabajador: {resumen.NombreTrabajador}", slot.X + 8, top - 45, 8.5, true);
-            canvas.Text($"Periodo: {periodo.CodigoPeriodo}", slot.X + 8, top - 59, 7.2);
-            canvas.Text($"Fechas: {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy}", slot.X + 160, top - 59, 7.2);
-            canvas.Text($"Estado: {resumen.EstadoPeriodo}", slot.X + 380, top - 59, 7.2);
-            canvas.Text($"Tipo: {resumen.TipoTrabajador}", slot.X + 8, top - 72, 7.2);
-            canvas.Text($"Medio de pago: {resumen.MedioPagoPreferido}", slot.X + 160, top - 72, 7.2);
+            canvas.Text($"Trabajador: {resumen.NombreTrabajador}", slot.X + 6, top - 34, 7.4, true);
+            canvas.Text($"Periodo: {periodo.CodigoPeriodo}", slot.X + 6, top - 46, 6.4);
+            canvas.Text($"Fechas: {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy}", slot.X + 124, top - 46, 6.4);
+            canvas.Text($"Estado: {resumen.EstadoPago}", slot.X + 286, top - 46, 6.4);
+            canvas.Text($"Tipo: {resumen.TipoTrabajador}", slot.X + 6, top - 57, 6.4);
+            canvas.Text($"Medio: {resumen.MedioPagoPreferido}", slot.X + 124, top - 57, 6.4);
 
-            double boxY = top - 112;
-            double gap = 4;
+            double boxY = top - 91;
+            double gap = 3;
             double boxWidth = (slot.Width - 16 - (gap * 4)) / 5;
             double x = slot.X + 8;
 
@@ -177,17 +175,17 @@ namespace CorexProd.WPF.Helpers
             DibujarCajaTotal(canvas, x + 3 * (boxWidth + gap), boxY, boxWidth, "Neto", resumen.NetoCalculado);
             DibujarCajaTotal(canvas, x + 4 * (boxWidth + gap), boxY, boxWidth, "Saldo", resumen.SaldoPendiente);
 
-            canvas.Text($"Pagado: {FormatoMoneda(resumen.TotalPagado)}", slot.X + 8, top - 126, 7.2, true);
+            canvas.Text($"Pagado: {FormatoMoneda(resumen.TotalPagado)}", slot.X + 8, top - 104, 6.6, true);
 
-            return top - 142;
+            return top - 118;
         }
 
         private static void DibujarCajaTotal(PdfCanvas canvas, double x, double y, double width, string label, decimal value)
         {
-            canvas.FillRectangle(x, y, width, 32, 0.95, 0.96, 0.98);
-            canvas.Rectangle(x, y, width, 32);
-            canvas.Text(label, x + 5, y + 20, 5.8);
-            canvas.Text(FormatoMoneda(value), x + 5, y + 7, 8, true);
+            canvas.FillRectangle(x, y, width, 26, 0.95, 0.96, 0.98);
+            canvas.Rectangle(x, y, width, 26);
+            canvas.Text(label, x + 4, y + 16, 5.1);
+            canvas.Text(FormatoMoneda(value), x + 4, y + 6, 6.4, true);
         }
 
         private static void DibujarCabeceraTabla(PdfCanvas canvas, BoletaSlot slot, double top)
@@ -299,7 +297,7 @@ namespace CorexProd.WPF.Helpers
                     DividirTexto(row.Cells[i], Columns[i].Width, RowFontSize, Columns[i].MaxLines).Count);
             }
 
-            return Math.Max(15, 6 + (lineCount * RowLineHeight));
+            return Math.Max(11, 4 + (lineCount * RowLineHeight));
         }
 
         private static List<string> DividirTexto(string text, double width, double fontSize, int maxLines)

@@ -116,6 +116,20 @@ namespace CorexProd.Entidad.Entidades
         public decimal TotalPagado { get; set; }
         public decimal SaldoPendiente { get; set; }
         public string EstadoPeriodo { get; set; } = string.Empty;
+        public decimal TotalAPagar => SaldoPendiente;
+        public string EstadoPago
+        {
+            get
+            {
+                if (SaldoPendiente <= 0 && TotalPagado > 0)
+                    return "Pagado / Cerrado";
+
+                if (TotalPagado > 0 && SaldoPendiente > 0)
+                    return "Pago Parcial";
+
+                return "Pendiente";
+            }
+        }
     }
 
     public class PrestamoTrabajador

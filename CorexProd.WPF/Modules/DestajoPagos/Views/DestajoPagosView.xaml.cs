@@ -13,12 +13,22 @@ namespace CorexProd.WPF.Modules.DestajoPagos.Views
         public DestajoPagosView(int tabIndex)
         {
             InitializeComponent();
-            DataContext = new DestajoPagosViewModel();
+            DestajoPagosViewModel viewModel = new();
+            DataContext = viewModel;
+            ModuleContent.Content = CrearVista(tabIndex);
+        }
 
-            if (tabIndex >= 0 && tabIndex < MainTabs.Items.Count)
+        private static UserControl CrearVista(int tabIndex)
+        {
+            return tabIndex switch
             {
-                MainTabs.SelectedIndex = tabIndex;
-            }
+                1 => new PanelDestajoView(),
+                2 => new PrestamosCuotasView(),
+                3 => new LotesPagoView(),
+                4 => new ReportesPagosView(),
+                5 => new ConfiguracionView(),
+                _ => new PeriodosPagoView()
+            };
         }
     }
 }

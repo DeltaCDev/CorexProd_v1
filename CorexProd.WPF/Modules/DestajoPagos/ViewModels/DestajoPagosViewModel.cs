@@ -28,6 +28,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         private MovimientoTrabajador? _movimientoSeleccionado;
         private CuotaProgramadaTrabajador? _cuotaSeleccionada;
         private LotePago? _loteSeleccionado;
+        private LotePagoDetalle? _loteDetalleSeleccionado;
         private ResumenPagoTrabajador? _resumenSeleccionado;
 
         private int _idAreaOperativa;
@@ -92,6 +93,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         private string _observacionMovimiento = string.Empty;
 
         private int _idTrabajadorPrestamo;
+        private int _idTrabajadorFiltroMovimientos;
+        private int _idTrabajadorFiltroPrestamos;
         private DateTime? _fechaPrestamo = DateTime.Today;
         private decimal _montoPrestamo;
         private int _numeroCuotasPrestamo = 1;
@@ -103,6 +106,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         private string _medioPagoLote = "Efectivo";
         private string _estadoLote = "Generado";
         private string _observacionLote = string.Empty;
+        private decimal _montoPagoLote;
 
         public ObservableCollection<AreaOperativa> Areas { get; } = [];
         public ObservableCollection<ConceptoMovimiento> Conceptos { get; } = [];
@@ -139,14 +143,9 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> EstadosPeriodo { get; } =
         [
-            "Borrador",
-            "Enviado a contabilidad",
-            "Observado",
-            "Corregido",
-            "Aprobado",
-            "Pagado",
-            "Cerrado",
-            "Anulado"
+            "Pendiente",
+            "Pago Parcial",
+            "Pagado / Cerrado"
         ];
 
         public ObservableCollection<string> TiposMovimiento { get; } =
@@ -184,11 +183,9 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> EstadosMovimiento { get; } =
         [
-            "Borrador",
-            "Observado",
-            "Corregido",
-            "Aprobado",
-            "Anulado"
+            "Pendiente",
+            "Pago Parcial",
+            "Pagado / Cerrado"
         ];
 
         public ObservableCollection<string> TiposOperacion { get; } =
@@ -202,10 +199,9 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> EstadosLote { get; } =
         [
-            "Generado",
-            "Revisado",
-            "Pagado",
-            "Anulado"
+            "Pendiente",
+            "Pago Parcial",
+            "Pagado / Cerrado"
         ];
 
         public int IdAreaOperativa
@@ -723,6 +719,18 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _idTrabajadorPrestamo = value; OnPropertyChanged(); }
         }
 
+        public int IdTrabajadorFiltroMovimientos
+        {
+            get => _idTrabajadorFiltroMovimientos;
+            set { _idTrabajadorFiltroMovimientos = value; OnPropertyChanged(); }
+        }
+
+        public int IdTrabajadorFiltroPrestamos
+        {
+            get => _idTrabajadorFiltroPrestamos;
+            set { _idTrabajadorFiltroPrestamos = value; OnPropertyChanged(); }
+        }
+
         public DateTime? FechaPrestamo
         {
             get => _fechaPrestamo;
@@ -799,6 +807,12 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _observacionLote = value; OnPropertyChanged(); }
         }
 
+        public decimal MontoPagoLote
+        {
+            get => _montoPagoLote;
+            set { _montoPagoLote = value; OnPropertyChanged(); }
+        }
+
         public LotePago? LoteSeleccionado
         {
             get => _loteSeleccionado;
@@ -820,7 +834,33 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ResumenPagoTrabajador? ResumenSeleccionado
         {
             get => _resumenSeleccionado;
-            set { _resumenSeleccionado = value; OnPropertyChanged(); }
+            set
+            {
+                _resumenSeleccionado = value;
+                OnPropertyChanged();
+
+                if (value != null)
+                {
+                    MontoPagoLote = value.SaldoPendiente > 0 ? value.SaldoPendiente : 0;
+                    MedioPagoLote = value.MedioPagoPreferido;
+                }
+            }
+        }
+
+        public LotePagoDetalle? LoteDetalleSeleccionado
+        {
+            get => _loteDetalleSeleccionado;
+            set
+            {
+                _loteDetalleSeleccionado = value;
+                OnPropertyChanged();
+
+                if (value != null)
+                {
+                    MontoPagoLote = value.MontoPago;
+                    MedioPagoLote = value.MedioPago;
+                }
+            }
         }
 
         public ICommand RefrescarCommand { get; }
@@ -845,9 +885,15 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ICommand RegistrarPrestamoCommand { get; }
         public ICommand LimpiarPrestamoCommand { get; }
         public ICommand FiltrarCuotasCommand { get; }
+        public ICommand FiltrarMovimientosCommand { get; }
+        public ICommand FiltrarPrestamosCommand { get; }
+        public ICommand LimpiarFiltroMovimientosCommand { get; }
+        public ICommand LimpiarFiltroPrestamosCommand { get; }
         public ICommand AplicarCuotaCommand { get; }
         public ICommand GenerarLoteCommand { get; }
         public ICommand CambiarEstadoLoteCommand { get; }
+        public ICommand RegistrarPagoCompletoCommand { get; }
+        public ICommand RegistrarPagoParcialCommand { get; }
         public ICommand DescargarBoletasSeleccionadasCommand { get; }
         public ICommand DescargarTodasBoletasCommand { get; }
 
@@ -875,9 +921,25 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             RegistrarPrestamoCommand = new RelayCommand(_ => RegistrarPrestamo());
             LimpiarPrestamoCommand = new RelayCommand(_ => LimpiarPrestamo());
             FiltrarCuotasCommand = new RelayCommand(_ => CargarCuotas());
+            FiltrarMovimientosCommand = new RelayCommand(_ => CargarMovimientos());
+            FiltrarPrestamosCommand = new RelayCommand(_ => CargarPrestamos());
+            LimpiarFiltroMovimientosCommand = new RelayCommand(_ =>
+            {
+                IdTrabajadorFiltroMovimientos = 0;
+                CargarMovimientos();
+            });
+            LimpiarFiltroPrestamosCommand = new RelayCommand(_ =>
+            {
+                IdTrabajadorFiltroPrestamos = 0;
+                IdTrabajadorFiltroCuotas = 0;
+                CargarPrestamos();
+                CargarCuotas();
+            });
             AplicarCuotaCommand = new RelayCommand(_ => AplicarCuota());
             GenerarLoteCommand = new RelayCommand(_ => GenerarLote());
             CambiarEstadoLoteCommand = new RelayCommand(_ => CambiarEstadoLote());
+            RegistrarPagoCompletoCommand = new RelayCommand(_ => RegistrarPagoCompleto());
+            RegistrarPagoParcialCommand = new RelayCommand(_ => RegistrarPagoParcial());
             DescargarBoletasSeleccionadasCommand = new RelayCommand(DescargarBoletasSeleccionadas);
             DescargarTodasBoletasCommand = new RelayCommand(_ => DescargarTodasBoletas());
 
@@ -993,7 +1055,14 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             Movimientos.Clear();
 
-            foreach (MovimientoTrabajador movimiento in _destajoNegocio.ListarMovimientos(PeriodoSeleccionado?.IdPeriodoPago ?? 0))
+            IEnumerable<MovimientoTrabajador> movimientos = _destajoNegocio.ListarMovimientos(PeriodoSeleccionado?.IdPeriodoPago ?? 0);
+
+            if (IdTrabajadorFiltroMovimientos > 0)
+            {
+                movimientos = movimientos.Where(m => m.IdTrabajadorOperativo == IdTrabajadorFiltroMovimientos);
+            }
+
+            foreach (MovimientoTrabajador movimiento in movimientos)
             {
                 Movimientos.Add(movimiento);
             }
@@ -1019,7 +1088,14 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             Prestamos.Clear();
 
-            foreach (PrestamoTrabajador prestamo in _destajoNegocio.ListarPrestamos())
+            IEnumerable<PrestamoTrabajador> prestamos = _destajoNegocio.ListarPrestamos();
+
+            if (IdTrabajadorFiltroPrestamos > 0)
+            {
+                prestamos = prestamos.Where(p => p.IdTrabajadorOperativo == IdTrabajadorFiltroPrestamos);
+            }
+
+            foreach (PrestamoTrabajador prestamo in prestamos)
             {
                 Prestamos.Add(prestamo);
             }
@@ -1029,7 +1105,10 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             Cuotas.Clear();
 
-            int? filtro = IdTrabajadorFiltroCuotas > 0 ? IdTrabajadorFiltroCuotas : null;
+            int idFiltro = IdTrabajadorFiltroCuotas > 0
+                ? IdTrabajadorFiltroCuotas
+                : IdTrabajadorFiltroPrestamos;
+            int? filtro = idFiltro > 0 ? idFiltro : null;
 
             foreach (CuotaProgramadaTrabajador cuota in _destajoNegocio.ListarCuotas(filtro))
             {
@@ -1375,6 +1454,55 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             });
         }
 
+        private void RegistrarPagoCompleto()
+        {
+            decimal monto = ObtenerSaldoPagoSeleccionado();
+            MontoPagoLote = monto;
+            RegistrarPago(monto);
+        }
+
+        private void RegistrarPagoParcial()
+        {
+            RegistrarPago(MontoPagoLote);
+        }
+
+        private void RegistrarPago(decimal monto)
+        {
+            int idTrabajador = ObtenerIdTrabajadorPagoSeleccionado();
+
+            Ejecutar(() => _destajoNegocio.RegistrarPagoTrabajador(
+                PeriodoSeleccionado?.IdPeriodoPago ?? 0,
+                idTrabajador,
+                LoteDetalleSeleccionado?.IdLotePagoDetalle,
+                MedioPagoLote,
+                monto,
+                ObservacionLote,
+                UsuarioActual()), () =>
+                {
+                    CargarMovimientos();
+                    CargarResumen();
+                    CargarLotes();
+                    CargarLoteDetalles();
+                    MontoPagoLote = 0;
+                });
+        }
+
+        private int ObtenerIdTrabajadorPagoSeleccionado()
+        {
+            if (LoteDetalleSeleccionado != null)
+                return LoteDetalleSeleccionado.IdTrabajadorOperativo;
+
+            return ResumenSeleccionado?.IdTrabajadorOperativo ?? 0;
+        }
+
+        private decimal ObtenerSaldoPagoSeleccionado()
+        {
+            if (LoteDetalleSeleccionado != null)
+                return LoteDetalleSeleccionado.MontoPago;
+
+            return ResumenSeleccionado?.SaldoPendiente ?? 0;
+        }
+
         private void DescargarBoletasSeleccionadas(object? parametro)
         {
             DescargarBoletas(ObtenerResumenesSeleccionados(parametro));
@@ -1561,7 +1689,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             return mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase)
                 || mensaje.Contains("generado", StringComparison.OrdinalIgnoreCase)
-                || mensaje.Contains("aplicada", StringComparison.OrdinalIgnoreCase);
+                || mensaje.Contains("aplicada", StringComparison.OrdinalIgnoreCase)
+                || mensaje.Contains("registrado", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string UsuarioActual()

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CorexProd.Datos")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4f64c217ae9496e124e09839ed9a86858bbe616f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a4572901267011d041a40e6d24d6d37e4aef422")]
 [assembly: System.Reflection.AssemblyProductAttribute("CorexProd.Datos")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CorexProd.Datos")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

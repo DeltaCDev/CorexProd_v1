@@ -1,0 +1,243 @@
+﻿<UserControl x:Class="CorexProd.WPF.Modules.DestajoPagos.Views.LotesPagoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="White">
+
+    <UserControl.Resources>
+        <Style x:Key="LabelCampo" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="CampoTexto" TargetType="TextBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+        </Style>
+
+        <Style x:Key="CampoCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+
+        <Style x:Key="BotonAccion" TargetType="Button">
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+
+        <Style x:Key="CajaSeccion" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E5E7EB"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#E5E7EB"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="MinColumnWidth" Value="96"/>
+            <Setter Property="ColumnWidth" Value="Auto"/>
+            <Setter Property="ColumnHeaderHeight" Value="34"/>
+            <Setter Property="RowHeight" Value="32"/>
+            <Setter Property="CanUserResizeColumns" Value="True"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="EnableColumnVirtualization" Value="False"/>
+            <Setter Property="EnableRowVirtualization" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="ColumnHeaderStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="#F1F5F9"/>
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="BorderBrush" Value="#CBD5E1"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridCell}">
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="#E5E7EB"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#DBEAFE"/>
+                                <Setter Property="Foreground" Value="#111827"/>
+                                <Setter Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#EFF6FF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#DBEAFE"/>
+                                <Setter Property="Foreground" Value="#111827"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="0,12,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CajaSeccion}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.2*"/>
+                    <ColumnDefinition Width="1.2*"/>
+                    <ColumnDefinition Width="1.2*"/>
+                    <ColumnDefinition Width="2.2*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Medio" Style="{StaticResource LabelCampo}"/>
+                    <ComboBox Style="{StaticResource CampoCombo}"
+                              ItemsSource="{Binding MediosPago}"
+                              SelectedItem="{Binding MedioPagoLote}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                    <TextBlock Text="Estado" Style="{StaticResource LabelCampo}"/>
+                    <ComboBox Style="{StaticResource CampoCombo}"
+                              ItemsSource="{Binding EstadosLote}"
+                              SelectedItem="{Binding EstadoLote}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                    <TextBlock Text="Monto pago" Style="{StaticResource LabelCampo}"/>
+                    <TextBox Style="{StaticResource CampoTexto}"
+                             Text="{Binding MontoPagoLote, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Margin="0,0,10,0">
+                    <TextBlock Text="Observación" Style="{StaticResource LabelCampo}"/>
+                    <TextBox Style="{StaticResource CampoTexto}"
+                             Text="{Binding ObservacionLote, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="4"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Bottom">
+                    <Button Content="Pago completo"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding RegistrarPagoCompletoCommand}"/>
+                    <Button Content="Pago parcial"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding RegistrarPagoParcialCommand}"/>
+                    <Button Content="Generar lote"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding GenerarLoteCommand}"/>
+                    <Button Content="Actualizar estado"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding CambiarEstadoLoteCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Resumenes}"
+                  SelectedItem="{Binding ResumenSeleccionado}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  MinHeight="170"
+                  Margin="0,0,0,12">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Código" Binding="{Binding IdTrabajadorOperativo}" Width="80"/>
+                <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="210"/>
+                <DataGridTextColumn Header="Saldo anterior" Binding="{Binding SaldoAnterior, StringFormat={}{0:N2}}" Width="115"/>
+                <DataGridTextColumn Header="Ingresos" Binding="{Binding TotalIngresos, StringFormat={}{0:N2}}" Width="100"/>
+                <DataGridTextColumn Header="Descuentos" Binding="{Binding TotalDescuentos, StringFormat={}{0:N2}}" Width="105"/>
+                <DataGridTextColumn Header="Neto a pagar" Binding="{Binding NetoCalculado, StringFormat={}{0:N2}}" Width="105"/>
+                <DataGridTextColumn Header="Pagado" Binding="{Binding TotalPagado, StringFormat={}{0:N2}}" Width="95"/>
+                <DataGridTextColumn Header="Saldo pendiente" Binding="{Binding SaldoPendiente, StringFormat={}{0:N2}}" Width="120"/>
+                <DataGridTextColumn Header="Total a pagar" Binding="{Binding TotalAPagar, StringFormat={}{0:N2}}" Width="110"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding EstadoPago}" Width="120"/>
+                <DataGridTextColumn Header="Medio" Binding="{Binding MedioPagoPreferido}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding Lotes}"
+                  SelectedItem="{Binding LoteSeleccionado}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  MinHeight="150"
+                  Margin="0,0,0,12">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Periodo" Binding="{Binding CodigoPeriodo}" Width="120"/>
+                <DataGridTextColumn Header="Medio" Binding="{Binding MedioPago}" Width="120"/>
+                <DataGridTextColumn Header="Fecha" Binding="{Binding FechaGeneracion, StringFormat=g}" Width="145"/>
+                <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioGenerador}" Width="120"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="110"/>
+                <DataGridTextColumn Header="Total" Binding="{Binding TotalLote, StringFormat={}{0:N2}}" Width="110"/>
+                <DataGridTextColumn Header="Observación" Binding="{Binding Observacion}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid Grid.Row="3"
+                  ItemsSource="{Binding LoteDetalles}"
+                  SelectedItem="{Binding LoteDetalleSeleccionado}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  MinHeight="150"
+                  IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="230"/>
+                <DataGridTextColumn Header="Monto" Binding="{Binding MontoPago, StringFormat={}{0:N2}}" Width="110"/>
+                <DataGridTextColumn Header="Medio" Binding="{Binding MedioPago}" Width="120"/>
+                <DataGridTextColumn Header="Cuenta" Binding="{Binding NumeroCuenta}" Width="170"/>
+                <DataGridTextColumn Header="Teléfono" Binding="{Binding TelefonoPago}" Width="120"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="120"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

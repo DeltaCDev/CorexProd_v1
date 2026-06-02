@@ -368,6 +368,16 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            // Buscamos exactamente la palabra "Configuración" como está en tu Base de Datos (IdMenu 31)
+            if (menusPermitidos.Contains("Configuración"))
+            {
+                destajoPagos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Configuración",
+                    Vista = "ConfiguracionPagos"
+                });
+            }
+
             if (menusPermitidos.Contains("Destajo y Pagos") && destajoPagos.Hijos.Count > 0)
             {
                 SidebarMenus.Add(destajoPagos);
@@ -597,6 +607,11 @@ namespace CorexProd.WPF.ViewModels
                 case "ReportesPagos":
                     Titulo = "Reportes de Pagos";
                     VistaActual = new DestajoPagosView(4);
+                    break;
+
+                case "ConfiguracionPagos":
+                    Titulo = "Configuración de Pagos";
+                    VistaActual = new DestajoPagosView(5); // El índice 5 es la 6ta pestaña
                     break;
 
                 case "DestajoPagos":

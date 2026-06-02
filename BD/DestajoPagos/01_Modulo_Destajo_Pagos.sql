@@ -1551,7 +1551,7 @@ BEGIN
         SET Estado = @Estado
         WHERE IdLotePago = @IdLotePago;
 
-        IF @Estado = 'Pagado'
+        IF @Estado IN ('Pagado', 'Pagado / Cerrado')
         BEGIN
             DECLARE @IdPeriodoPago INT;
             DECLARE @IdConceptoPago INT;
@@ -1642,7 +1642,7 @@ BEGIN
             );
 
             UPDATE dbo.LotePagoDetalle
-            SET Estado = 'Pagado'
+            SET Estado = 'Pagado / Cerrado'
             WHERE IdLotePago = @IdLotePago;
         END
         ELSE
@@ -1659,6 +1659,212 @@ BEGIN
 
         SET @Resultado = 1;
         SET @Mensaje = 'Lote actualizado correctamente.';
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        SET @Resultado = 0;
+        SET @Mensaje = ERROR_MESSAGE();
+    END CATCH;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_DES_PAGO_TRABAJADOR_REGISTRAR
+(
+    @IdPeriodoPago INT,
+    @IdTrabajadorOperativo INT,
+    @IdLotePagoDetalle INT = NULL,
+    @MedioPago VARCHAR(40),
+    @MontoPagado DECIMAL(18,2),
+    @Observacion VARCHAR(300),
+    @Usuario VARCHAR(80),
+    @Resultado BIT OUTPUT,
+    @Mensaje VARCHAR(500) OUTPUT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF EXISTS (SELECT 1 FROM dbo.PeriodoPago WHERE IdPeriodoPago = @IdPeriodoPago AND Estado IN ('Cerrado', 'Anulado', 'Pagado / Cerrado'))
+        BEGIN
+            SET @Resultado = 0;
+            SET @Mensaje = 'No se puede registrar pagos en un periodo cerrado.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        DECLARE @IdConceptoPago INT;
+
+        SELECT @IdConceptoPago = IdConceptoMovimiento
+        FROM dbo.ConceptoMovimiento
+        WHERE CodigoConcepto = 'PAGO_DIRECTO';
+
+        IF @IdConceptoPago IS NULL
+        BEGIN
+            SET @Resultado = 0;
+            SET @Mensaje = 'No existe el concepto PAGO_DIRECTO.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        DECLARE @SaldoPendiente DECIMAL(18,2);
+
+        WITH Totales AS
+        (
+            SELECT
+                SUM(CASE WHEN M.TipoMovimiento <> 'Pago' AND M.EsDescuento = 0 THEN M.Importe ELSE 0 END) AS TotalIngresos,
+                SUM(CASE WHEN M.EsDescuento = 1 OR M.TipoMovimiento = 'Descuento' THEN M.Importe ELSE 0 END) AS TotalDescuentos,
+                SUM(CASE WHEN M.TipoMovimiento = 'Pago' THEN M.Importe ELSE 0 END) AS TotalPagado
+            FROM dbo.MovimientoTrabajador M
+            WHERE M.IdPeriodoPago = @IdPeriodoPago
+            AND M.IdTrabajadorOperativo = @IdTrabajadorOperativo
+            AND M.Eliminado = 0
+        )
+        SELECT @SaldoPendiente =
+            ISNULL(TotalIngresos, 0) - ISNULL(TotalDescuentos, 0) - ISNULL(TotalPagado, 0)
+        FROM Totales;
+
+        IF ISNULL(@SaldoPendiente, 0) <= 0
+        BEGIN
+            SET @Resultado = 0;
+            SET @Mensaje = 'El trabajador no tiene saldo pendiente.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF @MontoPagado <= 0 OR @MontoPagado > @SaldoPendiente
+        BEGIN
+            SET @Resultado = 0;
+            SET @Mensaje = 'El monto a pagar debe ser mayor a cero y no superar el saldo pendiente.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF @IdLotePagoDetalle IS NOT NULL
+        AND NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.LotePagoDetalle D
+            INNER JOIN dbo.LotePago L ON L.IdLotePago = D.IdLotePago
+            WHERE D.IdLotePagoDetalle = @IdLotePagoDetalle
+            AND L.IdPeriodoPago = @IdPeriodoPago
+            AND D.IdTrabajadorOperativo = @IdTrabajadorOperativo
+        )
+        BEGIN
+            SET @Resultado = 0;
+            SET @Mensaje = 'El detalle de lote no corresponde al trabajador seleccionado.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        INSERT INTO dbo.PagoTrabajador
+        (
+            IdPeriodoPago,
+            IdTrabajadorOperativo,
+            IdLotePagoDetalle,
+            MedioPago,
+            MontoPagado,
+            Observacion,
+            UsuarioRegistro
+        )
+        VALUES
+        (
+            @IdPeriodoPago,
+            @IdTrabajadorOperativo,
+            @IdLotePagoDetalle,
+            @MedioPago,
+            @MontoPagado,
+            @Observacion,
+            @Usuario
+        );
+
+        DECLARE @IdPagoTrabajador INT = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.MovimientoTrabajador
+        (
+            IdPeriodoPago,
+            IdTrabajadorOperativo,
+            Fecha,
+            TipoMovimiento,
+            CategoriaMovimiento,
+            IdConceptoMovimiento,
+            Descripcion,
+            Cantidad,
+            UnidadMedida,
+            Tarifa,
+            Importe,
+            EsDescuento,
+            EsAutomatico,
+            OrigenMovimiento,
+            ReferenciaId,
+            Estado,
+            Observacion,
+            CreadoPor
+        )
+        VALUES
+        (
+            @IdPeriodoPago,
+            @IdTrabajadorOperativo,
+            GETDATE(),
+            'Pago',
+            'Pago',
+            @IdConceptoPago,
+            CONCAT('Pago por ', @MedioPago),
+            1,
+            'Pago',
+            @MontoPagado,
+            @MontoPagado,
+            0,
+            1,
+            'PagoTrabajador',
+            @IdPagoTrabajador,
+            'Aprobado',
+            @Observacion,
+            @Usuario
+        );
+
+        IF @IdLotePagoDetalle IS NOT NULL
+        BEGIN
+            UPDATE D
+            SET Estado =
+                CASE
+                    WHEN @SaldoPendiente - @MontoPagado <= 0 THEN 'Pagado / Cerrado'
+                    ELSE 'Pago Parcial'
+                END
+            FROM dbo.LotePagoDetalle D
+            WHERE D.IdLotePagoDetalle = @IdLotePagoDetalle;
+
+            UPDATE L
+            SET Estado =
+                CASE
+                    WHEN EXISTS
+                    (
+                        SELECT 1
+                        FROM dbo.LotePagoDetalle D
+                        WHERE D.IdLotePago = L.IdLotePago
+                        AND D.Estado IN ('Pendiente', 'Pago Parcial')
+                    )
+                    THEN 'Pago Parcial'
+                    ELSE 'Pagado / Cerrado'
+                END
+            FROM dbo.LotePago L
+            INNER JOIN dbo.LotePagoDetalle D ON D.IdLotePago = L.IdLotePago
+            WHERE D.IdLotePagoDetalle = @IdLotePagoDetalle;
+        END;
+
+        INSERT INTO dbo.Auditoria(Usuario, Accion, Modulo, Descripcion, Equipo)
+        VALUES(@Usuario, 'REGISTRAR PAGO', 'DESTAJO Y PAGOS', CONCAT('Pago trabajador ', @IdPagoTrabajador), HOST_NAME());
+
+        COMMIT TRANSACTION;
+
+        SET @Resultado = 1;
+        SET @Mensaje =
+            CASE
+                WHEN @SaldoPendiente - @MontoPagado <= 0 THEN 'Pago completo registrado correctamente.'
+                ELSE 'Pago parcial registrado correctamente.'
+            END;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;

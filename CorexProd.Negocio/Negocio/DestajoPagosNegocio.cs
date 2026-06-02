@@ -310,6 +310,37 @@ namespace CorexProd.Negocio.Negocio
             return _datos.CambiarEstadoLote(idLotePago, estado.Trim(), usuario);
         }
 
+        public string RegistrarPagoTrabajador(
+            int idPeriodoPago,
+            int idTrabajadorOperativo,
+            int? idLotePagoDetalle,
+            string medioPago,
+            decimal montoPagado,
+            string observacion,
+            string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            if (idTrabajadorOperativo <= 0)
+                return "Debe seleccionar un trabajador.";
+
+            if (string.IsNullOrWhiteSpace(medioPago))
+                return "Debe seleccionar el medio de pago.";
+
+            if (montoPagado <= 0)
+                return "El monto a pagar debe ser mayor a cero.";
+
+            return _datos.RegistrarPagoTrabajador(
+                idPeriodoPago,
+                idTrabajadorOperativo,
+                idLotePagoDetalle,
+                medioPago.Trim(),
+                montoPagado,
+                observacion.Trim(),
+                usuario);
+        }
+
         private static decimal CalcularImporte(MovimientoTrabajador movimiento)
         {
             if (movimiento.Cantidad > 0 && movimiento.Tarifa > 0)
