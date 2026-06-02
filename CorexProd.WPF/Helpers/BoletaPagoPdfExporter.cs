@@ -10,413 +10,317 @@ namespace CorexProd.WPF.Helpers
 {
     internal static class BoletaPagoPdfExporter
     {
-        private const double PageWidth = 420;
-        private const double PageHeight = 595;
+        private const double PageWidth = 595;
+        private const double PageHeight = 842;
+
         private const double PageMarginX = 14;
-        private const double PageMarginY = 14;
-        private const double SlotHeight = PageHeight - (PageMarginY * 2);
-        private const double TableWidth = PageWidth - (PageMarginX * 2);
-        private const double TableHeaderHeight = 14;
-        private const double TableTotalsReserve = 70;
-        private const double TableContinuationReserve = 18;
-        private const double RowFontSize = 5.6;
-        private const double RowLineHeight = 6.4;
+        private const double SlotWidth = PageWidth - (PageMarginX * 2);
 
-        private static readonly PdfColumn[] Columns =
-        [
-            new("Fecha", 38, false, 1),
-            new("Concepto", 68, false, 1),
-            new("Descripcion", 112, false, 1),
-            new("Cant.", 30, true, 1),
-            new("Tarifa", 36, true, 1),
-            new("Ingreso", 36, true, 1),
-            new("Desc.", 36, true, 1),
-            new("Pago", 36, true, 1)
-        ];
+        // Se aumentó el alto a 345 para ganar espacio vital arriba y abajo
+        private const double SlotHeight = 345;
 
+        // Se amplió la columna de Remuneraciones para que quepa más texto
+        private const double Col1Width = 215;
+        private const double Col2Width = 195;
+        private const double Col3Width = SlotWidth - Col1Width - Col2Width;
+
+        // Posiciones optimizadas (márgenes más holgados)
         private static readonly BoletaSlot[] Slots =
         [
-            new(PageMarginX, PageMarginY, TableWidth, SlotHeight)
+            new(PageMarginX, 465, SlotWidth, SlotHeight),
+            new(PageMarginX, 55, SlotWidth, SlotHeight)
         ];
 
         public static void Exportar(
             string ruta,
             PeriodoPago periodo,
             IReadOnlyList<ResumenPagoTrabajador> resumenes,
-            IReadOnlyList<MovimientoTrabajador> movimientos)
+            IReadOnlyList<MovimientoTrabajador> movimientos,
+            bool imprimirConCopia)
         {
             SimplePdfDocument document = new();
             BoletaPaginator paginator = new(document);
 
-            foreach (ResumenPagoTrabajador resumen in resumenes.OrderBy(r => r.NombreTrabajador))
+            foreach (var resumen in resumenes.OrderBy(r => r.NombreTrabajador))
             {
-                List<MovimientoTrabajador> detalle = movimientos
-                    .Where(m => m.IdPeriodoPago == periodo.IdPeriodoPago
-                        && m.IdTrabajadorOperativo == resumen.IdTrabajadorOperativo)
+                var detalle = movimientos
+                    .Where(m => m.IdPeriodoPago == periodo.IdPeriodoPago && m.IdTrabajadorOperativo == resumen.IdTrabajadorOperativo)
                     .OrderBy(m => m.Fecha)
-                    .ThenBy(m => m.NombreConcepto)
                     .ToList();
 
-                AgregarBoleta(paginator, periodo, resumen, detalle);
+                if (imprimirConCopia)
+                {
+                    AgregarBoleta(paginator, periodo, resumen, detalle);
+                    AgregarBoleta(paginator, periodo, resumen, detalle);
+                }
+                else
+                {
+                    AgregarBoleta(paginator, periodo, resumen, detalle);
+                }
             }
-
             document.Save(ruta);
         }
 
-        private static void AgregarBoleta(
-            BoletaPaginator paginator,
-            PeriodoPago periodo,
-            ResumenPagoTrabajador resumen,
-            IReadOnlyList<MovimientoTrabajador> movimientos)
+        private static void AgregarBoleta(BoletaPaginator paginator, PeriodoPago periodo, ResumenPagoTrabajador resumen, IReadOnlyList<MovimientoTrabajador> movimientos)
         {
-            List<TableRow> rows = movimientos
-                .Select(CrearFila)
-                .ToList();
+            PdfCanvas canvas = paginator.NextSlot(out BoletaSlot slot);
 
-            if (rows.Count == 0)
+            // Subimos el inicio del cuadro 4 puntos para pegarlo más arriba
+            double tableTop = slot.Top - 21;
+            double currentY = DibujarCabecera(canvas, slot, periodo, resumen);
+            double topLineasVerticales = currentY;
+
+            currentY = DibujarTitulosColumnas(canvas, slot, currentY);
+            currentY = DibujarCuerpo(canvas, slot, movimientos, currentY);
+
+            double tableBottom = DibujarTotalesYFirmas(canvas, slot, resumen);
+
+            canvas.Rectangle(slot.X, tableBottom, slot.Width, tableTop - tableBottom);
+
+            canvas.Line(slot.X + Col1Width, tableBottom, slot.X + Col1Width, topLineasVerticales);
+            canvas.Line(slot.X + Col1Width + Col2Width, tableBottom, slot.X + Col1Width + Col2Width, topLineasVerticales);
+        }
+
+        private static double DibujarCabecera(PdfCanvas canvas, BoletaSlot slot, PeriodoPago periodo, ResumenPagoTrabajador resumen)
+        {
+            double x = slot.X;
+            double w = slot.Width;
+            double y = slot.Top;
+
+            canvas.Text("DELTA CONFECCIONES S.R.L.", x + 2, y - 9, 7, true);
+            canvas.Text("AV. LOS COSTUREROS NRO. 123 URB. INDUSTRIAL - LIMA LIMA LA VICTORIA", x + 2, y - 18, 6);
+
+            y -= 21; // Inicio del cuadro más pegado a la empresa
+
+            y -= 10;
+            canvas.Text("RUC  20123456789", x + 2, y, 6);
+            canvas.Text("BOLETA DE PAGO SEMANAL", x + (w / 2) - 50, y, 8, true);
+            canvas.RightText($"Semana {periodo.CodigoPeriodo} - Del {periodo.FechaInicio:dd/MM/yyyy}  Al  {periodo.FechaFin:dd/MM/yyyy}", x + w - 2, y, 6);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            y -= 10;
+            canvas.Text("Codigo", x + 2, y, 6);
+            canvas.Text("10025", x + 50, y, 7, true);
+            canvas.Text("Nombre", x + 190, y, 6, true);
+            canvas.Text(QuitarTildes(resumen.NombreTrabajador), x + 230, y, 7, true);
+            canvas.Text("Afiliacion", x + 400, y, 6);
+            canvas.Text("ONP", x + 440, y, 6);
+
+            y -= 10;
+            canvas.Text("DNI", x + 2, y, 6);
+            canvas.Text("40123456", x + 50, y, 7, true);
+            canvas.Text("Ocupacion", x + 190, y, 6);
+            canvas.Text("Costurero / Maquinista", x + 230, y, 6);
+            canvas.Text("F.Ing.", x + 400, y, 6);
+            canvas.Text("10/01/2025", x + 440, y, 6);
+
+            y -= 10;
+            canvas.Text("Categoria", x + 2, y, 6);
+            canvas.Text("Destajo", x + 50, y, 7, true);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            y -= 10;
+            canvas.Text("PAGO POR PRODUCCION (DESTAJO)", x + 2, y, 6);
+            canvas.Text("UNIDADES PRODUCIDAS TOTALES", x + Col1Width + 2, y, 6);
+            canvas.Text("144", x + Col1Width + Col2Width - 15, y, 7, true);
+            canvas.Text("DIAS LABORADOS", x + Col1Width + Col2Width + 2, y, 6);
+            canvas.RightText("6", x + w - 5, y, 7, true);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            return y;
+        }
+
+        private static double DibujarTitulosColumnas(PdfCanvas canvas, BoletaSlot slot, double y)
+        {
+            double x = slot.X;
+            double w = slot.Width;
+
+            y -= 10;
+            canvas.Text("Remuneraciones", x + (Col1Width / 2) - 25, y, 6);
+            canvas.Text("Descuentos del trabajador", x + Col1Width + (Col2Width / 2) - 40, y, 6);
+            canvas.Text("Aportaciones del empleador", x + Col1Width + Col2Width + (Col3Width / 2) - 45, y, 6);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            y -= 10;
+            canvas.Text("Descripcion", x + 2, y, 6);
+            canvas.RightText("Monto (S/.)", x + Col1Width - 5, y, 6);
+
+            canvas.Text("Descripcion", x + Col1Width + 2, y, 6);
+            canvas.RightText("Monto (S/.)", x + Col1Width + Col2Width - 5, y, 6);
+
+            canvas.Text("Descripcion", x + Col1Width + Col2Width + 2, y, 6);
+            canvas.RightText("Monto (S/.)", x + w - 5, y, 6);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            return y;
+        }
+
+        private static double DibujarCuerpo(PdfCanvas canvas, BoletaSlot slot, IReadOnlyList<MovimientoTrabajador> movimientos, double startY)
+        {
+            double x = slot.X;
+            double w = slot.Width;
+            double y = startY;
+
+            var descuentos = movimientos.Where(m =>
+                (m.NombreConcepto ?? "").IndexOf("Descuento", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (m.NombreConcepto ?? "").IndexOf("DSCTO", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (m.Descripcion ?? "").IndexOf("Descuento", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (m.Descripcion ?? "").IndexOf("DSCTO", StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
+
+            var remuneraciones = movimientos.Except(descuentos).ToList();
+            var aportes = new List<MovimientoTrabajador>();
+
+            int maxRows = Math.Max(remuneraciones.Count, Math.Max(descuentos.Count, aportes.Count));
+
+            string ObtenerDetalle(MovimientoTrabajador m)
             {
-                rows.Add(new TableRow(
-                [
-                    string.Empty,
-                    "Sin movimientos",
-                    "No hay detalle registrado para este trabajador.",
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty
-                ]));
-            }
-
-            int index = 0;
-            bool continuacion = false;
-
-            while (index < rows.Count)
-            {
-                PdfCanvas canvas = paginator.NextSlot(out BoletaSlot slot);
-                double tableTop = DibujarEncabezado(canvas, slot, periodo, resumen, continuacion);
-                DibujarCabeceraTabla(canvas, slot, tableTop);
-
-                double currentTop = tableTop - TableHeaderHeight;
-                int firstIndexInSlot = index;
-
-                while (index < rows.Count)
+                if (m.Cantidad > 0 && m.Tarifa > 0)
                 {
-                    double rowHeight = CalcularAltoFila(rows[index]);
-                    double bottomReserve = index == rows.Count - 1
-                        ? TableTotalsReserve
-                        : TableContinuationReserve;
-
-                    if (currentTop - rowHeight < slot.Bottom + bottomReserve)
+                    string concepto = m.NombreConcepto ?? "";
+                    if (m.Cantidad == 1 && (concepto.IndexOf("Saldo", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            concepto.IndexOf("Movilidad", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            concepto.IndexOf("ONP", StringComparison.OrdinalIgnoreCase) >= 0))
                     {
-                        break;
+                        return "";
                     }
+                    return $"{FormatoNumero(m.Tarifa)} x {m.Cantidad:0.##} UND";
+                }
+                return "";
+            }
 
-                    DibujarFila(canvas, slot, rows[index], currentTop, rowHeight);
-                    currentTop -= rowHeight;
-                    index++;
+            double fontSize = 4.5;
+
+            for (int i = 0; i < maxRows; i++)
+            {
+                y -= 10;
+
+                // --- COLUMNA 1 ---
+                if (i < remuneraciones.Count)
+                {
+                    var r = remuneraciones[i];
+                    string texto = string.IsNullOrWhiteSpace(r.Descripcion) ? r.NombreConcepto : r.Descripcion;
+                    decimal valor = r.Importe > 0 ? r.Importe : (r.Cantidad * r.Tarifa);
+                    string detalle = ObtenerDetalle(r);
+
+                    // Ahora trunca a 50 chars (con detalle) o 65 (sin detalle) = Mucho más espacio libre
+                    int limit = string.IsNullOrEmpty(detalle) ? 65 : 50;
+
+                    canvas.Text(LimpiarYTruncar(texto, limit), x + 2, y, fontSize);
+
+                    if (!string.IsNullOrEmpty(detalle))
+                        canvas.RightText(detalle, x + Col1Width - 35, y, fontSize); // Alineado a la derecha, cerca al importe
+
+                    canvas.RightText(FormatoNumero(valor), x + Col1Width - 5, y, fontSize); // Importe con decimal alineado
                 }
 
-                if (index == firstIndexInSlot && index < rows.Count)
+                // --- COLUMNA 2 ---
+                if (i < descuentos.Count)
                 {
-                    double bottomReserve = index == rows.Count - 1
-                        ? TableTotalsReserve
-                        : TableContinuationReserve;
-                    double rowHeight = Math.Min(
-                        CalcularAltoFila(rows[index]),
-                        currentTop - (slot.Bottom + bottomReserve));
+                    var d = descuentos[i];
+                    string texto = string.IsNullOrWhiteSpace(d.Descripcion) ? d.NombreConcepto : d.Descripcion;
+                    decimal valor = d.Importe > 0 ? d.Importe : (d.Cantidad * d.Tarifa);
+                    string detalle = ObtenerDetalle(d);
 
-                    DibujarFila(canvas, slot, rows[index], currentTop, rowHeight);
-                    index++;
+                    int limit = string.IsNullOrEmpty(detalle) ? 58 : 42;
+
+                    canvas.Text(LimpiarYTruncar(texto, limit), x + Col1Width + 2, y, fontSize);
+
+                    if (!string.IsNullOrEmpty(detalle))
+                        canvas.RightText(detalle, x + Col1Width + Col2Width - 35, y, fontSize);
+
+                    canvas.RightText(FormatoNumero(valor), x + Col1Width + Col2Width - 5, y, fontSize);
                 }
 
-                if (index >= rows.Count)
+                // --- COLUMNA 3 ---
+                if (i < aportes.Count)
                 {
-                    DibujarTotales(canvas, slot, resumen);
-                }
-                else
-                {
-                    canvas.Text("Continua en la siguiente boleta...", slot.X + slot.Width - 148, slot.Bottom + 16, 6.5);
-                    continuacion = true;
+                    var a = aportes[i];
+                    string texto = string.IsNullOrWhiteSpace(a.Descripcion) ? a.NombreConcepto : a.Descripcion;
+                    decimal valor = a.Importe > 0 ? a.Importe : (a.Cantidad * a.Tarifa);
+                    string detalle = ObtenerDetalle(a);
+
+                    int limit = string.IsNullOrEmpty(detalle) ? 45 : 30;
+
+                    canvas.Text(LimpiarYTruncar(texto, limit), x + Col1Width + Col2Width + 2, y, fontSize);
+
+                    if (!string.IsNullOrEmpty(detalle))
+                        canvas.RightText(detalle, x + w - 35, y, fontSize);
+
+                    canvas.RightText(FormatoNumero(valor), x + w - 5, y, fontSize);
                 }
             }
+
+            return y;
         }
 
-        private static double DibujarEncabezado(
-            PdfCanvas canvas,
-            BoletaSlot slot,
-            PeriodoPago periodo,
-            ResumenPagoTrabajador resumen,
-            bool continuacion)
+        private static double DibujarTotalesYFirmas(PdfCanvas canvas, BoletaSlot slot, ResumenPagoTrabajador resumen)
         {
-            double top = slot.Top;
-            string titulo = continuacion ? "BOLETA DE PAGO (CONT.)" : "BOLETA DE PAGO";
-
-            canvas.Rectangle(slot.X, slot.Bottom, slot.Width, slot.Height);
-            canvas.Text("CorexProd", slot.X + 6, top - 15, 9.5, true);
-            canvas.Text(titulo, slot.X + slot.Width - 110, top - 15, 8.8, true);
-            canvas.Line(slot.X + 6, top - 21, slot.X + slot.Width - 6, top - 21);
-
-            canvas.Text($"Trabajador: {resumen.NombreTrabajador}", slot.X + 6, top - 34, 7.4, true);
-            canvas.Text($"Periodo: {periodo.CodigoPeriodo}", slot.X + 6, top - 46, 6.4);
-            canvas.Text($"Fechas: {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy}", slot.X + 124, top - 46, 6.4);
-            canvas.Text($"Estado: {resumen.EstadoPago}", slot.X + 286, top - 46, 6.4);
-            canvas.Text($"Tipo: {resumen.TipoTrabajador}", slot.X + 6, top - 57, 6.4);
-            canvas.Text($"Medio: {resumen.MedioPagoPreferido}", slot.X + 124, top - 57, 6.4);
-
-            double boxY = top - 91;
-            double gap = 3;
-            double boxWidth = (slot.Width - 16 - (gap * 4)) / 5;
-            double x = slot.X + 8;
-
-            DibujarCajaTotal(canvas, x, boxY, boxWidth, "Saldo ant.", resumen.SaldoAnterior);
-            DibujarCajaTotal(canvas, x + (boxWidth + gap), boxY, boxWidth, "Ingresos", resumen.TotalIngresos);
-            DibujarCajaTotal(canvas, x + 2 * (boxWidth + gap), boxY, boxWidth, "Descuentos", resumen.TotalDescuentos);
-            DibujarCajaTotal(canvas, x + 3 * (boxWidth + gap), boxY, boxWidth, "Neto", resumen.NetoCalculado);
-            DibujarCajaTotal(canvas, x + 4 * (boxWidth + gap), boxY, boxWidth, "Saldo", resumen.SaldoPendiente);
-
-            canvas.Text($"Pagado: {FormatoMoneda(resumen.TotalPagado)}", slot.X + 8, top - 104, 6.6, true);
-
-            return top - 118;
-        }
-
-        private static void DibujarCajaTotal(PdfCanvas canvas, double x, double y, double width, string label, decimal value)
-        {
-            canvas.FillRectangle(x, y, width, 26, 0.95, 0.96, 0.98);
-            canvas.Rectangle(x, y, width, 26);
-            canvas.Text(label, x + 4, y + 16, 5.1);
-            canvas.Text(FormatoMoneda(value), x + 4, y + 6, 6.4, true);
-        }
-
-        private static void DibujarCabeceraTabla(PdfCanvas canvas, BoletaSlot slot, double top)
-        {
-            canvas.FillRectangle(slot.X, top - TableHeaderHeight, slot.Width, TableHeaderHeight, 0.91, 0.93, 0.96);
-            canvas.Rectangle(slot.X, top - TableHeaderHeight, slot.Width, TableHeaderHeight);
-
             double x = slot.X;
+            double w = slot.Width;
 
-            foreach (PdfColumn column in Columns)
-            {
-                canvas.Text(column.Header, x + 3, top - 10.5, 6.3, true);
-                x += column.Width;
-            }
+            // Subimos la zona de totales para dar espacio amplio a las firmas
+            double y = slot.Bottom + 55;
+
+            canvas.Line(x, y, x + w, y);
+
+            y -= 10;
+            canvas.Text("TOTAL REMUNERACION", x + 2, y, 6);
+            canvas.RightText(FormatoNumero(resumen.TotalIngresos), x + Col1Width - 5, y, 6);
+
+            canvas.Text("TOTAL DESCUENTO", x + Col1Width + 2, y, 6);
+            canvas.RightText(FormatoNumero(resumen.TotalDescuentos), x + Col1Width + Col2Width - 5, y, 6);
+
+            canvas.Text("TOTAL APORTACIONES", x + Col1Width + Col2Width + 2, y, 6);
+            canvas.RightText("0.00", x + w - 5, y, 6);
+
+            y -= 4; canvas.Line(x, y, x + w, y);
+
+            y -= 10;
+            canvas.Text("TOTAL NETO EFECTIVO", x + 2, y, 7, true);
+            canvas.RightText(FormatoNumero(resumen.NetoCalculado), x + Col1Width - 5, y, 8, true);
+
+            y -= 4; // Fin exacto del recuadro
+            double tableBottom = y;
+
+            // Las firmas bajan drásticamente (22 puntos de diferencia vs el cuadro inferior)
+            double yFirmas = slot.Bottom + 5;
+
+            canvas.Line(x + 130, yFirmas + 10, x + 250, yFirmas + 10);
+            canvas.Text("Firma del Empleador", x + 155, yFirmas, 6);
+
+            canvas.Line(x + 320, yFirmas + 10, x + 440, yFirmas + 10);
+            canvas.Text("Firma del Trabajador", x + 345, yFirmas, 6);
+
+            return tableBottom;
         }
 
-        private static void DibujarFila(PdfCanvas canvas, BoletaSlot slot, TableRow row, double top, double rowHeight)
+        // --- MÉTODOS DE APOYO Y CLASES ---
+
+        private static string LimpiarYTruncar(string t, int maxLength)
         {
-            canvas.Rectangle(slot.X, top - rowHeight, slot.Width, rowHeight);
-
-            double x = slot.X;
-
-            for (int i = 0; i < Columns.Length; i++)
-            {
-                PdfColumn column = Columns[i];
-                List<string> lines = DividirTexto(row.Cells[i], column.Width, RowFontSize, column.MaxLines);
-
-                for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
-                {
-                    string line = lines[lineIndex];
-                    double textX = column.AlignRight
-                        ? x + column.Width - EstimarAnchoTexto(line, RowFontSize) - 3
-                        : x + 3;
-
-                    canvas.Text(line, textX, top - 10 - (lineIndex * RowLineHeight), RowFontSize);
-                }
-
-                x += column.Width;
-            }
+            string limpio = QuitarTildes(t);
+            if (limpio.Length > maxLength) return limpio.Substring(0, maxLength - 3) + "...";
+            return limpio;
         }
 
-        private static void DibujarTotales(PdfCanvas canvas, BoletaSlot slot, ResumenPagoTrabajador resumen)
+        private static string QuitarTildes(string t)
         {
-            double boxX = slot.X + slot.Width - 174;
-            double boxY = slot.Bottom + 18;
-            double labelX = boxX + 6;
-            double valueX = boxX + 158;
-
-            canvas.Rectangle(boxX, boxY, 166, 58);
-            DibujarLineaTotal(canvas, "Saldo anterior", resumen.SaldoAnterior, labelX, valueX, boxY + 46);
-            DibujarLineaTotal(canvas, "Total ingresos", resumen.TotalIngresos, labelX, valueX, boxY + 37);
-            DibujarLineaTotal(canvas, "Total descuentos", resumen.TotalDescuentos, labelX, valueX, boxY + 28);
-            DibujarLineaTotal(canvas, "Neto calculado", resumen.NetoCalculado, labelX, valueX, boxY + 19);
-            DibujarLineaTotal(canvas, "Total pagado", resumen.TotalPagado, labelX, valueX, boxY + 10);
-            DibujarLineaTotal(canvas, "Saldo pendiente", resumen.SaldoPendiente, labelX, valueX, boxY + 1, true);
-
-            double firmaY = slot.Bottom + 19;
-            canvas.Line(slot.X + 14, firmaY, slot.X + 150, firmaY);
-            canvas.Text("Recibi conforme", slot.X + 44, slot.Bottom + 7, 6.5);
-            canvas.Line(slot.X + 174, firmaY, slot.X + 310, firmaY);
-            canvas.Text("Responsable", slot.X + 217, slot.Bottom + 7, 6.5);
+            if (string.IsNullOrWhiteSpace(t)) return "";
+            return t.Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u")
+                    .Replace("Á", "A").Replace("É", "E").Replace("Í", "I").Replace("Ó", "O").Replace("Ú", "U")
+                    .Replace("ñ", "n").Replace("Ñ", "N").Replace("¿", "").Replace("¡", "");
         }
 
-        private static void DibujarLineaTotal(
-            PdfCanvas canvas,
-            string label,
-            decimal value,
-            double labelX,
-            double valueX,
-            double y,
-            bool bold = false)
-        {
-            string amount = FormatoMoneda(value);
-            canvas.Text(label, labelX, y, 6.2, bold);
-            canvas.Text(amount, valueX - EstimarAnchoTexto(amount, 6.2), y, 6.2, bold);
-        }
+        private static string FormatoNumero(decimal v) => v == 0 ? "0.00" : v.ToString("N2");
+        private static string NormalizarTexto(string t) => t ?? "";
 
-        private static TableRow CrearFila(MovimientoTrabajador movimiento)
-        {
-            bool esPago = movimiento.TipoMovimiento.Equals("Pago", StringComparison.OrdinalIgnoreCase);
-            bool esDescuento = movimiento.EsDescuento
-                || movimiento.TipoMovimiento.Equals("Descuento", StringComparison.OrdinalIgnoreCase);
-
-            decimal ingreso = !esPago && !esDescuento ? movimiento.Importe : 0;
-            decimal descuento = esDescuento ? movimiento.Importe : 0;
-            decimal pago = esPago ? movimiento.Importe : 0;
-
-            return new TableRow(
-            [
-                movimiento.Fecha.ToString("dd/MM/yy", CultureInfo.InvariantCulture),
-                movimiento.NombreConcepto,
-                movimiento.Descripcion,
-                FormatoNumero(movimiento.Cantidad),
-                FormatoNumero(movimiento.Tarifa),
-                FormatoMonedaVacio(ingreso),
-                FormatoMonedaVacio(descuento),
-                FormatoMonedaVacio(pago)
-            ]);
-        }
-
-        private static double CalcularAltoFila(TableRow row)
-        {
-            int lineCount = 1;
-
-            for (int i = 0; i < Columns.Length; i++)
-            {
-                lineCount = Math.Max(
-                    lineCount,
-                    DividirTexto(row.Cells[i], Columns[i].Width, RowFontSize, Columns[i].MaxLines).Count);
-            }
-
-            return Math.Max(11, 4 + (lineCount * RowLineHeight));
-        }
-
-        private static List<string> DividirTexto(string text, double width, double fontSize, int maxLines)
-        {
-            string cleaned = NormalizarTexto(text);
-            int maxChars = Math.Max(6, (int)Math.Floor((width - 6) / (fontSize * 0.56)));
-            List<string> lines = [];
-
-            foreach (string word in cleaned
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .SelectMany(w => DividirPalabra(w, maxChars)))
-            {
-                if (lines.Count == 0)
-                {
-                    lines.Add(word);
-                    continue;
-                }
-
-                string candidate = $"{lines[^1]} {word}";
-
-                if (candidate.Length <= maxChars)
-                {
-                    lines[^1] = candidate;
-                }
-                else
-                {
-                    lines.Add(word);
-                }
-
-                if (lines.Count == maxLines)
-                {
-                    break;
-                }
-            }
-
-            if (lines.Count == 0)
-                lines.Add(string.Empty);
-
-            if (lines.Count == maxLines && cleaned.Length > string.Join(' ', lines).Length)
-            {
-                string last = lines[^1];
-                lines[^1] = last.Length > 3
-                    ? $"{last[..Math.Min(last.Length, Math.Max(0, maxChars - 3))]}..."
-                    : last;
-            }
-
-            return lines;
-        }
-
-        private static IEnumerable<string> DividirPalabra(string word, int maxChars)
-        {
-            if (word.Length <= maxChars)
-            {
-                yield return word;
-                yield break;
-            }
-
-            for (int start = 0; start < word.Length; start += maxChars)
-            {
-                yield return word.Substring(start, Math.Min(maxChars, word.Length - start));
-            }
-        }
-
-        private static string FormatoMoneda(decimal value)
-        {
-            return $"S/ {value:N2}";
-        }
-
-        private static string FormatoMonedaVacio(decimal value)
-        {
-            return value == 0 ? string.Empty : FormatoMoneda(value);
-        }
-
-        private static string FormatoNumero(decimal value)
-        {
-            return value == 0 ? string.Empty : value.ToString("N2", CultureInfo.CurrentCulture);
-        }
-
-        private static double EstimarAnchoTexto(string text, double fontSize)
-        {
-            return NormalizarTexto(text).Length * fontSize * 0.52;
-        }
-
-        private static string NormalizarTexto(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-                return string.Empty;
-
-            string normalized = text.Normalize(NormalizationForm.FormD);
-            StringBuilder builder = new();
-
-            foreach (char character in normalized)
-            {
-                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(character);
-
-                if (category == UnicodeCategory.NonSpacingMark)
-                    continue;
-
-                if (character is >= ' ' and <= '~')
-                {
-                    builder.Append(character);
-                }
-                else
-                {
-                    builder.Append(' ');
-                }
-            }
-
-            return builder.ToString().Normalize(NormalizationForm.FormC);
-        }
-
-        private sealed record PdfColumn(string Header, double Width, bool AlignRight, int MaxLines);
-
-        private sealed record TableRow(string[] Cells);
-
-        private sealed record BoletaSlot(double X, double Bottom, double Width, double Height)
-        {
-            public double Top => Bottom + Height;
-        }
+        private sealed record BoletaSlot(double X, double Bottom, double Width, double Height) { public double Top => Bottom + Height; }
 
         private sealed class BoletaPaginator
         {
@@ -424,10 +328,7 @@ namespace CorexProd.WPF.Helpers
             private PdfCanvas? _currentPage;
             private int _slotIndex = Slots.Length;
 
-            public BoletaPaginator(SimplePdfDocument document)
-            {
-                _document = document;
-            }
+            public BoletaPaginator(SimplePdfDocument document) => _document = document;
 
             public PdfCanvas NextSlot(out BoletaSlot slot)
             {
@@ -436,10 +337,8 @@ namespace CorexProd.WPF.Helpers
                     _currentPage = _document.AddPage(PageWidth, PageHeight);
                     _slotIndex = 0;
                 }
-
                 slot = Slots[_slotIndex];
                 _slotIndex++;
-
                 return _currentPage;
             }
         }
@@ -546,9 +445,7 @@ namespace CorexProd.WPF.Helpers
             }
 
             public double Width { get; }
-
             public double Height { get; }
-
             public string Content => _content.ToString();
 
             public void Text(string text, double x, double y, double size, bool bold = false)
@@ -567,9 +464,33 @@ namespace CorexProd.WPF.Helpers
                 _content.Append(" Tj ET\n");
             }
 
+            // NUEVA FUNCIÓN: Alinea texto a la derecha (Ideal para columnas de dinero)
+            public void RightText(string text, double rightX, double y, double size, bool bold = false)
+            {
+                double textWidth = ApproximateWidth(text, size, bold);
+                Text(text, rightX - textWidth, y, size, bold);
+            }
+
+            // Motor matemático para aproximar el ancho exacto del texto en la fuente Helvetica del PDF
+            private double ApproximateWidth(string text, double size, bool bold)
+            {
+                if (string.IsNullOrEmpty(text)) return 0;
+                double w = 0;
+                foreach (char c in text)
+                {
+                    if (char.IsDigit(c)) w += size * 0.556; // Números tabulares
+                    else if (c == '.' || c == ',' || c == ' ') w += size * 0.278; // Signos estrechos
+                    else if (c == 'i' || c == 'l' || c == 'I' || c == 't' || c == 'f') w += size * 0.278;
+                    else if (char.IsUpper(c) || c == 'w' || c == 'm') w += size * 0.722;
+                    else w += size * 0.556; // Letras promedio
+                }
+                if (bold) w *= 1.05; // La negrita ocupa un ~5% más
+                return w;
+            }
+
             public void Line(double x1, double y1, double x2, double y2)
             {
-                _content.Append("0.82 0.85 0.9 RG ");
+                _content.Append("0 0 0 RG ");
                 _content.Append(N(x1));
                 _content.Append(' ');
                 _content.Append(N(y1));
@@ -582,21 +503,9 @@ namespace CorexProd.WPF.Helpers
 
             public void Rectangle(double x, double y, double width, double height)
             {
-                _content.Append("0.82 0.85 0.9 RG ");
+                _content.Append("0 0 0 RG ");
                 AppendRectangle(x, y, width, height);
                 _content.Append("S\n");
-            }
-
-            public void FillRectangle(double x, double y, double width, double height, double r, double g, double b)
-            {
-                _content.Append(N(r));
-                _content.Append(' ');
-                _content.Append(N(g));
-                _content.Append(' ');
-                _content.Append(N(b));
-                _content.Append(" rg ");
-                AppendRectangle(x, y, width, height);
-                _content.Append("f\n");
             }
 
             private void AppendRectangle(double x, double y, double width, double height)
@@ -616,17 +525,11 @@ namespace CorexProd.WPF.Helpers
         {
             string cleaned = NormalizarTexto(text);
             StringBuilder builder = new("(");
-
             foreach (char character in cleaned)
             {
-                if (character is '(' or ')' or '\\')
-                {
-                    builder.Append('\\');
-                }
-
+                if (character is '(' or ')' or '\\') builder.Append('\\');
                 builder.Append(character);
             }
-
             builder.Append(')');
             return builder.ToString();
         }

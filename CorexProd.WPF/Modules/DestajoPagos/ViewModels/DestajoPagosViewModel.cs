@@ -1541,11 +1541,13 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 if (dialog.ShowDialog() != true)
                     return;
 
+                // ✅ SE CORRIGIÓ AQUÍ: Se agregó 'true' al final
                 BoletaPagoPdfExporter.Exportar(
                     dialog.FileName,
                     PeriodoSeleccionado,
                     resumenes,
-                    Movimientos.ToList());
+                    Movimientos.ToList(),
+                    true); // true = Con copia (2 por hoja), false = Sin copia (1 por hoja)
 
                 NotificationService.Success("PDF generado correctamente.");
                 AbrirArchivo(dialog.FileName);
