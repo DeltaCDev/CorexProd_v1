@@ -51,7 +51,6 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Grid.ColumnDefinitions>
@@ -125,25 +124,13 @@
                               VerticalAlignment="Bottom"
                               Margin="0,0,0,19"/>
 
-                    <StackPanel Grid.Row="1"
-                                Grid.Column="0"
-                                Grid.ColumnSpan="4"
-                                Margin="0,0,20,0">
-
-                        <TextBlock Text="Descripción"
-                                   Style="{StaticResource LabelCampo}"/>
-
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1"
+                    <StackPanel Grid.Row="0"
                                 Grid.Column="4"
                                 Grid.ColumnSpan="2"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom">
-
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,0,-45">
                         <Button Content="Guardar"
                                 Width="110"
                                 Height="32"
@@ -164,7 +151,8 @@
                 CornerRadius="8"
                 BorderBrush="#E5E7EB"
                 BorderThickness="1"
-                Padding="0">
+                Padding="0"
+                Margin="0,35,0,0">
 
             <DataGrid ItemsSource="{Binding Productos}"
                       SelectedItem="{Binding ProductoSeleccionado}"
@@ -182,10 +170,9 @@
                     <DataGridTextColumn Header="Categoría" Binding="{Binding NombreCategoria}" Width="160"/>
                     <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="140"/>
                     <DataGridTextColumn Header="Stock Mín." Binding="{Binding StockMinimo}" Width="100"/>
-                    <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
                     <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="80"/>
-                    <DataGridTemplateColumn Header="Ficha Técnica"
-                        Width="120">
+
+                    <DataGridTemplateColumn Header="Ficha Técnica" Width="120">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="Ver PDF"
@@ -196,10 +183,11 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="Acciones" Width="120">
+                    <DataGridTemplateColumn Header="Acciones" Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="Eliminar"
+                                        HorizontalAlignment="Left"
                                         Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                         CommandParameter="{Binding IdProducto}"/>
                             </DataTemplate>

@@ -7,8 +7,6 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.IO;
-using CorexProd.Datos.Datos;
-
 
 namespace CorexProd.WPF.Modules.Productos.ViewModels
 {
@@ -22,7 +20,6 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private int _idProducto;
         private string _codigo = string.Empty;
         private string _nombreProducto = string.Empty;
-        private string _descripcion = string.Empty;
         private int _idCategoriaProducto;
         private int _idUnidadMedida;
         private decimal _stockMinimo;
@@ -59,16 +56,6 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             set
             {
                 _nombreProducto = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string Descripcion
-        {
-            get => _descripcion;
-            set
-            {
-                _descripcion = value;
                 OnPropertyChanged();
             }
         }
@@ -126,7 +113,6 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                     IdProducto = _productoSeleccionado.IdProducto;
                     Codigo = _productoSeleccionado.Codigo;
                     NombreProducto = _productoSeleccionado.NombreProducto;
-                    Descripcion = _productoSeleccionado.Descripcion;
                     IdCategoriaProducto = _productoSeleccionado.IdCategoriaProducto;
                     IdUnidadMedida = _productoSeleccionado.IdUnidadMedida;
                     StockMinimo = _productoSeleccionado.StockMinimo;
@@ -207,7 +193,6 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 IdProducto = IdProducto,
                 Codigo = Codigo,
                 NombreProducto = NombreProducto,
-                Descripcion = Descripcion,
                 IdCategoriaProducto = IdCategoriaProducto,
                 IdUnidadMedida = IdUnidadMedida,
                 StockMinimo = StockMinimo,
@@ -270,63 +255,52 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             IdProducto = 0;
             Codigo = string.Empty;
             NombreProducto = string.Empty;
-            Descripcion = string.Empty;
             IdCategoriaProducto = 0;
             IdUnidadMedida = 0;
             StockMinimo = 0;
             Estado = true;
             ProductoSeleccionado = null;
         }
+
         private void VerFichaTecnica(object? parametro)
         {
             try
             {
                 if (parametro == null)
                 {
-                    NotificationService.Warning(
-                        "Debe seleccionar un producto.");
+                    NotificationService.Warning("Debe seleccionar un producto.");
                     return;
                 }
 
-                string codigo =
-                    parametro.ToString() ?? string.Empty;
+                string codigo = parametro.ToString() ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(codigo))
                 {
-                    NotificationService.Warning(
-                        "El producto no tiene código.");
+                    NotificationService.Warning("El producto no tiene código.");
                     return;
                 }
 
-                var parametroRuta =
-                    _parametroNegocio.ObtenerPorCodigo(
-                        "RUTA_FICHA_TECNICA"
-                    );
+                var parametroRuta = _parametroNegocio.ObtenerPorCodigo("RUTA_FICHA_TECNICA");
 
                 if (parametroRuta == null)
                 {
-                    NotificationService.Warning(
-                        "No existe el parámetro RUTA_FICHA_TECNICA.");
+                    NotificationService.Warning("No existe el parámetro RUTA_FICHA_TECNICA.");
                     return;
                 }
 
-                string rutaBase =
-                    parametroRuta.ValorParametro;
+                string rutaBase = parametroRuta.ValorParametro;
 
                 if (string.IsNullOrWhiteSpace(rutaBase))
                 {
-                    NotificationService.Warning(
-                        "La ruta de fichas técnicas está vacía.");
+                    NotificationService.Warning("La ruta de fichas técnicas está vacía.");
                     return;
                 }
 
-                string rutaPdf =
-                    Path.Combine(rutaBase, $"{codigo}.pdf");
+                string rutaPdf = Path.Combine(rutaBase, $"{codigo}.pdf");
 
                 if (!File.Exists(rutaPdf))
                 {
-                    NotificationService.Warning(
-                        $"No se encontró la ficha técnica:\n{rutaPdf}");
+                    NotificationService.Warning($"No se encontró la ficha técnica:\n{rutaPdf}");
                     return;
                 }
 
@@ -338,8 +312,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             }
             catch (Exception ex)
             {
-                NotificationService.Error(
-                    $"Error al abrir la ficha técnica:\n{ex.Message}");
+                NotificationService.Error($"Error al abrir la ficha técnica:\n{ex.Message}");
             }
         }
     }
