@@ -192,13 +192,13 @@
                       GridLinesVisibility="Horizontal">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdCliente}" Width="70"/>
-                    <DataGridTextColumn Header="Documento" Binding="{Binding TipoDocumento}" Width="150"/>
-                    <DataGridTextColumn Header="Nro Documento" Binding="{Binding NumeroDocumento}" Width="150"/>
-                    <DataGridTextColumn Header="Nombre / Razón Social" Binding="{Binding NombreRazonSocial}" Width="*"/>
-                    <DataGridTextColumn Header="Dirección" Binding="{Binding Direccion}" Width="220"/>
-                    <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="130"/>
-                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="190"/>
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdCliente}" Width="50"/>
+                    <DataGridTextColumn Header="Documento" Binding="{Binding TipoDocumento}" Width="87"/>
+                    <DataGridTextColumn Header="Nro Documento" Binding="{Binding NumeroDocumento}" Width="110"/>
+                    <DataGridTextColumn Header="Nombre / Razón Social" Binding="{Binding NombreRazonSocial}" Width="350"/>
+                    <DataGridTextColumn Header="Dirección" Binding="{Binding Direccion}" Width="200"/>
+                    <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="90"/>
+                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="120"/>
                     <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="80"/>
 
                     <DataGridTemplateColumn Header="Acciones" Width="160">
