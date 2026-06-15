@@ -116,26 +116,26 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID"
                                         Binding="{Binding IdUnidadMedida}"
-                                        Width="80"/>
+                                        Width="50"/>
 
                     <DataGridTextColumn Header="Nombre Unidad"
                                         Binding="{Binding NombreUnidad}"
-                                        Width="*"/>
+                                        Width="160"/>
 
                     <DataGridTextColumn Header="Abreviatura"
                                         Binding="{Binding Abreviatura}"
-                                        Width="160"/>
+                                        Width="120"/>
 
                     <DataGridTextColumn Header="Fecha Registro"
                                         Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}"
-                                        Width="170"/>
+                                        Width="180"/>
 
                     <DataGridCheckBoxColumn Header="Activo"
                                             Binding="{Binding Estado}"
                                             Width="90"/>
 
                     <DataGridTemplateColumn Header="Acciones"
-                                            Width="120">
+                                            Width="100">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="Eliminar"

@@ -25,9 +25,8 @@
             <StackPanel>
                 <Grid Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.2*"/>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,15,0">
@@ -36,15 +35,9 @@
                                  Height="35"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Margin="0,0,15,0">
+                    <StackPanel Grid.Column="1">
                         <TextBlock Text="Nombre"/>
                         <TextBox Text="{Binding NombreInsumo, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="35"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Descripción"/>
-                        <TextBox Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}"
                                  Height="35"/>
                     </StackPanel>
                 </Grid>

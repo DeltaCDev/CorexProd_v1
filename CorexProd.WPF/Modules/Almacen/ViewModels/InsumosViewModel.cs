@@ -4,6 +4,8 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Linq;
+using System;
 
 namespace CorexProd.WPF.ViewModels
 {
@@ -18,7 +20,7 @@ namespace CorexProd.WPF.ViewModels
         public ObservableCollection<UnidadMedida> UnidadesMedida { get; set; } = [];
 
         private Insumo? _insumoSeleccionado;
-        public Insumo InsumoSeleccionado
+        public Insumo? InsumoSeleccionado
         {
             get => _insumoSeleccionado;
             set
@@ -31,7 +33,6 @@ namespace CorexProd.WPF.ViewModels
                     IdInsumo = value.IdInsumo;
                     Codigo = value.Codigo;
                     NombreInsumo = value.NombreInsumo;
-                    Descripcion = value.Descripcion;
                     IdCategoriaInsumo = value.IdCategoriaInsumo;
                     IdUnidadMedida = value.IdUnidadMedida;
                     StockMinimo = value.StockMinimo;
@@ -59,13 +60,6 @@ namespace CorexProd.WPF.ViewModels
         {
             get => _nombreInsumo;
             set { _nombreInsumo = value; OnPropertyChanged(); }
-        }
-
-        private string _descripcion = string.Empty;
-        public string Descripcion
-        {
-            get => _descripcion;
-            set { _descripcion = value; OnPropertyChanged(); }
         }
 
         private int _idCategoriaInsumo;
@@ -138,9 +132,8 @@ namespace CorexProd.WPF.ViewModels
             {
                 Insumo insumo = new()
                 {
-                    Codigo = Codigo?.Trim().ToUpper(),
-                    NombreInsumo = NombreInsumo?.Trim().ToUpper(),
-                    Descripcion = Descripcion?.Trim(),
+                    Codigo = Codigo?.Trim().ToUpper() ?? string.Empty,
+                    NombreInsumo = NombreInsumo?.Trim().ToUpper() ?? string.Empty,
                     IdCategoriaInsumo = IdCategoriaInsumo,
                     IdUnidadMedida = IdUnidadMedida,
                     StockMinimo = StockMinimo,
@@ -180,9 +173,8 @@ namespace CorexProd.WPF.ViewModels
                 Insumo insumo = new()
                 {
                     IdInsumo = IdInsumo,
-                    Codigo = Codigo?.Trim().ToUpper(),
-                    NombreInsumo = NombreInsumo?.Trim().ToUpper(),
-                    Descripcion = Descripcion?.Trim(),
+                    Codigo = Codigo?.Trim().ToUpper() ?? string.Empty,
+                    NombreInsumo = NombreInsumo?.Trim().ToUpper() ?? string.Empty,
                     IdCategoriaInsumo = IdCategoriaInsumo,
                     IdUnidadMedida = IdUnidadMedida,
                     StockMinimo = StockMinimo,
@@ -236,7 +228,6 @@ namespace CorexProd.WPF.ViewModels
             IdInsumo = 0;
             Codigo = string.Empty;
             NombreInsumo = string.Empty;
-            Descripcion = string.Empty;
             IdCategoriaInsumo = 0;
             IdUnidadMedida = 0;
             StockMinimo = 0;
