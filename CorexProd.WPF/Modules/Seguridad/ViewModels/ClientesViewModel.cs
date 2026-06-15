@@ -4,6 +4,11 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
 using System.Collections.ObjectModel;
+using System.Configuration;
+using System.IO;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 
@@ -11,6 +16,14 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
     public class ClientesViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly ClienteNegocio _clienteNegocio = new();
 
         private int _idCliente;
@@ -22,6 +35,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _correo = string.Empty;
         private bool _estado = true;
         private bool _mostrarFormulario;
+        private bool _isConsultandoDocumento;
         private Cliente? _clienteSeleccionado;
 
         public ObservableCollection<Cliente> Clientes { get; set; } = [];
@@ -122,6 +136,17 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         public string TituloFormulario => IdCliente > 0 ? "Editar cliente" : "Nuevo cliente";
 
+        public bool IsConsultandoDocumento
+        {
+            get => _isConsultandoDocumento;
+            set
+            {
+                _isConsultandoDocumento = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         public Cliente? ClienteSeleccionado
         {
             get => _clienteSeleccionado;
@@ -146,7 +171,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             GuardarCommand = new RelayCommand(_ => Guardar());
             CancelarCommand = new RelayCommand(_ => Cancelar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
-            ConsultarDocumentoCommand = new RelayCommand(_ => ConsultarDocumento());
+            ConsultarDocumentoCommand = new RelayCommand(
+                async _ => await ConsultarDocumentoAsync(),
+                _ => !IsConsultandoDocumento);
 
             CargarClientes();
         }
@@ -258,9 +285,123 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
         }
 
-        private void ConsultarDocumento()
+        private async Task ConsultarDocumentoAsync()
         {
-            NotificationService.Info("Consulta de API en mantenimiento");
+            string tipoDocumento = TipoDocumento.Trim().ToUpperInvariant();
+            string numeroDocumento = NumeroDocumento.Trim();
+
+            if (tipoDocumento != "DNI" && tipoDocumento != "RUC")
+            {
+                NotificationService.Warning("La consulta solo esta disponible para DNI y RUC");
+                return;
+            }
+
+            int longitudEsperada = tipoDocumento == "DNI" ? 8 : 11;
+
+            if (numeroDocumento.Length != longitudEsperada || !numeroDocumento.All(char.IsDigit))
+            {
+                NotificationService.Warning($"Ingrese un {tipoDocumento} valido de {longitudEsperada} digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoDocumento = true;
+
+                using JsonDocument respuesta = await ConsultarApiDocumentoAsync(tipoDocumento, numeroDocumento);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el documento");
+                    return;
+                }
+
+                string? nombre = ObtenerTexto(raiz, "nombre_completo", "nombre_o_razon_social", "razon_social", "nombre");
+                string? direccion = ObtenerTexto(raiz, "direccion", "domicilio_fiscal");
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio nombre o razon social");
+                    return;
+                }
+
+                NombreRazonSocial = nombre;
+
+                if (!string.IsNullOrWhiteSpace(direccion))
+                {
+                    Direccion = direccion;
+                }
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoDocumento = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiDocumentoAsync(string tipoDocumento, string numeroDocumento)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+            string campoDocumento = tipoDocumento == "RUC" ? "ruc" : "dni";
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                [campoDocumento] = numeroDocumento
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+            {
+                return false;
+            }
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    return valor.GetString();
+                }
+            }
+
+            return null;
         }
 
         private void Cancelar()

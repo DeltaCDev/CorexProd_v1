@@ -294,6 +294,10 @@
             "HandyControl": {
               "target": "Package",
               "version": "[3.5.1, )"
+            },
+            "System.Configuration.ConfigurationManager": {
+              "target": "Package",
+              "version": "[10.0.7, )"
             }
           },
           "imports": [
