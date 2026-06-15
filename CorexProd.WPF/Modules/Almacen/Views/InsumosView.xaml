@@ -26,7 +26,11 @@
                 <Grid Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"/>
-                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1.3*"/>
+                        <ColumnDefinition Width="1.3*"/>
+                        <ColumnDefinition Width="0.9*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,15,0">
@@ -35,22 +39,13 @@
                                  Height="35"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1">
+                    <StackPanel Grid.Column="1" Margin="0,0,15,0">
                         <TextBlock Text="Nombre"/>
                         <TextBox Text="{Binding NombreInsumo, UpdateSourceTrigger=PropertyChanged}"
                                  Height="35"/>
                     </StackPanel>
-                </Grid>
 
-                <Grid Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="1*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <StackPanel Grid.Column="2" Margin="0,0,15,0">
                         <TextBlock Text="Categoría"/>
                         <ComboBox ItemsSource="{Binding Categorias}"
                                   SelectedValue="{Binding IdCategoriaInsumo}"
@@ -59,7 +54,7 @@
                                   Height="35"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Margin="0,0,15,0">
+                    <StackPanel Grid.Column="3" Margin="0,0,15,0">
                         <TextBlock Text="Unidad de Medida"/>
                         <ComboBox ItemsSource="{Binding UnidadesMedida}"
                                   SelectedValue="{Binding IdUnidadMedida}"
@@ -68,13 +63,13 @@
                                   Height="35"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" Margin="0,0,15,0">
+                    <StackPanel Grid.Column="4" Margin="0,0,15,0">
                         <TextBlock Text="Stock mínimo"/>
                         <TextBox Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}"
                                  Height="35"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="3"
+                    <StackPanel Grid.Column="5"
                                 VerticalAlignment="Bottom"
                                 Orientation="Horizontal">
 
@@ -122,35 +117,35 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID"
                                         Binding="{Binding IdInsumo}"
-                                        Width="70"/>
+                                        Width="60"/>
 
                     <DataGridTextColumn Header="Código"
                                         Binding="{Binding Codigo}"
-                                        Width="120"/>
+                                        Width="90"/>
 
                     <DataGridTextColumn Header="Insumo"
                                         Binding="{Binding NombreInsumo}"
-                                        Width="*"/>
+                                        Width="400"/>
 
                     <DataGridTextColumn Header="Categoría"
                                         Binding="{Binding NombreCategoria}"
-                                        Width="160"/>
+                                        Width="100"/>
 
                     <DataGridTextColumn Header="Unidad"
                                         Binding="{Binding NombreUnidad}"
-                                        Width="150"/>
+                                        Width="80"/>
 
                     <DataGridTextColumn Header="Abrev."
                                         Binding="{Binding Abreviatura}"
-                                        Width="90"/>
+                                        Width="80"/>
 
                     <DataGridTextColumn Header="Stock mínimo"
                                         Binding="{Binding StockMinimo}"
-                                        Width="120"/>
+                                        Width="100"/>
 
                     <DataGridCheckBoxColumn Header="Activo"
                                             Binding="{Binding Estado}"
-                                            Width="90"/>
+                                            Width="80"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
