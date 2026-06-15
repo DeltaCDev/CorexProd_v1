@@ -77,10 +77,16 @@ namespace CorexProd.WPF.ViewModels
                 SessionManager.MenusPermitidos =
                     permisoDatos.ObtenerMenusPorRol(usuarioLogueado.IdRol);
 
-                MainWindow mainWindow = new();
+                Window? loginWindow = Application.Current.MainWindow;
+                MainWindow mainWindow = new()
+                {
+                    WindowState = WindowState.Maximized
+                };
+
+                Application.Current.MainWindow = mainWindow;
                 mainWindow.Show();
 
-                Application.Current.Windows[0]?.Close();
+                loginWindow?.Close();
             }
             catch (Exception ex)
             {
