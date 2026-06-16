@@ -365,11 +365,11 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID"
                                             Binding="{Binding IdProforma}"
-                                            Width="44"
+                                            Width="48"
                                             ElementStyle="{StaticResource CeldaTextoCentrada}"/>
 
                         <DataGridTemplateColumn Header="Acciones"
-                                                Width="200">
+                                                Width="220">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal"
@@ -396,7 +396,8 @@
                                                 CommandParameter="{Binding}"/>
                                         <Menu Background="Transparent"
                                               BorderThickness="0">
-                                            <MenuItem ToolTip="Mas acciones">
+                                            <MenuItem ToolTip="Mas acciones"
+                                                      Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=DataGrid}}">
                                                 <MenuItem.Header>
                                                     <TextBlock Text="&#xE712;"
                                                                Width="30"
@@ -405,10 +406,10 @@
                                                                Style="{StaticResource IconoAccion}"/>
                                                 </MenuItem.Header>
                                                 <MenuItem Header="Copiar"
-                                                          Command="{Binding DataContext.CopiarCommand, Source={x:Reference ProformasGrid}}"
+                                                          Command="{Binding Tag.CopiarCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"
                                                           CommandParameter="{Binding}"/>
                                                 <MenuItem Header="Anular"
-                                                          Command="{Binding DataContext.AnularCommand, Source={x:Reference ProformasGrid}}"
+                                                          Command="{Binding Tag.AnularCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"
                                                           CommandParameter="{Binding}"/>
                                             </MenuItem>
                                         </Menu>
@@ -419,11 +420,11 @@
 
                         <DataGridTextColumn Header="Proforma"
                                             Binding="{Binding SerieNumero}"
-                                            Width="88"
+                                            Width="100"
                                             ElementStyle="{StaticResource CeldaTextoCentrada}"/>
                         <DataGridTextColumn Header="OC Cliente"
                                             Binding="{Binding OrdenCompraCliente}"
-                                            Width="106"
+                                            Width="110"
                                             ElementStyle="{StaticResource CeldaTextoCentrada}"/>
 
                         <DataGridTemplateColumn Header="Estado" Width="112">
@@ -438,7 +439,7 @@
                         </DataGridTemplateColumn>
 
                         <DataGridTemplateColumn Header="Cliente"
-                                                Width="2*"
+                                                Width="250"
                                                 MinWidth="220">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -451,7 +452,7 @@
 
                         <DataGridTextColumn Header="Elaborado por"
                                             Binding="{Binding UsuarioGenerador}"
-                                            Width="130"
+                                            Width="105"
                                             ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Fecha emision"
                                             Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}"

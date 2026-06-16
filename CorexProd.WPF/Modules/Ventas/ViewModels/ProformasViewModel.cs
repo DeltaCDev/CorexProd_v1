@@ -7,6 +7,7 @@ using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -76,7 +77,10 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"));
             RefrescarCommand = new RelayCommand(_ => CargarProformas());
 
-            CargarProformas();
+            if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+            {
+                CargarProformas();
+            }
         }
 
         private void CargarProformas()
@@ -127,7 +131,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private static bool Contiene(string valor, string busqueda)
         {
-            return valor.Contains(busqueda, StringComparison.OrdinalIgnoreCase);
+            return valor?.Contains(busqueda, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         private void Editar(object? parametro)
