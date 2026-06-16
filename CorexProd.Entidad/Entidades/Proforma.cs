@@ -20,7 +20,17 @@ namespace CorexProd.Entidad.Entidades
         public string Estado { get; set; } = "Registrado";
         public bool TieneOrdenCompraInterna { get; set; }
         public string UsuarioGenerador { get; set; } = string.Empty;
+        public string MotivoAnulacion { get; set; } = string.Empty;
+        public string UsuarioAnulacion { get; set; } = string.Empty;
+        public DateTime? FechaAnulacion { get; set; }
+        public string DetalleAnulacion =>
+            $"Motivo: {TextoOmitido(MotivoAnulacion)}\nUsuario: {TextoOmitido(UsuarioAnulacion)}\nFecha: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}";
         public DateTime FechaRegistro { get; set; }
         public List<ProformaDetalle> Detalles { get; set; } = [];
+
+        private static string TextoOmitido(string valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor;
+        }
     }
 }

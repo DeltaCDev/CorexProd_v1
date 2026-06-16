@@ -78,10 +78,19 @@ namespace CorexProd.Negocio.Negocio
             return _proformaDatos.Guardar(proforma);
         }
 
-        public string Anular(int idProforma)
+        public string Anular(int idProforma, string motivoAnulacion, string usuarioAnulacion)
         {
+            motivoAnulacion = motivoAnulacion.Trim();
+            usuarioAnulacion = usuarioAnulacion.Trim();
+
             if (idProforma <= 0)
                 return "Debe seleccionar una proforma valida";
+
+            if (string.IsNullOrWhiteSpace(motivoAnulacion))
+                return "Debe ingresar el motivo de anulacion";
+
+            if (string.IsNullOrWhiteSpace(usuarioAnulacion))
+                return "No se pudo identificar al usuario de la sesion";
 
             Proforma? proforma = _proformaDatos.Obtener(idProforma);
 
@@ -91,7 +100,7 @@ namespace CorexProd.Negocio.Negocio
             if (proforma.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase))
                 return "La proforma ya se encuentra anulada";
 
-            return _proformaDatos.Anular(idProforma);
+            return _proformaDatos.Anular(idProforma, motivoAnulacion, usuarioAnulacion);
         }
     }
 }

@@ -266,16 +266,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 return;
             }
 
-            bool confirmar = ConfirmDialogService.Confirmar(
-                $"¿Desea anular la proforma {proforma.SerieNumero}?",
-                "Anular proforma");
+            AnularProformaWindow ventana = new(proforma.SerieNumero)
+            {
+                Owner = Application.Current.MainWindow
+            };
 
-            if (!confirmar)
+            if (ventana.ShowDialog() != true)
             {
                 return;
             }
 
-            string mensaje = _proformaNegocio.Anular(proforma.IdProforma);
+            string usuarioAnulacion = SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty;
+            string mensaje = _proformaNegocio.Anular(proforma.IdProforma, ventana.MotivoAnulacion, usuarioAnulacion);
 
             if (mensaje.Contains("correctamente"))
             {

@@ -45,6 +45,27 @@ BEGIN
 END
 GO
 
+IF COL_LENGTH('dbo.Proformas', 'MotivoAnulacion') IS NULL
+BEGIN
+    ALTER TABLE dbo.Proformas
+    ADD MotivoAnulacion VARCHAR(500) NULL;
+END
+GO
+
+IF COL_LENGTH('dbo.Proformas', 'UsuarioAnulacion') IS NULL
+BEGIN
+    ALTER TABLE dbo.Proformas
+    ADD UsuarioAnulacion VARCHAR(80) NULL;
+END
+GO
+
+IF COL_LENGTH('dbo.Proformas', 'FechaAnulacion') IS NULL
+BEGIN
+    ALTER TABLE dbo.Proformas
+    ADD FechaAnulacion DATETIME NULL;
+END
+GO
+
 IF NOT EXISTS (
     SELECT 1
     FROM sys.foreign_keys
@@ -121,6 +142,9 @@ BEGIN
         P.Estado,
         P.TieneOrdenCompraInterna,
         P.UsuarioGenerador,
+        P.MotivoAnulacion,
+        P.UsuarioAnulacion,
+        P.FechaAnulacion,
         P.FechaRegistro
     FROM dbo.Proformas P
     INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
@@ -155,6 +179,9 @@ BEGIN
         P.Estado,
         P.TieneOrdenCompraInterna,
         P.UsuarioGenerador,
+        P.MotivoAnulacion,
+        P.UsuarioAnulacion,
+        P.FechaAnulacion,
         P.FechaRegistro
     FROM dbo.Proformas P
     INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
@@ -350,6 +377,8 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.USP_VEN_PROFORMA_ANULAR
     @IdProforma INT,
+    @MotivoAnulacion VARCHAR(500),
+    @UsuarioAnulacion VARCHAR(80),
     @Resultado BIT OUTPUT,
     @Mensaje VARCHAR(500) OUTPUT
 AS
@@ -357,6 +386,20 @@ BEGIN
     SET NOCOUNT ON;
 
     SET @Resultado = 0;
+    SET @MotivoAnulacion = LTRIM(RTRIM(ISNULL(@MotivoAnulacion, '')));
+    SET @UsuarioAnulacion = LTRIM(RTRIM(ISNULL(@UsuarioAnulacion, '')));
+
+    IF @MotivoAnulacion = ''
+    BEGIN
+        SET @Mensaje = 'Debe ingresar el motivo de anulacion';
+        RETURN;
+    END
+
+    IF @UsuarioAnulacion = ''
+    BEGIN
+        SET @Mensaje = 'No se pudo identificar al usuario de la sesion';
+        RETURN;
+    END
 
     IF NOT EXISTS (SELECT 1 FROM dbo.Proformas WHERE IdProforma = @IdProforma)
     BEGIN
@@ -377,7 +420,10 @@ BEGIN
     END
 
     UPDATE dbo.Proformas
-    SET Estado = 'Anulado'
+    SET Estado = 'Anulado',
+        MotivoAnulacion = @MotivoAnulacion,
+        UsuarioAnulacion = @UsuarioAnulacion,
+        FechaAnulacion = GETDATE()
     WHERE IdProforma = @IdProforma;
 
     SET @Resultado = 1;

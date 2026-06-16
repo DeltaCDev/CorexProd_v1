@@ -173,12 +173,14 @@ namespace CorexProd.Datos.Datos
             return mensajeParam.Value?.ToString() ?? string.Empty;
         }
 
-        public string Anular(int idProforma)
+        public string Anular(int idProforma, string motivoAnulacion, string usuarioAnulacion)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_VEN_PROFORMA_ANULAR", conexion);
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@IdProforma", idProforma);
+            cmd.Parameters.AddWithValue("@MotivoAnulacion", motivoAnulacion);
+            cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
 
             SqlParameter resultado = new("@Resultado", SqlDbType.Bit)
             {
@@ -218,6 +220,9 @@ namespace CorexProd.Datos.Datos
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 TieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"]),
                 UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,
+                MotivoAnulacion = dr["MotivoAnulacion"]?.ToString() ?? string.Empty,
+                UsuarioAnulacion = dr["UsuarioAnulacion"]?.ToString() ?? string.Empty,
+                FechaAnulacion = dr["FechaAnulacion"] == DBNull.Value ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
                 FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
             };
         }

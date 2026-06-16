@@ -173,6 +173,23 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="IconoInfoAnulacion" TargetType="TextBlock">
+            <Setter Property="Text" Value="&#xE946;"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#BE123C"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="ToolTip" Value="{Binding DetalleAnulacion}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type DataGrid}">
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#0F172A"/>
@@ -433,10 +450,15 @@
                         <DataGridTemplateColumn Header="Estado" Width="112">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Style="{StaticResource EstadoBadge}">
-                                        <TextBlock Text="{Binding Estado}"
-                                                   Style="{StaticResource EstadoBadgeTexto}"/>
-                                    </Border>
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <Border Style="{StaticResource EstadoBadge}">
+                                            <TextBlock Text="{Binding Estado}"
+                                                       Style="{StaticResource EstadoBadgeTexto}"/>
+                                        </Border>
+                                        <TextBlock Style="{StaticResource IconoInfoAnulacion}"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
