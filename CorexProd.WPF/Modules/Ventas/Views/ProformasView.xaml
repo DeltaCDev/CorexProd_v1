@@ -25,6 +25,15 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="BotonAccionProforma" TargetType="Button">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -83,40 +92,44 @@
                       RowHeight="44"
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="330">
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40"/>
+                    <DataGridTemplateColumn Header="Acciones" Width="292">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Button Content="📝"
-                        Height="28"
-                        Width="62"
+                        Style="{StaticResource BotonAccionProforma}"
+                        Background="#2563EB"
+                        Width="40"
                         Margin="0,0,6,0"
                         Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding}"/>
                                     <Button Content="Copiar"
-                        Height="28"
-                        Width="62"
-                        Margin="0,0,6,0"
+                                            Style="{StaticResource BotonAccionProforma}"
+                                            Background="#4F46E5"
+                                            Width="62"
+                                            Margin="0,0,6,0"
                         Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding}"/>
                                     <Button Content="Anular"
-                        Height="28"
-                        Width="62"
-                        Margin="0,0,6,0"
+                                            Style="{StaticResource BotonAccionProforma}"
+                                            Background="#DC2626"
+                                            Width="62"
+                                            Margin="0,0,6,0"
                         Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding}"/>
                                     <Button Content="Generar OCI"
-                        Height="28"
-                        Width="92"
+                                            Style="{StaticResource BotonAccionProforma}"
+                                            Background="#059669"
+                                            Width="100"
                         Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="55"/>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="150"/>
-                    <DataGridTextColumn Header="Orden de Compra" Binding="{Binding OrdenCompraCliente}" Width="160"/>
+                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="100"/>
+                    <DataGridTextColumn Header="Orden de Compra" Binding="{Binding OrdenCompraCliente}" Width="120"/>
                     <DataGridTemplateColumn Header="Estado" Width="115">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
