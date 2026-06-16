@@ -541,11 +541,15 @@ namespace CorexProd.WPF.ViewModels
 
                 // VENTAS
                 case "Ventas":
-                case "Proformas":
                 case "OCI":
                 case "GuiaSalida":
                     Titulo = vista;
                     VistaActual = new VentasView();
+                    break;
+
+                case "Proformas":
+                    Titulo = "Proformas";
+                    VistaActual = new ProformasView();
                     break;
 
                 // ALMACÉN
