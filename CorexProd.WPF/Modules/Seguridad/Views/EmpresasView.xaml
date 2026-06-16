@@ -8,16 +8,112 @@
     </UserControl.DataContext>
 
     <UserControl.Resources>
-        <Style x:Key="LabelCampo" TargetType="TextBlock">
+        <Style x:Key="LabelFiltro" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#475569"/>
             <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
 
-        <Style x:Key="CampoTexto" TargetType="TextBox">
-            <Setter Property="Height" Value="30"/>
+        <Style x:Key="CampoFiltro" TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Width" Value="300"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="BotonPrimario" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="BotonIcono" TargetType="Button">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="IconoAccion" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="#2563EB"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CeldaTexto" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E2E8F0"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#E2E8F0"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="ColumnHeaderHeight" Value="38"/>
+            <Setter Property="ColumnHeaderStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="#E2E8F0"/>
+                        <Setter Property="Foreground" Value="#0F172A"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridCell}">
+                        <Setter Property="Foreground" Value="#0F172A"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="#E2E8F0"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#E0F2FE"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                                <Setter Property="BorderBrush" Value="#BAE6FD"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="#0F172A"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F0FDFA"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#E0F2FE"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
 
@@ -34,151 +130,68 @@
                 BorderThickness="1"
                 Padding="18"
                 Margin="0,0,0,14">
-            <StackPanel>
-                <DockPanel Margin="0,0,0,14">
-                    <StackPanel DockPanel.Dock="Left">
-                        <TextBlock Text="Gestión de Empresa"
-                                   FontSize="24"
-                                   FontWeight="Bold"
-                                   Margin="0,0,0,6"/>
-                        <TextBlock Text="Registre varias empresas y marque una como predeterminada para documentos impresos"
-                                   FontSize="14"
-                                   Foreground="#6B7280"/>
-                    </StackPanel>
-                </DockPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.1*"/>
-                        <ColumnDefinition Width="1.4*"/>
-                        <ColumnDefinition Width="1.4*"/>
-                        <ColumnDefinition Width="1.2*"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
+                    <TextBlock Text="Mantenimiento de Empresa"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding ResumenRegistros}"
+                               FontSize="13"
+                               Foreground="#64748B"/>
+                </StackPanel>
 
-                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,18,14">
-                        <TextBlock Style="{StaticResource LabelCampo}">
-                            <Run Text="RUC "/>
-                            <Run Text="*" Foreground="Red"/>
-                        </TextBlock>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Ruc, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource BotonPrimario}"
+                            Command="{Binding NuevoCommand}"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE710;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Nuevo"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource BotonPrimario}"
+                            Background="#0F766E"
+                            Command="{Binding RefrescarCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Actualizar"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
 
-                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,18,14">
-                        <TextBlock Style="{StaticResource LabelCampo}">
-                            <Run Text="Nombre "/>
-                            <Run Text="*" Foreground="Red"/>
-                        </TextBlock>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,18,14">
-                        <TextBlock Text="Nombre comercial" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding NombreComercial, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,0,14">
-                        <TextBlock Text="Teléfono" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Telefono, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,18,14">
-                        <TextBlock Text="Correo" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Correo, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,18,14">
-                        <TextBlock Text="Departamento" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Departamento, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,18,14">
-                        <TextBlock Text="Provincia" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Provincia, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,14">
-                        <TextBlock Text="Distrito" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Distrito, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,18,14">
-                        <TextBlock Text="Dirección" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding Direccion, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,18,14">
-                        <TextBlock Text="Logo" Style="{StaticResource LabelCampo}"/>
-                        <DockPanel LastChildFill="True">
-                            <Button DockPanel.Dock="Right"
-                                    Content="Buscar"
-                                    Width="78"
-                                    Height="30"
-                                    Margin="8,0,0,0"
-                                    Command="{Binding SeleccionarLogoCommand}"/>
-                            <TextBox Style="{StaticResource CampoTexto}"
-                                     Text="{Binding Logo, UpdateSourceTrigger=PropertyChanged}"/>
-                        </DockPanel>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="2" Grid.Column="3" Margin="0,0,0,14">
-                        <TextBlock Text="Código cliente" Style="{StaticResource LabelCampo}"/>
-                        <TextBox Style="{StaticResource CampoTexto}"
-                                 Text="{Binding CodigoCliente, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,18,0">
-                        <TextBlock Text="Licencia de activación" Style="{StaticResource LabelCampo}"/>
-                        <DockPanel LastChildFill="True">
-                            <Button DockPanel.Dock="Right"
-                                    Content="En mantenimiento"
-                                    Width="130"
-                                    Height="30"
-                                    Margin="8,0,0,0"
-                                    IsEnabled="False"
-                                    Command="{Binding ValidarLicenciaCommand}"/>
-                            <TextBox Style="{StaticResource CampoTexto}"
-                                     IsReadOnly="True"
-                                     Text="{Binding LicenciaActivacion, UpdateSourceTrigger=PropertyChanged}"/>
-                        </DockPanel>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,18,0">
-                        <CheckBox Content="Predeterminada"
-                                  IsChecked="{Binding EsPredeterminada}"
-                                  Margin="0,0,18,6"/>
-                        <CheckBox Content="Activa"
-                                  IsChecked="{Binding Estado}"
-                                  Margin="0,0,0,6"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="3" Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                        <Button Content="Guardar"
-                                Width="110"
-                                Height="32"
-                                Margin="0,0,10,0"
-                                Command="{Binding GuardarCommand}"/>
-                        <Button Content="Limpiar"
-                                Width="110"
-                                Height="32"
-                                Command="{Binding LimpiarCommand}"/>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right">
+                    <TextBlock Text="Buscar" Style="{StaticResource LabelFiltro}"/>
+                    <DockPanel LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="&#xE721;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   Foreground="#38BDF8"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0"/>
+                        <TextBox Style="{StaticResource CampoFiltro}"
+                                 Text="{Binding TextoBusqueda, UpdateSourceTrigger=PropertyChanged}"/>
+                    </DockPanel>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <Border Grid.Row="1"
@@ -194,24 +207,66 @@
                       IsReadOnly="True"
                       HeadersVisibility="Column"
                       RowHeight="44"
-                      GridLinesVisibility="Horizontal">
+                      GridLinesVisibility="Horizontal"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdEmpresa}" Width="50"/>
                     <DataGridTextColumn Header="RUC" Binding="{Binding Ruc}" Width="105"/>
-                    <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="220"/>
-                    <DataGridTextColumn Header="Nombre comercial" Binding="{Binding NombreComercial}" Width="180"/>
-                    <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="90"/>
-                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="140"/>
-                    <DataGridTextColumn Header="Distrito" Binding="{Binding Distrito}" Width="110"/>
-                    <DataGridTextColumn Header="Dirección" Binding="{Binding Direccion}" Width="220"/>
+                    <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="210" ElementStyle="{StaticResource CeldaTexto}"/>
+                    <DataGridTextColumn Header="Nombre comercial" Binding="{Binding NombreComercial}" Width="180" ElementStyle="{StaticResource CeldaTexto}"/>
+                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="140" ElementStyle="{StaticResource CeldaTexto}"/>
+                    <DataGridTextColumn Header="Distrito" Binding="{Binding Distrito}" Width="130" ElementStyle="{StaticResource CeldaTexto}"/>
+                    <DataGridTextColumn Header="Dirección" Binding="{Binding Direccion}" Width="260" ElementStyle="{StaticResource CeldaTexto}"/>
+
+                    <DataGridTemplateColumn Header="Logo" Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Center">
+                                    <Button x:Name="LogoButton"
+                                            Style="{StaticResource BotonIcono}"
+                                            ToolTip="Ver logo">
+                                        <TextBlock Text="&#xEB9F;" Style="{StaticResource IconoAccion}"/>
+                                    </Button>
+                                    <Popup PlacementTarget="{Binding ElementName=LogoButton}"
+                                           Placement="Bottom"
+                                           IsOpen="{Binding IsMouseOver, ElementName=LogoButton, Mode=OneWay}"
+                                           AllowsTransparency="True"
+                                           StaysOpen="False">
+                                        <Border Background="#4B5563"
+                                                Padding="12"
+                                                CornerRadius="4">
+                                            <Image Source="{Binding Logo}"
+                                                   Width="150"
+                                                   Height="100"
+                                                   Stretch="Uniform"/>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <DataGridCheckBoxColumn Header="Default" Binding="{Binding EsPredeterminada}" Width="70"/>
                     <DataGridCheckBoxColumn Header="Activa" Binding="{Binding Estado}" Width="65"/>
+
                     <DataGridTemplateColumn Header="Acciones" Width="110">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Content="Eliminar"
-                                        Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        CommandParameter="{Binding IdEmpresa}"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource BotonIcono}"
+                                            ToolTip="Editar"
+                                            Margin="0,0,8,0"
+                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonIcono}"
+                                            ToolTip="Eliminar"
+                                            Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding IdEmpresa}">
+                                        <TextBlock Text="&#xE74D;" Style="{StaticResource IconoAccion}" Foreground="#DC2626"/>
+                                    </Button>
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
