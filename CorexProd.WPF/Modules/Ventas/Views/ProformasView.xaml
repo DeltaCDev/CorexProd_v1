@@ -83,6 +83,37 @@
                       RowHeight="44"
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Acciones" Width="330">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="📝"
+                        Height="28"
+                        Width="62"
+                        Margin="0,0,6,0"
+                        Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"/>
+                                    <Button Content="Copiar"
+                        Height="28"
+                        Width="62"
+                        Margin="0,0,6,0"
+                        Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"/>
+                                    <Button Content="Anular"
+                        Height="28"
+                        Width="62"
+                        Margin="0,0,6,0"
+                        Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"/>
+                                    <Button Content="Generar OCI"
+                        Height="28"
+                        Width="92"
+                        Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="55"/>
                     <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="150"/>
                     <DataGridTextColumn Header="Orden de Compra" Binding="{Binding OrdenCompraCliente}" Width="160"/>
@@ -101,37 +132,7 @@
                     <DataGridTextColumn Header="IGV" Binding="{Binding Igv, StringFormat=S/ {0:N2}}" Width="80"/>
                     <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="95"/>
 
-                    <DataGridTemplateColumn Header="Acciones" Width="330">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="Editar"
-                                            Height="28"
-                                            Width="62"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                    <Button Content="Copiar"
-                                            Height="28"
-                                            Width="62"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                    <Button Content="Anular"
-                                            Height="28"
-                                            Width="62"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                    <Button Content="Generar OCI"
-                                            Height="28"
-                                            Width="92"
-                                            Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

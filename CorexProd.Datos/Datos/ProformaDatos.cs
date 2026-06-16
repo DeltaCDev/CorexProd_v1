@@ -121,6 +121,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.Add(mensajeParam);
 
             conexion.Open();
+            ConfigurarOpcionesInsert(conexion);
             cmd.ExecuteNonQuery();
 
             if (idGenerado.Value != DBNull.Value)
@@ -204,6 +205,23 @@ namespace CorexProd.Datos.Datos
         private static string CrearAtributo(string nombre, string valor)
         {
             return $"{nombre}=\"{SecurityElement.Escape(valor) ?? string.Empty}\" ";
+        }
+
+        private static void ConfigurarOpcionesInsert(SqlConnection conexion)
+        {
+            using SqlCommand cmd = new(
+                """
+                SET ANSI_NULLS ON;
+                SET ANSI_PADDING ON;
+                SET ANSI_WARNINGS ON;
+                SET ARITHABORT ON;
+                SET CONCAT_NULL_YIELDS_NULL ON;
+                SET QUOTED_IDENTIFIER ON;
+                SET NUMERIC_ROUNDABORT OFF;
+                """,
+                conexion);
+
+            cmd.ExecuteNonQuery();
         }
     }
 }
