@@ -66,6 +66,67 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#F9FAFB"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E5E7EB"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#E5E7EB"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="ColumnHeaderStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="#F3F4F6"/>
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridCell}">
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="#E5E7EB"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#EAF2FF"/>
+                                <Setter Property="Foreground" Value="#111827"/>
+                                <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="#111827"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F3F8FF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#EAF2FF"/>
+                                <Setter Property="Foreground" Value="#111827"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -125,10 +186,20 @@
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40"/>
-                    <DataGridTemplateColumn Header="Acciones" Width="224">
+                    <DataGridTemplateColumn Header="Acciones" Width="260">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource BotonIconoProforma}"
+                                            ToolTip="Ver"
+                                            Margin="0,0,6,0"
+                                            Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE890;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="14"
+                                                   Foreground="#0F766E"/>
+                                    </Button>
                                     <Button Style="{StaticResource BotonIconoProforma}"
                                             ToolTip="Editar"
                                             Margin="0,0,6,0"
@@ -169,9 +240,9 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="100"/>
-                    <DataGridTextColumn Header="Orden de Compra" Binding="{Binding OrdenCompraCliente}" Width="120"/>
-                    <DataGridTemplateColumn Header="Estado" Width="115">
+                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="85"/>
+                    <DataGridTextColumn Header="OC Cliente" Binding="{Binding OrdenCompraCliente}" Width="110"/>
+                    <DataGridTemplateColumn Header="Estado" Width="105">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Estado}"
@@ -180,11 +251,12 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="260"/>
+                    <DataGridTextColumn Header="Elaborado por" Binding="{Binding UsuarioGenerador}" Width="125"/>
                     <DataGridTextColumn Header="Fecha Emisión" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="115"/>
-                    <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="95"/>
-                    <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=S/ {0:N2}}" Width="95"/>
+                    <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="90"/>
+                    <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=S/ {0:N2}}" Width="90"/>
                     <DataGridTextColumn Header="IGV" Binding="{Binding Igv, StringFormat=S/ {0:N2}}" Width="80"/>
-                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="95"/>
+                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="90"/>
 
                     
                 </DataGrid.Columns>

@@ -37,6 +37,14 @@ BEGIN
 END
 GO
 
+IF COL_LENGTH('dbo.Proformas', 'UsuarioGenerador') IS NULL
+BEGIN
+    ALTER TABLE dbo.Proformas
+    ADD UsuarioGenerador VARCHAR(80) NOT NULL
+        CONSTRAINT DF_Proformas_UsuarioGenerador DEFAULT('Sistema');
+END
+GO
+
 IF NOT EXISTS (
     SELECT 1
     FROM sys.foreign_keys
@@ -112,6 +120,7 @@ BEGIN
         P.Total,
         P.Estado,
         P.TieneOrdenCompraInterna,
+        P.UsuarioGenerador,
         P.FechaRegistro
     FROM dbo.Proformas P
     INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
@@ -145,6 +154,7 @@ BEGIN
         P.Total,
         P.Estado,
         P.TieneOrdenCompraInterna,
+        P.UsuarioGenerador,
         P.FechaRegistro
     FROM dbo.Proformas P
     INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
@@ -186,6 +196,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_VEN_PROFORMA_GUARDAR
     @Igv DECIMAL(18,2),
     @Total DECIMAL(18,2),
     @DetallesXml XML,
+    @UsuarioGenerador VARCHAR(80),
     @IdGenerado INT OUTPUT,
     @SerieNumero VARCHAR(40) OUTPUT,
     @Resultado BIT OUTPUT,
@@ -243,6 +254,7 @@ BEGIN
                 Descuento,
                 Igv,
                 Total,
+                UsuarioGenerador,
                 Estado
             )
             VALUES
@@ -257,6 +269,7 @@ BEGIN
                 @Descuento,
                 @Igv,
                 @Total,
+                ISNULL(NULLIF(@UsuarioGenerador, ''), 'Sistema'),
                 'Registrado'
             );
 

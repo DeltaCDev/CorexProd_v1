@@ -94,6 +94,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@Igv", proforma.Igv);
             cmd.Parameters.AddWithValue("@Total", proforma.Total);
             cmd.Parameters.AddWithValue("@DetallesXml", CrearDetallesXml(proforma.Detalles));
+            cmd.Parameters.AddWithValue("@UsuarioGenerador", proforma.UsuarioGenerador);
 
             SqlParameter idGenerado = new("@IdGenerado", SqlDbType.Int)
             {
@@ -178,6 +179,7 @@ namespace CorexProd.Datos.Datos
                 Total = Convert.ToDecimal(dr["Total"]),
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 TieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"]),
+                UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,
                 FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
             };
         }

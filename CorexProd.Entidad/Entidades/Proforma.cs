@@ -19,6 +19,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal Total { get; set; }
         public string Estado { get; set; } = "Registrado";
         public bool TieneOrdenCompraInterna { get; set; }
+        public string UsuarioGenerador { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
         public List<ProformaDetalle> Detalles { get; set; } = [];
     }

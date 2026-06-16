@@ -29,6 +29,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         public ICommand NuevoCommand { get; }
         public ICommand EditarCommand { get; }
+        public ICommand VerCommand { get; }
         public ICommand CopiarCommand { get; }
         public ICommand AnularCommand { get; }
         public ICommand GenerarOciCommand { get; }
@@ -37,6 +38,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ProformasViewModel()
         {
             NuevoCommand = new RelayCommand(_ => AbrirEditor(null, false));
+            VerCommand = new RelayCommand(parametro => Ver(parametro));
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             CopiarCommand = new RelayCommand(parametro => Copiar(parametro));
             AnularCommand = new RelayCommand(parametro => Anular(parametro));
@@ -72,6 +74,23 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
 
             AbrirEditor(proforma, false);
+        }
+
+        private void Ver(object? parametro)
+        {
+            Proforma? proforma = ObtenerProforma(parametro);
+
+            if (proforma == null)
+            {
+                return;
+            }
+
+            ProformaDetalleWindow ventana = new(proforma)
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            ventana.ShowDialog();
         }
 
         private void Copiar(object? parametro)

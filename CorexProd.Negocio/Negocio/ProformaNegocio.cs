@@ -29,6 +29,7 @@ namespace CorexProd.Negocio.Negocio
         {
             proforma.OrdenCompraCliente = proforma.OrdenCompraCliente.Trim();
             proforma.Observacion = proforma.Observacion.Trim();
+            proforma.UsuarioGenerador = proforma.UsuarioGenerador.Trim();
 
             if (proforma.FechaEmision == DateTime.MinValue)
                 return "La fecha de emision es obligatoria";
@@ -41,6 +42,9 @@ namespace CorexProd.Negocio.Negocio
 
             if (proforma.IdCliente <= 0)
                 return "Debe seleccionar un cliente";
+
+            if (string.IsNullOrWhiteSpace(proforma.UsuarioGenerador))
+                proforma.UsuarioGenerador = "Sistema";
 
             if (proforma.Detalles.Count == 0)
                 return "Debe agregar al menos un producto";

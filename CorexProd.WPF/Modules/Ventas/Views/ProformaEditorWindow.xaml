@@ -213,7 +213,7 @@
                                   MinHeight="155"
                                   GridLinesVisibility="Horizontal">
                             <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="Producto" Width="*">
+                                <DataGridTemplateColumn Header="Producto" Width="600">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <ComboBox ItemsSource="{Binding Productos}"
@@ -224,16 +224,16 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
-                                <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="95"/>
-                                <DataGridTextColumn Header="Dscto." Binding="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="85"/>
-                                <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" IsReadOnly="True" Width="95"/>
+                                <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                                <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="85"/>
+                                <DataGridTextColumn Header="Dscto." Binding="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="65"/>
+                                <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" IsReadOnly="True" Width="75"/>
                                 <DataGridTextColumn Header="Observación" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="190"/>
                                 <DataGridTemplateColumn Header="" Width="62">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Content="Quitar"
-                                                    Height="28"
+                                                    Height="28" 
                                                     Command="{Binding DataContext.QuitarProductoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                     CommandParameter="{Binding}"/>
                                         </DataTemplate>

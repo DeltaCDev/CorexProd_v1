@@ -376,6 +376,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 OrdenCompraCliente = OrdenCompraCliente,
                 IdCliente = ClienteSeleccionado?.IdCliente ?? 0,
                 Observacion = Observacion,
+                UsuarioGenerador = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema",
                 Detalles = Detalles.Select(d => d.CrearDetalle()).ToList()
             };
 
