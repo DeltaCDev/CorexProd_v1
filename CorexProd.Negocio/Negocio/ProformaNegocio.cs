@@ -25,6 +25,11 @@ namespace CorexProd.Negocio.Negocio
             return _proformaDatos.Obtener(idProforma);
         }
 
+        public string ObtenerSiguienteSerieNumero()
+        {
+            return _proformaDatos.ObtenerSiguienteSerieNumero();
+        }
+
         public string Guardar(Proforma proforma)
         {
             proforma.OrdenCompraCliente = proforma.OrdenCompraCliente.Trim();

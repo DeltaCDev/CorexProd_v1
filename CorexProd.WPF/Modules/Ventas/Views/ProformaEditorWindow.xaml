@@ -4,6 +4,7 @@
         Title="{Binding Titulo}"
         Width="1160"
         Height="760"
+        WindowState="Maximized"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
 
@@ -144,7 +145,15 @@
 
                                     <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,10,12">
                                         <TextBlock Text="Nro Documento" Style="{StaticResource LabelCampo}"/>
-                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoClienteNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <DockPanel LastChildFill="True">
+                                            <Button DockPanel.Dock="Right"
+                                                    Content="Consultar"
+                                                    Width="82"
+                                                    Height="30"
+                                                    Margin="8,0,0,0"
+                                                    Command="{Binding ConsultarNuevoClienteDocumentoCommand}"/>
+                                            <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoClienteNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
                                     </StackPanel>
 
                                     <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,10,12">

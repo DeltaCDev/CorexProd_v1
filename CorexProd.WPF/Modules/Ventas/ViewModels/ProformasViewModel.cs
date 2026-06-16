@@ -4,10 +4,12 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Ventas.Views;
 using CorexProd.WPF.ViewModels;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -17,6 +19,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     public class ProformasViewModel : BaseViewModel
     {
         private readonly ProformaNegocio _proformaNegocio = new();
+        private readonly EmpresaNegocio _empresaNegocio = new();
         private readonly List<Proforma> _todasLasProformas = [];
         private Proforma? _proformaSeleccionada;
         private string _textoBusqueda = string.Empty;
@@ -63,6 +66,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ICommand EditarCommand { get; }
         public ICommand VerCommand { get; }
         public ICommand CopiarCommand { get; }
+        public ICommand ImprimirCommand { get; }
         public ICommand AnularCommand { get; }
         public ICommand GenerarOciCommand { get; }
         public ICommand RefrescarCommand { get; }
@@ -73,6 +77,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             VerCommand = new RelayCommand(parametro => Ver(parametro));
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             CopiarCommand = new RelayCommand(parametro => Copiar(parametro));
+            ImprimirCommand = new RelayCommand(parametro => Imprimir(parametro));
             AnularCommand = new RelayCommand(parametro => Anular(parametro));
             GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"));
             RefrescarCommand = new RelayCommand(_ => CargarProformas());
@@ -176,6 +181,51 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if (proforma != null)
             {
                 AbrirEditor(proforma, true);
+            }
+        }
+
+        private void Imprimir(object? parametro)
+        {
+            Proforma? proforma = ObtenerProforma(parametro);
+
+            if (proforma == null)
+            {
+                return;
+            }
+
+            Empresa? empresa = _empresaNegocio.ObtenerPredeterminada();
+
+            if (empresa == null)
+            {
+                NotificationService.Warning("Debe registrar una empresa predeterminada antes de imprimir");
+                return;
+            }
+
+            SaveFileDialog dialog = new()
+            {
+                Title = "Guardar proforma",
+                FileName = $"Proforma_{proforma.SerieNumero}.pdf",
+                Filter = "PDF|*.pdf"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                ProformaPdfExporter.Exportar(dialog.FileName, empresa, proforma);
+                NotificationService.Success("Proforma generada correctamente");
+
+                Process.Start(new ProcessStartInfo(dialog.FileName)
+                {
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error($"No se pudo generar la proforma: {ex.Message}");
             }
         }
 

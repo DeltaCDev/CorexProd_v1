@@ -408,6 +408,9 @@
                                                 <MenuItem Header="Copiar"
                                                           Command="{Binding Tag.CopiarCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"
                                                           CommandParameter="{Binding}"/>
+                                                <MenuItem Header="Imprimir"
+                                                          Command="{Binding Tag.ImprimirCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"
+                                                          CommandParameter="{Binding}"/>
                                                 <MenuItem Header="Anular"
                                                           Command="{Binding Tag.AnularCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"
                                                           CommandParameter="{Binding}"/>

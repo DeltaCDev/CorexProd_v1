@@ -5,7 +5,12 @@ using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
+using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,6 +18,14 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 {
     public class ProformaEditorViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly ProformaNegocio _proformaNegocio = new();
         private readonly ClienteNegocio _clienteNegocio = new();
         private readonly ProductoNegocio _productoNegocio = new();
@@ -31,6 +44,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private string _nuevoClienteDireccion = string.Empty;
         private string _nuevoClienteTelefono = string.Empty;
         private string _nuevoClienteCorreo = string.Empty;
+        private bool _isConsultandoNuevoClienteDocumento;
 
         public ObservableCollection<Cliente> Clientes { get; } = [];
         public ObservableCollection<Producto> Productos { get; } = [];
@@ -185,6 +199,17 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
         }
 
+        public bool IsConsultandoNuevoClienteDocumento
+        {
+            get => _isConsultandoNuevoClienteDocumento;
+            set
+            {
+                _isConsultandoNuevoClienteDocumento = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         public decimal Subtotal => Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
         public decimal Descuento => Detalles.Sum(d => d.Descuento);
         public decimal Igv => 0;
@@ -195,6 +220,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand CancelarCommand { get; }
         public ICommand MostrarClienteRapidoCommand { get; }
+        public ICommand ConsultarNuevoClienteDocumentoCommand { get; }
         public ICommand GuardarClienteRapidoCommand { get; }
         public ICommand CancelarClienteRapidoCommand { get; }
 
@@ -205,6 +231,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             GuardarCommand = new RelayCommand(_ => Guardar());
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             MostrarClienteRapidoCommand = new RelayCommand(_ => MostrarClienteRapido = true);
+            ConsultarNuevoClienteDocumentoCommand = new RelayCommand(
+                async _ => await ConsultarNuevoClienteDocumentoAsync(),
+                _ => !IsConsultandoNuevoClienteDocumento);
             GuardarClienteRapidoCommand = new RelayCommand(_ => GuardarClienteRapido());
             CancelarClienteRapidoCommand = new RelayCommand(_ => LimpiarClienteRapido());
 
@@ -217,6 +246,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
             else
             {
+                SerieNumero = _proformaNegocio.ObtenerSiguienteSerieNumero();
                 AgregarFila();
             }
         }
@@ -244,7 +274,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private void CargarProforma(Proforma proforma, bool copiar)
         {
             IdProforma = copiar ? 0 : proforma.IdProforma;
-            SerieNumero = copiar ? string.Empty : proforma.SerieNumero;
+            SerieNumero = copiar ? _proformaNegocio.ObtenerSiguienteSerieNumero() : proforma.SerieNumero;
             FechaEmision = DateTime.Today;
             FechaVencimiento = DateTime.Today;
             OrdenCompraCliente = proforma.OrdenCompraCliente;
@@ -353,6 +383,125 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 .FirstOrDefault(c => c.NumeroDocumento == NuevoClienteNumeroDocumento.Trim()
                     && c.NombreRazonSocial == NuevoClienteNombre.Trim());
             LimpiarClienteRapido();
+        }
+
+        private async Task ConsultarNuevoClienteDocumentoAsync()
+        {
+            string tipoDocumento = NuevoClienteTipoDocumento.Trim().ToUpperInvariant();
+            string numeroDocumento = NuevoClienteNumeroDocumento.Trim();
+
+            if (tipoDocumento != "DNI" && tipoDocumento != "RUC")
+            {
+                NotificationService.Warning("La consulta solo esta disponible para DNI y RUC");
+                return;
+            }
+
+            int longitudEsperada = tipoDocumento == "DNI" ? 8 : 11;
+
+            if (numeroDocumento.Length != longitudEsperada || !numeroDocumento.All(char.IsDigit))
+            {
+                NotificationService.Warning($"Ingrese un {tipoDocumento} valido de {longitudEsperada} digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoNuevoClienteDocumento = true;
+
+                using JsonDocument respuesta = await ConsultarApiDocumentoAsync(tipoDocumento, numeroDocumento);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el documento");
+                    return;
+                }
+
+                string? nombre = ObtenerTexto(raiz, "nombre_completo", "nombre_o_razon_social", "razon_social", "nombre");
+                string? direccion = ObtenerTexto(raiz, "direccion", "domicilio_fiscal");
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio nombre o razon social");
+                    return;
+                }
+
+                NuevoClienteNombre = nombre;
+
+                if (!string.IsNullOrWhiteSpace(direccion))
+                {
+                    NuevoClienteDireccion = direccion;
+                }
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoNuevoClienteDocumento = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiDocumentoAsync(string tipoDocumento, string numeroDocumento)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+            string campoDocumento = tipoDocumento == "RUC" ? "ruc" : "dni";
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                [campoDocumento] = numeroDocumento
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+            {
+                return false;
+            }
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    return valor.GetString();
+                }
+            }
+
+            return null;
         }
 
         private void LimpiarClienteRapido()

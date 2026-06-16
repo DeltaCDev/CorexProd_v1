@@ -77,6 +77,44 @@ namespace CorexProd.Datos.Datos
             return proforma;
         }
 
+        public string ObtenerSiguienteSerieNumero()
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                """
+                SELECT
+                    Serie = MAX(CASE WHEN CodigoParametro = 'PROFORMA_SERIE' THEN ValorParametro END),
+                    Correlativo = MAX(CASE WHEN CodigoParametro = 'PROFORMA_CORRELATIVO' THEN ValorParametro END)
+                FROM dbo.Parametros
+                WHERE CodigoParametro IN ('PROFORMA_SERIE', 'PROFORMA_CORRELATIVO');
+                """,
+                conexion);
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            if (!dr.Read())
+            {
+                return "PF-000001";
+            }
+
+            string serie = dr["Serie"]?.ToString() ?? string.Empty;
+            string correlativoTexto = dr["Correlativo"]?.ToString() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(serie))
+            {
+                serie = "PF";
+            }
+
+            if (!int.TryParse(correlativoTexto, out int correlativo) || correlativo <= 0)
+            {
+                correlativo = 1;
+            }
+
+            return $"{serie}-{correlativo:000000}";
+        }
+
         public string Guardar(Proforma proforma)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();

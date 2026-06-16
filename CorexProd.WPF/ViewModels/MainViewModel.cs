@@ -474,6 +474,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Empresa"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Empresa",
+                    Vista = "Empresa"
+                });
+            }
+
             if (menusPermitidos.Contains("Cargos"))
             {
                 seguridad.Hijos.Add(new MenuItemSistema
@@ -527,6 +536,11 @@ namespace CorexProd.WPF.ViewModels
                 case "Clientes":
                     Titulo = "Clientes";
                     VistaActual = new ClientesView();
+                    break;
+
+                case "Empresa":
+                    Titulo = "Empresa";
+                    VistaActual = new EmpresasView();
                     break;
 
                 case "Cargos":
