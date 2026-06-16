@@ -34,6 +34,38 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+
+        <Style x:Key="BotonIconoProforma" TargetType="Button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F3F4F6"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#E5E7EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -93,37 +125,46 @@
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40"/>
-                    <DataGridTemplateColumn Header="Acciones" Width="292">
+                    <DataGridTemplateColumn Header="Acciones" Width="224">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="📝"
-                        Style="{StaticResource BotonAccionProforma}"
-                        Background="#2563EB"
-                        Width="40"
-                        Margin="0,0,6,0"
-                        Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"/>
-                                    <Button Content="Copiar"
-                                            Style="{StaticResource BotonAccionProforma}"
-                                            Background="#4F46E5"
-                                            Width="62"
+                                    <Button Style="{StaticResource BotonIconoProforma}"
+                                            ToolTip="Editar"
                                             Margin="0,0,6,0"
-                        Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"/>
-                                    <Button Content="Anular"
-                                            Style="{StaticResource BotonAccionProforma}"
-                                            Background="#DC2626"
-                                            Width="62"
+                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE70F;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="14"
+                                                   Foreground="#2563EB"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonIconoProforma}"
+                                            ToolTip="Copiar"
                                             Margin="0,0,6,0"
-                        Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"/>
+                                            Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE8C8;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="14"
+                                                   Foreground="#4F46E5"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonIconoProforma}"
+                                            ToolTip="Anular"
+                                            Margin="0,0,6,0"
+                                            Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE711;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="14"
+                                                   Foreground="#DC2626"/>
+                                    </Button>
                                     <Button Content="Generar OCI"
                                             Style="{StaticResource BotonAccionProforma}"
                                             Background="#059669"
                                             Width="100"
-                        Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"/>
+                                            Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
