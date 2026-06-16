@@ -10,18 +10,23 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     {
         private int _idProformaDetalle;
         private Producto? _productoSeleccionado;
+        private Producto? _productoResaltado;
+        private string _textoBusquedaProducto = string.Empty;
+        private bool _productoDropdownAbierto;
+        private bool _actualizandoTextoDesdeSeleccion;
         private decimal _cantidad = 1;
         private decimal _precioUnitario;
         private decimal _descuento;
         private string _observacion = string.Empty;
+        private readonly ObservableCollection<Producto> _productos;
 
-        public ObservableCollection<Producto> Productos { get; }
+        public ObservableCollection<Producto> ProductosFiltrados { get; } = [];
         public event Action? TotalesActualizados;
         public event Action<ProformaDetalleItemViewModel, Producto>? ProductoCambiado;
 
         public ProformaDetalleItemViewModel(ObservableCollection<Producto> productos)
         {
-            Productos = productos;
+            _productos = productos;
         }
 
         public int IdProformaDetalle
@@ -50,12 +55,57 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
                 if (value != null)
                 {
+                    ActualizarTextoProductoSeleccionado(value.ProductoBusqueda);
                     ProductoCambiado?.Invoke(this, value);
                 }
             }
         }
 
         public int IdProducto => ProductoSeleccionado?.IdProducto ?? 0;
+
+        public Producto? ProductoResaltado
+        {
+            get => _productoResaltado;
+            set
+            {
+                _productoResaltado = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string TextoBusquedaProducto
+        {
+            get => _textoBusquedaProducto;
+            set
+            {
+                _textoBusquedaProducto = value ?? string.Empty;
+                OnPropertyChanged();
+                FiltrarProductos();
+            }
+        }
+
+        public bool ProductoDropdownAbierto
+        {
+            get => _productoDropdownAbierto;
+            set
+            {
+                _productoDropdownAbierto = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void SeleccionarProductoBusqueda()
+        {
+            Producto? producto = ProductoResaltado ?? ProductosFiltrados.FirstOrDefault();
+
+            if (producto == null)
+            {
+                return;
+            }
+
+            ProductoDropdownAbierto = false;
+            ProductoSeleccionado = producto;
+        }
 
         public decimal Cantidad
         {
@@ -104,9 +154,20 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         public void CargarProducto(int idProducto)
         {
-            _productoSeleccionado = Productos.FirstOrDefault(p => p.IdProducto == idProducto);
+            _productoSeleccionado = _productos.FirstOrDefault(p => p.IdProducto == idProducto);
+            _textoBusquedaProducto = _productoSeleccionado?.ProductoBusqueda ?? string.Empty;
+            ProductosFiltrados.Clear();
+            ProductoResaltado = null;
+
+            if (_productoSeleccionado != null)
+            {
+                ProductosFiltrados.Add(_productoSeleccionado);
+                ProductoResaltado = _productoSeleccionado;
+            }
+
             OnPropertyChanged(nameof(ProductoSeleccionado));
             OnPropertyChanged(nameof(IdProducto));
+            OnPropertyChanged(nameof(TextoBusquedaProducto));
         }
 
         public ProformaDetalle CrearDetalle()
@@ -127,6 +188,51 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             OnPropertyChanged(nameof(Importe));
             TotalesActualizados?.Invoke();
+        }
+
+        private void FiltrarProductos()
+        {
+            if (_actualizandoTextoDesdeSeleccion)
+            {
+                return;
+            }
+
+            string texto = TextoBusquedaProducto.Trim();
+
+            if (ProductoSeleccionado != null && !texto.Equals(ProductoSeleccionado.ProductoBusqueda, StringComparison.OrdinalIgnoreCase))
+            {
+                _productoSeleccionado = null;
+                OnPropertyChanged(nameof(ProductoSeleccionado));
+                OnPropertyChanged(nameof(IdProducto));
+            }
+
+            ProductosFiltrados.Clear();
+            ProductoResaltado = null;
+
+            if (texto.Length < 3)
+            {
+                ProductoDropdownAbierto = false;
+                return;
+            }
+
+            foreach (Producto producto in _productos
+                .Where(p => p.Codigo.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                    || p.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase))
+                .Take(30))
+            {
+                ProductosFiltrados.Add(producto);
+            }
+
+            ProductoResaltado = ProductosFiltrados.FirstOrDefault();
+            ProductoDropdownAbierto = ProductosFiltrados.Count > 0;
+        }
+
+        private void ActualizarTextoProductoSeleccionado(string texto)
+        {
+            _actualizandoTextoDesdeSeleccion = true;
+            _textoBusquedaProducto = texto;
+            OnPropertyChanged(nameof(TextoBusquedaProducto));
+            _actualizandoTextoDesdeSeleccion = false;
         }
     }
 }

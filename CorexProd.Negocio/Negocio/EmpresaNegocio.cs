@@ -65,7 +65,6 @@ namespace CorexProd.Negocio.Negocio
             empresa.Provincia = empresa.Provincia.Trim();
             empresa.Distrito = empresa.Distrito.Trim();
             empresa.Direccion = empresa.Direccion.Trim();
-            empresa.Logo = empresa.Logo.Trim();
             empresa.CodigoCliente = empresa.CodigoCliente.Trim();
             empresa.LicenciaActivacion = empresa.LicenciaActivacion.Trim();
         }

@@ -26,6 +26,11 @@
             <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="6,0"/>
         </Style>
+
+        <Style x:Key="ProductoBusquedaItem" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -225,11 +230,31 @@
                                 <DataGridTemplateColumn Header="Producto" Width="600">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <ComboBox ItemsSource="{Binding Productos}"
-                                                      DisplayMemberPath="NombreProducto"
-                                                      SelectedItem="{Binding ProductoSeleccionado, UpdateSourceTrigger=PropertyChanged}"
-                                                      IsTextSearchEnabled="True"
-                                                      MinWidth="360"/>
+                                            <Grid MinWidth="360">
+                                                <TextBox Height="28"
+                                                         Padding="8,0"
+                                                         VerticalContentAlignment="Center"
+                                                         Text="{Binding TextoBusquedaProducto, UpdateSourceTrigger=PropertyChanged}"
+                                                         PreviewKeyDown="ProductoBusquedaTextBox_PreviewKeyDown"/>
+                                                <Popup IsOpen="{Binding ProductoDropdownAbierto, Mode=TwoWay}"
+                                                       Placement="Bottom"
+                                                       StaysOpen="False"
+                                                       AllowsTransparency="True"
+                                                       Width="560">
+                                                    <Border Background="White"
+                                                            BorderBrush="#9CA3AF"
+                                                            BorderThickness="1"
+                                                            MaxHeight="220">
+                                                        <ListBox ItemsSource="{Binding ProductosFiltrados}"
+                                                                 SelectedItem="{Binding ProductoResaltado, Mode=TwoWay}"
+                                                                 DisplayMemberPath="ProductoBusqueda"
+                                                                 ItemContainerStyle="{StaticResource ProductoBusquedaItem}"
+                                                                 PreviewKeyDown="ProductoBusquedaListBox_PreviewKeyDown"
+                                                                 PreviewMouseLeftButtonUp="ProductoBusquedaListBox_PreviewMouseLeftButtonUp"
+                                                                 MouseDoubleClick="ProductoBusquedaListBox_MouseDoubleClick"/>
+                                                    </Border>
+                                                </Popup>
+                                            </Grid>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>

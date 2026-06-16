@@ -5,6 +5,7 @@ using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
 using System;
+using System.IO;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
@@ -23,7 +24,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _provincia = string.Empty;
         private string _distrito = string.Empty;
         private string _direccion = string.Empty;
-        private string _logo = string.Empty;
+        private byte[]? _logo;
+        private string _logoResumen = "Sin logo seleccionado";
         private string _codigoCliente = string.Empty;
         private string _licenciaActivacion = string.Empty;
         private bool _esPredeterminada;
@@ -134,12 +136,25 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
         }
 
-        public string Logo
+        public byte[]? Logo
         {
             get => _logo;
             set
             {
                 _logo = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TieneLogo));
+            }
+        }
+
+        public bool TieneLogo => Logo?.Length > 0;
+
+        public string LogoResumen
+        {
+            get => _logoResumen;
+            set
+            {
+                _logoResumen = value;
                 OnPropertyChanged();
             }
         }
@@ -264,7 +279,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
             if (dialog.ShowDialog() == true)
             {
-                Logo = dialog.FileName;
+                Logo = File.ReadAllBytes(dialog.FileName);
+                LogoResumen = Path.GetFileName(dialog.FileName);
             }
         }
 
@@ -281,6 +297,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             Distrito = empresa.Distrito;
             Direccion = empresa.Direccion;
             Logo = empresa.Logo;
+            LogoResumen = TieneLogo ? "Logo guardado en BD" : "Sin logo seleccionado";
             CodigoCliente = empresa.CodigoCliente;
             LicenciaActivacion = empresa.LicenciaActivacion;
             EsPredeterminada = empresa.EsPredeterminada;

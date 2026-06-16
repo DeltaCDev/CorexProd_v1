@@ -75,11 +75,11 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             NuevoCommand = new RelayCommand(_ => AbrirEditor(null, false));
             VerCommand = new RelayCommand(parametro => Ver(parametro));
-            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro), PuedeModificar);
             CopiarCommand = new RelayCommand(parametro => Copiar(parametro));
             ImprimirCommand = new RelayCommand(parametro => Imprimir(parametro));
-            AnularCommand = new RelayCommand(parametro => Anular(parametro));
-            GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"));
+            AnularCommand = new RelayCommand(parametro => Anular(parametro), PuedeAnular);
+            GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"), PuedeModificar);
             RefrescarCommand = new RelayCommand(_ => CargarProformas());
 
             if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
@@ -137,6 +137,21 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private static bool Contiene(string valor, string busqueda)
         {
             return valor?.Contains(busqueda, StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private static bool EsAnulada(Proforma? proforma)
+        {
+            return proforma?.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private static bool PuedeModificar(object? parametro)
+        {
+            return parametro is Proforma proforma && !EsAnulada(proforma);
+        }
+
+        private static bool PuedeAnular(object? parametro)
+        {
+            return parametro is Proforma proforma && !EsAnulada(proforma) && !proforma.TieneOrdenCompraInterna;
         }
 
         private void Editar(object? parametro)
@@ -236,6 +251,12 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if (proforma == null)
             {
                 NotificationService.Warning("Debe seleccionar una proforma");
+                return;
+            }
+
+            if (EsAnulada(proforma))
+            {
+                NotificationService.Warning("La proforma ya se encuentra anulada");
                 return;
             }
 

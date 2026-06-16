@@ -21,6 +21,20 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
 
+        <Style x:Key="EstadoCabecera" TargetType="TextBlock">
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#166534"/>
+            <Setter Property="Background" Value="#BBF7D0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Foreground" Value="#BE123C"/>
+                    <Setter Property="Background" Value="#FFE4E6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type DataGrid}">
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#111827"/>
@@ -77,11 +91,7 @@
                        VerticalAlignment="Center"/>
             <TextBlock DockPanel.Dock="Right"
                        Text="{Binding Estado}"
-                       Padding="12,5"
-                       FontWeight="SemiBold"
-                       Foreground="#166534"
-                       Background="#BBF7D0"
-                       VerticalAlignment="Center"/>
+                       Style="{StaticResource EstadoCabecera}"/>
         </DockPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -149,9 +159,10 @@
                                   IsReadOnly="True"
                                   MinHeight="260">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*"/>
-                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" Width="110"/>
-                                <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion}" Width="260"/>
+                                <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="80"/>
+                                <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="550"/>
+                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
+                                <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion}" Width="230"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </StackPanel>

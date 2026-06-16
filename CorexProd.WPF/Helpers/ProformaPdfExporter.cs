@@ -3,8 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Resources;
 
 namespace CorexProd.WPF.Helpers
 {
@@ -34,22 +39,37 @@ namespace CorexProd.WPF.Helpers
         {
             string nombreEmpresa = string.IsNullOrWhiteSpace(empresa.NombreComercial) ? empresa.Nombre : empresa.NombreComercial;
             string ubicacion = UnirPartes(empresa.Departamento, empresa.Provincia, empresa.Distrito);
+            byte[]? logoBytes = ObtenerLogoBytes(empresa);
 
-            canvas.Text(Limpiar(nombreEmpresa).ToUpperInvariant(), Margin, y, 14, true);
+            if (logoBytes != null)
+            {
+                canvas.Image(logoBytes, Margin, y - 44, 86, 44);
+            }
+
+            double infoX = logoBytes == null ? Margin : Margin + 98;
+
+            canvas.Text(Limpiar(nombreEmpresa).ToUpperInvariant(), infoX, y, 14, true);
             y -= 15;
-            canvas.Text($"RUC: {empresa.Ruc}", Margin, y, 9);
+            canvas.Text($"RUC: {empresa.Ruc}", infoX, y, 9);
             y -= 12;
-            canvas.Text(Limpiar(empresa.Direccion), Margin, y, 8);
+            canvas.Text(Limpiar(empresa.Direccion), infoX, y, 8);
             y -= 11;
-            canvas.Text(Limpiar(ubicacion), Margin, y, 8);
+            canvas.Text(Limpiar(ubicacion), infoX, y, 8);
             y -= 11;
-            canvas.Text(Limpiar(UnirPartes(empresa.Telefono, empresa.Correo)), Margin, y, 8);
+            canvas.Text(Limpiar(UnirPartes(empresa.Telefono, empresa.Correo)), infoX, y, 8);
 
-            double boxX = PageWidth - Margin - 170;
-            double boxY = PageHeight - Margin - 70;
-            canvas.Rectangle(boxX, boxY, 170, 70);
-            canvas.CenterText("PROFORMA", boxX + 85, boxY + 45, 14, true);
-            canvas.CenterText(proforma.SerieNumero, boxX + 85, boxY + 25, 12, true);
+            double boxWidth = 140;
+            double boxHeight = 56;
+            double boxX = PageWidth - Margin - boxWidth;
+            double boxY = PageHeight - Margin - boxHeight - 4;
+            canvas.Rectangle(boxX, boxY, boxWidth, boxHeight);
+            canvas.CenterText("PROFORMA", boxX + (boxWidth / 2), boxY + 34, 13, true);
+            canvas.CenterText(proforma.SerieNumero, boxX + (boxWidth / 2), boxY + 17, 11, true);
+
+            if (proforma.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase))
+            {
+                canvas.CenterText("ANULADO", boxX + (boxWidth / 2), boxY + 5, 8, true, 190, 18, 60);
+            }
 
             y -= 22;
             canvas.Line(Margin, y, PageWidth - Margin, y);
@@ -80,18 +100,19 @@ namespace CorexProd.WPF.Helpers
             double x = Margin;
             double w = PageWidth - (Margin * 2);
             double headerHeight = 22;
-            double rowHeight = 21;
 
-            double colProducto = 220;
+            double colCodigo = 70;
+            double colProducto = 230;
             double colCantidad = 55;
-            double colPrecio = 70;
-            double colDescuento = 70;
+            double colPrecio = 60;
+            double colDescuento = 55;
 
             canvas.Rectangle(x, y - headerHeight, w, headerHeight);
-            canvas.Text("Producto / Servicio", x + 6, y - 14, 8, true);
-            canvas.RightText("Cant.", x + colProducto + colCantidad - 8, y - 14, 8, true);
-            canvas.RightText("P. Unit.", x + colProducto + colCantidad + colPrecio - 8, y - 14, 8, true);
-            canvas.RightText("Dscto.", x + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8, true);
+            canvas.Text("Codigo", x + 6, y - 14, 8, true);
+            canvas.Text("Producto / Servicio", x + colCodigo + 6, y - 14, 8, true);
+            canvas.RightText("Cant.", x + colCodigo + colProducto + colCantidad - 8, y - 14, 8, true);
+            canvas.RightText("P. Unit.", x + colCodigo + colProducto + colCantidad + colPrecio - 8, y - 14, 8, true);
+            canvas.RightText("Dscto.", x + colCodigo + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8, true);
             canvas.RightText("Importe", x + w - 8, y - 14, 8, true);
 
             y -= headerHeight;
@@ -103,20 +124,29 @@ namespace CorexProd.WPF.Helpers
                     break;
                 }
 
+                string producto = detalle.NombreProducto;
+                if (!string.IsNullOrWhiteSpace(detalle.Observacion))
+                {
+                    producto = $"{producto} (OBS. {detalle.Observacion})";
+                }
+
+                List<string> lineasProducto = EnvolverTexto(canvas, Limpiar(producto), colProducto - 12, 8);
+                double rowHeight = Math.Max(21, 10 + (lineasProducto.Count * 9));
+
                 canvas.Rectangle(x, y - rowHeight, w, rowHeight);
-                canvas.Text(Truncar(Limpiar(detalle.NombreProducto), 42), x + 6, y - 14, 8);
-                canvas.RightText(FormatoCantidad(detalle.Cantidad), x + colProducto + colCantidad - 8, y - 14, 8);
-                canvas.RightText(FormatoMoneda(detalle.PrecioUnitario), x + colProducto + colCantidad + colPrecio - 8, y - 14, 8);
-                canvas.RightText(FormatoMoneda(detalle.Descuento), x + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8);
+
+                canvas.Text(Truncar(Limpiar(detalle.CodigoProducto), 13), x + 6, y - 14, 8);
+
+                for (int i = 0; i < lineasProducto.Count; i++)
+                {
+                    canvas.Text(lineasProducto[i], x + colCodigo + 6, y - 14 - (i * 9), 8);
+                }
+
+                canvas.RightText(FormatoCantidad(detalle.Cantidad), x + colCodigo + colProducto + colCantidad - 8, y - 14, 8);
+                canvas.RightText(FormatoMoneda(detalle.PrecioUnitario), x + colCodigo + colProducto + colCantidad + colPrecio - 8, y - 14, 8);
+                canvas.RightText(FormatoMoneda(detalle.Descuento), x + colCodigo + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8);
                 canvas.RightText(FormatoMoneda(detalle.Importe), x + w - 8, y - 14, 8);
                 y -= rowHeight;
-
-                if (!string.IsNullOrWhiteSpace(detalle.Observacion) && y >= 125)
-                {
-                    canvas.Rectangle(x, y - rowHeight, w, rowHeight);
-                    canvas.Text($"Obs: {Truncar(Limpiar(detalle.Observacion), 82)}", x + 6, y - 14, 7);
-                    y -= rowHeight;
-                }
             }
 
             y -= 15;
@@ -160,6 +190,87 @@ namespace CorexProd.WPF.Helpers
             return string.Join(" - ", partes.Where(p => !string.IsNullOrWhiteSpace(p)));
         }
 
+        private static List<string> EnvolverTexto(PdfCanvas canvas, string texto, double maxWidth, double fontSize)
+        {
+            List<string> lineas = [];
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                lineas.Add(string.Empty);
+                return lineas;
+            }
+
+            string[] palabras = texto.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            StringBuilder linea = new();
+
+            foreach (string palabra in palabras)
+            {
+                string candidata = linea.Length == 0 ? palabra : $"{linea} {palabra}";
+
+                if (canvas.MeasureText(candidata, fontSize) <= maxWidth)
+                {
+                    linea.Clear();
+                    linea.Append(candidata);
+                    continue;
+                }
+
+                if (linea.Length > 0)
+                {
+                    lineas.Add(linea.ToString());
+                    linea.Clear();
+                }
+
+                if (canvas.MeasureText(palabra, fontSize) <= maxWidth)
+                {
+                    linea.Append(palabra);
+                }
+                else
+                {
+                    foreach (string parte in DividirPalabra(canvas, palabra, maxWidth, fontSize))
+                    {
+                        if (canvas.MeasureText(parte, fontSize) <= maxWidth && parte != palabra)
+                        {
+                            lineas.Add(parte);
+                        }
+                        else
+                        {
+                            linea.Append(parte);
+                        }
+                    }
+                }
+            }
+
+            if (linea.Length > 0)
+            {
+                lineas.Add(linea.ToString());
+            }
+
+            return lineas;
+        }
+
+        private static IEnumerable<string> DividirPalabra(PdfCanvas canvas, string palabra, double maxWidth, double fontSize)
+        {
+            StringBuilder parte = new();
+
+            foreach (char caracter in palabra)
+            {
+                string candidata = parte.ToString() + caracter;
+
+                if (parte.Length > 0 && canvas.MeasureText(candidata, fontSize) > maxWidth)
+                {
+                    yield return parte.ToString();
+                    parte.Clear();
+                }
+
+                parte.Append(caracter);
+            }
+
+            if (parte.Length > 0)
+            {
+                yield return parte.ToString();
+            }
+        }
+
         private static string FormatoMoneda(decimal value)
         {
             return $"S/ {value:N2}";
@@ -193,6 +304,76 @@ namespace CorexProd.WPF.Helpers
                 .Replace("ñ", "n").Replace("Ñ", "N").Replace("¿", "").Replace("¡", "");
         }
 
+        private static byte[]? ObtenerLogoBytes(Empresa empresa)
+        {
+            if (EsImagenValida(empresa.Logo))
+            {
+                return empresa.Logo;
+            }
+
+            string baseDirectory = AppContext.BaseDirectory;
+            string[] rutas =
+            [
+                Path.Combine(baseDirectory, "Images", "LOGO.png"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images", "LOGO.png"),
+                Path.GetFullPath(Path.Combine(baseDirectory, "..", "..", "..", "Images", "LOGO.png")),
+                Path.GetFullPath(Path.Combine(baseDirectory, "..", "..", "..", "..", "CorexProd.WPF", "Images", "LOGO.png")),
+                Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Images", "LOGO.png")),
+                Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "CorexProd.WPF", "Images", "LOGO.png"))
+            ];
+
+            string? logoPath = rutas.FirstOrDefault(path => File.Exists(path) && EsImagenValida(path));
+
+            if (!string.IsNullOrWhiteSpace(logoPath))
+            {
+                return File.ReadAllBytes(logoPath);
+            }
+
+            StreamResourceInfo? resource = Application.GetResourceStream(new Uri("pack://application:,,,/Images/LOGO.png", UriKind.Absolute));
+
+            if (resource?.Stream == null)
+            {
+                return null;
+            }
+
+            using MemoryStream stream = new();
+            resource.Stream.CopyTo(stream);
+            return stream.ToArray();
+        }
+
+        private static bool EsImagenValida(string path)
+        {
+            try
+            {
+                using FileStream stream = File.OpenRead(path);
+                BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool EsImagenValida(byte[]? bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                using MemoryStream stream = new(bytes);
+                BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private sealed class SimplePdfDocument
         {
             private readonly List<PdfCanvas> _pages = [];
@@ -207,7 +388,8 @@ namespace CorexProd.WPF.Helpers
             public void Save(string path)
             {
                 int pageCount = _pages.Count;
-                int objectCount = 4 + (pageCount * 2);
+                List<PdfImage> images = _pages.SelectMany(page => page.Images).ToList();
+                int objectCount = 4 + (pageCount * 2) + images.Count;
                 byte[][] objects = new byte[objectCount + 1][];
 
                 int[] pageObjectIds = new int[pageCount];
@@ -220,6 +402,11 @@ namespace CorexProd.WPF.Helpers
                     contentObjectIds[i] = nextId++;
                 }
 
+                foreach (PdfImage image in images)
+                {
+                    image.ObjectId = nextId++;
+                }
+
                 string kids = string.Join(" ", pageObjectIds.Select(id => $"{id} 0 R"));
 
                 objects[1] = AsciiObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
@@ -230,11 +417,19 @@ namespace CorexProd.WPF.Helpers
                 for (int i = 0; i < pageCount; i++)
                 {
                     PdfCanvas page = _pages[i];
+                    string xObjects = page.Images.Count == 0
+                        ? string.Empty
+                        : $" /XObject << {string.Join(" ", page.Images.Select(image => $"/{image.Name} {image.ObjectId} 0 R"))} >>";
                     objects[pageObjectIds[i]] = AsciiObject(
                         pageObjectIds[i],
-                        $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectIds[i]} 0 R >>");
+                        $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xObjects} >> /Contents {contentObjectIds[i]} 0 R >>");
 
                     objects[contentObjectIds[i]] = StreamObject(contentObjectIds[i], page.Content);
+                }
+
+                foreach (PdfImage image in images)
+                {
+                    objects[image.ObjectId] = ImageObject(image);
                 }
 
                 using FileStream stream = File.Create(path);
@@ -278,6 +473,19 @@ namespace CorexProd.WPF.Helpers
                 return stream.ToArray();
             }
 
+            private static byte[] ImageObject(PdfImage image)
+            {
+                byte[] header = Encoding.ASCII.GetBytes(
+                    $"{image.ObjectId} 0 obj\n<< /Type /XObject /Subtype /Image /Width {image.Width} /Height {image.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {image.Data.Length} >>\nstream\n");
+                byte[] footer = Encoding.ASCII.GetBytes("endstream\nendobj\n");
+
+                using MemoryStream stream = new();
+                stream.Write(header);
+                stream.Write(image.Data);
+                stream.Write(footer);
+                return stream.ToArray();
+            }
+
             private static void WriteAscii(Stream stream, string value)
             {
                 stream.Write(Encoding.ASCII.GetBytes(value));
@@ -287,6 +495,7 @@ namespace CorexProd.WPF.Helpers
         private sealed class PdfCanvas
         {
             private readonly StringBuilder _content = new();
+            private int _imageCounter;
 
             public PdfCanvas(double width, double height)
             {
@@ -296,11 +505,17 @@ namespace CorexProd.WPF.Helpers
 
             public double Width { get; }
             public double Height { get; }
+            public List<PdfImage> Images { get; } = [];
             public string Content => _content.ToString();
 
             public void Text(string text, double x, double y, double size, bool bold = false)
             {
-                _content.Append("0 0 0 rg ");
+                Text(text, x, y, size, bold, 0, 0, 0);
+            }
+
+            public void Text(string text, double x, double y, double size, bool bold, byte red, byte green, byte blue)
+            {
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg ");
                 _content.Append("BT /");
                 _content.Append(bold ? "F2" : "F1");
                 _content.Append(' ');
@@ -320,10 +535,57 @@ namespace CorexProd.WPF.Helpers
                 Text(text, rightX - textWidth, y, size, bold);
             }
 
+            public double MeasureText(string text, double size, bool bold = false)
+            {
+                return ApproximateWidth(text, size, bold);
+            }
+
             public void CenterText(string text, double centerX, double y, double size, bool bold = false)
             {
+                CenterText(text, centerX, y, size, bold, 0, 0, 0);
+            }
+
+            public void CenterText(string text, double centerX, double y, double size, bool bold, byte red, byte green, byte blue)
+            {
                 double textWidth = ApproximateWidth(text, size, bold);
-                Text(text, centerX - (textWidth / 2), y, size, bold);
+                Text(text, centerX - (textWidth / 2), y, size, bold, red, green, blue);
+            }
+
+            public void Image(string path, double x, double y, double maxWidth, double maxHeight)
+            {
+                PdfImage? image = PdfImage.FromFile(path, $"Im{++_imageCounter}");
+                DrawImage(image, x, y, maxWidth, maxHeight);
+            }
+
+            public void Image(byte[] bytes, double x, double y, double maxWidth, double maxHeight)
+            {
+                PdfImage? image = PdfImage.FromBytes(bytes, $"Im{++_imageCounter}");
+                DrawImage(image, x, y, maxWidth, maxHeight);
+            }
+
+            private void DrawImage(PdfImage? image, double x, double y, double maxWidth, double maxHeight)
+            {
+                if (image == null)
+                {
+                    return;
+                }
+
+                double ratio = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
+                double width = image.Width * ratio;
+                double height = image.Height * ratio;
+
+                Images.Add(image);
+                _content.Append("q ");
+                _content.Append(N(width));
+                _content.Append(" 0 0 ");
+                _content.Append(N(height));
+                _content.Append(' ');
+                _content.Append(N(x));
+                _content.Append(' ');
+                _content.Append(N(y + (maxHeight - height) / 2));
+                _content.Append(" cm /");
+                _content.Append(image.Name);
+                _content.Append(" Do Q\n");
             }
 
             public void Line(double x1, double y1, double x2, double y2)
@@ -370,6 +632,86 @@ namespace CorexProd.WPF.Helpers
                 }
 
                 return bold ? width * 1.05 : width;
+            }
+
+            private static string ColorValue(byte value)
+            {
+                return (value / 255d).ToString("0.###", CultureInfo.InvariantCulture);
+            }
+        }
+
+        private sealed class PdfImage
+        {
+            private PdfImage(string name, int width, int height, byte[] data)
+            {
+                Name = name;
+                Width = width;
+                Height = height;
+                Data = data;
+            }
+
+            public string Name { get; }
+            public int Width { get; }
+            public int Height { get; }
+            public byte[] Data { get; }
+            public int ObjectId { get; set; }
+
+            public static PdfImage? FromFile(string path, string name)
+            {
+                try
+                {
+                    BitmapImage bitmap = new();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(path, UriKind.Absolute);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    return FromBitmapSource(bitmap, name);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            public static PdfImage? FromBytes(byte[] bytes, string name)
+            {
+                try
+                {
+                    using MemoryStream input = new(bytes);
+                    BitmapImage bitmap = new();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.StreamSource = input;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    return FromBitmapSource(bitmap, name);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            private static PdfImage FromBitmapSource(BitmapSource bitmap, string name)
+            {
+                BitmapSource source = bitmap.Format == PixelFormats.Rgb24
+                    ? bitmap
+                    : new FormatConvertedBitmap(bitmap, PixelFormats.Rgb24, null, 0);
+
+                int stride = ((source.PixelWidth * source.Format.BitsPerPixel) + 7) / 8;
+                byte[] pixels = new byte[stride * source.PixelHeight];
+                source.CopyPixels(pixels, stride, 0);
+
+                using MemoryStream compressed = new();
+                using (DeflateStream deflate = new(compressed, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    deflate.Write(pixels, 0, pixels.Length);
+                }
+
+                return new PdfImage(name, source.PixelWidth, source.PixelHeight, compressed.ToArray());
             }
         }
 

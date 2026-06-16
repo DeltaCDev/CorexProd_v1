@@ -12,13 +12,59 @@ BEGIN
         Provincia VARCHAR(80) NOT NULL CONSTRAINT DF_Empresas_Provincia DEFAULT(''),
         Distrito VARCHAR(80) NOT NULL CONSTRAINT DF_Empresas_Distrito DEFAULT(''),
         Direccion VARCHAR(250) NOT NULL CONSTRAINT DF_Empresas_Direccion DEFAULT(''),
-        Logo VARCHAR(500) NOT NULL CONSTRAINT DF_Empresas_Logo DEFAULT(''),
+        Logo VARBINARY(MAX) NULL,
         CodigoCliente VARCHAR(80) NOT NULL CONSTRAINT DF_Empresas_CodigoCliente DEFAULT(''),
         LicenciaActivacion VARCHAR(500) NOT NULL CONSTRAINT DF_Empresas_LicenciaActivacion DEFAULT(''),
         EsPredeterminada BIT NOT NULL CONSTRAINT DF_Empresas_EsPredeterminada DEFAULT(0),
         Estado BIT NOT NULL CONSTRAINT DF_Empresas_Estado DEFAULT(1),
         FechaRegistro DATETIME NOT NULL CONSTRAINT DF_Empresas_FechaRegistro DEFAULT(GETDATE())
     );
+END
+GO
+
+IF COL_LENGTH('dbo.Empresas', 'Logo') IS NOT NULL
+AND EXISTS
+(
+    SELECT 1
+    FROM sys.columns C
+    INNER JOIN sys.types T ON T.user_type_id = C.user_type_id
+    WHERE C.object_id = OBJECT_ID('dbo.Empresas')
+    AND C.name = 'Logo'
+    AND T.name <> 'varbinary'
+)
+BEGIN
+    IF COL_LENGTH('dbo.Empresas', 'LogoRutaAnterior') IS NULL
+    BEGIN
+        EXEC sp_rename 'dbo.Empresas.Logo', 'LogoRutaAnterior', 'COLUMN';
+    END
+END
+GO
+
+IF COL_LENGTH('dbo.Empresas', 'Logo') IS NULL
+BEGIN
+    ALTER TABLE dbo.Empresas
+    ADD Logo VARBINARY(MAX) NULL;
+END
+GO
+
+IF COL_LENGTH('dbo.Empresas', 'LogoRutaAnterior') IS NOT NULL
+BEGIN
+    DECLARE @ConstraintLogoRuta SYSNAME;
+
+    SELECT @ConstraintLogoRuta = DC.name
+    FROM sys.default_constraints DC
+    INNER JOIN sys.columns C ON C.default_object_id = DC.object_id
+    WHERE DC.parent_object_id = OBJECT_ID('dbo.Empresas')
+    AND C.name = 'LogoRutaAnterior';
+
+    IF @ConstraintLogoRuta IS NOT NULL
+    BEGIN
+        DECLARE @SqlDropLogoRuta NVARCHAR(MAX) = N'ALTER TABLE dbo.Empresas DROP CONSTRAINT ' + QUOTENAME(@ConstraintLogoRuta);
+        EXEC sp_executesql @SqlDropLogoRuta;
+    END
+
+    ALTER TABLE dbo.Empresas
+    DROP COLUMN LogoRutaAnterior;
 END
 GO
 
@@ -93,7 +139,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_SEG_EMPRESA_REGISTRAR
     @Provincia VARCHAR(80),
     @Distrito VARCHAR(80),
     @Direccion VARCHAR(250),
-    @Logo VARCHAR(500),
+    @Logo VARBINARY(MAX),
     @CodigoCliente VARCHAR(80),
     @LicenciaActivacion VARCHAR(500),
     @EsPredeterminada BIT,
@@ -185,7 +231,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_SEG_EMPRESA_EDITAR
     @Provincia VARCHAR(80),
     @Distrito VARCHAR(80),
     @Direccion VARCHAR(250),
-    @Logo VARCHAR(500),
+    @Logo VARBINARY(MAX),
     @CodigoCliente VARCHAR(80),
     @LicenciaActivacion VARCHAR(500),
     @EsPredeterminada BIT,

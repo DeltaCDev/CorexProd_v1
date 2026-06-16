@@ -83,6 +83,14 @@ namespace CorexProd.Negocio.Negocio
             if (idProforma <= 0)
                 return "Debe seleccionar una proforma valida";
 
+            Proforma? proforma = _proformaDatos.Obtener(idProforma);
+
+            if (proforma == null)
+                return "No se encontro la proforma";
+
+            if (proforma.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase))
+                return "La proforma ya se encuentra anulada";
+
             return _proformaDatos.Anular(idProforma);
         }
     }

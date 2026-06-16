@@ -8,6 +8,9 @@ namespace CorexProd.Entidad.Entidades
 
         public string Codigo { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
+        public string ProductoBusqueda => string.IsNullOrWhiteSpace(Codigo)
+            ? NombreProducto
+            : $"{Codigo} - {NombreProducto}";
         public string Descripcion { get; set; } = string.Empty;
 
         public int IdCategoriaProducto { get; set; }

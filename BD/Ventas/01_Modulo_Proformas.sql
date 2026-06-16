@@ -370,6 +370,12 @@ BEGIN
         RETURN;
     END
 
+    IF EXISTS (SELECT 1 FROM dbo.Proformas WHERE IdProforma = @IdProforma AND Estado = 'Anulado')
+    BEGIN
+        SET @Mensaje = 'La proforma ya se encuentra anulada';
+        RETURN;
+    END
+
     UPDATE dbo.Proformas
     SET Estado = 'Anulado'
     WHERE IdProforma = @IdProforma;

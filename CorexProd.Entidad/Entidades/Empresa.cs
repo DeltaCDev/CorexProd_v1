@@ -14,7 +14,7 @@ namespace CorexProd.Entidad.Entidades
         public string Provincia { get; set; } = string.Empty;
         public string Distrito { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
-        public string Logo { get; set; } = string.Empty;
+        public byte[]? Logo { get; set; }
         public string CodigoCliente { get; set; } = string.Empty;
         public string LicenciaActivacion { get; set; } = string.Empty;
         public bool EsPredeterminada { get; set; }
