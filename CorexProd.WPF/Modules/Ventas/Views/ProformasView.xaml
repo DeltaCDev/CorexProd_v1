@@ -8,46 +8,35 @@
     </UserControl.DataContext>
 
     <UserControl.Resources>
-        <Style x:Key="EstadoBadge" TargetType="Border">
-            <Setter Property="Background" Value="#BAE6FD"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
-                    <Setter Property="Background" Value="#FED7AA"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Registrado">
-                    <Setter Property="Background" Value="#BBF7D0"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
-            <Setter Property="TextAlignment" Value="Center"/>
+        <Style x:Key="LabelFiltro" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#155E75"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
-                    <Setter Property="Foreground" Value="#9A3412"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Registrado">
-                    <Setter Property="Foreground" Value="#166534"/>
-                </DataTrigger>
-            </Style.Triggers>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
 
-        <Style x:Key="CeldaTextoCentrada" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="0"/>
-        </Style>
-
-        <Style x:Key="BotonAccionProforma" TargetType="Button">
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
+        <Style x:Key="CampoFiltro" TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="260"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+
+        <Style x:Key="ComboFiltro" TargetType="ComboBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="BotonBaseProforma" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
@@ -56,16 +45,16 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="14">
+                                CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.9"/>
+                                <Setter Property="Opacity" Value="0.92"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Opacity" Value="0.8"/>
+                                <Setter Property="Opacity" Value="0.82"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -76,9 +65,33 @@
             </Setter>
         </Style>
 
+        <Style x:Key="BotonPrimarioProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
+            <Setter Property="MinWidth" Value="122"/>
+            <Setter Property="Background" Value="#0F766E"/>
+            <Setter Property="BorderBrush" Value="#0F766E"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style x:Key="BotonSecundarioProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
+            <Setter Property="MinWidth" Value="116"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="Foreground" Value="#334155"/>
+        </Style>
+
+        <Style x:Key="BotonOciProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Background" Value="#0F766E"/>
+            <Setter Property="BorderBrush" Value="#0F766E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
         <Style x:Key="BotonIconoProforma" TargetType="Button">
-            <Setter Property="Width" Value="32"/>
-            <Setter Property="Height" Value="28"/>
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -88,16 +101,20 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="4">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F3F4F6"/>
+                                <Setter Property="Background" Value="#E0F2FE"/>
+                                <Setter Property="BorderBrush" Value="#BAE6FD"/>
+                                <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#E5E7EB"/>
+                                <Setter Property="Background" Value="#CCFBF1"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45"/>
@@ -108,24 +125,73 @@
             </Setter>
         </Style>
 
+        <Style x:Key="IconoAccion" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#0F766E"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CeldaTexto" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style x:Key="CeldaTextoCentrada" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CeldaTextoDerecha" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+
+        <Style x:Key="EstadoBadge" TargetType="Border">
+            <Setter Property="MinWidth" Value="88"/>
+            <Setter Property="Background" Value="#DCFCE7"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Background" Value="#FFE4E6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#166534"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Foreground" Value="#BE123C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type DataGrid}">
             <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="RowBackground" Value="White"/>
-            <Setter Property="AlternatingRowBackground" Value="#F9FAFB"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#E5E7EB"/>
-            <Setter Property="VerticalGridLinesBrush" Value="#E5E7EB"/>
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E2E8F0"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="ColumnHeaderHeight" Value="38"/>
             <Setter Property="ColumnHeaderStyle">
                 <Setter.Value>
                     <Style TargetType="{x:Type DataGridColumnHeader}">
-                        <Setter Property="Background" Value="#F3F4F6"/>
-                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="Background" Value="#E2E8F0"/>
+                        <Setter Property="Foreground" Value="#0F172A"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
-                        <Setter Property="BorderBrush" Value="#D1D5DB"/>
-                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="BorderBrush" Value="#CBD5E1"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
                         <Setter Property="Padding" Value="8,0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Left"/>
                     </Style>
@@ -134,17 +200,16 @@
             <Setter Property="CellStyle">
                 <Setter.Value>
                     <Style TargetType="{x:Type DataGridCell}">
-                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="Foreground" Value="#0F172A"/>
                         <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="BorderBrush" Value="#E5E7EB"/>
+                        <Setter Property="BorderBrush" Value="#E2E8F0"/>
                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="Padding" Value="0"/>
                         <Setter Property="VerticalContentAlignment" Value="Center"/>
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#EAF2FF"/>
-                                <Setter Property="Foreground" Value="#111827"/>
-                                <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                                <Setter Property="Background" Value="#DBEAFE"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>
@@ -154,14 +219,14 @@
                 <Setter.Value>
                     <Style TargetType="{x:Type DataGridRow}">
                         <Setter Property="Background" Value="White"/>
-                        <Setter Property="Foreground" Value="#111827"/>
+                        <Setter Property="Foreground" Value="#0F172A"/>
+                        <Setter Property="MinHeight" Value="48"/>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F3F8FF"/>
+                                <Setter Property="Background" Value="#F0FDFA"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#EAF2FF"/>
-                                <Setter Property="Foreground" Value="#111827"/>
+                                <Setter Property="Background" Value="#DBEAFE"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>
@@ -170,140 +235,247 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20"
+              MaxWidth="1360"
+              HorizontalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Background="White"
-                CornerRadius="8"
-                BorderBrush="#E5E7EB"
-                BorderThickness="1"
-                Padding="18"
-                Margin="0,0,0,14">
-            <DockPanel LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Proformas"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Foreground="#111827"
-                               Margin="0,0,0,6"/>
-                    <TextBlock Text="Listado de proformas registradas"
-                               FontSize="14"
-                               Foreground="#6B7280"/>
-                </StackPanel>
+            <Border Grid.Row="0"
+                    Background="White"
+                    CornerRadius="8"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    Padding="18"
+                    Margin="0,0,0,12">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12"
+                                      ShadowDepth="1"
+                                      Opacity="0.10"
+                                      Color="#0F172A"/>
+                </Border.Effect>
 
-                <StackPanel DockPanel.Dock="Right"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right">
-                    <Button Content="Nuevo"
-                            Width="110"
-                            Height="32"
-                            Margin="0,0,10,0"
-                            Command="{Binding NuevoCommand}"/>
-                    <Button Content="Refrescar"
-                            Width="110"
-                            Height="32"
-                            Command="{Binding RefrescarCommand}"/>
-                </StackPanel>
-            </DockPanel>
-        </Border>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="1"
-                Background="White"
-                CornerRadius="8"
-                BorderBrush="#E5E7EB"
-                BorderThickness="1"
-                Padding="0">
-            <DataGrid ItemsSource="{Binding Proformas}"
-                      SelectedItem="{Binding ProformaSeleccionada}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="True"
-                      HeadersVisibility="Column"
-                      RowHeight="44"
-                      GridLinesVisibility="Horizontal">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTemplateColumn Header="Acciones" Width="260">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource BotonIconoProforma}"
-                                            ToolTip="Ver"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Text="&#xE890;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="14"
-                                                   Foreground="#0F766E"/>
-                                    </Button>
-                                    <Button Style="{StaticResource BotonIconoProforma}"
-                                            ToolTip="Editar"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Text="&#xE70F;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="14"
-                                                   Foreground="#2563EB"/>
-                                    </Button>
-                                    <Button Style="{StaticResource BotonIconoProforma}"
-                                            ToolTip="Copiar"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Text="&#xE8C8;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="14"
-                                                   Foreground="#4F46E5"/>
-                                    </Button>
-                                    <Button Style="{StaticResource BotonIconoProforma}"
-                                            ToolTip="Anular"
-                                            Margin="0,0,6,0"
-                                            Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Text="&#xE711;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="14"
-                                                   Foreground="#DC2626"/>
-                                    </Button>
-                                    <Button Content="Generar OCI"
-                                            Style="{StaticResource BotonAccionProforma}"
-                                            Background="#059669"
-                                            Width="100"
-                                            Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="85" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="OC Cliente" Binding="{Binding OrdenCompraCliente}" Width="110" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTemplateColumn Header="Estado" Width="105">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource EstadoBadge}">
-                                    <TextBlock Text="{Binding Estado}"
-                                               Style="{StaticResource EstadoBadgeTexto}"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="260" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="Elaborado por" Binding="{Binding UsuarioGenerador}" Width="125" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="Fecha Emisión" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="115" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="IGV" Binding="{Binding Igv, StringFormat=S/ {0:N2}}" Width="80" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
-                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <StackPanel Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0,0,16,14">
+                        <TextBlock Text="Listado registrado"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="Consulta, filtra y gestiona documentos de venta"
+                                   FontSize="13"
+                                   Foreground="#64748B"/>
+                    </StackPanel>
 
-                    
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
-    </Grid>
+                    <StackPanel Grid.Row="0"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top">
+                        <Button Style="{StaticResource BotonPrimarioProforma}"
+                                Margin="0,0,8,0"
+                                Command="{Binding NuevoCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE710;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="13"
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="Nuevo"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource BotonSecundarioProforma}"
+                                Command="{Binding RefrescarCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72C;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="13"
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="Actualizar"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <WrapPanel Grid.Row="1"
+                               Grid.Column="0"
+                               Grid.ColumnSpan="2">
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Buscar" Style="{StaticResource LabelFiltro}"/>
+                            <TextBox Style="{StaticResource CampoFiltro}"
+                                     Text="{Binding TextoBusqueda, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Estado" Style="{StaticResource LabelFiltro}"/>
+                            <ComboBox Style="{StaticResource ComboFiltro}"
+                                      ItemsSource="{Binding EstadosFiltro}"
+                                      SelectedItem="{Binding EstadoFiltro, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding ResumenRegistros}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#475569"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,0,8"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Background="White"
+                    CornerRadius="8"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    Padding="0"
+                    VerticalAlignment="Top">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12"
+                                      ShadowDepth="1"
+                                      Opacity="0.08"
+                                      Color="#0F172A"/>
+                </Border.Effect>
+
+                <DataGrid ItemsSource="{Binding Proformas}"
+                          x:Name="ProformasGrid"
+                          SelectedItem="{Binding ProformaSeleccionada}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          RowHeight="48"
+                          MaxHeight="560"
+                          GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID"
+                                            Binding="{Binding IdProforma}"
+                                            Width="44"
+                                            ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+
+                        <DataGridTemplateColumn Header="Acciones"
+                                                Width="200">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <Button Style="{StaticResource BotonIconoProforma}"
+                                                ToolTip="Ver"
+                                                Margin="0,0,4,0"
+                                                Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}"/>
+                                        </Button>
+                                        <Button Style="{StaticResource BotonIconoProforma}"
+                                                ToolTip="Editar"
+                                                Margin="0,0,8,0"
+                                                Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}"/>
+                                        </Button>
+                                        <Button Content="Generar OCI"
+                                                Style="{StaticResource BotonOciProforma}"
+                                                Margin="0,0,8,0"
+                                                Command="{Binding DataContext.GenerarOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"/>
+                                        <Menu Background="Transparent"
+                                              BorderThickness="0">
+                                            <MenuItem ToolTip="Mas acciones">
+                                                <MenuItem.Header>
+                                                    <TextBlock Text="&#xE712;"
+                                                               Width="30"
+                                                               Height="30"
+                                                               TextAlignment="Center"
+                                                               Style="{StaticResource IconoAccion}"/>
+                                                </MenuItem.Header>
+                                                <MenuItem Header="Copiar"
+                                                          Command="{Binding DataContext.CopiarCommand, Source={x:Reference ProformasGrid}}"
+                                                          CommandParameter="{Binding}"/>
+                                                <MenuItem Header="Anular"
+                                                          Command="{Binding DataContext.AnularCommand, Source={x:Reference ProformasGrid}}"
+                                                          CommandParameter="{Binding}"/>
+                                            </MenuItem>
+                                        </Menu>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Proforma"
+                                            Binding="{Binding SerieNumero}"
+                                            Width="88"
+                                            ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                        <DataGridTextColumn Header="OC Cliente"
+                                            Binding="{Binding OrdenCompraCliente}"
+                                            Width="106"
+                                            ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+
+                        <DataGridTemplateColumn Header="Estado" Width="112">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource EstadoBadge}">
+                                        <TextBlock Text="{Binding Estado}"
+                                                   Style="{StaticResource EstadoBadgeTexto}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Cliente"
+                                                Width="2*"
+                                                MinWidth="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding NombreCliente}"
+                                               ToolTip="{Binding NombreCliente}"
+                                               Style="{StaticResource CeldaTexto}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Elaborado por"
+                                            Binding="{Binding UsuarioGenerador}"
+                                            Width="130"
+                                            ElementStyle="{StaticResource CeldaTexto}"/>
+                        <DataGridTextColumn Header="Fecha emision"
+                                            Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}"
+                                            Width="106"
+                                            ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                        <DataGridTextColumn Header="Subtotal"
+                                            Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}"
+                                            Width="82"
+                                            ElementStyle="{StaticResource CeldaTextoDerecha}"/>
+                        <DataGridTextColumn Header="Descuento"
+                                            Binding="{Binding Descuento, StringFormat=S/ {0:N2}}"
+                                            Width="82"
+                                            ElementStyle="{StaticResource CeldaTextoDerecha}"/>
+                        <DataGridTextColumn Header="IGV"
+                                            Binding="{Binding Igv, StringFormat=S/ {0:N2}}"
+                                            Width="70"
+                                            ElementStyle="{StaticResource CeldaTextoDerecha}"/>
+                        <DataGridTextColumn Header="Total"
+                                            Binding="{Binding Total, StringFormat=S/ {0:N2}}"
+                                            Width="86"
+                                            ElementStyle="{StaticResource CeldaTextoDerecha}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

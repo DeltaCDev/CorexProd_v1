@@ -4,7 +4,10 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Ventas.Views;
 using CorexProd.WPF.ViewModels;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,9 +16,13 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     public class ProformasViewModel : BaseViewModel
     {
         private readonly ProformaNegocio _proformaNegocio = new();
+        private readonly List<Proforma> _todasLasProformas = [];
         private Proforma? _proformaSeleccionada;
+        private string _textoBusqueda = string.Empty;
+        private string _estadoFiltro = "Todos";
 
         public ObservableCollection<Proforma> Proformas { get; set; } = [];
+        public ObservableCollection<string> EstadosFiltro { get; } = ["Todos", "Registrado", "Anulado"];
 
         public Proforma? ProformaSeleccionada
         {
@@ -26,6 +33,30 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 OnPropertyChanged();
             }
         }
+
+        public string TextoBusqueda
+        {
+            get => _textoBusqueda;
+            set
+            {
+                _textoBusqueda = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public string EstadoFiltro
+        {
+            get => _estadoFiltro;
+            set
+            {
+                _estadoFiltro = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public string ResumenRegistros => $"Mostrando {Proformas.Count} de {_todasLasProformas.Count} registros";
 
         public ICommand NuevoCommand { get; }
         public ICommand EditarCommand { get; }
@@ -50,12 +81,53 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private void CargarProformas()
         {
+            _todasLasProformas.Clear();
             Proformas.Clear();
 
-            foreach (Proforma proforma in _proformaNegocio.Listar())
+            IEnumerable<Proforma> proformas = _proformaNegocio.Listar()
+                .OrderByDescending(p => p.FechaEmision)
+                .ThenByDescending(p => p.IdProforma);
+
+            foreach (Proforma proforma in proformas)
+            {
+                _todasLasProformas.Add(proforma);
+            }
+
+            AplicarFiltros();
+        }
+
+        private void AplicarFiltros()
+        {
+            string busqueda = TextoBusqueda.Trim();
+            IEnumerable<Proforma> filtradas = _todasLasProformas;
+
+            if (!string.IsNullOrWhiteSpace(EstadoFiltro) && EstadoFiltro != "Todos")
+            {
+                filtradas = filtradas.Where(p => string.Equals(p.Estado, EstadoFiltro, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(busqueda))
+            {
+                filtradas = filtradas.Where(p =>
+                    Contiene(p.NombreCliente, busqueda) ||
+                    Contiene(p.Estado, busqueda) ||
+                    Contiene(p.SerieNumero, busqueda) ||
+                    Contiene(p.OrdenCompraCliente, busqueda));
+            }
+
+            Proformas.Clear();
+
+            foreach (Proforma proforma in filtradas)
             {
                 Proformas.Add(proforma);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
+        }
+
+        private static bool Contiene(string valor, string busqueda)
+        {
+            return valor.Contains(busqueda, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Editar(object? parametro)
@@ -120,7 +192,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
 
             bool confirmar = ConfirmDialogService.Confirmar(
-                "¿Desea anular esta proforma?",
+                $"¿Desea anular la proforma {proforma.SerieNumero}?",
                 "Anular proforma");
 
             if (!confirmar)
