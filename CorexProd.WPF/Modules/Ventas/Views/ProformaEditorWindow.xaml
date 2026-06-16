@@ -228,8 +228,8 @@
                                 <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="85"/>
                                 <DataGridTextColumn Header="Dscto." Binding="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="65"/>
                                 <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" IsReadOnly="True" Width="75"/>
-                                <DataGridTextColumn Header="Observación" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="190"/>
-                                <DataGridTemplateColumn Header="" Width="62">
+                                <DataGridTextColumn Header="Observación" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                                <DataGridTemplateColumn Header="" Width="82">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Content="Quitar"

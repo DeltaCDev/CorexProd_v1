@@ -8,22 +8,39 @@
     </UserControl.DataContext>
 
     <UserControl.Resources>
-        <Style x:Key="EstadoTexto" TargetType="TextBlock">
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="TextAlignment" Value="Center"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#155E75"/>
+        <Style x:Key="EstadoBadge" TargetType="Border">
             <Setter Property="Background" Value="#BAE6FD"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Estado}" Value="Anulado">
-                    <Setter Property="Foreground" Value="#9A3412"/>
                     <Setter Property="Background" Value="#FED7AA"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Estado}" Value="Registrado">
-                    <Setter Property="Foreground" Value="#166534"/>
                     <Setter Property="Background" Value="#BBF7D0"/>
                 </DataTrigger>
             </Style.Triggers>
+        </Style>
+
+        <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#155E75"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Foreground" Value="#9A3412"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Registrado">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CeldaTextoCentrada" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
         </Style>
 
         <Style x:Key="BotonAccionProforma" TargetType="Button">
@@ -33,6 +50,30 @@
             <Setter Property="Padding" Value="10,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="14">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="BotonIconoProforma" TargetType="Button">
@@ -185,11 +226,11 @@
                       RowHeight="44"
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40"/>
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdProforma}" Width="40" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
                     <DataGridTemplateColumn Header="Acciones" Width="260">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <Button Style="{StaticResource BotonIconoProforma}"
                                             ToolTip="Ver"
                                             Margin="0,0,6,0"
@@ -240,23 +281,25 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="85"/>
-                    <DataGridTextColumn Header="OC Cliente" Binding="{Binding OrdenCompraCliente}" Width="110"/>
+                    <DataGridTextColumn Header="Proforma" Binding="{Binding SerieNumero}" Width="85" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="OC Cliente" Binding="{Binding OrdenCompraCliente}" Width="110" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
                     <DataGridTemplateColumn Header="Estado" Width="105">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Estado}"
-                                           Style="{StaticResource EstadoTexto}"/>
+                                <Border Style="{StaticResource EstadoBadge}">
+                                    <TextBlock Text="{Binding Estado}"
+                                               Style="{StaticResource EstadoBadgeTexto}"/>
+                                </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="260"/>
-                    <DataGridTextColumn Header="Elaborado por" Binding="{Binding UsuarioGenerador}" Width="125"/>
-                    <DataGridTextColumn Header="Fecha Emisión" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="115"/>
-                    <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="90"/>
-                    <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=S/ {0:N2}}" Width="90"/>
-                    <DataGridTextColumn Header="IGV" Binding="{Binding Igv, StringFormat=S/ {0:N2}}" Width="80"/>
-                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="90"/>
+                    <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="260" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="Elaborado por" Binding="{Binding UsuarioGenerador}" Width="125" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="Fecha Emisión" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="115" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="IGV" Binding="{Binding Igv, StringFormat=S/ {0:N2}}" Width="80" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
+                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaTextoCentrada}"/>
 
                     
                 </DataGrid.Columns>
