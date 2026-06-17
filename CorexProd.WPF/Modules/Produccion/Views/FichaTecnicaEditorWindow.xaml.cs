@@ -7,11 +7,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 {
     public partial class FichaTecnicaEditorWindow : Window
     {
-        public FichaTecnicaEditorWindow(FichaTecnica fichaSeleccionada)
+        public FichaTecnicaEditorWindow(FichaTecnica? fichaSeleccionada)
         {
-            if (fichaSeleccionada == null)
-                throw new ArgumentNullException(nameof(fichaSeleccionada));
-
             InitializeComponent();
 
             var vm = new FichaTecnicaEditorViewModel(fichaSeleccionada);

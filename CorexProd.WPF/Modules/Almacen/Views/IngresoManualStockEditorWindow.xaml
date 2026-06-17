@@ -126,7 +126,15 @@
                                     </StackPanel>
                                     <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,10,12">
                                         <TextBlock Text="Nro documento" Style="{StaticResource LabelCampo}"/>
-                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <DockPanel LastChildFill="True">
+                                            <Button DockPanel.Dock="Right"
+                                                    Content="Consultar"
+                                                    Width="82"
+                                                    Height="30"
+                                                    Margin="8,0,0,0"
+                                                    Command="{Binding ConsultarProveedorDocumentoCommand}"/>
+                                            <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
                                     </StackPanel>
                                     <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,10,12">
                                         <TextBlock Text="Nombre / Razon Social" Style="{StaticResource LabelCampo}"/>

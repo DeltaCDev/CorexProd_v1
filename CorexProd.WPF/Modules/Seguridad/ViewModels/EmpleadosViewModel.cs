@@ -2,8 +2,8 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
-using HandyControl.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -182,12 +182,25 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdEmpleado > 0 ? "Editar Empleado" : "Nuevo Empleado";
+        public string ResumenRegistros => $"Mostrando {Empleados.Count} empleados";
 
         public EmpleadosViewModel()
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => Refrescar());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCargos();
             CargarEmpleados();
@@ -214,6 +227,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Empleados.Add(empleado);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void Guardar()
@@ -251,7 +266,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarEmpleados();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -310,6 +326,61 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             FechaNacimiento = null;
             Estado = true;
             EmpleadoSeleccionado = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void Refrescar()
+        {
+            CargarCargos();
+            CargarEmpleados();
+        }
+
+        private void AbrirEditor(Empleado? empleado)
+        {
+            EmpleadosViewModel viewModel = new();
+
+            if (empleado != null)
+            {
+                viewModel.IdEmpleado = empleado.IdEmpleado;
+                viewModel.TipoDocumento = empleado.TipoDocumento;
+                viewModel.NumeroDocumento = empleado.NumeroDocumento;
+                viewModel.Nombre = empleado.Nombre;
+                viewModel.Apellido = empleado.Apellido;
+                viewModel.Sexo = empleado.Sexo;
+                viewModel.Telefono = empleado.Telefono;
+                viewModel.Email = empleado.Email;
+                viewModel.Direccion = empleado.Direccion;
+                viewModel.IdCargo = empleado.IdCargo;
+                viewModel.FechaNacimiento = empleado.FechaNacimiento;
+                viewModel.Estado = empleado.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            EmpleadoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                Refrescar();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not Empleado empleado)
+            {
+                NotificationService.Warning("Debe seleccionar un empleado");
+                return;
+            }
+
+            AbrirEditor(empleado);
         }
     }
 }

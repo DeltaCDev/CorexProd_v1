@@ -2,8 +2,11 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.ViewModels;
+using System;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Productos.ViewModels
@@ -81,12 +84,25 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdCategoriaProducto > 0 ? "Editar Categoria de Producto" : "Nueva Categoria de Producto";
+        public string ResumenRegistros => $"Mostrando {Categorias.Count} categorias de productos";
 
         public CategoriasProductosViewModel()
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => CargarCategorias());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCategorias();
         }
@@ -99,6 +115,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 Categorias.Add(categoria);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void Guardar()
@@ -129,7 +147,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarCategorias();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -181,6 +200,47 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             Descripcion = string.Empty;
             Estado = true;
             CategoriaSeleccionada = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void AbrirEditor(CategoriaProducto? categoria)
+        {
+            CategoriasProductosViewModel viewModel = new();
+
+            if (categoria != null)
+            {
+                viewModel.IdCategoriaProducto = categoria.IdCategoriaProducto;
+                viewModel.NombreCategoria = categoria.NombreCategoria;
+                viewModel.Descripcion = categoria.Descripcion;
+                viewModel.Estado = categoria.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            CategoriaProductoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                CargarCategorias();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not CategoriaProducto categoria)
+            {
+                NotificationService.Warning("Debe seleccionar una categoría.");
+                return;
+            }
+
+            AbrirEditor(categoria);
         }
     }
 }

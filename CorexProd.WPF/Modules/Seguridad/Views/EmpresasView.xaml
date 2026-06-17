@@ -31,9 +31,10 @@
             <Setter Property="Height" Value="34"/>
             <Setter Property="MinWidth" Value="110"/>
             <Setter Property="Padding" Value="14,0"/>
-            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="Background" Value="#F97316"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="#F97316"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
@@ -144,9 +145,10 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
-                    <TextBlock Text="Mantenimiento de Empresa"
-                               FontSize="24"
+                    <TextBlock Text="Empresas"
+                               FontSize="22"
                                FontWeight="Bold"
+                               Foreground="#0F172A"
                                Margin="0,0,0,6"/>
                     <TextBlock Text="{Binding ResumenRegistros}"
                                FontSize="13"
@@ -167,7 +169,9 @@
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource BotonPrimario}"
-                            Background="#0F766E"
+                            Background="#F8FAFC"
+                            BorderBrush="#CBD5E1"
+                            Foreground="#0F172A"
                             Command="{Binding RefrescarCommand}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE72C;"

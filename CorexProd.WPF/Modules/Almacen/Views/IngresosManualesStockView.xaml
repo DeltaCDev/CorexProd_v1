@@ -18,23 +18,89 @@
             <Setter Property="Height" Value="34"/>
             <Setter Property="MinWidth" Value="160"/>
             <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style x:Key="ComboFiltro" TargetType="ComboBox">
             <Setter Property="Height" Value="34"/>
             <Setter Property="MinWidth" Value="150"/>
             <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style x:Key="BotonBase" TargetType="Button">
-            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#CBD5E1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource BotonBase}">
             <Setter Property="Background" Value="#F97316"/>
             <Setter Property="BorderBrush" Value="#F97316"/>
             <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#EA580C"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#EA580C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#C2410C"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#C2410C"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="BotonIcono" TargetType="Button">
             <Setter Property="Width" Value="30"/>
@@ -42,6 +108,33 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0,0,4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="IconBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="IconBorder" Property="Background" Value="#EFF6FF"/>
+                                <Setter TargetName="IconBorder" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="IconBorder" Property="Background" Value="#DBEAFE"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="IconoAccion" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
@@ -51,11 +144,21 @@
         </Style>
         <Style x:Key="CeldaTexto" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
-        <Style x:Key="CeldaDerecha" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
-            <Setter Property="TextAlignment" Value="Right"/>
+        <Style x:Key="CeldaCentro" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}"/>
+        <Style x:Key="EncabezadoCentro" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="CeldaGridCentro" TargetType="DataGridCell">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
         </Style>
         <Style x:Key="EstadoBadge" TargetType="Border">
             <Setter Property="MinWidth" Value="92"/>
@@ -111,15 +214,15 @@
 
                     <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button Style="{StaticResource BotonPrimario}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
-                                <TextBlock Text="Nuevo"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Nuevo" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource BotonBase}" Command="{Binding RefrescarCommand}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
-                                <TextBlock Text="Actualizar"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Actualizar" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -157,12 +260,12 @@
             </Border>
 
             <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
-                <DataGrid ItemsSource="{Binding Ingresos}" SelectedItem="{Binding IngresoSeleccionado}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="48" MaxHeight="560" GridLinesVisibility="Horizontal">
+                <DataGrid ItemsSource="{Binding Ingresos}" SelectedItem="{Binding IngresoSeleccionado}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="48" MaxHeight="560" GridLinesVisibility="Horizontal" ColumnHeaderStyle="{StaticResource EncabezadoCentro}" CellStyle="{StaticResource CeldaGridCentro}">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Acciones" Width="150">
+                        <DataGridTemplateColumn Header="Acciones" Width="160">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <Button Style="{StaticResource BotonIcono}" ToolTip="Vista previa" Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
                                             <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
                                         </Button>
@@ -179,21 +282,21 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="ID" Binding="{Binding IdIngresoManualStock}" Width="60"/>
-                        <DataGridTextColumn Header="Fecha emision" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="110"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding IdIngresoManualStock}" Width="40" ElementStyle="{StaticResource CeldaCentro}"/>
+                        <DataGridTextColumn Header="Fecha emision" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="100" ElementStyle="{StaticResource CeldaCentro}"/>
                         <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="230" ElementStyle="{StaticResource CeldaTexto}"/>
-                        <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="140"/>
-                        <DataGridTextColumn Header="Almacen" Binding="{Binding NombreAlmacen}" Width="150"/>
+                        <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="120" ElementStyle="{StaticResource CeldaCentro}"/>
+                        <DataGridTextColumn Header="Almacen" Binding="{Binding NombreAlmacen}" Width="130" ElementStyle="{StaticResource CeldaCentro}"/>
                         <DataGridTemplateColumn Header="Estado" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
+                                    <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoTexto}"/>
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="110" ElementStyle="{StaticResource CeldaDerecha}"/>
+                        <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="90" ElementStyle="{StaticResource CeldaCentro}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

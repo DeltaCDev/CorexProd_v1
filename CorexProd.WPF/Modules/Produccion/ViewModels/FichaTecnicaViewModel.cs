@@ -165,16 +165,17 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         public ICommand QuitarDetalleCommand { get; }
         public ICommand RefrescarCommand { get; }
         public ICommand EditarFichaCommand { get; }
+        public string ResumenRegistros => $"Mostrando {FichasTecnicas.Count} fichas tecnicas";
 
         public FichaTecnicaViewModel()
         {
-            NuevoCommand = new RelayCommand(_ => Nuevo());
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
             GuardarCommand = new RelayCommand(_ => Guardar());
             AgregarDetalleCommand = new RelayCommand(_ => AgregarDetalle());
             EditarDetalleCommand = new RelayCommand(_ => EditarDetalle());
             QuitarDetalleCommand = new RelayCommand(_ => QuitarDetalle());
             RefrescarCommand = new RelayCommand(_ => CargarDatos());
-            EditarFichaCommand = new RelayCommand(_ => EditarFicha());
+            EditarFichaCommand = new RelayCommand(parametro => EditarFicha(parametro));
 
             CargarDatos();
         }
@@ -200,6 +201,8 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
 
             foreach (var item in _unidadNegocio.Listar())
                 UnidadesMedida.Add(item);
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void CargarDetalle()
@@ -352,19 +355,26 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                 NotificationService.Warning(mensaje);
             }
         }
-        private void EditarFicha()
+        private void EditarFicha(object? parametro)
         {
-            if (FichaSeleccionada == null)
+            FichaTecnica? ficha = parametro as FichaTecnica ?? FichaSeleccionada;
+
+            if (ficha == null)
             {
                 NotificationService.Warning("Seleccione una ficha técnica para editar.");
                 return;
             }
 
+            AbrirEditor(ficha);
+        }
+
+        private void AbrirEditor(FichaTecnica? ficha)
+        {
             try
             {
-                var idFichaActual = FichaSeleccionada.IdFichaTecnica;
+                int idFichaActual = ficha?.IdFichaTecnica ?? 0;
 
-                var ventana = new FichaTecnicaEditorWindow(FichaSeleccionada)
+                var ventana = new FichaTecnicaEditorWindow(ficha)
                 {
                     Owner = Application.Current.MainWindow
                 };
@@ -372,7 +382,11 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                 ventana.ViewModel.GuardadoExitoso = () =>
                 {
                     CargarDatos();
-                    FichaSeleccionada = FichasTecnicas.FirstOrDefault(x => x.IdFichaTecnica == idFichaActual);
+
+                    if (idFichaActual > 0)
+                    {
+                        FichaSeleccionada = FichasTecnicas.FirstOrDefault(x => x.IdFichaTecnica == idFichaActual);
+                    }
                 };
 
                 ventana.ShowDialog();

@@ -2,11 +2,14 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.ViewModels;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.IO;
+using System;
+using System.Windows;
 
 namespace CorexProd.WPF.Modules.Productos.ViewModels
 {
@@ -125,6 +128,15 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
         public ICommand VerFichaTecnicaCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdProducto > 0 ? "Editar Producto" : "Nuevo Producto";
+        public string ResumenRegistros => $"Mostrando {Productos.Count} productos";
 
         public ProductosViewModel()
         {
@@ -132,6 +144,10 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
             VerFichaTecnicaCommand = new RelayCommand(parametro => VerFichaTecnica(parametro));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => Refrescar());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCategorias();
             CargarUnidadesMedida();
@@ -146,6 +162,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 Productos.Add(producto);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void CargarCategorias()
@@ -205,7 +223,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarProductos();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -260,6 +279,57 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             StockMinimo = 0;
             Estado = true;
             ProductoSeleccionado = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void Refrescar()
+        {
+            CargarCategorias();
+            CargarUnidadesMedida();
+            CargarProductos();
+        }
+
+        private void AbrirEditor(Producto? producto)
+        {
+            ProductosViewModel viewModel = new();
+
+            if (producto != null)
+            {
+                viewModel.IdProducto = producto.IdProducto;
+                viewModel.Codigo = producto.Codigo;
+                viewModel.NombreProducto = producto.NombreProducto;
+                viewModel.IdCategoriaProducto = producto.IdCategoriaProducto;
+                viewModel.IdUnidadMedida = producto.IdUnidadMedida;
+                viewModel.StockMinimo = producto.StockMinimo;
+                viewModel.Estado = producto.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            ProductoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                Refrescar();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not Producto producto)
+            {
+                NotificationService.Warning("Debe seleccionar un producto.");
+                return;
+            }
+
+            AbrirEditor(producto);
         }
 
         private void VerFichaTecnica(object? parametro)

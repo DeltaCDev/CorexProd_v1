@@ -2,8 +2,11 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Almacen.Views;
 using CorexProd.WPF.ViewModels;
 using System.Collections.ObjectModel;
+using System;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Almacen.ViewModels
@@ -81,12 +84,25 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdUnidadMedida > 0 ? "Editar Unidad de Medida" : "Nueva Unidad de Medida";
+        public string ResumenRegistros => $"Mostrando {UnidadesMedida.Count} unidades de medida";
 
         public UnidadesMedidaViewModel()
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => CargarUnidadesMedida());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarUnidadesMedida();
         }
@@ -99,6 +115,8 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             {
                 UnidadesMedida.Add(unidad);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void Guardar()
@@ -129,7 +147,8 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarUnidadesMedida();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -181,6 +200,47 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             Abreviatura = string.Empty;
             Estado = true;
             UnidadSeleccionada = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void AbrirEditor(UnidadMedida? unidad)
+        {
+            UnidadesMedidaViewModel viewModel = new();
+
+            if (unidad != null)
+            {
+                viewModel.IdUnidadMedida = unidad.IdUnidadMedida;
+                viewModel.NombreUnidad = unidad.NombreUnidad;
+                viewModel.Abreviatura = unidad.Abreviatura;
+                viewModel.Estado = unidad.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            UnidadMedidaEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                CargarUnidadesMedida();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not UnidadMedida unidad)
+            {
+                NotificationService.Warning("Debe seleccionar una unidad de medida.");
+                return;
+            }
+
+            AbrirEditor(unidad);
         }
     }
 }

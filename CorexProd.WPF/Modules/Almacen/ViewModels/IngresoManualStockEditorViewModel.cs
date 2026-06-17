@@ -6,7 +6,12 @@ using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,6 +19,14 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
 {
     public class IngresoManualStockEditorViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly IngresoManualStockNegocio _negocio = new();
         private readonly IngresoManualStock? _ingresoOriginal;
         private DateTime? _fechaEmision = DateTime.Today;
@@ -25,6 +38,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         private AlmacenStock? _almacenSeleccionado;
         private string _observacion = string.Empty;
         private bool _isSaving;
+        private bool _isConsultandoProveedor;
         private Visibility _proveedorRapidoVisibility = Visibility.Collapsed;
 
         public IngresoManualStockEditorViewModel(IngresoManualStock? ingreso)
@@ -39,6 +53,9 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             MostrarProveedorRapidoCommand = new RelayCommand(_ => ProveedorRapidoVisibility = Visibility.Visible);
             CancelarProveedorRapidoCommand = new RelayCommand(_ => LimpiarProveedorRapido());
             GuardarProveedorRapidoCommand = new RelayCommand(_ => GuardarProveedorRapido());
+            ConsultarProveedorDocumentoCommand = new RelayCommand(
+                async _ => await ConsultarProveedorDocumentoAsync(),
+                _ => !IsConsultandoProveedor);
 
             if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
@@ -145,6 +162,17 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             set { _isSaving = value; OnPropertyChanged(); }
         }
 
+        public bool IsConsultandoProveedor
+        {
+            get => _isConsultandoProveedor;
+            set
+            {
+                _isConsultandoProveedor = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         public Visibility ProveedorRapidoVisibility
         {
             get => _proveedorRapidoVisibility;
@@ -165,6 +193,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         public ICommand MostrarProveedorRapidoCommand { get; }
         public ICommand CancelarProveedorRapidoCommand { get; }
         public ICommand GuardarProveedorRapidoCommand { get; }
+        public ICommand ConsultarProveedorDocumentoCommand { get; }
 
         private void CargarCombos()
         {
@@ -298,6 +327,127 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             ProveedorSeleccionado = Proveedores.FirstOrDefault(p => p.IdProveedor == idProveedor);
             NotificationService.Success(mensaje);
             LimpiarProveedorRapido();
+        }
+
+        private async Task ConsultarProveedorDocumentoAsync()
+        {
+            string tipoDocumento = NuevoProveedorTipoDocumento.Trim().ToUpperInvariant();
+            string numeroDocumento = NuevoProveedorNumeroDocumento.Trim();
+
+            if (tipoDocumento != "DNI" && tipoDocumento != "RUC")
+            {
+                NotificationService.Warning("La consulta solo esta disponible para DNI y RUC");
+                return;
+            }
+
+            int longitudEsperada = tipoDocumento == "DNI" ? 8 : 11;
+
+            if (numeroDocumento.Length != longitudEsperada || !numeroDocumento.All(char.IsDigit))
+            {
+                NotificationService.Warning($"Ingrese un {tipoDocumento} valido de {longitudEsperada} digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoProveedor = true;
+
+                using JsonDocument respuesta = await ConsultarApiDocumentoAsync(tipoDocumento, numeroDocumento);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el documento");
+                    return;
+                }
+
+                string? nombre = ObtenerTexto(raiz, "nombre_completo", "nombre_o_razon_social", "razon_social", "nombre");
+                string? direccion = ObtenerTexto(raiz, "direccion", "domicilio_fiscal");
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio nombre o razon social");
+                    return;
+                }
+
+                NuevoProveedorNombre = nombre;
+                OnPropertyChanged(nameof(NuevoProveedorNombre));
+
+                if (!string.IsNullOrWhiteSpace(direccion))
+                {
+                    NuevoProveedorDireccion = direccion;
+                    OnPropertyChanged(nameof(NuevoProveedorDireccion));
+                }
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoProveedor = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiDocumentoAsync(string tipoDocumento, string numeroDocumento)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+            string campoDocumento = tipoDocumento == "RUC" ? "ruc" : "dni";
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                [campoDocumento] = numeroDocumento
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+            {
+                return false;
+            }
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    return valor.GetString();
+                }
+            }
+
+            return null;
         }
 
         private void LimpiarProveedorRapido()

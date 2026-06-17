@@ -31,7 +31,9 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         public Action? CerrarVentana { get; set; }
         public Action? GuardadoExitoso { get; set; }
 
-        public int IdFichaTecnica { get; }
+        public int IdFichaTecnica { get; private set; }
+        public bool EsNuevo => IdFichaTecnica == 0;
+        public string TituloEditor => EsNuevo ? "Nueva Ficha Tecnica" : "Editar Ficha Tecnica";
 
         private Producto? _productoSeleccionado;
         public Producto? ProductoSeleccionado { get => _productoSeleccionado; set { _productoSeleccionado = value; OnPropertyChanged(); } }
@@ -93,9 +95,9 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         private decimal _cantidad;
         public decimal Cantidad { get => _cantidad; set { _cantidad = value; OnPropertyChanged(); } }
 
-        public FichaTecnicaEditorViewModel(FichaTecnica fichaSeleccionada)
+        public FichaTecnicaEditorViewModel(FichaTecnica? fichaSeleccionada)
         {
-            IdFichaTecnica = fichaSeleccionada.IdFichaTecnica;
+            IdFichaTecnica = fichaSeleccionada?.IdFichaTecnica ?? 0;
             GuardarCommand = new RelayCommand(_ => Guardar());
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             AgregarDetalleCommand = new RelayCommand(_ => AgregarDetalle());
@@ -103,20 +105,40 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
             QuitarDetalleCommand = new RelayCommand(_ => QuitarDetalle());
 
             foreach (var item in _productoNegocio.Listar()) Productos.Add(item);
+            MarcarProductosConFichaTecnica();
             foreach (var item in _insumoNegocio.Listar()) Insumos.Add(item);
             foreach (var item in _unidadNegocio.Listar()) UnidadesMedida.Add(item);
 
-            ProductoSeleccionado = Productos.FirstOrDefault(x => x.IdProducto == fichaSeleccionada.IdProducto);
-            Version = fichaSeleccionada.Version;
-            Observacion = fichaSeleccionada.Observacion ?? string.Empty;
-            Estado = fichaSeleccionada.Estado;
+            ProductoSeleccionado = fichaSeleccionada == null
+                ? null
+                : Productos.FirstOrDefault(x => x.IdProducto == fichaSeleccionada.IdProducto);
+            Version = fichaSeleccionada?.Version ?? 1;
+            Observacion = fichaSeleccionada?.Observacion ?? string.Empty;
+            Estado = fichaSeleccionada?.Estado ?? true;
 
             CargarDetalle();
+        }
+
+        private void MarcarProductosConFichaTecnica()
+        {
+            var productosConFicha = _fichaNegocio.Listar()
+                .Select(x => x.IdProducto)
+                .ToHashSet();
+
+            foreach (var producto in Productos)
+            {
+                producto.TieneFichaTecnica = productosConFicha.Contains(producto.IdProducto);
+            }
         }
 
         private void CargarDetalle()
         {
             Detalles.Clear();
+            if (IdFichaTecnica <= 0)
+            {
+                return;
+            }
+
             foreach (var item in _fichaNegocio.ListarDetalle(IdFichaTecnica))
                 Detalles.Add(item);
         }
@@ -124,17 +146,39 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         private void Guardar()
         {
             var ficha = new FichaTecnica { IdFichaTecnica = IdFichaTecnica, IdProducto = ProductoSeleccionado?.IdProducto ?? 0, Version = Version, Observacion = Observacion, Estado = Estado };
-            bool resultado = _fichaNegocio.Editar(ficha, out string mensaje);
+            bool resultado;
+            string mensaje;
+
+            if (IdFichaTecnica == 0)
+            {
+                resultado = _fichaNegocio.Registrar(ficha, out mensaje);
+            }
+            else
+            {
+                resultado = _fichaNegocio.Editar(ficha, out mensaje);
+            }
+
             if (resultado)
             {
                 NotificationService.Success(mensaje);
+                MarcarProductosConFichaTecnica();
                 GuardadoExitoso?.Invoke();
+                if (IdFichaTecnica == 0)
+                {
+                    CerrarVentana?.Invoke();
+                }
             }
             else NotificationService.Warning(mensaje);
         }
 
         private void AgregarDetalle()
         {
+            if (IdFichaTecnica <= 0)
+            {
+                NotificationService.Warning("Primero debe guardar la cabecera de la ficha técnica.");
+                return;
+            }
+
             var detalle = new FichaTecnicaDetalle { IdFichaTecnica = IdFichaTecnica, IdInsumo = InsumoSeleccionado?.IdInsumo ?? 0, Cantidad = Cantidad, IdUnidadMedida = UnidadSeleccionada?.IdUnidadMedida ?? 0 };
             bool resultado = _fichaNegocio.RegistrarDetalle(detalle, out string mensaje);
             if (resultado) { NotificationService.Success(mensaje); CargarDetalle(); LimpiarDetalle(); } else NotificationService.Warning(mensaje);

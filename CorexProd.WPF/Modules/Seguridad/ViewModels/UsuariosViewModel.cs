@@ -2,8 +2,11 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
+using System;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
@@ -85,12 +88,25 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdUsuario > 0 ? "Editar Usuario" : "Nuevo Usuario";
+        public string ResumenRegistros => $"Mostrando {Usuarios.Count} usuarios";
 
         public UsuariosViewModel()
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => Refrescar());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarEmpleados();
             CargarRoles();
@@ -105,6 +121,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Usuarios.Add(usuario);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void CargarEmpleados()
@@ -165,7 +183,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarUsuarios();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -219,6 +238,56 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             IdRol = 0;
             Estado = true;
             UsuarioSeleccionado = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void Refrescar()
+        {
+            CargarEmpleados();
+            CargarRoles();
+            CargarUsuarios();
+        }
+
+        private void AbrirEditor(Usuario? usuario)
+        {
+            UsuariosViewModel viewModel = new();
+
+            if (usuario != null)
+            {
+                viewModel.IdUsuario = usuario.IdUsuario;
+                viewModel.IdEmpleado = usuario.IdEmpleado;
+                viewModel.NombreUsuario = usuario.NombreUsuario;
+                viewModel.Clave = string.Empty;
+                viewModel.IdRol = usuario.IdRol;
+                viewModel.Estado = usuario.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            UsuarioEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                Refrescar();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not Usuario usuario)
+            {
+                NotificationService.Warning("Debe seleccionar un usuario");
+                return;
+            }
+
+            AbrirEditor(usuario);
         }
     }
 }

@@ -17,8 +17,9 @@
 
         <Style x:Key="CampoFiltro" TargetType="TextBox">
             <Setter Property="Height" Value="34"/>
-            <Setter Property="MinWidth" Value="260"/>
+            <Setter Property="MinWidth" Value="220"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Padding" Value="10,0"/>
             <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -31,6 +32,8 @@
             <Setter Property="Padding" Value="8,0"/>
             <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style x:Key="FechaFiltro" TargetType="DatePicker">
@@ -42,30 +45,39 @@
         </Style>
 
         <Style x:Key="BotonBaseProforma" TargetType="Button">
-            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.92"/>
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E2E8F0"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Opacity" Value="0.82"/>
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#CBD5E1"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.45"/>
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -74,17 +86,41 @@
         </Style>
 
         <Style x:Key="BotonPrimarioProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
-            <Setter Property="MinWidth" Value="122"/>
-            <Setter Property="Background" Value="#0F766E"/>
-            <Setter Property="BorderBrush" Value="#0F766E"/>
+            <Setter Property="Background" Value="#F97316"/>
+            <Setter Property="BorderBrush" Value="#F97316"/>
             <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#EA580C"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#EA580C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#C2410C"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#C2410C"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="BotonSecundarioProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
-            <Setter Property="MinWidth" Value="116"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#CBD5E1"/>
-            <Setter Property="Foreground" Value="#334155"/>
         </Style>
 
         <Style x:Key="BotonOciProforma" TargetType="Button" BasedOn="{StaticResource BotonBaseProforma}">
@@ -101,31 +137,34 @@
             <Setter Property="Width" Value="30"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="IconBorder"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
+                                CornerRadius="3">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E0F2FE"/>
-                                <Setter Property="BorderBrush" Value="#BAE6FD"/>
-                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter TargetName="IconBorder" Property="Background" Value="#EFF6FF"/>
+                                <Setter TargetName="IconBorder" Property="BorderBrush" Value="#93C5FD"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#CCFBF1"/>
+                                <Setter TargetName="IconBorder" Property="Background" Value="#DBEAFE"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.45"/>
+                                <Setter TargetName="IconBorder" Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -136,14 +175,15 @@
         <Style x:Key="IconoAccion" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="#0F766E"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
         <Style x:Key="CeldaTexto" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
@@ -153,6 +193,34 @@
 
         <Style x:Key="CeldaTextoDerecha" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
             <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="EncabezadoCentro" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#E2E8F0"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="CeldaGridCentro" TargetType="DataGridCell">
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="EstadoBadge" TargetType="Border">
@@ -218,7 +286,8 @@
                         <Setter Property="BorderBrush" Value="#CBD5E1"/>
                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
                         <Setter Property="Padding" Value="8,0"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
                     </Style>
                 </Setter.Value>
             </Setter>
@@ -280,7 +349,7 @@
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="12"
                                       ShadowDepth="1"
-                                      Opacity="0.10"
+                                      Opacity="0.08"
                                       Color="#0F172A"/>
                 </Border.Effect>
 
@@ -297,7 +366,7 @@
                     <StackPanel Grid.Row="0"
                                 Grid.Column="0"
                                 Margin="0,0,16,14">
-                        <TextBlock Text="Listado registrado"
+                        <TextBlock Text="Proformas"
                                    FontSize="22"
                                    FontWeight="Bold"
                                    Foreground="#0F172A"
@@ -318,10 +387,9 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE710;"
                                            FontFamily="Segoe MDL2 Assets"
-                                           FontSize="13"
                                            Margin="0,0,8,0"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Text="Nuevo"/>
+                                <TextBlock Text="Nuevo" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource BotonSecundarioProforma}"
@@ -329,10 +397,9 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE72C;"
                                            FontFamily="Segoe MDL2 Assets"
-                                           FontSize="13"
                                            Margin="0,0,8,0"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Text="Actualizar"/>
+                                <TextBlock Text="Actualizar" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -340,26 +407,26 @@
                     <WrapPanel Grid.Row="1"
                                Grid.Column="0"
                                Grid.ColumnSpan="2">
-                        <StackPanel Margin="0,0,14,0">
+                        <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Buscar" Style="{StaticResource LabelFiltro}"/>
                             <TextBox Style="{StaticResource CampoFiltro}"
                                      Text="{Binding TextoBusqueda, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,14,0">
+                        <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Estado" Style="{StaticResource LabelFiltro}"/>
                             <ComboBox Style="{StaticResource ComboFiltro}"
                                       ItemsSource="{Binding EstadosFiltro}"
                                       SelectedItem="{Binding EstadoFiltro, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,14,0">
+                        <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Fecha desde" Style="{StaticResource LabelFiltro}"/>
                             <DatePicker Style="{StaticResource FechaFiltro}"
                                         SelectedDate="{Binding FechaDesdeFiltro, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,14,0">
+                        <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Fecha hasta" Style="{StaticResource LabelFiltro}"/>
                             <DatePicker Style="{StaticResource FechaFiltro}"
                                         SelectedDate="{Binding FechaHastaFiltro, UpdateSourceTrigger=PropertyChanged}"/>
@@ -412,7 +479,9 @@
                           HeadersVisibility="Column"
                           RowHeight="48"
                           MaxHeight="560"
-                          GridLinesVisibility="Horizontal">
+                          GridLinesVisibility="Horizontal"
+                          ColumnHeaderStyle="{StaticResource EncabezadoCentro}"
+                          CellStyle="{StaticResource CeldaGridCentro}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID"
                                             Binding="{Binding IdProforma}"
@@ -428,17 +497,15 @@
                                                 VerticalAlignment="Center">
                                         <Button Style="{StaticResource BotonIconoProforma}"
                                                 ToolTip="Ver"
-                                                Margin="0,0,4,0"
                                                 Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}">
-                                            <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}"/>
+                                            <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
                                         </Button>
                                         <Button Style="{StaticResource BotonIconoProforma}"
                                                 ToolTip="Editar"
-                                                Margin="0,0,8,0"
                                                 Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}">
-                                            <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}"/>
+                                            <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}" Foreground="#0369A1"/>
                                         </Button>
                                         <Button Content="Generar OCI"
                                                 Style="{StaticResource BotonOciProforma}"
@@ -454,7 +521,8 @@
                                                                Width="30"
                                                                Height="30"
                                                                TextAlignment="Center"
-                                                               Style="{StaticResource IconoAccion}"/>
+                                                               Style="{StaticResource IconoAccion}"
+                                                               Foreground="#0F766E"/>
                                                 </MenuItem.Header>
                                                 <MenuItem Header="Copiar"
                                                           Command="{Binding Tag.CopiarCommand, RelativeSource={RelativeSource AncestorType=MenuItem}}"

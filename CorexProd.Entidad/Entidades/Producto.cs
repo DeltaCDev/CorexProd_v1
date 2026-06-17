@@ -11,6 +11,10 @@ namespace CorexProd.Entidad.Entidades
         public string ProductoBusqueda => string.IsNullOrWhiteSpace(Codigo)
             ? NombreProducto
             : $"{Codigo} - {NombreProducto}";
+        public bool TieneFichaTecnica { get; set; }
+        public string ProductoFichaTecnicaBusqueda => TieneFichaTecnica
+            ? $"{ProductoBusqueda} (Ya tiene ficha tecnica)"
+            : ProductoBusqueda;
         public string Descripcion { get; set; } = string.Empty;
 
         public int IdCategoriaProducto { get; set; }

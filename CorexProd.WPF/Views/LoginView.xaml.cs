@@ -1,5 +1,6 @@
 ﻿using CorexProd.WPF.ViewModels;
 using System.Windows;
+using System.Windows.Input;
 
 namespace CorexProd.WPF.Views
 {
@@ -9,6 +10,11 @@ namespace CorexProd.WPF.Views
         {
             InitializeComponent();
             DataContext = new LoginViewModel();
+            Loaded += (_, _) =>
+            {
+                TxtUsuario.Focus();
+                Keyboard.Focus(TxtUsuario);
+            };
         }
     }
 }

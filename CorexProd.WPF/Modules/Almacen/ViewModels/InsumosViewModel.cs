@@ -2,10 +2,12 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Views;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Linq;
 using System;
+using System.Windows;
 
 namespace CorexProd.WPF.ViewModels
 {
@@ -94,13 +96,24 @@ namespace CorexProd.WPF.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand EditarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand LimpiarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdInsumo > 0 ? "Editar Insumo" : "Nuevo Insumo";
+        public string ResumenRegistros => $"Mostrando {Insumos.Count} insumos";
 
         public InsumosViewModel()
         {
-            NuevoCommand = new RelayCommand(_ => Limpiar());
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
             GuardarCommand = new RelayCommand(_ => Guardar());
-            EditarCommand = new RelayCommand(_ => Editar());
-            EliminarCommand = new RelayCommand(_ => Eliminar());
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
+            LimpiarCommand = new RelayCommand(_ => Limpiar());
+            RefrescarCommand = new RelayCommand(_ => Refrescar());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCombos();
             CargarInsumos();
@@ -124,51 +137,24 @@ namespace CorexProd.WPF.ViewModels
         {
             Insumos = new ObservableCollection<Insumo>(_insumoNegocio.Listar());
             OnPropertyChanged(nameof(Insumos));
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void Guardar()
         {
             try
             {
-                Insumo insumo = new()
+                if (IdInsumo > 0)
                 {
-                    Codigo = Codigo?.Trim().ToUpper() ?? string.Empty,
-                    NombreInsumo = NombreInsumo?.Trim().ToUpper() ?? string.Empty,
-                    IdCategoriaInsumo = IdCategoriaInsumo,
-                    IdUnidadMedida = IdUnidadMedida,
-                    StockMinimo = StockMinimo,
-                    Estado = true
-                };
+                    bool confirma = ConfirmDialogService.Confirmar(
+                        "¿Está seguro de editar este insumo?",
+                        "Editar insumo");
 
-                _insumoNegocio.Registrar(insumo);
-
-                NotificationService.Success("Insumo registrado correctamente.");
-                CargarInsumos();
-                Limpiar();
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Error(ex.Message);
-            }
-        }
-
-        private void Editar()
-        {
-            try
-            {
-                if (IdInsumo <= 0)
-                {
-                    NotificationService.Warning("Seleccione un insumo.");
-                    return;
+                    if (!confirma)
+                    {
+                        return;
+                    }
                 }
-
-                bool confirma = ConfirmDialogService.Confirmar(
-                    "Editar insumo",
-                    "¿Está seguro de editar este insumo?"
-                );
-
-                if (!confirma)
-                    return;
 
                 Insumo insumo = new()
                 {
@@ -181,11 +167,20 @@ namespace CorexProd.WPF.ViewModels
                     Estado = Estado
                 };
 
-                _insumoNegocio.Editar(insumo);
+                if (IdInsumo > 0)
+                {
+                    _insumoNegocio.Editar(insumo);
+                    NotificationService.Success("Insumo actualizado correctamente.");
+                }
+                else
+                {
+                    _insumoNegocio.Registrar(insumo);
+                    NotificationService.Success("Insumo registrado correctamente.");
+                }
 
-                NotificationService.Success("Insumo actualizado correctamente.");
+                Guardado = true;
                 CargarInsumos();
-                Limpiar();
+                CerrarVentana?.Invoke();
             }
             catch (Exception ex)
             {
@@ -193,25 +188,37 @@ namespace CorexProd.WPF.ViewModels
             }
         }
 
-        private void Eliminar()
+        private void Editar(object? parametro)
+        {
+            if (parametro is not Insumo insumo)
+            {
+                NotificationService.Warning("Seleccione un insumo.");
+                return;
+            }
+
+            AbrirEditor(insumo);
+        }
+
+        private void Eliminar(object? parametro)
         {
             try
             {
-                if (InsumoSeleccionado == null)
+                Insumo? insumo = parametro as Insumo ?? InsumoSeleccionado;
+
+                if (insumo == null)
                 {
                     NotificationService.Warning("Seleccione un insumo.");
                     return;
                 }
 
                 bool confirma = ConfirmDialogService.Confirmar(
-                    "Eliminar insumo",
-                    "¿Está seguro de eliminar este insumo?"
-                );
+                    "¿Está seguro de eliminar este insumo?",
+                    "Eliminar insumo");
 
                 if (!confirma)
                     return;
 
-                _insumoNegocio.Eliminar(InsumoSeleccionado);
+                _insumoNegocio.Eliminar(insumo);
 
                 NotificationService.Success("Insumo eliminado correctamente.");
                 CargarInsumos();
@@ -233,6 +240,45 @@ namespace CorexProd.WPF.ViewModels
             StockMinimo = 0;
             Estado = true;
             InsumoSeleccionado = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void Refrescar()
+        {
+            CargarCombos();
+            CargarInsumos();
+        }
+
+        private void AbrirEditor(Insumo? insumo)
+        {
+            InsumosViewModel viewModel = new();
+
+            if (insumo != null)
+            {
+                viewModel.IdInsumo = insumo.IdInsumo;
+                viewModel.Codigo = insumo.Codigo;
+                viewModel.NombreInsumo = insumo.NombreInsumo;
+                viewModel.IdCategoriaInsumo = insumo.IdCategoriaInsumo;
+                viewModel.IdUnidadMedida = insumo.IdUnidadMedida;
+                viewModel.StockMinimo = insumo.StockMinimo;
+                viewModel.Estado = insumo.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            InsumoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                Refrescar();
+                Limpiar();
+            }
         }
     }
 }

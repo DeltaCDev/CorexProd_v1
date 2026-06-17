@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows;
+using CorexProd.WPF.Modules.Seguridad.Views;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
@@ -71,6 +72,15 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
+        public ICommand NuevoCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand RefrescarCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
+        public bool Guardado { get; private set; }
+        public string TituloEditor => IdCargo > 0 ? "Editar Cargo" : "Nuevo Cargo";
+        public string ResumenRegistros => $"Mostrando {Cargos.Count} cargos";
 
         public CargosViewModel()
         {
@@ -79,6 +89,10 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(id => Eliminar(id));
+            NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            EditarCommand = new RelayCommand(parametro => Editar(parametro));
+            RefrescarCommand = new RelayCommand(_ => CargarCargos());
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCargos();
         }
@@ -91,6 +105,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Cargos.Add(cargo);
             }
+
+            OnPropertyChanged(nameof(ResumenRegistros));
         }
 
         private void Guardar()
@@ -122,7 +138,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 NotificationService.Success(mensaje);
                 CargarCargos();
-                Limpiar();
+                Guardado = true;
+                CerrarVentana?.Invoke();
             }
             else
             {
@@ -143,17 +160,15 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 NotificationService.Warning("Id de cargo inválido");
                 return;
             }
-            if (IdCargo > 0)
-            {
-                bool confirmar = ConfirmDialogService.Confirmar(
-                    "¿Está seguro de eliminar este cargo?",
-                    "Confirmar eliminación");
+            bool confirmar = ConfirmDialogService.Confirmar(
+                "¿Está seguro de eliminar este cargo?",
+                "Confirmar eliminación");
 
-                if (!confirmar)
-                {
-                    return;
-                }
+            if (!confirmar)
+            {
+                return;
             }
+
             string mensaje = _cargoNegocio.Eliminar(idCargo);
 
             if (mensaje.Contains("correctamente"))
@@ -174,6 +189,46 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             NombreCargo = string.Empty;
             Estado = true;
             CargoSeleccionado = null;
+            OnPropertyChanged(nameof(TituloEditor));
+        }
+
+        private void AbrirEditor(Cargo? cargo)
+        {
+            CargosViewModel viewModel = new();
+
+            if (cargo != null)
+            {
+                viewModel.IdCargo = cargo.IdCargo;
+                viewModel.NombreCargo = cargo.NombreCargo;
+                viewModel.Estado = cargo.Estado;
+                viewModel.OnPropertyChanged(nameof(TituloEditor));
+            }
+
+            CargoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+            {
+                CargarCargos();
+                Limpiar();
+            }
+        }
+
+        private void Editar(object? parametro)
+        {
+            if (parametro is not Cargo cargo)
+            {
+                NotificationService.Warning("Debe seleccionar un cargo");
+                return;
+            }
+
+            AbrirEditor(cargo);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
