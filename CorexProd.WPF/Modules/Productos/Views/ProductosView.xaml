@@ -90,6 +90,9 @@
                         <TextBlock Text="Administra codigos, categorias, unidades y stock minimo" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button Style="{StaticResource BotonBase}" Command="{Binding CreacionMasivaCommand}" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Creacion masiva"/></StackPanel>
+                        </Button>
                         <Button Style="{StaticResource BotonPrimario}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Nuevo"/></StackPanel>
                         </Button>

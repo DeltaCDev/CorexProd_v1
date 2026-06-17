@@ -2,6 +2,7 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Shared.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
@@ -256,6 +257,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public decimal Total => Detalles.Sum(d => d.Importe);
 
         public ICommand AgregarProductoCommand { get; }
+        public ICommand CargaMasivaCommand { get; }
         public ICommand QuitarProductoCommand { get; }
         public ICommand GuardarCommand { get; }
         public ICommand CancelarCommand { get; }
@@ -267,6 +269,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ProformaEditorViewModel(Proforma? proforma = null, bool copiar = false)
         {
             AgregarProductoCommand = new RelayCommand(_ => AgregarFila());
+            CargaMasivaCommand = new RelayCommand(_ => AbrirCargaMasiva());
             QuitarProductoCommand = new RelayCommand(parametro => QuitarFila(parametro));
             GuardarCommand = new RelayCommand(_ => Guardar());
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
@@ -431,6 +434,78 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             Detalles.Remove(item);
             NotificarTotales();
+        }
+
+        private void AbrirCargaMasiva()
+        {
+            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva)
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            if (ventana.ShowDialog() != true)
+            {
+                return;
+            }
+
+            int productosProcesados = 0;
+            decimal unidadesAgregadas = 0;
+
+            foreach (CargaMasivaProductoFila fila in ventana.ProductosSeleccionados)
+            {
+                if (fila.Producto is not Producto producto)
+                {
+                    continue;
+                }
+
+                AgregarProductoCargaMasiva(producto, fila.Cantidad);
+                productosProcesados++;
+                unidadesAgregadas += fila.Cantidad;
+            }
+
+            NotificarTotales();
+            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {productosProcesados}. Unidades agregadas: {unidadesAgregadas:N2}. Errores encontrados: {ventana.ErroresEncontrados}");
+        }
+
+        private CargaMasivaProductoInfo? BuscarProductoCargaMasiva(string codigo)
+        {
+            Producto? producto = Productos.FirstOrDefault(p =>
+                p.Codigo.Equals(codigo.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (producto == null)
+            {
+                return null;
+            }
+
+            return new CargaMasivaProductoInfo
+            {
+                IdProducto = producto.IdProducto,
+                Codigo = producto.Codigo,
+                NombreProducto = producto.NombreProducto,
+                Producto = producto
+            };
+        }
+
+        private void AgregarProductoCargaMasiva(Producto producto, decimal cantidad)
+        {
+            ProformaDetalleItemViewModel? filaExistente = Detalles.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
+
+            if (filaExistente != null)
+            {
+                filaExistente.Cantidad += cantidad;
+                return;
+            }
+
+            ProformaDetalleItemViewModel fila = Detalles.FirstOrDefault(d => d.IdProducto == 0) ?? CrearFilaDetalle();
+
+            if (!Detalles.Contains(fila))
+            {
+                Detalles.Add(fila);
+            }
+
+            fila.CargarProducto(producto.IdProducto);
+            fila.Cantidad = cantidad;
+            fila.Observacion = producto.Descripcion;
         }
 
         private void ValidarProductoRepetido(ProformaDetalleItemViewModel filaActual, Producto producto)

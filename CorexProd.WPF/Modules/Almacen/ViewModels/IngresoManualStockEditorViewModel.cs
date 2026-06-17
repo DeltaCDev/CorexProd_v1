@@ -2,6 +2,7 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Shared.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
@@ -49,6 +50,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             GuardarCommand = new RelayCommand(_ => Guardar(), _ => !IsSaving);
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             AgregarProductoCommand = new RelayCommand(_ => AgregarProducto());
+            CargaMasivaCommand = new RelayCommand(_ => AbrirCargaMasiva());
             QuitarProductoCommand = new RelayCommand(parametro => QuitarProducto(parametro));
             MostrarProveedorRapidoCommand = new RelayCommand(_ => ProveedorRapidoVisibility = Visibility.Visible);
             CancelarProveedorRapidoCommand = new RelayCommand(_ => LimpiarProveedorRapido());
@@ -189,6 +191,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand CancelarCommand { get; }
         public ICommand AgregarProductoCommand { get; }
+        public ICommand CargaMasivaCommand { get; }
         public ICommand QuitarProductoCommand { get; }
         public ICommand MostrarProveedorRapidoCommand { get; }
         public ICommand CancelarProveedorRapidoCommand { get; }
@@ -259,6 +262,85 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 Detalles.Remove(detalle);
                 RecalcularTotales();
             }
+        }
+
+        private void AbrirCargaMasiva()
+        {
+            if (AlmacenSeleccionado == null)
+            {
+                NotificationService.Warning("Seleccione un almacen antes de realizar la carga masiva");
+                return;
+            }
+
+            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva)
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            if (ventana.ShowDialog() != true)
+            {
+                return;
+            }
+
+            int productosProcesados = 0;
+            decimal unidadesAgregadas = 0;
+
+            foreach (CargaMasivaProductoFila fila in ventana.ProductosSeleccionados)
+            {
+                if (fila.Producto is not ProductoStockBusqueda producto)
+                {
+                    continue;
+                }
+
+                AgregarProductoCargaMasiva(producto, fila.Cantidad);
+                productosProcesados++;
+                unidadesAgregadas += fila.Cantidad;
+            }
+
+            RecalcularTotales();
+            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {productosProcesados}. Unidades agregadas: {unidadesAgregadas:N2}. Errores encontrados: {ventana.ErroresEncontrados}");
+        }
+
+        private CargaMasivaProductoInfo? BuscarProductoCargaMasiva(string codigo)
+        {
+            int idAlmacen = AlmacenSeleccionado?.IdAlmacen ?? 0;
+            ProductoStockBusqueda? producto = _negocio.BuscarProductos(idAlmacen, codigo.Trim())
+                .FirstOrDefault(p => p.Codigo.Equals(codigo.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (producto == null)
+            {
+                return null;
+            }
+
+            return new CargaMasivaProductoInfo
+            {
+                IdProducto = producto.IdProducto,
+                Codigo = producto.Codigo,
+                NombreProducto = producto.NombreProducto,
+                Producto = producto
+            };
+        }
+
+        private void AgregarProductoCargaMasiva(ProductoStockBusqueda producto, decimal cantidad)
+        {
+            IngresoManualStockDetalleViewModel? filaExistente = Detalles.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
+
+            if (filaExistente != null)
+            {
+                filaExistente.Cantidad += cantidad;
+                return;
+            }
+
+            IngresoManualStockDetalleViewModel fila = Detalles.FirstOrDefault(d => d.IdProducto == 0)
+                ?? new IngresoManualStockDetalleViewModel(RecalcularTotales, BuscarProductos);
+
+            if (!Detalles.Contains(fila))
+            {
+                Detalles.Add(fila);
+            }
+
+            fila.AsignarProducto(producto);
+            fila.Cantidad = cantidad;
         }
 
         private ObservableCollection<ProductoStockBusqueda> BuscarProductos(string texto)

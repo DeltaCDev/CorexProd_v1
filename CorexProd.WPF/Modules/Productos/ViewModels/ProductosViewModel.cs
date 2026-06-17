@@ -129,6 +129,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         public ICommand EliminarCommand { get; }
         public ICommand VerFichaTecnicaCommand { get; }
         public ICommand NuevoCommand { get; }
+        public ICommand CreacionMasivaCommand { get; }
         public ICommand EditarCommand { get; }
         public ICommand RefrescarCommand { get; }
         public ICommand CerrarCommand { get; }
@@ -145,6 +146,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
             VerFichaTecnicaCommand = new RelayCommand(parametro => VerFichaTecnica(parametro));
             NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
+            CreacionMasivaCommand = new RelayCommand(_ => AbrirCreacionMasiva());
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             RefrescarCommand = new RelayCommand(_ => Refrescar());
             CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
@@ -315,6 +317,26 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             ventana.ShowDialog();
 
             if (viewModel.Guardado)
+            {
+                Refrescar();
+                Limpiar();
+            }
+        }
+
+        private void AbrirCreacionMasiva()
+        {
+            CreacionMasivaProductosWindow ventana = new(
+                Productos.ToList(),
+                _categoriaProductoNegocio.Listar(),
+                _unidadMedidaNegocio.Listar(),
+                producto => _productoNegocio.Guardar(producto))
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            ventana.ShowDialog();
+
+            if (ventana.SeCrearonProductos)
             {
                 Refrescar();
                 Limpiar();

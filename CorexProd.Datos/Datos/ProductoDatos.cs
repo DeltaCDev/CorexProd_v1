@@ -75,6 +75,11 @@ namespace CorexProd.Datos.Datos
 
             mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
 
+            if (Convert.ToBoolean(resultado.Value))
+            {
+                InicializarStockProducto(conexion, producto.Codigo);
+            }
+
             return mensaje;
         }
 
@@ -145,6 +150,28 @@ namespace CorexProd.Datos.Datos
             mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
 
             return mensaje;
+        }
+
+        private static void InicializarStockProducto(SqlConnection conexion, string codigo)
+        {
+            using SqlCommand cmd = new(@"
+IF OBJECT_ID('dbo.StockProductos', 'U') IS NOT NULL
+BEGIN
+    INSERT INTO dbo.StockProductos (IdProducto, StockActual)
+    SELECT P.IdProducto, 0
+    FROM dbo.Productos P
+    WHERE P.Codigo = @Codigo
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.StockProductos SP
+          WHERE SP.IdProducto = P.IdProducto
+      );
+END", conexion);
+
+            cmd.CommandType = CommandType.Text;
+            cmd.Parameters.AddWithValue("@Codigo", codigo);
+            cmd.ExecuteNonQuery();
         }
     }
 }

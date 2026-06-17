@@ -171,6 +171,7 @@
                             <Button DockPanel.Dock="Right" Width="38" Height="30" ToolTip="Agregar producto" Command="{Binding AgregarProductoCommand}">
                                 <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"/>
                             </Button>
+                            <Button DockPanel.Dock="Right" Content="Carga masiva" Width="118" Height="30" Margin="0,0,8,0" Command="{Binding CargaMasivaCommand}"/>
                         </DockPanel>
 
                         <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" RowHeight="42" MinHeight="180" GridLinesVisibility="Horizontal">
