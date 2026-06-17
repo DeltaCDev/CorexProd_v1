@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -39,14 +38,18 @@ namespace CorexProd.WPF.Helpers
         {
             string nombreEmpresa = string.IsNullOrWhiteSpace(empresa.NombreComercial) ? empresa.Nombre : empresa.NombreComercial;
             string ubicacion = UnirPartes(empresa.Departamento, empresa.Provincia, empresa.Distrito);
-            byte[]? logoBytes = ObtenerLogoBytes(empresa);
+            bool logoDibujado = false;
 
-            if (logoBytes != null)
+            foreach (byte[] logoBytes in ObtenerLogosBytes(empresa))
             {
-                canvas.Image(logoBytes, Margin, y - 44, 86, 44);
+                if (canvas.Image(logoBytes, Margin, y - 44, 86, 44))
+                {
+                    logoDibujado = true;
+                    break;
+                }
             }
 
-            double infoX = logoBytes == null ? Margin : Margin + 98;
+            double infoX = logoDibujado ? Margin + 98 : Margin;
 
             canvas.Text(Limpiar(nombreEmpresa).ToUpperInvariant(), infoX, y, 14, true);
             y -= 15;
@@ -304,11 +307,11 @@ namespace CorexProd.WPF.Helpers
                 .Replace("ñ", "n").Replace("Ñ", "N").Replace("¿", "").Replace("¡", "");
         }
 
-        private static byte[]? ObtenerLogoBytes(Empresa empresa)
+        private static IEnumerable<byte[]> ObtenerLogosBytes(Empresa empresa)
         {
-            if (EsImagenValida(empresa.Logo))
+            if (empresa.Logo is { Length: > 0 } logoEmpresa && EsImagenValida(logoEmpresa))
             {
-                return empresa.Logo;
+                yield return logoEmpresa;
             }
 
             string baseDirectory = AppContext.BaseDirectory;
@@ -322,23 +325,19 @@ namespace CorexProd.WPF.Helpers
                 Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "CorexProd.WPF", "Images", "LOGO.png"))
             ];
 
-            string? logoPath = rutas.FirstOrDefault(path => File.Exists(path) && EsImagenValida(path));
-
-            if (!string.IsNullOrWhiteSpace(logoPath))
+            foreach (string logoPath in rutas.Where(path => File.Exists(path) && EsImagenValida(path)))
             {
-                return File.ReadAllBytes(logoPath);
+                yield return File.ReadAllBytes(logoPath);
             }
 
             StreamResourceInfo? resource = Application.GetResourceStream(new Uri("pack://application:,,,/Images/LOGO.png", UriKind.Absolute));
 
-            if (resource?.Stream == null)
+            if (resource?.Stream != null)
             {
-                return null;
+                using MemoryStream stream = new();
+                resource.Stream.CopyTo(stream);
+                yield return stream.ToArray();
             }
-
-            using MemoryStream stream = new();
-            resource.Stream.CopyTo(stream);
-            return stream.ToArray();
         }
 
         private static bool EsImagenValida(string path)
@@ -476,7 +475,7 @@ namespace CorexProd.WPF.Helpers
             private static byte[] ImageObject(PdfImage image)
             {
                 byte[] header = Encoding.ASCII.GetBytes(
-                    $"{image.ObjectId} 0 obj\n<< /Type /XObject /Subtype /Image /Width {image.Width} /Height {image.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {image.Data.Length} >>\nstream\n");
+                    $"{image.ObjectId} 0 obj\n<< /Type /XObject /Subtype /Image /Width {image.Width} /Height {image.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /{image.Filter} /Length {image.Data.Length} >>\nstream\n");
                 byte[] footer = Encoding.ASCII.GetBytes("endstream\nendobj\n");
 
                 using MemoryStream stream = new();
@@ -551,23 +550,23 @@ namespace CorexProd.WPF.Helpers
                 Text(text, centerX - (textWidth / 2), y, size, bold, red, green, blue);
             }
 
-            public void Image(string path, double x, double y, double maxWidth, double maxHeight)
+            public bool Image(string path, double x, double y, double maxWidth, double maxHeight)
             {
                 PdfImage? image = PdfImage.FromFile(path, $"Im{++_imageCounter}");
-                DrawImage(image, x, y, maxWidth, maxHeight);
+                return DrawImage(image, x, y, maxWidth, maxHeight);
             }
 
-            public void Image(byte[] bytes, double x, double y, double maxWidth, double maxHeight)
+            public bool Image(byte[] bytes, double x, double y, double maxWidth, double maxHeight)
             {
                 PdfImage? image = PdfImage.FromBytes(bytes, $"Im{++_imageCounter}");
-                DrawImage(image, x, y, maxWidth, maxHeight);
+                return DrawImage(image, x, y, maxWidth, maxHeight);
             }
 
-            private void DrawImage(PdfImage? image, double x, double y, double maxWidth, double maxHeight)
+            private bool DrawImage(PdfImage? image, double x, double y, double maxWidth, double maxHeight)
             {
                 if (image == null)
                 {
-                    return;
+                    return false;
                 }
 
                 double ratio = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
@@ -586,6 +585,7 @@ namespace CorexProd.WPF.Helpers
                 _content.Append(" cm /");
                 _content.Append(image.Name);
                 _content.Append(" Do Q\n");
+                return true;
             }
 
             public void Line(double x1, double y1, double x2, double y2)
@@ -642,18 +642,20 @@ namespace CorexProd.WPF.Helpers
 
         private sealed class PdfImage
         {
-            private PdfImage(string name, int width, int height, byte[] data)
+            private PdfImage(string name, int width, int height, byte[] data, string filter)
             {
                 Name = name;
                 Width = width;
                 Height = height;
                 Data = data;
+                Filter = filter;
             }
 
             public string Name { get; }
             public int Width { get; }
             public int Height { get; }
             public byte[] Data { get; }
+            public string Filter { get; }
             public int ObjectId { get; set; }
 
             public static PdfImage? FromFile(string path, string name)
@@ -697,21 +699,122 @@ namespace CorexProd.WPF.Helpers
 
             private static PdfImage FromBitmapSource(BitmapSource bitmap, string name)
             {
-                BitmapSource source = bitmap.Format == PixelFormats.Rgb24
+                BitmapSource source = bitmap.Format == PixelFormats.Pbgra32
                     ? bitmap
-                    : new FormatConvertedBitmap(bitmap, PixelFormats.Rgb24, null, 0);
+                    : new FormatConvertedBitmap(bitmap, PixelFormats.Pbgra32, null, 0);
 
-                int stride = ((source.PixelWidth * source.Format.BitsPerPixel) + 7) / 8;
-                byte[] pixels = new byte[stride * source.PixelHeight];
-                source.CopyPixels(pixels, stride, 0);
+                int width = source.PixelWidth;
+                int height = source.PixelHeight;
+                int sourceStride = width * 4;
+                byte[] sourcePixels = new byte[sourceStride * height];
 
-                using MemoryStream compressed = new();
-                using (DeflateStream deflate = new(compressed, CompressionLevel.Optimal, leaveOpen: true))
+                source.CopyPixels(sourcePixels, sourceStride, 0);
+
+                Int32Rect contentBounds = ObtenerAreaVisible(sourcePixels, width, height, sourceStride);
+                int outputWidth = contentBounds.Width;
+                int outputHeight = contentBounds.Height;
+                byte[] rgbPixels = new byte[outputWidth * outputHeight * 3];
+
+                for (int y = 0, rgbIndex = 0; y < outputHeight; y++)
                 {
-                    deflate.Write(pixels, 0, pixels.Length);
+                    int sourceIndex = ((contentBounds.Y + y) * sourceStride) + (contentBounds.X * 4);
+
+                    for (int x = 0; x < outputWidth; x++, sourceIndex += 4, rgbIndex += 3)
+                    {
+                        byte blue = sourcePixels[sourceIndex];
+                        byte green = sourcePixels[sourceIndex + 1];
+                        byte red = sourcePixels[sourceIndex + 2];
+                        byte alpha = sourcePixels[sourceIndex + 3];
+
+                        rgbPixels[rgbIndex] = BlendWithWhite(red, alpha);
+                        rgbPixels[rgbIndex + 1] = BlendWithWhite(green, alpha);
+                        rgbPixels[rgbIndex + 2] = BlendWithWhite(blue, alpha);
+                    }
                 }
 
-                return new PdfImage(name, source.PixelWidth, source.PixelHeight, compressed.ToArray());
+                BitmapSource rgbSource = BitmapSource.Create(
+                    outputWidth,
+                    outputHeight,
+                    96,
+                    96,
+                    PixelFormats.Rgb24,
+                    null,
+                    rgbPixels,
+                    outputWidth * 3);
+
+                JpegBitmapEncoder encoder = new()
+                {
+                    QualityLevel = 92
+                };
+                encoder.Frames.Add(BitmapFrame.Create(rgbSource));
+
+                using MemoryStream output = new();
+                encoder.Save(output);
+
+                return new PdfImage(name, outputWidth, outputHeight, output.ToArray(), "DCTDecode");
+            }
+
+            private static Int32Rect ObtenerAreaVisible(byte[] pixels, int width, int height, int stride)
+            {
+                int left = width;
+                int top = height;
+                int right = -1;
+                int bottom = -1;
+
+                for (int y = 0; y < height; y++)
+                {
+                    int index = y * stride;
+
+                    for (int x = 0; x < width; x++, index += 4)
+                    {
+                        byte blue = pixels[index];
+                        byte green = pixels[index + 1];
+                        byte red = pixels[index + 2];
+                        byte alpha = pixels[index + 3];
+
+                        if (!EsPixelVisible(red, green, blue, alpha))
+                        {
+                            continue;
+                        }
+
+                        left = Math.Min(left, x);
+                        top = Math.Min(top, y);
+                        right = Math.Max(right, x);
+                        bottom = Math.Max(bottom, y);
+                    }
+                }
+
+                if (right < left || bottom < top)
+                {
+                    return new Int32Rect(0, 0, width, height);
+                }
+
+                return new Int32Rect(left, top, right - left + 1, bottom - top + 1);
+            }
+
+            private static bool EsPixelVisible(byte premultipliedRed, byte premultipliedGreen, byte premultipliedBlue, byte alpha)
+            {
+                if (alpha < 16)
+                {
+                    return false;
+                }
+
+                byte red = BlendWithWhite(premultipliedRed, alpha);
+                byte green = BlendWithWhite(premultipliedGreen, alpha);
+                byte blue = BlendWithWhite(premultipliedBlue, alpha);
+
+                return red < 245 || green < 245 || blue < 245;
+            }
+
+            private static byte BlendWithWhite(byte premultipliedColor, byte alpha)
+            {
+                if (alpha == 255)
+                {
+                    return premultipliedColor;
+                }
+
+                int value = premultipliedColor + 255 - alpha;
+                return (byte)Math.Clamp(value, 0, 255);
             }
         }
 

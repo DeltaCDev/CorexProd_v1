@@ -1,0 +1,202 @@
+<UserControl x:Class="CorexProd.WPF.Modules.Almacen.Views.IngresosManualesStockView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CorexProd.WPF.Modules.Almacen.ViewModels">
+
+    <UserControl.DataContext>
+        <vm:IngresosManualesStockViewModel/>
+    </UserControl.DataContext>
+
+    <UserControl.Resources>
+        <Style x:Key="LabelFiltro" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="CampoFiltro" TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="160"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="ComboFiltro" TargetType="ComboBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Padding" Value="8,0"/>
+        </Style>
+        <Style x:Key="BotonBase" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+            <Setter Property="Background" Value="#F97316"/>
+            <Setter Property="BorderBrush" Value="#F97316"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="BotonIcono" TargetType="Button">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="IconoAccion" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CeldaTexto" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="CeldaDerecha" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+        <Style x:Key="EstadoBadge" TargetType="Border">
+            <Setter Property="MinWidth" Value="92"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Background" Value="#FEF3C7"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Abastecido">
+                    <Setter Property="Background" Value="#BAE6FD"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Background" Value="#FFE4E6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoTexto" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#92400E"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Abastecido">
+                    <Setter Property="Foreground" Value="#0369A1"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Foreground" Value="#BE123C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20" MaxWidth="1360" HorizontalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="18" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
+                        <TextBlock Text="Ingresos Manuales de Stock" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
+                        <TextBlock Text="Registra, revisa y abastece entradas manuales al almacen" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button Style="{StaticResource BotonPrimario}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
+                                <TextBlock Text="Nuevo"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource BotonBase}" Command="{Binding RefrescarCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
+                                <TextBlock Text="Actualizar"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <WrapPanel Grid.Row="1" Grid.ColumnSpan="2">
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Desde" Style="{StaticResource LabelFiltro}"/>
+                            <DatePicker SelectedDate="{Binding FechaDesde}" Height="34" MinWidth="130"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Hasta" Style="{StaticResource LabelFiltro}"/>
+                            <DatePicker SelectedDate="{Binding FechaHasta}" Height="34" MinWidth="130"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Proveedor" Style="{StaticResource LabelFiltro}"/>
+                            <ComboBox Style="{StaticResource ComboFiltro}" ItemsSource="{Binding ProveedoresFiltro}" DisplayMemberPath="NombreRazonSocial" SelectedItem="{Binding ProveedorFiltro}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Almacen" Style="{StaticResource LabelFiltro}"/>
+                            <ComboBox Style="{StaticResource ComboFiltro}" ItemsSource="{Binding AlmacenesFiltro}" DisplayMemberPath="NombreAlmacen" SelectedItem="{Binding AlmacenFiltro}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Estado" Style="{StaticResource LabelFiltro}"/>
+                            <ComboBox Style="{StaticResource ComboFiltro}" ItemsSource="{Binding EstadosFiltro}" SelectedItem="{Binding EstadoFiltro}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Documento" Style="{StaticResource LabelFiltro}"/>
+                            <TextBox Style="{StaticResource CampoFiltro}" Text="{Binding NumeroDocumentoFiltro, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <Button Content="Buscar" Style="{StaticResource BotonBase}" Command="{Binding BuscarCommand}" VerticalAlignment="Bottom" Margin="0,0,8,0"/>
+                        <Button Content="Quitar filtros" Style="{StaticResource BotonBase}" Command="{Binding QuitarFiltrosCommand}" VerticalAlignment="Bottom" Margin="0,0,14,0"/>
+                        <TextBlock Text="{Binding ResumenRegistros}" VerticalAlignment="Bottom" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,8"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
+                <DataGrid ItemsSource="{Binding Ingresos}" SelectedItem="{Binding IngresoSeleccionado}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="48" MaxHeight="560" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Acciones" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource BotonIcono}" ToolTip="Vista previa" Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
+                                        </Button>
+                                        <Button Style="{StaticResource BotonIcono}" ToolTip="Editar" Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}" Foreground="#0369A1"/>
+                                        </Button>
+                                        <Button Style="{StaticResource BotonIcono}" ToolTip="Abastecer" Command="{Binding DataContext.AbastecerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE73E;" Style="{StaticResource IconoAccion}" Foreground="#16A34A"/>
+                                        </Button>
+                                        <Button Style="{StaticResource BotonIcono}" ToolTip="Anular" Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                            <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccion}" Foreground="#BE123C"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="ID" Binding="{Binding IdIngresoManualStock}" Width="60"/>
+                        <DataGridTextColumn Header="Fecha emision" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="110"/>
+                        <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="230" ElementStyle="{StaticResource CeldaTexto}"/>
+                        <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="140"/>
+                        <DataGridTextColumn Header="Almacen" Binding="{Binding NombreAlmacen}" Width="150"/>
+                        <DataGridTemplateColumn Header="Estado" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoTexto}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="110" ElementStyle="{StaticResource CeldaDerecha}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

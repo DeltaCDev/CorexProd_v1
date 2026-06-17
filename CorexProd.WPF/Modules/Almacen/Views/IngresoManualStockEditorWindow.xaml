@@ -1,0 +1,242 @@
+<Window x:Class="CorexProd.WPF.Modules.Almacen.Views.IngresoManualStockEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Titulo}"
+        Width="1180"
+        Height="760"
+        WindowState="Maximized"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F4F6">
+
+    <Window.Resources>
+        <Style x:Key="LabelCampo" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="CampoTexto" TargetType="TextBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CampoCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+        <Style x:Key="ProductoBusquedaItem" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding Titulo}" FontSize="24" FontWeight="Bold" Foreground="#F97316" Margin="0,0,0,14"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="White" CornerRadius="8" BorderBrush="#E5E7EB" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Datos Generales" FontSize="16" FontWeight="Bold" Foreground="#374151" Margin="0,0,0,14"/>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1.7*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,14">
+                                <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Fecha emision "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                                <DatePicker SelectedDate="{Binding FechaEmision}" Height="30"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,14,14">
+                                <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Proveedor "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                                <DockPanel LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Width="38" Height="30" Margin="8,0,0,0" ToolTip="Crear proveedor" Command="{Binding MostrarProveedorRapidoCommand}">
+                                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"/>
+                                    </Button>
+                                    <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding Proveedores}" DisplayMemberPath="ProveedorBusqueda" SelectedItem="{Binding ProveedorSeleccionado}" IsTextSearchEnabled="True"/>
+                                </DockPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,14,14">
+                                <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Tipo documento "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                                <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding TiposDocumento}" DisplayMemberPath="NombreTipoDocumento" SelectedItem="{Binding TipoDocumentoSeleccionado}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,0,14">
+                                <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Almacen "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                                <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding Almacenes}" DisplayMemberPath="NombreAlmacen" SelectedItem="{Binding AlmacenSeleccionado}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,14,14">
+                                <TextBlock Text="Tipo numeracion" Style="{StaticResource LabelCampo}"/>
+                                <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding TiposNumeracion}" SelectedItem="{Binding TipoNumeracion}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,14,14">
+                                <TextBlock Text="Serie" Style="{StaticResource LabelCampo}"/>
+                                <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Serie, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding SerieNumeroReadOnly}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,14,14">
+                                <TextBlock Text="Numero" Style="{StaticResource LabelCampo}"/>
+                                <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Numero, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding SerieNumeroReadOnly}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,14">
+                                <TextBlock Text="Documento" Style="{StaticResource LabelCampo}"/>
+                                <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Serie}" IsReadOnly="True" ToolTip="El correlativo automatico se genera definitivamente al guardar"/>
+                            </StackPanel>
+
+                            <Border Grid.Row="2" Grid.ColumnSpan="4" Visibility="{Binding ProveedorRapidoVisibility}" Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,4">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="0.8*"/>
+                                        <ColumnDefinition Width="1.1*"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="1.2*"/>
+                                        <ColumnDefinition Width="1.2*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,12">
+                                        <TextBlock Text="Documento" Style="{StaticResource LabelCampo}"/>
+                                        <ComboBox Style="{StaticResource CampoCombo}" SelectedValuePath="Content" SelectedValue="{Binding NuevoProveedorTipoDocumento}">
+                                            <ComboBoxItem Content="RUC"/>
+                                            <ComboBoxItem Content="DNI"/>
+                                            <ComboBoxItem Content="S/N"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,10,12">
+                                        <TextBlock Text="Nro documento" Style="{StaticResource LabelCampo}"/>
+                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,10,12">
+                                        <TextBlock Text="Nombre / Razon Social" Style="{StaticResource LabelCampo}"/>
+                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorNombre, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,10,12">
+                                        <TextBlock Text="Telefono" Style="{StaticResource LabelCampo}"/>
+                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorTelefono, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="4" Margin="0,0,10,12">
+                                        <TextBlock Text="Correo" Style="{StaticResource LabelCampo}"/>
+                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorCorreo, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Margin="0,0,10,0">
+                                        <TextBlock Text="Direccion" Style="{StaticResource LabelCampo}"/>
+                                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoProveedorDireccion, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                                        <Button Content="Guardar" Width="96" Height="30" Margin="0,0,8,0" Command="{Binding GuardarProveedorRapidoCommand}"/>
+                                        <Button Content="Cerrar" Width="80" Height="30" Command="{Binding CancelarProveedorRapidoCommand}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="White" CornerRadius="8" BorderBrush="#E5E7EB" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBlock Text="Productos" FontSize="16" FontWeight="Bold" Foreground="#374151" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Width="38" Height="30" ToolTip="Agregar producto" Command="{Binding AgregarProductoCommand}">
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"/>
+                            </Button>
+                        </DockPanel>
+
+                        <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" RowHeight="42" MinHeight="180" GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" IsReadOnly="True" Width="90"/>
+                                <DataGridTemplateColumn Header="Producto" Width="420">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid MinWidth="340">
+                                                <TextBox Height="28" Padding="8,0" VerticalContentAlignment="Center" Text="{Binding TextoBusquedaProducto, UpdateSourceTrigger=PropertyChanged}"/>
+                                                <Popup IsOpen="{Binding ProductoDropdownAbierto, Mode=TwoWay}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" Width="520">
+                                                    <Border Background="White" BorderBrush="#9CA3AF" BorderThickness="1" MaxHeight="220">
+                                                        <ListBox ItemsSource="{Binding ProductosFiltrados}" DisplayMemberPath="ProductoBusqueda" ItemContainerStyle="{StaticResource ProductoBusquedaItem}" PreviewMouseLeftButtonUp="ProductoBusquedaListBox_PreviewMouseLeftButtonUp"/>
+                                                    </Border>
+                                                </Popup>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" IsReadOnly="True" Width="95"/>
+                                <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                                <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" IsReadOnly="True" Width="100"/>
+                                <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="92"/>
+                                <DataGridTextColumn Header="Dscto." Binding="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" IsReadOnly="True" Width="95"/>
+                                <DataGridTemplateColumn Header="" Width="75">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="Quitar" Height="28" Command="{Binding DataContext.QuitarProductoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="280"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="White" CornerRadius="8" BorderBrush="#E5E7EB" BorderThickness="1" Padding="14" Margin="0,0,14,0">
+                        <StackPanel>
+                            <TextBlock Text="Observacion" FontSize="16" FontWeight="Bold" Foreground="#374151" Margin="0,0,0,12"/>
+                            <TextBox Text="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Height="95" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="White" CornerRadius="8" BorderBrush="#E5E7EB" BorderThickness="1" Padding="14">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="130"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Resumen" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                            <TextBlock Grid.Row="1" Text="Subtotal:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Subtotal, StringFormat=S/ {0:N2}}" TextAlignment="Right" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="2" Text="Descuento:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DescuentoTotal, StringFormat=S/ {0:N2}}" TextAlignment="Right" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="3" Text="Total:" FontWeight="Bold" Foreground="#F97316"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Total, StringFormat=S/ {0:N2}}" TextAlignment="Right" FontWeight="Bold" Foreground="#F97316"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Cancelar" Width="120" Height="34" Margin="0,0,10,0" Command="{Binding CancelarCommand}"/>
+            <Button Content="Guardar" Width="120" Height="34" Background="#16A34A" BorderBrush="#16A34A" Foreground="White" Command="{Binding GuardarCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

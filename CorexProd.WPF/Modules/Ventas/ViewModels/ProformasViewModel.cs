@@ -24,6 +24,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private Proforma? _proformaSeleccionada;
         private string _textoBusqueda = string.Empty;
         private string _estadoFiltro = "Todos";
+        private DateTime? _fechaDesdeFiltro;
+        private DateTime? _fechaHastaFiltro;
 
         public ObservableCollection<Proforma> Proformas { get; set; } = [];
         public ObservableCollection<string> EstadosFiltro { get; } = ["Todos", "Registrado", "Anulado"];
@@ -60,6 +62,28 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
         }
 
+        public DateTime? FechaDesdeFiltro
+        {
+            get => _fechaDesdeFiltro;
+            set
+            {
+                _fechaDesdeFiltro = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public DateTime? FechaHastaFiltro
+        {
+            get => _fechaHastaFiltro;
+            set
+            {
+                _fechaHastaFiltro = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
         public string ResumenRegistros => $"Mostrando {Proformas.Count} de {_todasLasProformas.Count} registros";
 
         public ICommand NuevoCommand { get; }
@@ -70,6 +94,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ICommand AnularCommand { get; }
         public ICommand GenerarOciCommand { get; }
         public ICommand RefrescarCommand { get; }
+        public ICommand QuitarFiltrosCommand { get; }
 
         public ProformasViewModel()
         {
@@ -81,6 +106,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             AnularCommand = new RelayCommand(parametro => Anular(parametro), PuedeAnular);
             GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"), PuedeModificar);
             RefrescarCommand = new RelayCommand(_ => CargarProformas());
+            QuitarFiltrosCommand = new RelayCommand(_ => QuitarFiltros());
 
             if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
@@ -105,6 +131,21 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             AplicarFiltros();
         }
 
+        private void QuitarFiltros()
+        {
+            _textoBusqueda = string.Empty;
+            _estadoFiltro = "Todos";
+            _fechaDesdeFiltro = null;
+            _fechaHastaFiltro = null;
+
+            OnPropertyChanged(nameof(TextoBusqueda));
+            OnPropertyChanged(nameof(EstadoFiltro));
+            OnPropertyChanged(nameof(FechaDesdeFiltro));
+            OnPropertyChanged(nameof(FechaHastaFiltro));
+
+            AplicarFiltros();
+        }
+
         private void AplicarFiltros()
         {
             string busqueda = TextoBusqueda.Trim();
@@ -113,6 +154,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if (!string.IsNullOrWhiteSpace(EstadoFiltro) && EstadoFiltro != "Todos")
             {
                 filtradas = filtradas.Where(p => string.Equals(p.Estado, EstadoFiltro, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (FechaDesdeFiltro.HasValue)
+            {
+                DateTime fechaDesde = FechaDesdeFiltro.Value.Date;
+                filtradas = filtradas.Where(p => p.FechaEmision.Date >= fechaDesde);
+            }
+
+            if (FechaHastaFiltro.HasValue)
+            {
+                DateTime fechaHasta = FechaHastaFiltro.Value.Date;
+                filtradas = filtradas.Where(p => p.FechaEmision.Date <= fechaHasta);
             }
 
             if (!string.IsNullOrWhiteSpace(busqueda))
