@@ -208,7 +208,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
-                        <TextBlock Text="Ingresos Manuales de Stock" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
+                        <TextBlock Text="Entrada Manual de Productos" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                         <TextBlock Text="Registra, revisa y abastece entradas manuales al almacen" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                     </StackPanel>
 

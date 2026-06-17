@@ -230,20 +230,20 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
-            if (menusPermitidos.Contains("Ingresos Manuales de Stock"))
+            if (menusPermitidos.Contains("Entrada Manual de Productos") || menusPermitidos.Contains("Ingresos Manuales de Stock"))
             {
                 almacen.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Ingresos Manuales de Stock",
+                    Titulo = "Entrada Manual de Productos",
                     Vista = "IngresosManualesStock"
                 });
             }
 
-            if (menusPermitidos.Contains("Ingresos de Stock de Insumos"))
+            if (menusPermitidos.Contains("Entrada Manual de Insumos") || menusPermitidos.Contains("Ingresos de Stock de Insumos"))
             {
                 almacen.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Ingresos de Stock de Insumos",
+                    Titulo = "Entrada Manual de Insumos",
                     Vista = "IngresosManualesStockInsumos"
                 });
             }
@@ -621,12 +621,12 @@ namespace CorexProd.WPF.ViewModels
                     break;
 
                 case "IngresosManualesStock":
-                    Titulo = "Ingresos Manuales de Stock";
+                    Titulo = "Entrada Manual de Productos";
                     VistaActual = new IngresosManualesStockView();
                     break;
 
                 case "IngresosManualesStockInsumos":
-                    Titulo = "Ingresos de Stock de Insumos";
+                    Titulo = "Entrada Manual de Insumos";
                     VistaActual = new IngresosManualesStockInsumosView();
                     break;
 
@@ -705,8 +705,12 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new StockProductosView();
                     break;
 
-                case "Reportes":
                 case "StockInsumos":
+                    Titulo = "Stock Insumos";
+                    VistaActual = new StockInsumosView();
+                    break;
+
+                case "Reportes":
                 case "KardexProductos":
                 case "KardexInsumos":
                     Titulo = vista;

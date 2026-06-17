@@ -193,18 +193,23 @@ END
 GO
 
 DECLARE @IdAlmacenPadre INT = (SELECT TOP (1) IdMenu FROM dbo.Menu WHERE NombreMenu LIKE 'Almac%' AND IdMenuPadre IS NULL ORDER BY IdMenu);
+UPDATE dbo.Menu
+SET NombreMenu = 'Entrada Manual de Insumos'
+WHERE NombreMenu = 'Ingresos de Stock de Insumos'
+  AND IdMenuPadre = @IdAlmacenPadre;
+
 IF @IdAlmacenPadre IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.Menu WHERE NombreMenu = 'Ingresos de Stock de Insumos' AND IdMenuPadre = @IdAlmacenPadre)
+   AND NOT EXISTS (SELECT 1 FROM dbo.Menu WHERE NombreMenu = 'Entrada Manual de Insumos' AND IdMenuPadre = @IdAlmacenPadre)
 BEGIN
     INSERT INTO dbo.Menu (NombreMenu, IdMenuPadre, Orden, Estado)
-    VALUES ('Ingresos de Stock de Insumos', @IdAlmacenPadre, 5, 1);
+    VALUES ('Entrada Manual de Insumos', @IdAlmacenPadre, 5, 1);
 END
 
 INSERT INTO dbo.PermisosMenu (IdRol, IdMenu, PuedeVer)
 SELECT R.IdRol, M.IdMenu, 1
 FROM dbo.Roles R
 CROSS JOIN dbo.Menu M
-WHERE M.NombreMenu = 'Ingresos de Stock de Insumos'
+WHERE M.NombreMenu = 'Entrada Manual de Insumos'
   AND NOT EXISTS
   (
       SELECT 1 FROM dbo.PermisosMenu PM
