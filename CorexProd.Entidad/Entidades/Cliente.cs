@@ -13,5 +13,8 @@ namespace CorexProd.Entidad.Entidades
         public string Correo { get; set; } = string.Empty;
         public bool Estado { get; set; }
         public DateTime FechaRegistro { get; set; }
+        public string ClienteBusqueda => string.IsNullOrWhiteSpace(NumeroDocumento)
+            ? NombreRazonSocial
+            : $"{NumeroDocumento} - {NombreRazonSocial}";
     }
 }

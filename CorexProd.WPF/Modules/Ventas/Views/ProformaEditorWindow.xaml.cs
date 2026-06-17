@@ -27,6 +27,59 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             }
         }
 
+        private void ClienteBusquedaTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            if (DataContext is ProformaEditorViewModel viewModel)
+            {
+                viewModel.SeleccionarClienteBusqueda();
+                e.Handled = true;
+            }
+        }
+
+        private void ClienteBusquedaListBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            if (DataContext is ProformaEditorViewModel viewModel)
+            {
+                viewModel.SeleccionarClienteBusqueda();
+                e.Handled = true;
+            }
+        }
+
+        private void ClienteBusquedaListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is ProformaEditorViewModel viewModel
+                && BuscarAncestro<ListBoxItem>((DependencyObject)e.OriginalSource)?.DataContext is CorexProd.Entidad.Entidades.Cliente cliente)
+            {
+                viewModel.SeleccionarClienteBusqueda(cliente);
+            }
+        }
+
+        private void ClienteBusquedaListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            ListBoxItem? itemSeleccionado = BuscarAncestro<ListBoxItem>((DependencyObject)e.OriginalSource);
+
+            if (sender is not ListBox || itemSeleccionado?.DataContext is not CorexProd.Entidad.Entidades.Cliente cliente)
+            {
+                return;
+            }
+
+            if (DataContext is ProformaEditorViewModel viewModel)
+            {
+                viewModel.SeleccionarClienteBusqueda(cliente);
+                e.Handled = true;
+            }
+        }
+
         private void ProductoBusquedaListBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.Enter)
@@ -43,23 +96,26 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
         private void ProductoBusquedaListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is ProformaDetalleItemViewModel item)
+            if (((FrameworkElement)sender).DataContext is ProformaDetalleItemViewModel item
+                && BuscarAncestro<ListBoxItem>((DependencyObject)e.OriginalSource)?.DataContext is CorexProd.Entidad.Entidades.Producto producto)
             {
-                item.SeleccionarProductoBusqueda();
+                item.SeleccionarProductoBusqueda(producto);
             }
         }
 
         private void ProductoBusquedaListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            ListBoxItem? itemSeleccionado = BuscarAncestro<ListBoxItem>((DependencyObject)e.OriginalSource);
+
             if (sender is not ListBox listBox
-                || BuscarAncestro<ListBoxItem>((DependencyObject)e.OriginalSource) == null)
+                || itemSeleccionado?.DataContext is not CorexProd.Entidad.Entidades.Producto producto)
             {
                 return;
             }
 
             if (listBox.DataContext is ProformaDetalleItemViewModel item)
             {
-                item.SeleccionarProductoBusqueda();
+                item.SeleccionarProductoBusqueda(producto);
                 e.Handled = true;
             }
         }

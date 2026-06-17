@@ -113,11 +113,13 @@
                         </TextBlock>
                         <DockPanel LastChildFill="True">
                             <Button DockPanel.Dock="Right"
-                                    Content="Consultar"
-                                    Width="82"
+                                    Width="38"
                                     Height="30"
                                     Margin="8,0,0,0"
-                                    Command="{Binding ConsultarDocumentoCommand}"/>
+                                    ToolTip="Consultar documento"
+                                    Command="{Binding ConsultarDocumentoCommand}">
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
                             <TextBox Style="{StaticResource CampoTexto}"
                                      Text="{Binding NumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
                         </DockPanel>

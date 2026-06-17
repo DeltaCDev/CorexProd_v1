@@ -97,7 +97,11 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public void SeleccionarProductoBusqueda()
         {
             Producto? producto = ProductoResaltado ?? ProductosFiltrados.FirstOrDefault();
+            SeleccionarProductoBusqueda(producto);
+        }
 
+        public void SeleccionarProductoBusqueda(Producto? producto)
+        {
             if (producto == null)
             {
                 return;

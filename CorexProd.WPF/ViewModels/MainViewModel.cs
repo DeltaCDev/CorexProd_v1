@@ -64,6 +64,8 @@ namespace CorexProd.WPF.ViewModels
 
         public string SidebarToggleToolTip => IsSidebarCollapsed ? "Expandir menu" : "Minimizar menu";
 
+        public bool OmitirConfirmacionCierre { get; private set; }
+
         public UserControl VistaActual
         {
             get => _vistaActual;
@@ -129,9 +131,12 @@ namespace CorexProd.WPF.ViewModels
             SessionManager.CerrarSesion();
 
             LoginView loginView = new();
+            Window? ventanaPrincipal = Application.Current.MainWindow;
+
+            OmitirConfirmacionCierre = true;
             loginView.Show();
 
-            Application.Current.MainWindow?.Close();
+            ventanaPrincipal?.Close();
             Application.Current.MainWindow = loginView;
         }
         private void CambiarClave()
@@ -231,6 +236,15 @@ namespace CorexProd.WPF.ViewModels
                 {
                     Titulo = "Ingresos Manuales de Stock",
                     Vista = "IngresosManualesStock"
+                });
+            }
+
+            if (menusPermitidos.Contains("Ingresos de Stock de Insumos"))
+            {
+                almacen.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Ingresos de Stock de Insumos",
+                    Vista = "IngresosManualesStockInsumos"
                 });
             }
 
@@ -609,6 +623,11 @@ namespace CorexProd.WPF.ViewModels
                 case "IngresosManualesStock":
                     Titulo = "Ingresos Manuales de Stock";
                     VistaActual = new IngresosManualesStockView();
+                    break;
+
+                case "IngresosManualesStockInsumos":
+                    Titulo = "Ingresos de Stock de Insumos";
+                    VistaActual = new IngresosManualesStockInsumosView();
                     break;
 
                 case "Almacén":

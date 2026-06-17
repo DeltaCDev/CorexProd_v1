@@ -6,6 +6,7 @@
         Height="720"
         Width="1100"
         WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing"
         Background="#F3F4F6">
 
     <Grid>
@@ -67,54 +68,56 @@
                 </StackPanel>
 
                 <!-- USUARIO -->
-                <!-- USUARIO -->
                 <Border DockPanel.Dock="Bottom"
-        Margin="12"
-        Padding="14"
-        Background="#0F172A"
-        CornerRadius="10"
-        BorderBrush="#1E293B"
-        BorderThickness="1"
-        Visibility="{Binding SidebarExpandedVisibility}">
+                        Margin="12"
+                        Padding="11"
+                        Background="#18243A"
+                        CornerRadius="8"
+                        BorderBrush="#334155"
+                        BorderThickness="1"
+                        Visibility="{Binding SidebarExpandedVisibility}">
 
                     <StackPanel>
-
-                        <!-- Usuario -->
-                        <StackPanel Margin="0,0,0,14">
-
+                        <StackPanel Margin="0,0,0,10">
                             <TextBlock Text="{Binding NombreUsuario}"
-                       FontWeight="SemiBold"
-                       FontSize="14"
-                       Foreground="White"/>
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="White"
+                                       TextTrimming="CharacterEllipsis"/>
 
                             <TextBlock Text="{Binding NombreRol}"
-                       FontSize="12"
-                       Foreground="#94A3B8"
-                       Margin="0,3,0,0"/>
-
+                                       FontSize="12"
+                                       Foreground="#CBD5E1"
+                                       Margin="0,3,0,0"/>
                         </StackPanel>
 
-                        <!-- Botón cambiar clave -->
-                        <Button Content="Cambiar clave"
-                Command="{Binding CambiarClaveCommand}"
-                Height="36"
-                Margin="0,0,0,8"
-                Background="#2563EB"
-                Foreground="White"
-                BorderThickness="0"
-                FontWeight="SemiBold"
-                Cursor="Hand"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="Cambiar clave"
+                                    Command="{Binding CambiarClaveCommand}"
+                                    Width="132"
+                                    Height="32"
+                                    Margin="0,0,8,0"
+                                    Background="#3B82F6"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    FontWeight="SemiBold"
+                                    Cursor="Hand"/>
 
-                        <!-- Botón cerrar sesión -->
-                        <Button Content="Cerrar sesión"
-                Command="{Binding CerrarSesionCommand}"
-                Height="36"
-                Background="#DC2626"
-                Foreground="White"
-                BorderThickness="0"
-                FontWeight="SemiBold"
-                Cursor="Hand"/>
-
+                            <Button Command="{Binding CerrarSesionCommand}"
+                                    Width="38"
+                                    Height="32"
+                                    Background="#EF4444"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    ToolTip="Cerrar sesión">
+                                <TextBlock Text="&#xE8AC;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="15"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Button>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

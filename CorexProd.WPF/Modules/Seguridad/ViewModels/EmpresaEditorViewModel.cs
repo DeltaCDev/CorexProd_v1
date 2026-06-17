@@ -5,13 +5,28 @@ using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
     public class EmpresaEditorViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly EmpresaNegocio _empresaNegocio = new();
 
         private int _idEmpresa;
@@ -30,6 +45,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _licenciaActivacion = string.Empty;
         private bool _esPredeterminada;
         private bool _estado = true;
+        private bool _isConsultandoRuc;
 
         public Action? CerrarVentana { get; set; }
         public bool Guardado { get; private set; }
@@ -199,10 +215,22 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
         }
 
+        public bool IsConsultandoRuc
+        {
+            get => _isConsultandoRuc;
+            set
+            {
+                _isConsultandoRuc = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         public ICommand GuardarCommand { get; }
         public ICommand CancelarCommand { get; }
         public ICommand SeleccionarLogoCommand { get; }
         public ICommand ValidarLicenciaCommand { get; }
+        public ICommand ConsultarRucCommand { get; }
 
         public EmpresaEditorViewModel(Empresa? empresa = null, bool marcarPredeterminada = false)
         {
@@ -210,6 +238,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             SeleccionarLogoCommand = new RelayCommand(_ => SeleccionarLogo());
             ValidarLicenciaCommand = new RelayCommand(_ => NotificationService.Info("Activacion de licencia en mantenimiento"));
+            ConsultarRucCommand = new RelayCommand(
+                async _ => await ConsultarRucAsync(),
+                _ => !IsConsultandoRuc);
 
             if (empresa != null)
             {
@@ -220,6 +251,114 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 EsPredeterminada = marcarPredeterminada;
                 Estado = true;
             }
+        }
+
+        private async Task ConsultarRucAsync()
+        {
+            string ruc = Ruc.Trim();
+
+            if (ruc.Length != 11 || !ruc.All(char.IsDigit))
+            {
+                NotificationService.Warning("Ingrese un RUC valido de 11 digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoRuc = true;
+
+                using JsonDocument respuesta = await ConsultarApiRucAsync(ruc);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el RUC");
+                    return;
+                }
+
+                string? nombre = ObtenerTexto(raiz, "nombre_o_razon_social", "razon_social", "nombre", "nombre_completo");
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio la razon social");
+                    return;
+                }
+
+                Nombre = nombre;
+                NombreComercial = ObtenerTexto(raiz, "nombre_comercial") ?? NombreComercial;
+                Direccion = ObtenerTexto(raiz, "direccion", "domicilio_fiscal") ?? Direccion;
+                Departamento = ObtenerTexto(raiz, "departamento") ?? Departamento;
+                Provincia = ObtenerTexto(raiz, "provincia") ?? Provincia;
+                Distrito = ObtenerTexto(raiz, "distrito") ?? Distrito;
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoRuc = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiRucAsync(string ruc)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                ["ruc"] = ruc
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+            {
+                return false;
+            }
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    return valor.GetString();
+                }
+            }
+
+            return null;
         }
 
         private void Guardar()

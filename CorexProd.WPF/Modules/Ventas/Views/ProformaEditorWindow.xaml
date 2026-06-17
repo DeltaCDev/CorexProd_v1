@@ -101,10 +101,47 @@
                                             Height="30"
                                             Margin="8,0,0,0"
                                             Command="{Binding MostrarClienteRapidoCommand}"/>
-                                    <ComboBox Style="{StaticResource CampoCombo}"
-                                              ItemsSource="{Binding Clientes}"
-                                              DisplayMemberPath="NombreRazonSocial"
-                                              SelectedItem="{Binding ClienteSeleccionado}"/>
+                                    <Grid>
+                                        <TextBox Style="{StaticResource CampoTexto}"
+                                                 Text="{Binding TextoBusquedaCliente, UpdateSourceTrigger=PropertyChanged}"
+                                                 PreviewKeyDown="ClienteBusquedaTextBox_PreviewKeyDown"/>
+                                        <Popup IsOpen="{Binding ClienteDropdownAbierto, Mode=TwoWay}"
+                                               Placement="Bottom"
+                                               StaysOpen="False"
+                                               AllowsTransparency="True"
+                                               Width="620">
+                                            <Border Background="White"
+                                                    BorderBrush="#9CA3AF"
+                                                    BorderThickness="1"
+                                                    MaxHeight="220">
+                                                <ListBox ItemsSource="{Binding Clientes}"
+                                                         SelectedItem="{Binding ClienteBusquedaResaltado, Mode=TwoWay}"
+                                                         ItemContainerStyle="{StaticResource ProductoBusquedaItem}"
+                                                         PreviewKeyDown="ClienteBusquedaListBox_PreviewKeyDown"
+                                                         PreviewMouseLeftButtonUp="ClienteBusquedaListBox_PreviewMouseLeftButtonUp"
+                                                         MouseDoubleClick="ClienteBusquedaListBox_MouseDoubleClick">
+                                                    <ListBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="135"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0"
+                                                                           Text="{Binding NumeroDocumento}"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="#334155"/>
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding NombreRazonSocial}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           Foreground="#0F172A"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
+                                            </Border>
+                                        </Popup>
+                                    </Grid>
                                 </DockPanel>
                             </StackPanel>
 
@@ -152,11 +189,13 @@
                                         <TextBlock Text="Nro Documento" Style="{StaticResource LabelCampo}"/>
                                         <DockPanel LastChildFill="True">
                                             <Button DockPanel.Dock="Right"
-                                                    Content="Consultar"
-                                                    Width="82"
+                                                    Width="38"
                                                     Height="30"
                                                     Margin="8,0,0,0"
-                                                    Command="{Binding ConsultarNuevoClienteDocumentoCommand}"/>
+                                                    ToolTip="Consultar documento"
+                                                    Command="{Binding ConsultarNuevoClienteDocumentoCommand}">
+                                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                            </Button>
                                             <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NuevoClienteNumeroDocumento, UpdateSourceTrigger=PropertyChanged}"/>
                                         </DockPanel>
                                     </StackPanel>

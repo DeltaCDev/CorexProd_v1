@@ -29,6 +29,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private readonly ProformaNegocio _proformaNegocio = new();
         private readonly ClienteNegocio _clienteNegocio = new();
         private readonly ProductoNegocio _productoNegocio = new();
+        private readonly List<Cliente> _todosLosClientes = [];
 
         private int _idProforma;
         private string _serieNumero = string.Empty;
@@ -36,6 +37,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private DateTime _fechaVencimiento = DateTime.Today;
         private string _ordenCompraCliente = string.Empty;
         private Cliente? _clienteSeleccionado;
+        private Cliente? _clienteBusquedaResaltado;
+        private string _textoBusquedaCliente = string.Empty;
+        private bool _clienteDropdownAbierto;
         private string _observacion = string.Empty;
         private bool _mostrarClienteRapido;
         private string _nuevoClienteTipoDocumento = "RUC";
@@ -112,6 +116,42 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             set
             {
                 _clienteSeleccionado = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Cliente? ClienteBusquedaResaltado
+        {
+            get => _clienteBusquedaResaltado;
+            set
+            {
+                _clienteBusquedaResaltado = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string TextoBusquedaCliente
+        {
+            get => _textoBusquedaCliente;
+            set
+            {
+                _textoBusquedaCliente = value;
+                if (ClienteSeleccionado?.ClienteBusqueda != _textoBusquedaCliente)
+                {
+                    ClienteSeleccionado = null;
+                }
+
+                OnPropertyChanged();
+                FiltrarClientes();
+            }
+        }
+
+        public bool ClienteDropdownAbierto
+        {
+            get => _clienteDropdownAbierto;
+            set
+            {
+                _clienteDropdownAbierto = value;
                 OnPropertyChanged();
             }
         }
@@ -253,12 +293,70 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private void CargarClientes()
         {
+            _todosLosClientes.Clear();
             Clientes.Clear();
 
             foreach (Cliente cliente in _clienteNegocio.Listar().Where(c => c.Estado))
             {
+                _todosLosClientes.Add(cliente);
+            }
+
+            FiltrarClientes();
+        }
+
+        private void FiltrarClientes()
+        {
+            Clientes.Clear();
+            ClienteBusquedaResaltado = null;
+
+            string busqueda = TextoBusquedaCliente.Trim();
+
+            if (busqueda.Length < 3)
+            {
+                ClienteDropdownAbierto = false;
+                return;
+            }
+
+            foreach (Cliente cliente in _todosLosClientes
+                .Where(c => CoincideCliente(c, busqueda))
+                .Take(20))
+            {
                 Clientes.Add(cliente);
             }
+
+            ClienteBusquedaResaltado = Clientes.FirstOrDefault();
+            ClienteDropdownAbierto = Clientes.Count > 0;
+        }
+
+        public void SeleccionarClienteBusqueda()
+        {
+            SeleccionarClienteBusqueda(ClienteBusquedaResaltado);
+        }
+
+        public void SeleccionarClienteBusqueda(Cliente? cliente)
+        {
+            if (cliente == null)
+            {
+                return;
+            }
+
+            ClienteSeleccionado = cliente;
+            _textoBusquedaCliente = ClienteSeleccionado.ClienteBusqueda;
+            OnPropertyChanged(nameof(TextoBusquedaCliente));
+            Clientes.Clear();
+            ClienteDropdownAbierto = false;
+        }
+
+        private static bool CoincideCliente(Cliente cliente, string busqueda)
+        {
+            return Contiene(cliente.NombreRazonSocial, busqueda)
+                || Contiene(cliente.NumeroDocumento, busqueda)
+                || Contiene(cliente.TipoDocumento, busqueda);
+        }
+
+        private static bool Contiene(string valor, string busqueda)
+        {
+            return valor?.Contains(busqueda, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         private void CargarProductos()
@@ -278,7 +376,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             FechaEmision = DateTime.Today;
             FechaVencimiento = DateTime.Today;
             OrdenCompraCliente = proforma.OrdenCompraCliente;
-            ClienteSeleccionado = Clientes.FirstOrDefault(c => c.IdCliente == proforma.IdCliente);
+            ClienteSeleccionado = _todosLosClientes.FirstOrDefault(c => c.IdCliente == proforma.IdCliente);
+            TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;
             Observacion = proforma.Observacion;
 
             Detalles.Clear();
@@ -379,9 +478,10 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             NotificationService.Success(mensaje);
             CargarClientes();
-            ClienteSeleccionado = Clientes
+            ClienteSeleccionado = _todosLosClientes
                 .FirstOrDefault(c => c.NumeroDocumento == NuevoClienteNumeroDocumento.Trim()
                     && c.NombreRazonSocial == NuevoClienteNombre.Trim());
+            TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;
             LimpiarClienteRapido();
         }
 

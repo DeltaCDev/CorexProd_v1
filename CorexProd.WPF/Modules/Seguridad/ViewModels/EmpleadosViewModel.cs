@@ -6,6 +6,12 @@ using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
+using System.Configuration;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,6 +19,14 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 {
     public class EmpleadosViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly EmpleadoNegocio _empleadoNegocio = new();
         private readonly CargoNegocio _cargoNegocio = new();
 
@@ -28,6 +42,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private int _idCargo;
         private DateTime? _fechaNacimiento;
         private bool _estado = true;
+        private bool _isConsultandoDocumento;
         private Empleado? _empleadoSeleccionado;
 
         public ObservableCollection<Empleado> Empleados { get; set; } = [];
@@ -153,6 +168,17 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
         }
 
+        public bool IsConsultandoDocumento
+        {
+            get => _isConsultandoDocumento;
+            set
+            {
+                _isConsultandoDocumento = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         public Empleado? EmpleadoSeleccionado
         {
             get => _empleadoSeleccionado;
@@ -186,6 +212,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand EditarCommand { get; }
         public ICommand RefrescarCommand { get; }
         public ICommand CerrarCommand { get; }
+        public ICommand ConsultarDocumentoCommand { get; }
 
         public Action? CerrarVentana { get; set; }
         public bool Guardado { get; private set; }
@@ -201,6 +228,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             RefrescarCommand = new RelayCommand(_ => Refrescar());
             CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
+            ConsultarDocumentoCommand = new RelayCommand(
+                async _ => await ConsultarDocumentoAsync(),
+                _ => !IsConsultandoDocumento);
 
             CargarCargos();
             CargarEmpleados();
@@ -229,6 +259,154 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
 
             OnPropertyChanged(nameof(ResumenRegistros));
+        }
+
+        private async Task ConsultarDocumentoAsync()
+        {
+            string tipoDocumento = TipoDocumento.Trim().ToUpperInvariant();
+            string numeroDocumento = NumeroDocumento.Trim();
+
+            if (tipoDocumento != "DNI")
+            {
+                NotificationService.Warning("La consulta solo esta disponible para DNI");
+                return;
+            }
+
+            if (numeroDocumento.Length != 8 || !numeroDocumento.All(char.IsDigit))
+            {
+                NotificationService.Warning("Ingrese un DNI valido de 8 digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoDocumento = true;
+
+                using JsonDocument respuesta = await ConsultarApiDocumentoAsync(numeroDocumento);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el DNI");
+                    return;
+                }
+
+                (string nombres, string apellidos) = ObtenerNombreYApellidos(raiz);
+
+                if (string.IsNullOrWhiteSpace(nombres) || string.IsNullOrWhiteSpace(apellidos))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio nombres y apellidos completos");
+                    return;
+                }
+
+                Nombre = nombres;
+                Apellido = apellidos;
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoDocumento = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiDocumentoAsync(string numeroDocumento)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                ["dni"] = numeroDocumento
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static (string nombres, string apellidos) ObtenerNombreYApellidos(JsonElement raiz)
+        {
+            string? nombres = ObtenerTexto(raiz, "nombres");
+            string? apellidoPaterno = ObtenerTexto(raiz, "apellido_paterno", "ap_paterno", "paterno");
+            string? apellidoMaterno = ObtenerTexto(raiz, "apellido_materno", "ap_materno", "materno");
+
+            if (!string.IsNullOrWhiteSpace(nombres)
+                && (!string.IsNullOrWhiteSpace(apellidoPaterno) || !string.IsNullOrWhiteSpace(apellidoMaterno)))
+            {
+                return (NormalizarEspacios(nombres), NormalizarEspacios($"{apellidoPaterno} {apellidoMaterno}"));
+            }
+
+            string? nombreCompleto = ObtenerTexto(raiz, "nombre_completo", "nombre");
+            return SepararNombreCompleto(nombreCompleto);
+        }
+
+        private static (string nombres, string apellidos) SepararNombreCompleto(string? nombreCompleto)
+        {
+            string[] partes = NormalizarEspacios(nombreCompleto)
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (partes.Length < 3)
+            {
+                return (NormalizarEspacios(nombreCompleto), string.Empty);
+            }
+
+            string nombres = string.Join(" ", partes.Take(partes.Length - 2));
+            string apellidos = string.Join(" ", partes.Skip(partes.Length - 2));
+
+            return (nombres, apellidos);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+            {
+                return false;
+            }
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    return valor.GetString();
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizarEspacios(string? valor)
+        {
+            return string.Join(" ", (valor ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
 
         private void Guardar()

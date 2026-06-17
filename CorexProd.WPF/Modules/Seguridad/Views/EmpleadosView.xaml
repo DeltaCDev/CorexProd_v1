@@ -94,7 +94,7 @@
                     <TextBlock DockPanel.Dock="Bottom" Text="{Binding ResumenRegistros}" FontWeight="SemiBold" Foreground="#475569" Margin="14,10"/>
                     <DataGrid ItemsSource="{Binding Empleados}" SelectedItem="{Binding EmpleadoSeleccionado}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="48" MaxHeight="560" GridLinesVisibility="Horizontal" ColumnHeaderStyle="{StaticResource EncabezadoCentro}" CellStyle="{StaticResource CeldaGridCentro}">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Acciones" Width="96">
+                            <DataGridTemplateColumn Header="Acciones" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -108,14 +108,14 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="ID" Binding="{Binding IdEmpleado}" Width="60" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="130" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="ID" Binding="{Binding IdEmpleado}" Width="50" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="90" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Nombres" Binding="{Binding Nombre}" Width="170" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Apellidos" Binding="{Binding Apellido}" Width="170" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTextColumn Header="Cargo" Binding="{Binding NombreCargo}" Width="170" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTextColumn Header="Telefono" Binding="{Binding Telefono}" Width="120" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTextColumn Header="Correo" Binding="{Binding Email}" Width="220" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTemplateColumn Header="Estado" Width="120">
+                            <DataGridTextColumn Header="Cargo" Binding="{Binding NombreCargo}" Width="120" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Telefono" Binding="{Binding Telefono}" Width="90" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Correo" Binding="{Binding Email}" Width="150" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTemplateColumn Header="Estado" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">

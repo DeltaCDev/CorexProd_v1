@@ -65,7 +65,17 @@
                         <Run Text="RUC "/>
                         <Run Text="*" Foreground="Red"/>
                     </TextBlock>
-                    <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Ruc, UpdateSourceTrigger=PropertyChanged}"/>
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right"
+                                Width="38"
+                                Height="30"
+                                Margin="8,0,0,0"
+                                ToolTip="Consultar RUC"
+                                Command="{Binding ConsultarRucCommand}">
+                            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                        </Button>
+                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Ruc, UpdateSourceTrigger=PropertyChanged}"/>
+                    </DockPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,18,14">

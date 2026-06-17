@@ -63,6 +63,11 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
+        <Style x:Key="CeldaCentro" TargetType="TextBlock" BasedOn="{StaticResource CeldaTexto}">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
         <Style TargetType="{x:Type DataGrid}">
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#0F172A"/>
@@ -218,7 +223,7 @@
                       ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdEmpresa}" Width="50"/>
-                    <DataGridTextColumn Header="RUC" Binding="{Binding Ruc}" Width="105"/>
+                    <DataGridTextColumn Header="RUC" Binding="{Binding Ruc}" Width="85" ElementStyle="{StaticResource CeldaCentro}"/>
                     <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="210" ElementStyle="{StaticResource CeldaTexto}"/>
                     <DataGridTextColumn Header="Nombre comercial" Binding="{Binding NombreComercial}" Width="180" ElementStyle="{StaticResource CeldaTexto}"/>
                     <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="140" ElementStyle="{StaticResource CeldaTexto}"/>
