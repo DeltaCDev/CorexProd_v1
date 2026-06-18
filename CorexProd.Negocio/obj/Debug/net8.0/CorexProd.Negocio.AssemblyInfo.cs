@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+77fcdac2148ba4cbbab582af135f05f30c4b7835")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f30935cb800d01dffa864d4ec8fdccf859158958")]
 [assembly: System.Reflection.AssemblyProductAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CorexProd.Negocio")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

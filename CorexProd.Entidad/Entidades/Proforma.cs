@@ -17,7 +17,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal Descuento { get; set; }
         public decimal Igv { get; set; }
         public decimal Total { get; set; }
-        public string Estado { get; set; } = "Registrado";
+        public string Estado { get; set; } = "Emitido";
         public bool TieneOrdenCompraInterna { get; set; }
         public string UsuarioGenerador { get; set; } = string.Empty;
         public string MotivoAnulacion { get; set; } = string.Empty;

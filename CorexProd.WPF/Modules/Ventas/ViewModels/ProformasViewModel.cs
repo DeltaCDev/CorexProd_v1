@@ -19,6 +19,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     public class ProformasViewModel : BaseViewModel
     {
         private readonly ProformaNegocio _proformaNegocio = new();
+        private readonly OrdenCompraInternaNegocio _ordenCompraInternaNegocio = new();
         private readonly EmpresaNegocio _empresaNegocio = new();
         private readonly List<Proforma> _todasLasProformas = [];
         private Proforma? _proformaSeleccionada;
@@ -28,7 +29,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private DateTime? _fechaHastaFiltro;
 
         public ObservableCollection<Proforma> Proformas { get; set; } = [];
-        public ObservableCollection<string> EstadosFiltro { get; } = ["Todos", "Registrado", "Anulado"];
+        public ObservableCollection<string> EstadosFiltro { get; } = ["Todos", "Emitido", "Registrado", "Anulado"];
 
         public Proforma? ProformaSeleccionada
         {
@@ -104,7 +105,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             CopiarCommand = new RelayCommand(parametro => Copiar(parametro));
             ImprimirCommand = new RelayCommand(parametro => Imprimir(parametro));
             AnularCommand = new RelayCommand(parametro => Anular(parametro), PuedeAnular);
-            GenerarOciCommand = new RelayCommand(_ => NotificationService.Info("Generar orden de compra interna se encuentra en mantenimiento"), PuedeModificar);
+            GenerarOciCommand = new RelayCommand(GenerarOci, PuedeGenerarOci);
             RefrescarCommand = new RelayCommand(_ => CargarProformas());
             QuitarFiltrosCommand = new RelayCommand(_ => QuitarFiltros());
 
@@ -205,6 +206,41 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private static bool PuedeAnular(object? parametro)
         {
             return parametro is Proforma proforma && !EsAnulada(proforma) && !proforma.TieneOrdenCompraInterna;
+        }
+
+        private static bool PuedeGenerarOci(object? parametro)
+        {
+            return parametro is Proforma proforma
+                && !EsAnulada(proforma)
+                && !proforma.TieneOrdenCompraInterna;
+        }
+
+        private void GenerarOci(object? parametro)
+        {
+            if (parametro is not Proforma proforma)
+            {
+                NotificationService.Warning("Debe seleccionar una proforma.");
+                return;
+            }
+
+            bool confirmar = ConfirmDialogService.Confirmar(
+                $"¿Desea generar la OCI desde la proforma {proforma.SerieNumero}?",
+                "Generar orden de compra interna");
+
+            if (!confirmar) return;
+
+            string usuario = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
+            string mensaje = _ordenCompraInternaNegocio.Generar(proforma.IdProforma, usuario);
+
+            if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
+            {
+                NotificationService.Success(mensaje);
+                CargarProformas();
+            }
+            else
+            {
+                NotificationService.Warning(mensaje);
+            }
         }
 
         private void Editar(object? parametro)

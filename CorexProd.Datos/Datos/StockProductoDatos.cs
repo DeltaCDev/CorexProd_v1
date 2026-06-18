@@ -13,8 +13,9 @@ namespace CorexProd.Datos.Datos
             List<StockProducto> lista = [];
 
             using SqlConnection conexion = Conexion.ObtenerConexion();
-            using SqlCommand cmd = new(ObtenerConsulta(), conexion);
-            cmd.CommandType = CommandType.Text;
+            using SqlCommand cmd = new("USP_ALM_PRODUCTO_LISTAR", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@SoloActivos", true);
 
             conexion.Open();
 
@@ -34,46 +35,6 @@ namespace CorexProd.Datos.Datos
             }
 
             return lista;
-        }
-
-        private static string ObtenerConsulta()
-        {
-            return @"
-DECLARE @sql NVARCHAR(MAX);
-
-IF OBJECT_ID('dbo.StockProductos', 'U') IS NOT NULL
-BEGIN
-    SET @sql = N'
-        SELECT
-            P.IdProducto,
-            P.Codigo,
-            P.NombreProducto,
-            P.IdCategoriaProducto,
-            CP.NombreCategoria,
-            CAST(ISNULL(SP.StockActual, 0) AS DECIMAL(18, 2)) AS Cantidad
-        FROM dbo.Productos P
-        INNER JOIN dbo.CategoriasProducto CP ON CP.IdCategoriaProducto = P.IdCategoriaProducto
-        LEFT JOIN dbo.StockProductos SP ON SP.IdProducto = P.IdProducto
-        WHERE P.Estado = 1
-        ORDER BY P.NombreProducto;';
-END
-ELSE
-BEGIN
-    SET @sql = N'
-        SELECT
-            P.IdProducto,
-            P.Codigo,
-            P.NombreProducto,
-            P.IdCategoriaProducto,
-            CP.NombreCategoria,
-            CAST(0 AS DECIMAL(18, 2)) AS Cantidad
-        FROM dbo.Productos P
-        INNER JOIN dbo.CategoriasProducto CP ON CP.IdCategoriaProducto = P.IdCategoriaProducto
-        WHERE P.Estado = 1
-        ORDER BY P.NombreProducto;';
-END
-
-EXEC sp_executesql @sql;";
         }
     }
 }

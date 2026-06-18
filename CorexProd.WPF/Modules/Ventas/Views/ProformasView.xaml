@@ -225,12 +225,18 @@
 
         <Style x:Key="EstadoBadge" TargetType="Border">
             <Setter Property="MinWidth" Value="88"/>
-            <Setter Property="Background" Value="#DCFCE7"/>
+            <Setter Property="Background" Value="#F1F5F9"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="10,4"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Emitido">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Registrado">
+                    <Setter Property="Background" Value="#DCFCE7"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Estado}" Value="Anulado">
                     <Setter Property="Background" Value="#FFE4E6"/>
                 </DataTrigger>
@@ -241,8 +247,14 @@
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#166534"/>
+            <Setter Property="Foreground" Value="#475569"/>
             <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Emitido">
+                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Registrado">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Estado}" Value="Anulado">
                     <Setter Property="Foreground" Value="#BE123C"/>
                 </DataTrigger>

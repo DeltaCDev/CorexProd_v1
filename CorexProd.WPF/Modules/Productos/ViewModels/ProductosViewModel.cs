@@ -242,7 +242,6 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                         || producto.NombreProducto.Contains(nombre, StringComparison.OrdinalIgnoreCase))
                     && (IdCategoriaFiltro == 0
                         || producto.IdCategoriaProducto == IdCategoriaFiltro))
-                .OrderBy(producto => producto.NombreProducto)
                 .ToList();
 
             Productos.Clear();

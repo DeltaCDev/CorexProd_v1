@@ -30,11 +30,33 @@ BEGIN
         Descuento DECIMAL(18,2) NOT NULL DEFAULT(0),
         Igv DECIMAL(18,2) NOT NULL DEFAULT(0),
         Total DECIMAL(18,2) NOT NULL DEFAULT(0),
-        Estado VARCHAR(20) NOT NULL DEFAULT('Registrado'),
+        Estado VARCHAR(20) NOT NULL DEFAULT('Emitido'),
         TieneOrdenCompraInterna BIT NOT NULL DEFAULT(0),
         FechaRegistro DATETIME NOT NULL DEFAULT(GETDATE())
     );
 END
+GO
+
+DECLARE @RestriccionEstadoProforma SYSNAME;
+
+SELECT @RestriccionEstadoProforma = DC.name
+FROM sys.default_constraints DC
+INNER JOIN sys.columns C
+    ON C.object_id = DC.parent_object_id
+   AND C.column_id = DC.parent_column_id
+WHERE DC.parent_object_id = OBJECT_ID('dbo.Proformas')
+  AND C.name = 'Estado';
+
+IF @RestriccionEstadoProforma IS NOT NULL
+BEGIN
+    DECLARE @SqlEstadoProforma NVARCHAR(500) =
+        N'ALTER TABLE dbo.Proformas DROP CONSTRAINT ' + QUOTENAME(@RestriccionEstadoProforma) + N';';
+
+    EXEC sys.sp_executesql @SqlEstadoProforma;
+END
+
+ALTER TABLE dbo.Proformas
+ADD CONSTRAINT DF_Proformas_Estado DEFAULT('Emitido') FOR Estado;
 GO
 
 IF COL_LENGTH('dbo.Proformas', 'UsuarioGenerador') IS NULL
@@ -297,7 +319,7 @@ BEGIN
                 @Igv,
                 @Total,
                 ISNULL(NULLIF(@UsuarioGenerador, ''), 'Sistema'),
-                'Registrado'
+                'Emitido'
             );
 
             SET @IdGenerado = SCOPE_IDENTITY();

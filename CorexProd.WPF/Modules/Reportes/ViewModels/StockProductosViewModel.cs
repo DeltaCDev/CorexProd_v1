@@ -105,7 +105,6 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
                     && (string.IsNullOrWhiteSpace(texto)
                         || producto.Codigo.Contains(texto, StringComparison.OrdinalIgnoreCase)
                         || producto.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase)))
-                .OrderBy(producto => producto.NombreProducto)
                 .ToList();
 
             StockProductos.Clear();
