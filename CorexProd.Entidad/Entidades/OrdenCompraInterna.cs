@@ -20,6 +20,13 @@ namespace CorexProd.Entidad.Entidades
         public string Estado { get; set; } = string.Empty;
         public string UsuarioGenerador { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
+        public bool TieneGuiaSalida { get; set; }
+        public bool TieneOrdenTrabajo { get; set; }
+        public bool PuedeGenerarOt { get; set; }
+        public bool PuedeGenerarGuiaSalida { get; set; }
+        public bool PuedeAnular => !Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
+            && !TieneGuiaSalida
+            && !TieneOrdenTrabajo;
         public List<OrdenCompraInternaDetalle> Detalles { get; set; } = [];
     }
 }

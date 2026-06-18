@@ -11,10 +11,78 @@
             <Setter Property="Background" Value="#16A34A"/><Setter Property="BorderBrush" Value="#16A34A"/><Setter Property="Foreground" Value="White"/>
         </Style>
         <Style x:Key="BotonAccion" TargetType="Button">
-            <Setter Property="Height" Value="30"/><Setter Property="Padding" Value="9,0"/><Setter Property="Margin" Value="0,0,6,0"/>
-            <Setter Property="Background" Value="#FFFFFF"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#475569"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="Padding" Value="9,0"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ActionBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#EFF6FF"/>
+                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#DBEAFE"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BotonGuiaAccion" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
+            <Setter Property="MinWidth" Value="104"/>
+            <Setter Property="Background" Value="#0F766E"/>
+            <Setter Property="BorderBrush" Value="#0F766E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ActionBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#0D9488"/>
+                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#0D9488"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#115E59"/>
+                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#115E59"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="IconoAccion" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="Etiqueta" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="#475569"/><Setter Property="Margin" Value="0,0,0,5"/>
@@ -62,20 +130,29 @@
         <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
             <DataGrid ItemsSource="{Binding Ordenes}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="330"><DataGridTemplateColumn.CellTemplate><DataTemplate>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Style="{StaticResource BotonAccion}" Width="34" Padding="0" ToolTip="Vista"
+                    <DataGridTemplateColumn Header="Acciones" Width="235"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver detalle"
                                     Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
-                                <TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
                             </Button>
-                            <Button Style="{StaticResource BotonAccion}" ToolTip="Orden de trabajo">
-                                <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Foreground="#A21CAF" Margin="0,0,5,0"/><TextBlock Text="OT"/></StackPanel>
+                            <Button Style="{StaticResource BotonAccion}" ToolTip="Orden de trabajo"
+                                     Command="{Binding DataContext.GenerarOtCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8A5;" Style="{StaticResource IconoAccion}" Foreground="#7E22CE" Margin="0,0,6,0"/>
+                                    <TextBlock Text="OT" VerticalAlignment="Center" Foreground="#7E22CE"/>
+                                </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BotonAccion}" ToolTip="Guía de salida">
-                                <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7C8;" FontFamily="Segoe MDL2 Assets" Foreground="#2563EB" Margin="0,0,5,0"/><TextBlock Text="Guía de salida"/></StackPanel>
+                            <Button Style="{StaticResource BotonGuiaAccion}" ToolTip="Guía Interna"
+                                     Command="{Binding DataContext.GenerarGuiaSalidaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7C8;" Style="{StaticResource IconoAccion}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Guía Interna" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BotonAccion}" Margin="0" Foreground="#DC2626" BorderBrush="#FCA5A5" ToolTip="Anular">
-                                <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0"/><TextBlock Text="Anular"/></StackPanel>
+                            <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" Margin="0" Foreground="#DC2626" BorderBrush="#FCA5A5" ToolTip="Anular"
+                                    Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccion}"/>
                             </Button>
                         </StackPanel>
                     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>

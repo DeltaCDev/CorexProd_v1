@@ -57,6 +57,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public decimal TotalVisible => Ordenes.Sum(orden => orden.Total);
 
         public ICommand VerCommand { get; }
+        public ICommand GenerarOtCommand { get; }
+        public ICommand GenerarGuiaSalidaCommand { get; }
+        public ICommand AnularCommand { get; }
         public ICommand ExportarCommand { get; }
         public ICommand ActualizarCommand { get; }
         public ICommand LimpiarCommand { get; }
@@ -64,6 +67,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public OrdenesCompraInternaViewModel()
         {
             VerCommand = new RelayCommand(Ver);
+            GenerarOtCommand = new RelayCommand(GenerarOt, PuedeGenerarOt);
+            GenerarGuiaSalidaCommand = new RelayCommand(GenerarGuiaSalida, PuedeGenerarGuiaSalida);
+            AnularCommand = new RelayCommand(Anular, PuedeAnular);
             ExportarCommand = new RelayCommand(_ => Exportar());
             ActualizarCommand = new RelayCommand(_ => Cargar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
@@ -136,6 +142,60 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
 
             new OrdenCompraInternaDetalleWindow(orden) { Owner = Application.Current.MainWindow }.ShowDialog();
+        }
+
+        private static bool PuedeGenerarOt(object? parametro) =>
+            parametro is OrdenCompraInterna orden && orden.PuedeGenerarOt;
+
+        private void GenerarOt(object? parametro)
+        {
+            if (parametro is not OrdenCompraInterna orden
+                || !_negocio.RequiereOrdenTrabajo(orden.IdOrdenCompraInterna))
+            {
+                NotificationService.Warning("La OCI ya no requiere una orden de trabajo. Actualice la lista.");
+                Cargar();
+                return;
+            }
+
+            NotificationService.Info("No existe stock suficiente para completar el despacho de esta OCI.");
+        }
+
+        private static bool PuedeGenerarGuiaSalida(object? parametro) =>
+            parametro is OrdenCompraInterna orden && orden.PuedeGenerarGuiaSalida;
+
+        private void GenerarGuiaSalida(object? parametro)
+        {
+            if (parametro is not OrdenCompraInterna orden
+                || !_negocio.PuedeGenerarGuiaSalida(orden.IdOrdenCompraInterna))
+            {
+                NotificationService.Warning("La OCI ya no tiene productos pendientes con stock disponible.");
+                Cargar();
+                return;
+            }
+
+            NotificationService.Info("La generación de la Guía de Salida se implementará en la siguiente etapa.");
+        }
+
+        private static bool PuedeAnular(object? parametro) =>
+            parametro is OrdenCompraInterna orden && orden.PuedeAnular;
+
+        private void Anular(object? parametro)
+        {
+            if (parametro is not OrdenCompraInterna orden) return;
+
+            bool confirmar = ConfirmDialogService.Confirmar(
+                $"¿Desea anular la OCI {orden.NumeroOci}?",
+                "Anular orden de compra interna");
+            if (!confirmar) return;
+
+            string usuario = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
+            string mensaje = _negocio.Anular(orden.IdOrdenCompraInterna, usuario);
+            if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
+                NotificationService.Success(mensaje);
+            else
+                NotificationService.Warning(mensaje);
+
+            Cargar();
         }
 
         private void Exportar()

@@ -51,6 +51,8 @@ namespace CorexProd.Datos.Datos
                         CodigoProducto = dr["CodigoProducto"]?.ToString() ?? string.Empty,
                         NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
                         Cantidad = Convert.ToDecimal(dr["Cantidad"]),
+                        StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        CantidadDespachada = Convert.ToDecimal(dr["CantidadDespachada"]),
                         PrecioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
                         Descuento = Convert.ToDecimal(dr["Descuento"]),
                         Importe = Convert.ToDecimal(dr["Importe"]),
@@ -78,6 +80,19 @@ namespace CorexProd.Datos.Datos
             return mensaje.Value?.ToString() ?? string.Empty;
         }
 
+        public string Anular(int idOrdenCompraInterna, string usuarioAnulacion)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOrdenCompraInterna);
+            cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
+            SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(mensaje);
+            conexion.Open();
+            cmd.ExecuteNonQuery();
+            return mensaje.Value?.ToString() ?? string.Empty;
+        }
+
         private static OrdenCompraInterna Mapear(SqlDataReader dr)
         {
             return new OrdenCompraInterna
@@ -96,7 +111,11 @@ namespace CorexProd.Datos.Datos
                 Total = Convert.ToDecimal(dr["Total"]),
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,
-                FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
+                TieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
+                TieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
+                PuedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),
+                PuedeGenerarGuiaSalida = Convert.ToBoolean(dr["PuedeGenerarGuiaSalida"])
             };
         }
     }

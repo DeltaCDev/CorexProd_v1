@@ -49,6 +49,29 @@ BEGIN
 END;
 GO
 
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'TieneGuiaSalida') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD TieneGuiaSalida BIT NOT NULL
+        CONSTRAINT DF_OCI_TieneGuiaSalida DEFAULT(0) WITH VALUES;
+GO
+
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'TieneOrdenTrabajo') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD TieneOrdenTrabajo BIT NOT NULL
+        CONSTRAINT DF_OCI_TieneOrdenTrabajo DEFAULT(0) WITH VALUES;
+GO
+
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'UsuarioAnulacion') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD UsuarioAnulacion VARCHAR(80) NULL;
+GO
+
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'FechaAnulacion') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD FechaAnulacion DATETIME NULL;
+GO
+
+IF COL_LENGTH('dbo.OrdenCompraInternaDetalle', 'CantidadDespachada') IS NULL
+    ALTER TABLE dbo.OrdenCompraInternaDetalle ADD CantidadDespachada DECIMAL(18,2) NOT NULL
+        CONSTRAINT DF_OCID_CantidadDespachada DEFAULT(0) WITH VALUES;
+GO
+
 UPDATE P
 SET Estado = CASE
     WHEN P.Estado = 'Anulado' THEN 'Anulado'
@@ -80,7 +103,26 @@ BEGIN
         O.Total,
         O.Estado,
         O.UsuarioGenerador,
-        O.FechaRegistro
+        O.FechaRegistro,
+        O.TieneGuiaSalida,
+        O.TieneOrdenTrabajo,
+        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenCompraInternaDetalle D
+            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+            WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+              AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
+        ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
+        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenCompraInternaDetalle D
+            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+            WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+              AND D.Cantidad - D.CantidadDespachada > 0
+              AND ISNULL(S.StockActual, 0) > 0
+        ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
     FROM dbo.OrdenesCompraInterna O
     INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
     ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;
@@ -108,7 +150,26 @@ BEGIN
         O.Total,
         O.Estado,
         O.UsuarioGenerador,
-        O.FechaRegistro
+        O.FechaRegistro,
+        O.TieneGuiaSalida,
+        O.TieneOrdenTrabajo,
+        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenCompraInternaDetalle D
+            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+            WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+              AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
+        ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
+        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenCompraInternaDetalle D
+            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+            WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+              AND D.Cantidad - D.CantidadDespachada > 0
+              AND ISNULL(S.StockActual, 0) > 0
+        ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
     FROM dbo.OrdenesCompraInterna O
     INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
     WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;
@@ -120,13 +181,52 @@ BEGIN
         D.CodigoProducto,
         D.NombreProducto,
         D.Cantidad,
+        CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockActual,
+        D.CantidadDespachada,
         D.PrecioUnitario,
         D.Descuento,
         D.Importe,
         D.Observacion
     FROM dbo.OrdenCompraInternaDetalle D
+    LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
     WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
     ORDER BY D.IdOrdenCompraInternaDetalle;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_VEN_OCI_ANULAR
+    @IdOrdenCompraInterna INT,
+    @UsuarioAnulacion VARCHAR(80),
+    @Mensaje VARCHAR(500) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.OrdenesCompraInterna WITH (UPDLOCK)
+    SET Estado = 'Anulada',
+        UsuarioAnulacion = @UsuarioAnulacion,
+        FechaAnulacion = GETDATE()
+    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+      AND Estado <> 'Anulada'
+      AND TieneGuiaSalida = 0
+      AND TieneOrdenTrabajo = 0;
+
+    IF @@ROWCOUNT = 1
+    BEGIN
+        SET @Mensaje = 'OCI anulada correctamente.';
+        RETURN;
+    END;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.OrdenesCompraInterna WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna)
+        SET @Mensaje = 'No se encontró la OCI seleccionada.';
+    ELSE IF EXISTS
+    (
+        SELECT 1 FROM dbo.OrdenesCompraInterna
+        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado = 'Anulada'
+    )
+        SET @Mensaje = 'La OCI ya se encuentra anulada.';
+    ELSE
+        SET @Mensaje = 'No se puede anular la OCI porque tiene documentos relacionados.';
 END;
 GO
 

@@ -19,5 +19,38 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(usuarioGenerador)) usuarioGenerador = "Sistema";
             return _datos.Generar(idProforma, usuarioGenerador.Trim());
         }
+
+        public bool RequiereOrdenTrabajo(int idOrdenCompraInterna)
+        {
+            OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
+            return orden != null
+                && !EsAnulada(orden)
+                && orden.Detalles.Exists(item => item.CantidadPendiente > item.StockActual);
+        }
+
+        public bool PuedeGenerarGuiaSalida(int idOrdenCompraInterna)
+        {
+            OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
+            return orden != null
+                && !EsAnulada(orden)
+                && orden.Detalles.Exists(item => item.StockActual > 0 && item.CantidadPendiente > 0);
+        }
+
+        public string Anular(int idOrdenCompraInterna, string usuarioAnulacion)
+        {
+            if (idOrdenCompraInterna <= 0) return "Debe seleccionar una OCI válida.";
+
+            OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
+            if (orden == null) return "No se encontró la OCI seleccionada.";
+            if (EsAnulada(orden)) return "La OCI ya se encuentra anulada.";
+            if (orden.TieneGuiaSalida || orden.TieneOrdenTrabajo)
+                return "No se puede anular la OCI porque tiene documentos relacionados.";
+
+            if (string.IsNullOrWhiteSpace(usuarioAnulacion)) usuarioAnulacion = "Sistema";
+            return _datos.Anular(idOrdenCompraInterna, usuarioAnulacion.Trim());
+        }
+
+        private static bool EsAnulada(OrdenCompraInterna orden) =>
+            orden.Estado.Equals("Anulada", System.StringComparison.OrdinalIgnoreCase);
     }
 }
