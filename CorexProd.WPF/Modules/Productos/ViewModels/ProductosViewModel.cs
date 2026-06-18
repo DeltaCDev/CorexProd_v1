@@ -4,7 +4,11 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.ViewModels;
+using Microsoft.Win32;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.IO;
@@ -19,6 +23,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private readonly CategoriaProductoNegocio _categoriaProductoNegocio = new();
         private readonly UnidadMedidaNegocio _unidadMedidaNegocio = new();
         private readonly ParametroNegocio _parametroNegocio = new();
+        private readonly List<Producto> _todosLosProductos = [];
 
         private int _idProducto;
         private string _codigo = string.Empty;
@@ -28,9 +33,13 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private decimal _stockMinimo;
         private bool _estado = true;
         private Producto? _productoSeleccionado;
+        private string _filtroCodigo = string.Empty;
+        private string _filtroNombre = string.Empty;
+        private int _idCategoriaFiltro;
 
         public ObservableCollection<Producto> Productos { get; set; } = [];
         public ObservableCollection<CategoriaProducto> Categorias { get; set; } = [];
+        public ObservableCollection<CategoriaProducto> CategoriasFiltro { get; set; } = [];
         public ObservableCollection<UnidadMedida> UnidadesMedida { get; set; } = [];
 
         public int IdProducto
@@ -124,6 +133,39 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             }
         }
 
+        public string FiltroCodigo
+        {
+            get => _filtroCodigo;
+            set
+            {
+                _filtroCodigo = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public string FiltroNombre
+        {
+            get => _filtroNombre;
+            set
+            {
+                _filtroNombre = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public int IdCategoriaFiltro
+        {
+            get => _idCategoriaFiltro;
+            set
+            {
+                _idCategoriaFiltro = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
         public ICommand GuardarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand EliminarCommand { get; }
@@ -132,6 +174,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         public ICommand CreacionMasivaCommand { get; }
         public ICommand EditarCommand { get; }
         public ICommand RefrescarCommand { get; }
+        public ICommand LimpiarFiltrosCommand { get; }
+        public ICommand ExportarCommand { get; }
         public ICommand CerrarCommand { get; }
 
         public Action? CerrarVentana { get; set; }
@@ -149,6 +193,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             CreacionMasivaCommand = new RelayCommand(_ => AbrirCreacionMasiva());
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             RefrescarCommand = new RelayCommand(_ => Refrescar());
+            LimpiarFiltrosCommand = new RelayCommand(_ => LimpiarFiltros());
+            ExportarCommand = new RelayCommand(_ => Exportar());
             CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarCategorias();
@@ -158,9 +204,50 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
         private void CargarProductos()
         {
+            _todosLosProductos.Clear();
+            _todosLosProductos.AddRange(_productoNegocio.Listar());
+            AplicarFiltros();
+        }
+
+        private void CargarCategorias()
+        {
+            Categorias.Clear();
+            CategoriasFiltro.Clear();
+            CategoriasFiltro.Add(new CategoriaProducto
+            {
+                IdCategoriaProducto = 0,
+                NombreCategoria = "Todas las categorías"
+            });
+
+            foreach (CategoriaProducto categoria in _categoriaProductoNegocio.Listar())
+            {
+                if (categoria.Estado)
+                {
+                    Categorias.Add(categoria);
+                    CategoriasFiltro.Add(categoria);
+                }
+            }
+        }
+
+        private void AplicarFiltros()
+        {
+            string codigo = FiltroCodigo.Trim();
+            string nombre = FiltroNombre.Trim();
+
+            List<Producto> filtrados = _todosLosProductos
+                .Where(producto =>
+                    (string.IsNullOrWhiteSpace(codigo)
+                        || producto.Codigo.Contains(codigo, StringComparison.OrdinalIgnoreCase))
+                    && (string.IsNullOrWhiteSpace(nombre)
+                        || producto.NombreProducto.Contains(nombre, StringComparison.OrdinalIgnoreCase))
+                    && (IdCategoriaFiltro == 0
+                        || producto.IdCategoriaProducto == IdCategoriaFiltro))
+                .OrderBy(producto => producto.NombreProducto)
+                .ToList();
+
             Productos.Clear();
 
-            foreach (Producto producto in _productoNegocio.Listar())
+            foreach (Producto producto in filtrados)
             {
                 Productos.Add(producto);
             }
@@ -168,17 +255,67 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             OnPropertyChanged(nameof(ResumenRegistros));
         }
 
-        private void CargarCategorias()
+        private void LimpiarFiltros()
         {
-            Categorias.Clear();
+            _filtroCodigo = string.Empty;
+            _filtroNombre = string.Empty;
+            _idCategoriaFiltro = 0;
+            OnPropertyChanged(nameof(FiltroCodigo));
+            OnPropertyChanged(nameof(FiltroNombre));
+            OnPropertyChanged(nameof(IdCategoriaFiltro));
+            AplicarFiltros();
+        }
 
-            foreach (CategoriaProducto categoria in _categoriaProductoNegocio.Listar())
+        private void Exportar()
+        {
+            if (Productos.Count == 0)
             {
-                if (categoria.Estado)
-                {
-                    Categorias.Add(categoria);
-                }
+                NotificationService.Warning("No hay productos para exportar.");
+                return;
             }
+
+            SaveFileDialog dialog = new()
+            {
+                Title = "Exportar productos",
+                FileName = $"Productos_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+                DefaultExt = ".csv",
+                Filter = "Archivo CSV para Excel (*.csv)|*.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                StringBuilder contenido = new();
+                contenido.AppendLine("ID;Código;Producto;Categoría;Unidad;Stock mínimo;Estado");
+
+                foreach (Producto producto in Productos)
+                {
+                    contenido.AppendLine(string.Join(";",
+                        producto.IdProducto,
+                        EscaparCsv(producto.Codigo),
+                        EscaparCsv(producto.NombreProducto),
+                        EscaparCsv(producto.NombreCategoria),
+                        EscaparCsv(producto.NombreUnidad),
+                        producto.StockMinimo.ToString("0.00"),
+                        producto.Estado ? "Activo" : "Inactivo"));
+                }
+
+                File.WriteAllText(dialog.FileName, contenido.ToString(), new UTF8Encoding(true));
+                NotificationService.Success($"Se exportaron {Productos.Count} productos correctamente.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error($"No se pudo exportar los productos: {ex.Message}");
+            }
+        }
+
+        private static string EscaparCsv(string valor)
+        {
+            return $"\"{valor.Replace("\"", "\"\"")}\"";
         }
 
         private void CargarUnidadesMedida()

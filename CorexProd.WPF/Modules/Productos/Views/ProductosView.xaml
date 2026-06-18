@@ -76,6 +76,7 @@
         <Grid Margin="20" MaxWidth="1360" HorizontalAlignment="Center">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -93,6 +94,9 @@
                         <Button Style="{StaticResource BotonBase}" Command="{Binding CreacionMasivaCommand}" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Creacion masiva"/></StackPanel>
                         </Button>
+                        <Button Style="{StaticResource BotonBase}" Command="{Binding ExportarCommand}" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Exportar"/></StackPanel>
+                        </Button>
                         <Button Style="{StaticResource BotonPrimario}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Nuevo"/></StackPanel>
                         </Button>
@@ -103,7 +107,37 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Código" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,5"/>
+                        <TextBox Height="34" Padding="9,0" VerticalContentAlignment="Center" Text="{Binding FiltroCodigo, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="Nombre" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,5"/>
+                        <TextBox Height="34" Padding="9,0" VerticalContentAlignment="Center" Text="{Binding FiltroNombre, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                        <TextBlock Text="Categoría" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,5"/>
+                        <ComboBox Height="34" Padding="7,0" VerticalContentAlignment="Center"
+                                  ItemsSource="{Binding CategoriasFiltro}"
+                                  DisplayMemberPath="NombreCategoria"
+                                  SelectedValuePath="IdCategoriaProducto"
+                                  SelectedValue="{Binding IdCategoriaFiltro}"/>
+                    </StackPanel>
+                    <Button Grid.Column="3" Style="{StaticResource BotonBase}" Command="{Binding LimpiarFiltrosCommand}" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Limpiar"/></StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Bottom" Text="{Binding ResumenRegistros}" FontWeight="SemiBold" Foreground="#475569" Margin="14,10"/>
                     <DataGrid ItemsSource="{Binding Productos}" SelectedItem="{Binding ProductoSeleccionado}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" RowHeight="48" MaxHeight="560" GridLinesVisibility="Horizontal" ColumnHeaderStyle="{StaticResource EncabezadoCentro}" CellStyle="{StaticResource CeldaGridCentro}">
