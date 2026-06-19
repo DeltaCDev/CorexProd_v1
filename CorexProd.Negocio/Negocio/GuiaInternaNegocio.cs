@@ -28,9 +28,9 @@ namespace CorexProd.Negocio.Negocio
             if (!guia.Detalles.Any(d => d.CantidadDespachar > 0)) return "Debe indicar al menos un producto para despachar.";
 
             GuiaInternaDetalle? invalido = guia.Detalles.FirstOrDefault(d =>
-                d.CantidadDespachar < 0 || d.CantidadDespachar > d.CantidadPendiente || d.CantidadDespachar > d.StockActual);
+                d.CantidadDespachar < 0 || d.CantidadDespachar > d.CantidadMaxima);
             if (invalido != null)
-                return $"La cantidad a despachar de {invalido.CodigoProducto} supera el pendiente o el stock disponible.";
+                return $"La cantidad máxima permitida para {invalido.CodigoProducto} es {invalido.CantidadMaxima:N2}.";
 
             guia.UsuarioEmisor = guia.UsuarioEmisor.Trim();
             guia.UsuarioAutorizador = guia.UsuarioAutorizador.Trim();
@@ -44,7 +44,9 @@ namespace CorexProd.Negocio.Negocio
         {
             numeroGuia = string.Empty;
             if (guia.IdAlmacen <= 0) return "Debe seleccionar un almacén.";
-            if (string.IsNullOrWhiteSpace(guia.MotivoEmisionManual)) return "Debe ingresar el motivo de la emisión manual.";
+            if (string.IsNullOrWhiteSpace(guia.MotivoEmisionManual)) return "Debe seleccionar el motivo de salida o destino.";
+            if (guia.MotivoEmisionManual.Equals("Entrega a cliente", StringComparison.OrdinalIgnoreCase) && guia.IdCliente.GetValueOrDefault() <= 0)
+                return "Debe seleccionar un cliente para una entrega a cliente.";
             if (string.IsNullOrWhiteSpace(guia.UsuarioEmisor)) return "No se pudo identificar al usuario emisor.";
             if (string.IsNullOrWhiteSpace(guia.UsuarioAutorizador)) return "Debe seleccionar al usuario que autoriza.";
             if (!guia.Detalles.Any(d => d.CantidadDespachar > 0)) return "Debe indicar al menos un producto para despachar.";

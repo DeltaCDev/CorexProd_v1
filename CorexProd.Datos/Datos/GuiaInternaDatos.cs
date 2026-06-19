@@ -123,7 +123,7 @@ namespace CorexProd.Datos.Datos
                 NombreAlmacen = dr["NombreAlmacen"]?.ToString() ?? string.Empty,
                 RucEmisor = dr["RucEmisor"]?.ToString() ?? string.Empty,
                 EmpresaEmisora = dr["EmpresaEmisora"]?.ToString() ?? string.Empty,
-                EmpresaDestino = "Regularización manual", FechaEmision = DateTime.Today
+                EmpresaDestino = string.Empty, FechaEmision = DateTime.Today
             };
             if (dr.NextResult()) while (dr.Read()) guia.Detalles.Add(new GuiaInternaDetalle
             {
@@ -141,6 +141,7 @@ namespace CorexProd.Datos.Datos
             using SqlCommand cmd = new("USP_VEN_GUIA_INTERNA_MANUAL_EMITIR", conexion) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdAlmacen", guia.IdAlmacen); cmd.Parameters.AddWithValue("@FechaEmision", guia.FechaEmision.Date);
             cmd.Parameters.AddWithValue("@UsuarioEmisor", guia.UsuarioEmisor); cmd.Parameters.AddWithValue("@UsuarioAutorizador", guia.UsuarioAutorizador);
+            cmd.Parameters.AddWithValue("@IdCliente", (object?)guia.IdCliente ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MotivoEmisionManual", guia.MotivoEmisionManual); cmd.Parameters.AddWithValue("@Observacion", guia.Observacion ?? string.Empty);
             SqlParameter detalles = cmd.Parameters.AddWithValue("@Detalles", CrearTablaDetallesManual(guia));
             detalles.SqlDbType = SqlDbType.Structured; detalles.TypeName = "dbo.GuiaInternaManualDetalleType";
@@ -184,7 +185,9 @@ namespace CorexProd.Datos.Datos
         {
             IdGuiaInterna=Convert.ToInt32(dr["IdGuiaInterna"]), NumeroGuia=dr["NumeroGuia"]?.ToString() ?? string.Empty,
             Origen=dr["Origen"]?.ToString() ?? string.Empty, IdOrdenCompraInterna=Convert.ToInt32(dr["IdOrdenCompraInterna"]),
-            NumeroOci=dr["NumeroOci"]?.ToString() ?? string.Empty, OrdenCompraCliente=dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
+            IdCliente=dr["IdCliente"] == DBNull.Value ? null : Convert.ToInt32(dr["IdCliente"]),
+            NumeroOci=dr["NumeroOci"]?.ToString() ?? string.Empty, NumeroProforma=dr["NumeroProforma"]?.ToString() ?? string.Empty,
+            OrdenCompraCliente=dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
             FechaEmision=Convert.ToDateTime(dr["FechaEmision"]), IdAlmacen=Convert.ToInt32(dr["IdAlmacen"]), NombreAlmacen=dr["NombreAlmacen"]?.ToString() ?? string.Empty,
             RucEmisor=dr["RucEmisor"]?.ToString() ?? string.Empty, EmpresaEmisora=dr["EmpresaEmisora"]?.ToString() ?? string.Empty,
             RucDestino=dr["RucDestino"]?.ToString() ?? string.Empty, EmpresaDestino=dr["EmpresaDestino"]?.ToString() ?? string.Empty,

@@ -15,8 +15,10 @@ BEGIN
         Subtotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_OCI_Subtotal DEFAULT(0),
         Descuento DECIMAL(18,2) NOT NULL CONSTRAINT DF_OCI_Descuento DEFAULT(0),
         Igv DECIMAL(18,2) NOT NULL CONSTRAINT DF_OCI_Igv DEFAULT(0),
+        IgvPorcentaje DECIMAL(9,4) NOT NULL CONSTRAINT DF_OCI_IgvPorcentaje DEFAULT(0),
+        CondicionTributaria VARCHAR(50) NOT NULL CONSTRAINT DF_OCI_CondicionTributaria DEFAULT('Exonerado de IGV'),
         Total DECIMAL(18,2) NOT NULL CONSTRAINT DF_OCI_Total DEFAULT(0),
-        Estado VARCHAR(20) NOT NULL CONSTRAINT DF_OCI_Estado DEFAULT('Registrada'),
+        Estado VARCHAR(20) NOT NULL CONSTRAINT DF_OCI_Estado DEFAULT('Emitida'),
         UsuarioGenerador VARCHAR(80) NOT NULL,
         FechaRegistro DATETIME NOT NULL CONSTRAINT DF_OCI_FechaRegistro DEFAULT(GETDATE()),
         CONSTRAINT UQ_OCI_Numero UNIQUE (NumeroOci),
@@ -25,6 +27,22 @@ BEGIN
         CONSTRAINT FK_OCI_Cliente FOREIGN KEY (IdCliente) REFERENCES dbo.Clientes(IdCliente)
     );
 END;
+GO
+
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'IgvPorcentaje') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD IgvPorcentaje DECIMAL(9,4) NOT NULL
+        CONSTRAINT DF_OCI_IgvPorcentaje DEFAULT(0) WITH VALUES;
+GO
+
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'CondicionTributaria') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD CondicionTributaria VARCHAR(50) NOT NULL
+        CONSTRAINT DF_OCI_CondicionTributaria DEFAULT('Exonerado de IGV') WITH VALUES;
+GO
+
+UPDATE dbo.OrdenesCompraInterna
+SET IgvPorcentaje = CASE WHEN Subtotal <> 0 THEN ROUND(Igv * 100 / Subtotal, 4) ELSE IgvPorcentaje END,
+    CondicionTributaria = 'Gravado con IGV'
+WHERE Igv > 0 AND IgvPorcentaje = 0;
 GO
 
 /* MODULO DE GUIAS INTERNAS: ORIGEN OCI Y MANUAL */
@@ -36,6 +54,7 @@ BEGIN
         NumeroGuia VARCHAR(30) NOT NULL,
         Origen VARCHAR(20) NOT NULL CONSTRAINT DF_GuiasInternas_Origen DEFAULT('OCI'),
         IdOrdenCompraInterna INT NULL,
+        IdCliente INT NULL,
         IdAlmacen INT NOT NULL,
         FechaEmision DATE NOT NULL,
         RucEmisor VARCHAR(20) NOT NULL,
@@ -53,6 +72,7 @@ BEGIN
         FechaRegistro DATETIME NOT NULL CONSTRAINT DF_GuiaInterna_FechaRegistro DEFAULT(GETDATE()),
         CONSTRAINT UQ_GuiasInternas_Numero UNIQUE(NumeroGuia),
         CONSTRAINT FK_GuiasInternas_OCI FOREIGN KEY(IdOrdenCompraInterna) REFERENCES dbo.OrdenesCompraInterna(IdOrdenCompraInterna),
+        CONSTRAINT FK_GuiasInternas_Cliente FOREIGN KEY(IdCliente) REFERENCES dbo.Clientes(IdCliente),
         CONSTRAINT FK_GuiasInternas_Almacen FOREIGN KEY(IdAlmacen) REFERENCES dbo.Almacenes(IdAlmacen)
     );
 END;
@@ -85,6 +105,12 @@ IF COL_LENGTH('dbo.GuiasInternas', 'Origen') IS NULL
 GO
 IF COL_LENGTH('dbo.GuiasInternas', 'MotivoEmisionManual') IS NULL
     ALTER TABLE dbo.GuiasInternas ADD MotivoEmisionManual VARCHAR(500) NOT NULL CONSTRAINT DF_GuiasInternas_MotivoManual DEFAULT('') WITH VALUES;
+GO
+IF COL_LENGTH('dbo.GuiasInternas', 'IdCliente') IS NULL
+    ALTER TABLE dbo.GuiasInternas ADD IdCliente INT NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_GuiasInternas_Cliente')
+    ALTER TABLE dbo.GuiasInternas ADD CONSTRAINT FK_GuiasInternas_Cliente FOREIGN KEY(IdCliente) REFERENCES dbo.Clientes(IdCliente);
 GO
 IF COL_LENGTH('dbo.GuiasInternas', 'UsuarioAnulacion') IS NULL
     ALTER TABLE dbo.GuiasInternas ADD UsuarioAnulacion VARCHAR(80) NULL;
@@ -122,8 +148,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_VEN_GUIA_INTERNA_LISTAR
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT G.IdGuiaInterna,G.NumeroGuia,G.Origen,ISNULL(G.IdOrdenCompraInterna,0) IdOrdenCompraInterna,
-           ISNULL(O.NumeroOci,'') NumeroOci,ISNULL(O.OrdenCompraCliente,'') OrdenCompraCliente,
+    SELECT G.IdGuiaInterna,G.NumeroGuia,G.Origen,ISNULL(G.IdOrdenCompraInterna,0) IdOrdenCompraInterna,G.IdCliente,
+           ISNULL(O.NumeroOci,'') NumeroOci,ISNULL(P.SerieNumero,'') NumeroProforma,ISNULL(O.OrdenCompraCliente,'') OrdenCompraCliente,
            G.FechaEmision,G.IdAlmacen,A.NombreAlmacen,G.RucEmisor,G.EmpresaEmisora,G.RucDestino,G.EmpresaDestino,
            G.UsuarioEmisor,G.UsuarioAutorizador,G.Observacion,G.MotivoEmisionManual,G.Estado,
            ISNULL(G.UsuarioAnulacion,'') UsuarioAnulacion,G.FechaAnulacion,
@@ -131,6 +157,7 @@ BEGIN
     FROM dbo.GuiasInternas G
     INNER JOIN dbo.Almacenes A ON A.IdAlmacen=G.IdAlmacen
     LEFT JOIN dbo.OrdenesCompraInterna O ON O.IdOrdenCompraInterna=G.IdOrdenCompraInterna
+    LEFT JOIN dbo.Proformas P ON P.IdProforma=O.IdProforma
     WHERE (@FechaDesde IS NULL OR G.FechaEmision>=@FechaDesde)
       AND (@FechaHasta IS NULL OR G.FechaEmision<=@FechaHasta)
       AND (@IdAlmacen IS NULL OR G.IdAlmacen=@IdAlmacen)
@@ -147,8 +174,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_VEN_GUIA_INTERNA_OBTENER
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT G.IdGuiaInterna,G.NumeroGuia,G.Origen,ISNULL(G.IdOrdenCompraInterna,0) IdOrdenCompraInterna,
-           ISNULL(O.NumeroOci,'') NumeroOci,ISNULL(O.OrdenCompraCliente,'') OrdenCompraCliente,
+    SELECT G.IdGuiaInterna,G.NumeroGuia,G.Origen,ISNULL(G.IdOrdenCompraInterna,0) IdOrdenCompraInterna,G.IdCliente,
+           ISNULL(O.NumeroOci,'') NumeroOci,ISNULL(P.SerieNumero,'') NumeroProforma,ISNULL(O.OrdenCompraCliente,'') OrdenCompraCliente,
            G.FechaEmision,G.IdAlmacen,A.NombreAlmacen,G.RucEmisor,G.EmpresaEmisora,G.RucDestino,G.EmpresaDestino,
            G.UsuarioEmisor,G.UsuarioAutorizador,G.Observacion,G.MotivoEmisionManual,G.Estado,
            ISNULL(G.UsuarioAnulacion,'') UsuarioAnulacion,G.FechaAnulacion,
@@ -156,13 +183,20 @@ BEGIN
     FROM dbo.GuiasInternas G
     INNER JOIN dbo.Almacenes A ON A.IdAlmacen=G.IdAlmacen
     LEFT JOIN dbo.OrdenesCompraInterna O ON O.IdOrdenCompraInterna=G.IdOrdenCompraInterna
+    LEFT JOIN dbo.Proformas P ON P.IdProforma=O.IdProforma
     WHERE G.IdGuiaInterna=@IdGuiaInterna;
 
     SELECT D.IdGuiaInternaDetalle,ISNULL(D.IdOrdenCompraInternaDetalle,0) IdOrdenCompraInternaDetalle,
            D.IdProducto,D.CodigoProducto,D.NombreProducto,D.IdUnidadMedida,D.NombreUnidad,
-           D.CantidadRequerida,CAST(0 AS DECIMAL(18,2)) CantidadEntregada,D.CantidadRequerida CantidadPendiente,
+           D.CantidadRequerida,
+           ISNULL(OD.CantidadDespachada,D.CantidadDespachada) CantidadEntregada,
+           CASE WHEN OD.IdOrdenCompraInternaDetalle IS NULL THEN CAST(0 AS DECIMAL(18,2))
+                WHEN OD.Cantidad>OD.CantidadDespachada THEN OD.Cantidad-OD.CantidadDespachada
+                ELSE CAST(0 AS DECIMAL(18,2)) END CantidadPendiente,
            D.StockAnterior StockActual,D.PrecioUnitario,D.CantidadDespachada CantidadSugerida,D.Observacion
-    FROM dbo.GuiaInternaDetalle D WHERE D.IdGuiaInterna=@IdGuiaInterna ORDER BY D.IdGuiaInternaDetalle;
+    FROM dbo.GuiaInternaDetalle D
+    LEFT JOIN dbo.OrdenCompraInternaDetalle OD ON OD.IdOrdenCompraInternaDetalle=D.IdOrdenCompraInternaDetalle
+    WHERE D.IdGuiaInterna=@IdGuiaInterna ORDER BY D.IdGuiaInternaDetalle;
 END;
 GO
 
@@ -188,13 +222,15 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.USP_VEN_GUIA_INTERNA_MANUAL_EMITIR
     @IdAlmacen INT,@FechaEmision DATE,@UsuarioEmisor VARCHAR(80),@UsuarioAutorizador VARCHAR(80),
-    @MotivoEmisionManual VARCHAR(500),@Observacion VARCHAR(500),
+    @IdCliente INT=NULL,@MotivoEmisionManual VARCHAR(500),@Observacion VARCHAR(500),
     @Detalles dbo.GuiaInternaManualDetalleType READONLY,@NumeroGuia VARCHAR(30) OUTPUT,@Mensaje VARCHAR(500) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON; SET XACT_ABORT ON; SET @NumeroGuia='';
     SET @MotivoEmisionManual=LTRIM(RTRIM(ISNULL(@MotivoEmisionManual,'')));
-    IF @MotivoEmisionManual='' BEGIN SET @Mensaje='Debe ingresar el motivo de la emisión manual.'; RETURN; END;
+    IF @MotivoEmisionManual='' BEGIN SET @Mensaje='Debe seleccionar el motivo de salida o destino.'; RETURN; END;
+    IF @MotivoEmisionManual='Entrega a cliente' AND @IdCliente IS NULL BEGIN SET @Mensaje='Debe seleccionar un cliente para una entrega a cliente.'; RETURN; END;
+    IF @IdCliente IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Clientes WHERE IdCliente=@IdCliente AND Estado=1) BEGIN SET @Mensaje='El cliente seleccionado no existe o está inactivo.'; RETURN; END;
     IF NOT EXISTS(SELECT 1 FROM @Detalles WHERE CantidadDespachar>0) BEGIN SET @Mensaje='Debe indicar al menos un producto para despachar.'; RETURN; END;
     IF EXISTS(SELECT IdProducto FROM @Detalles GROUP BY IdProducto HAVING COUNT(*)>1) BEGIN SET @Mensaje='No se permiten productos repetidos.'; RETURN; END;
     BEGIN TRY
@@ -210,11 +246,12 @@ BEGIN
         EXEC dbo.USP_SEG_SERIE_TOMAR_SIGUIENTE 'GUIA_SALIDA',@Serie OUTPUT,@Correlativo OUTPUT,@Numero OUTPUT;
         SET @NumeroGuia=CONCAT(@Serie,'-',@Numero);
 
-        INSERT INTO dbo.GuiasInternas(NumeroGuia,Origen,IdOrdenCompraInterna,IdAlmacen,FechaEmision,RucEmisor,EmpresaEmisora,
+        INSERT INTO dbo.GuiasInternas(NumeroGuia,Origen,IdOrdenCompraInterna,IdCliente,IdAlmacen,FechaEmision,RucEmisor,EmpresaEmisora,
             RucDestino,EmpresaDestino,UsuarioEmisor,UsuarioAutorizador,Observacion,MotivoEmisionManual,Estado)
-        SELECT @NumeroGuia,'Manual',NULL,@IdAlmacen,@FechaEmision,ISNULL(E.Ruc,''),ISNULL(E.Nombre,''),'','Regularización manual',
+        SELECT @NumeroGuia,'Manual',NULL,@IdCliente,@IdAlmacen,@FechaEmision,ISNULL(E.Ruc,''),ISNULL(E.Nombre,''),ISNULL(C.NumeroDocumento,''),ISNULL(C.NombreRazonSocial,'No especificado'),
                @UsuarioEmisor,@UsuarioAutorizador,ISNULL(@Observacion,''),@MotivoEmisionManual,'Emitida'
-        FROM (SELECT 1 X) B OUTER APPLY(SELECT TOP(1) Ruc,Nombre FROM dbo.Empresas WHERE Estado=1 ORDER BY EsPredeterminada DESC,IdEmpresa) E;
+        FROM (SELECT 1 X) B OUTER APPLY(SELECT TOP(1) Ruc,Nombre FROM dbo.Empresas WHERE Estado=1 ORDER BY EsPredeterminada DESC,IdEmpresa) E
+        LEFT JOIN dbo.Clientes C ON C.IdCliente=@IdCliente;
         DECLARE @IdGuia INT=SCOPE_IDENTITY();
 
         INSERT INTO dbo.GuiaInternaDetalle(IdGuiaInterna,IdOrdenCompraInternaDetalle,IdProducto,CodigoProducto,NombreProducto,
@@ -284,9 +321,12 @@ BEGIN
             UPDATE dbo.OrdenesCompraInterna SET
                 TieneGuiaSalida=CASE WHEN EXISTS(SELECT 1 FROM dbo.GuiasInternas WHERE IdOrdenCompraInterna=@IdOci AND Estado='Emitida') THEN 1 ELSE 0 END,
                 Estado=CASE
-                    WHEN NOT EXISTS(SELECT 1 FROM dbo.OrdenCompraInternaDetalle WHERE IdOrdenCompraInterna=@IdOci AND CantidadDespachada>0) THEN 'Registrada'
-                    WHEN NOT EXISTS(SELECT 1 FROM dbo.OrdenCompraInternaDetalle WHERE IdOrdenCompraInterna=@IdOci AND CantidadDespachada<Cantidad) THEN 'Despachada'
-                    ELSE 'Parcial' END
+                    WHEN Estado='Anulado' THEN 'Anulado'
+                    WHEN NOT EXISTS(SELECT 1 FROM dbo.OrdenCompraInternaDetalle WHERE IdOrdenCompraInterna=@IdOci AND CantidadDespachada<Cantidad) THEN 'Entregado'
+                    WHEN EXISTS(SELECT 1 FROM dbo.OrdenCompraInternaDetalle WHERE IdOrdenCompraInterna=@IdOci AND CantidadDespachada>0) THEN 'Parcial'
+                    WHEN TieneOrdenTrabajo=1 THEN 'En proceso'
+                    ELSE 'Emitida'
+                    END
             WHERE IdOrdenCompraInterna=@IdOci;
         COMMIT; SET @Mensaje='Guía interna anulada correctamente. El stock fue restituido.';
     END TRY
@@ -400,7 +440,7 @@ BEGIN
         ORDER BY EsPredeterminada DESC, IdEmpresa
     ) E
     WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna
-      AND O.Estado <> 'Anulada';
+      AND O.Estado <> 'Anulado';
 
     SELECT
         D.IdOrdenCompraInternaDetalle, D.IdProducto, D.CodigoProducto, D.NombreProducto,
@@ -454,7 +494,7 @@ BEGIN
         IF NOT EXISTS
         (
             SELECT 1 FROM dbo.OrdenesCompraInterna WITH (UPDLOCK, HOLDLOCK)
-            WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado <> 'Anulada'
+            WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado <> 'Anulado'
         )
             THROW 51000, 'La OCI no existe o se encuentra anulada.', 1;
 
@@ -465,14 +505,39 @@ BEGIN
             LEFT JOIN dbo.OrdenCompraInternaDetalle D WITH (UPDLOCK, HOLDLOCK)
                 ON D.IdOrdenCompraInternaDetalle = T.IdOrdenCompraInternaDetalle
                AND D.IdOrdenCompraInterna = @IdOrdenCompraInterna
-            LEFT JOIN dbo.StockProductosAlmacen S WITH (UPDLOCK, HOLDLOCK)
-                ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen
             WHERE D.IdOrdenCompraInternaDetalle IS NULL
                OR T.CantidadDespachar <= 0
-               OR T.CantidadDespachar > D.Cantidad - D.CantidadDespachada
-               OR T.CantidadDespachar > ISNULL(S.StockActual, 0)
         )
-            THROW 51001, 'Las cantidades cambiaron o el stock disponible es insuficiente. Actualice la vista previa.', 1;
+            THROW 51001, 'Uno o más detalles de la guía no son válidos.', 1;
+
+        DECLARE @CodigoProductoInvalido VARCHAR(100), @CantidadMaxima DECIMAL(18,2), @MensajeValidacion VARCHAR(500);
+        SELECT TOP (1)
+            @CodigoProductoInvalido = D.CodigoProducto,
+            @CantidadMaxima = CASE
+                WHEN D.Cantidad - D.CantidadDespachada < ISNULL(S.StockActual, 0)
+                    THEN D.Cantidad - D.CantidadDespachada
+                ELSE ISNULL(S.StockActual, 0)
+            END
+        FROM @Detalles T
+        INNER JOIN dbo.OrdenCompraInternaDetalle D WITH (UPDLOCK, HOLDLOCK)
+            ON D.IdOrdenCompraInternaDetalle = T.IdOrdenCompraInternaDetalle
+           AND D.IdOrdenCompraInterna = @IdOrdenCompraInterna
+        LEFT JOIN dbo.StockProductosAlmacen S WITH (UPDLOCK, HOLDLOCK)
+            ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen
+        WHERE T.CantidadDespachar > CASE
+            WHEN D.Cantidad - D.CantidadDespachada < ISNULL(S.StockActual, 0)
+                THEN D.Cantidad - D.CantidadDespachada
+            ELSE ISNULL(S.StockActual, 0)
+        END
+        ORDER BY T.IdOrdenCompraInternaDetalle;
+
+        IF @CodigoProductoInvalido IS NOT NULL
+        BEGIN
+            SET @MensajeValidacion = CONCAT(
+                'La cantidad máxima permitida para ', @CodigoProductoInvalido,
+                ' es ', CONVERT(VARCHAR(30), CAST(@CantidadMaxima AS DECIMAL(18,2))), '.');
+            THROW 51001, @MensajeValidacion, 1;
+        END;
 
         DECLARE @SerieGuia VARCHAR(20), @Correlativo BIGINT, @NumeroCorrelativo VARCHAR(30);
         EXEC dbo.USP_SEG_SERIE_TOMAR_SIGUIENTE
@@ -562,7 +627,7 @@ BEGIN
             (
                 SELECT 1 FROM dbo.OrdenCompraInternaDetalle
                 WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND CantidadDespachada < Cantidad
-            ) THEN 'Parcial' ELSE 'Despachada' END
+            ) THEN 'Parcial' ELSE 'Entregado' END
         WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
 
         COMMIT TRANSACTION;
@@ -623,9 +688,49 @@ IF COL_LENGTH('dbo.OrdenesCompraInterna', 'MotivoAnulacion') IS NULL
 GO
 
 UPDATE dbo.OrdenesCompraInterna
+SET Estado = CASE
+        WHEN Estado IN ('Anulada', 'Anulado') THEN 'Anulado'
+        WHEN NOT EXISTS
+        (
+            SELECT 1 FROM dbo.OrdenCompraInternaDetalle D
+            WHERE D.IdOrdenCompraInterna = OrdenesCompraInterna.IdOrdenCompraInterna
+              AND D.CantidadDespachada < D.Cantidad
+        ) THEN 'Entregado'
+        WHEN EXISTS
+        (
+            SELECT 1 FROM dbo.OrdenCompraInternaDetalle D
+            WHERE D.IdOrdenCompraInterna = OrdenesCompraInterna.IdOrdenCompraInterna
+              AND D.CantidadDespachada > 0
+        ) THEN 'Parcial'
+        WHEN TieneOrdenTrabajo = 1 THEN 'En proceso'
+        ELSE 'Emitida'
+    END;
+GO
+
+UPDATE dbo.OrdenesCompraInterna
 SET MotivoAnulacion = 'No registrado (anulacion anterior)'
-WHERE Estado = 'Anulada'
+WHERE Estado = 'Anulado'
   AND NULLIF(LTRIM(RTRIM(MotivoAnulacion)), '') IS NULL;
+GO
+
+CREATE OR ALTER TRIGGER dbo.TRG_OCI_ESTADO_ORDEN_TRABAJO
+ON dbo.OrdenesCompraInterna
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT UPDATE(TieneOrdenTrabajo) RETURN;
+
+    UPDATE O
+    SET Estado = 'En proceso'
+    FROM dbo.OrdenesCompraInterna O
+    INNER JOIN inserted I ON I.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+    INNER JOIN deleted D ON D.IdOrdenCompraInterna = I.IdOrdenCompraInterna
+    WHERE D.TieneOrdenTrabajo = 0
+      AND I.TieneOrdenTrabajo = 1
+      AND O.Estado = 'Emitida';
+END;
 GO
 
 IF COL_LENGTH('dbo.OrdenCompraInternaDetalle', 'CantidadDespachada') IS NULL
@@ -661,6 +766,8 @@ BEGIN
         O.Subtotal,
         O.Descuento,
         O.Igv,
+        O.IgvPorcentaje,
+        O.CondicionTributaria,
         O.Total,
         O.Estado,
         O.UsuarioGenerador,
@@ -670,7 +777,7 @@ BEGIN
         O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
-        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado' AND O.TieneOrdenTrabajo = 0 AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
@@ -678,7 +785,7 @@ BEGIN
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
               AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
-        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
@@ -711,6 +818,8 @@ BEGIN
         O.Subtotal,
         O.Descuento,
         O.Igv,
+        O.IgvPorcentaje,
+        O.CondicionTributaria,
         O.Total,
         O.Estado,
         O.UsuarioGenerador,
@@ -720,7 +829,7 @@ BEGIN
         O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
-        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado' AND O.TieneOrdenTrabajo = 0 AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
@@ -728,7 +837,7 @@ BEGIN
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
               AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
-        CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
@@ -786,13 +895,12 @@ BEGIN
     END;
 
     UPDATE dbo.OrdenesCompraInterna WITH (UPDLOCK)
-    SET Estado = 'Anulada',
+    SET Estado = 'Anulado',
         MotivoAnulacion = @MotivoAnulacion,
         UsuarioAnulacion = @UsuarioAnulacion,
         FechaAnulacion = GETDATE()
     WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
-      AND Estado <> 'Anulada'
-      AND TieneGuiaSalida = 0
+      AND Estado <> 'Anulado'
       AND TieneOrdenTrabajo = 0;
 
     IF @@ROWCOUNT = 1
@@ -806,11 +914,11 @@ BEGIN
     ELSE IF EXISTS
     (
         SELECT 1 FROM dbo.OrdenesCompraInterna
-        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado = 'Anulada'
+        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado = 'Anulado'
     )
         SET @Mensaje = 'La OCI ya se encuentra anulada.';
     ELSE
-        SET @Mensaje = 'No se puede anular la OCI porque tiene documentos relacionados.';
+        SET @Mensaje = 'No se puede anular la OCI porque tiene una Orden de Trabajo emitida.';
 END;
 GO
 
@@ -854,11 +962,13 @@ BEGIN
         INSERT INTO dbo.OrdenesCompraInterna
         (
             NumeroOci, IdProforma, FechaEmision, OrdenCompraCliente, IdCliente,
-            NombreCliente, Subtotal, Descuento, Igv, Total, Estado, UsuarioGenerador
+            NombreCliente, Subtotal, Descuento, Igv, IgvPorcentaje, CondicionTributaria,
+            Total, Estado, UsuarioGenerador
         )
         SELECT
             '', P.IdProforma, CAST(GETDATE() AS DATE), P.OrdenCompraCliente, P.IdCliente,
-            C.NombreRazonSocial, P.Subtotal, P.Descuento, P.Igv, P.Total, 'Registrada', @UsuarioGenerador
+            C.NombreRazonSocial, P.Subtotal, P.Descuento, P.Igv, P.IgvPorcentaje, P.CondicionTributaria,
+            P.Total, 'Emitida', @UsuarioGenerador
         FROM dbo.Proformas P
         INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
         WHERE P.IdProforma = @IdProforma;

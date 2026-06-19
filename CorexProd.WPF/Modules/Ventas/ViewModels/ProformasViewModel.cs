@@ -200,7 +200,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private static bool PuedeModificar(object? parametro)
         {
-            return parametro is Proforma proforma && !EsAnulada(proforma);
+            return parametro is Proforma proforma
+                && !EsAnulada(proforma)
+                && !proforma.TieneOrdenCompraInterna;
         }
 
         private static bool PuedeAnular(object? parametro)
@@ -255,6 +257,12 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if (proforma.Estado == "Anulado")
             {
                 NotificationService.Warning("No se puede editar una proforma anulada");
+                return;
+            }
+
+            if (proforma.TieneOrdenCompraInterna)
+            {
+                NotificationService.Warning("La proforma ya tiene una OCI emitida y solo esta disponible para consulta");
                 return;
             }
 

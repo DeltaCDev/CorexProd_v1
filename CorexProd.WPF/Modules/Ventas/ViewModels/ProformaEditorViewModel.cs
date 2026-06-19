@@ -50,6 +50,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private string _nuevoClienteTelefono = string.Empty;
         private string _nuevoClienteCorreo = string.Empty;
         private bool _isConsultandoNuevoClienteDocumento;
+        private decimal _igvPorcentaje;
+        private bool _igvActivo;
+        private string _condicionTributaria = string.Empty;
 
         public ObservableCollection<Cliente> Clientes { get; } = [];
         public ObservableCollection<Producto> Productos { get; } = [];
@@ -251,10 +254,14 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
         }
 
-        public decimal Subtotal => Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+        public decimal Subtotal => Detalles.Sum(d => d.Importe);
         public decimal Descuento => Detalles.Sum(d => d.Descuento);
-        public decimal Igv => 0;
-        public decimal Total => Detalles.Sum(d => d.Importe);
+        public decimal Igv => _igvActivo
+            ? Math.Round(Subtotal * _igvPorcentaje / 100m, 2, MidpointRounding.AwayFromZero)
+            : 0m;
+        public decimal Total => Subtotal + Igv;
+        public string EtiquetaIgv => _igvActivo ? $"IGV ({_igvPorcentaje:N2}%):" : "IGV:";
+        public string CondicionTributaria => _condicionTributaria;
 
         public ICommand AgregarProductoCommand { get; }
         public ICommand CargaMasivaCommand { get; }
@@ -282,6 +289,11 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             CargarClientes();
             CargarProductos();
+
+            (decimal porcentaje, bool activo, string condicion) = _proformaNegocio.ObtenerConfiguracionIgv();
+            _igvPorcentaje = porcentaje;
+            _igvActivo = activo;
+            _condicionTributaria = condicion;
 
             if (proforma != null)
             {
@@ -383,6 +395,15 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;
             Observacion = proforma.Observacion;
 
+            if (!copiar)
+            {
+                _igvPorcentaje = proforma.IgvPorcentaje;
+                _igvActivo = !proforma.CondicionTributaria.Equals("Exonerado de IGV", StringComparison.OrdinalIgnoreCase);
+                _condicionTributaria = proforma.CondicionTributaria;
+                OnPropertyChanged(nameof(EtiquetaIgv));
+                OnPropertyChanged(nameof(CondicionTributaria));
+            }
+
             Detalles.Clear();
 
             foreach (ProformaDetalle detalle in proforma.Detalles)
@@ -438,7 +459,10 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private void AbrirCargaMasiva()
         {
-            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva)
+            CargaMasivaProductosWindow ventana = new(
+                "Carga masiva de productos",
+                BuscarProductoCargaMasiva,
+                ampliarVentana: true)
             {
                 Owner = Application.Current.MainWindow
             };
@@ -700,6 +724,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 OrdenCompraCliente = OrdenCompraCliente,
                 IdCliente = ClienteSeleccionado?.IdCliente ?? 0,
                 Observacion = Observacion,
+                IgvPorcentaje = _igvPorcentaje,
+                CondicionTributaria = _condicionTributaria,
                 UsuarioGenerador = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema",
                 Detalles = Detalles.Select(d => d.CrearDetalle()).ToList()
             };

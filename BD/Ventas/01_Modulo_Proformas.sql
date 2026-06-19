@@ -29,12 +29,39 @@ BEGIN
         Subtotal DECIMAL(18,2) NOT NULL DEFAULT(0),
         Descuento DECIMAL(18,2) NOT NULL DEFAULT(0),
         Igv DECIMAL(18,2) NOT NULL DEFAULT(0),
+        IgvPorcentaje DECIMAL(9,4) NOT NULL DEFAULT(0),
+        CondicionTributaria VARCHAR(50) NOT NULL DEFAULT('Exonerado de IGV'),
         Total DECIMAL(18,2) NOT NULL DEFAULT(0),
         Estado VARCHAR(20) NOT NULL DEFAULT('Emitido'),
         TieneOrdenCompraInterna BIT NOT NULL DEFAULT(0),
         FechaRegistro DATETIME NOT NULL DEFAULT(GETDATE())
     );
 END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Parametros WHERE CodigoParametro = 'IGV_PORCENTAJE')
+    INSERT INTO dbo.Parametros (CodigoParametro, NombreParametro, ValorParametro, Descripcion, Estado)
+    VALUES ('IGV_PORCENTAJE', 'Porcentaje de IGV', '18', 'Porcentaje de IGV aplicado a nuevos documentos.', 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Parametros WHERE CodigoParametro = 'IGV_ACTIVO')
+    INSERT INTO dbo.Parametros (CodigoParametro, NombreParametro, ValorParametro, Descripcion, Estado)
+    VALUES ('IGV_ACTIVO', 'IGV activo', '1', 'Indica si los nuevos documentos aplican IGV: 1 activo, 0 inactivo.', 1);
+GO
+
+IF COL_LENGTH('dbo.Proformas', 'IgvPorcentaje') IS NULL
+    ALTER TABLE dbo.Proformas ADD IgvPorcentaje DECIMAL(9,4) NOT NULL
+        CONSTRAINT DF_Proformas_IgvPorcentaje DEFAULT(0) WITH VALUES;
+GO
+
+IF COL_LENGTH('dbo.Proformas', 'CondicionTributaria') IS NULL
+    ALTER TABLE dbo.Proformas ADD CondicionTributaria VARCHAR(50) NOT NULL
+        CONSTRAINT DF_Proformas_CondicionTributaria DEFAULT('Exonerado de IGV') WITH VALUES;
+GO
+
+UPDATE dbo.Proformas
+SET IgvPorcentaje = CASE WHEN Subtotal <> 0 THEN ROUND(Igv * 100 / Subtotal, 4) ELSE IgvPorcentaje END,
+    CondicionTributaria = 'Gravado con IGV'
+WHERE Igv > 0 AND IgvPorcentaje = 0;
 GO
 
 DECLARE @RestriccionEstadoProforma SYSNAME;
@@ -146,6 +173,8 @@ BEGIN
         P.Subtotal,
         P.Descuento,
         P.Igv,
+        P.IgvPorcentaje,
+        P.CondicionTributaria,
         P.Total,
         P.Estado,
         P.TieneOrdenCompraInterna,
@@ -183,6 +212,8 @@ BEGIN
         P.Subtotal,
         P.Descuento,
         P.Igv,
+        P.IgvPorcentaje,
+        P.CondicionTributaria,
         P.Total,
         P.Estado,
         P.TieneOrdenCompraInterna,
@@ -229,6 +260,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_VEN_PROFORMA_GUARDAR
     @Subtotal DECIMAL(18,2),
     @Descuento DECIMAL(18,2),
     @Igv DECIMAL(18,2),
+    @IgvPorcentaje DECIMAL(9,4),
+    @CondicionTributaria VARCHAR(50),
     @Total DECIMAL(18,2),
     @DetallesXml XML,
     @UsuarioGenerador VARCHAR(80),
@@ -281,6 +314,8 @@ BEGIN
                 Subtotal,
                 Descuento,
                 Igv,
+                IgvPorcentaje,
+                CondicionTributaria,
                 Total,
                 UsuarioGenerador,
                 Estado
@@ -296,6 +331,8 @@ BEGIN
                 @Subtotal,
                 @Descuento,
                 @Igv,
+                @IgvPorcentaje,
+                @CondicionTributaria,
                 @Total,
                 ISNULL(NULLIF(@UsuarioGenerador, ''), 'Sistema'),
                 'Emitido'
@@ -309,6 +346,19 @@ BEGIN
             IF EXISTS (SELECT 1 FROM dbo.Proformas WHERE IdProforma = @IdProforma AND Estado = 'Anulado')
             BEGIN
                 SET @Mensaje = 'No se puede editar una proforma anulada';
+                ROLLBACK TRANSACTION;
+                RETURN;
+            END
+
+            IF EXISTS
+            (
+                SELECT 1
+                FROM dbo.Proformas WITH (UPDLOCK, HOLDLOCK)
+                WHERE IdProforma = @IdProforma
+                  AND TieneOrdenCompraInterna = 1
+            )
+            BEGIN
+                SET @Mensaje = 'La proforma ya tiene una OCI emitida y solo esta disponible para consulta';
                 ROLLBACK TRANSACTION;
                 RETURN;
             END
@@ -327,6 +377,8 @@ BEGIN
                 Subtotal = @Subtotal,
                 Descuento = @Descuento,
                 Igv = @Igv,
+                IgvPorcentaje = @IgvPorcentaje,
+                CondicionTributaria = @CondicionTributaria,
                 Total = @Total
             WHERE IdProforma = @IdProforma;
 

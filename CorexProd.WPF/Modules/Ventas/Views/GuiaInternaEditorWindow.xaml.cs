@@ -2,6 +2,7 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Helpers;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -61,6 +62,13 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         {
             DetallesGrid.CommitEdit(DataGridEditingUnit.Cell, true);
             DetallesGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            GuiaInternaDetalle? invalido = _guia.Detalles.FirstOrDefault(d => d.CantidadDespachar > d.CantidadMaxima);
+            if (invalido != null)
+            {
+                MostrarCantidadMaxima(invalido);
+                return;
+            }
+
             if (AlmacenCombo.SelectedItem is AlmacenStock almacen)
             {
                 _guia.IdAlmacen = almacen.IdAlmacen;
@@ -80,6 +88,21 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             _guia.NumeroGuia = numeroGuia;
             DialogResult = true;
         }
+
+        private void CantidadDespachar_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is not TextBox { DataContext: GuiaInternaDetalle detalle } textBox
+                || !decimal.TryParse(textBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad)
+                || cantidad <= detalle.CantidadMaxima)
+                return;
+
+            detalle.CantidadDespachar = detalle.CantidadMaxima;
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            MostrarCantidadMaxima(detalle);
+        }
+
+        private static void MostrarCantidadMaxima(GuiaInternaDetalle detalle) =>
+            NotificationService.Warning($"La cantidad máxima permitida para {detalle.CodigoProducto} es {detalle.CantidadMaxima:N2}.");
 
         private void Volver_Click(object sender, RoutedEventArgs e) => Close();
     }

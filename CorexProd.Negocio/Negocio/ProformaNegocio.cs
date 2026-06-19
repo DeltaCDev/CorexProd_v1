@@ -2,6 +2,7 @@ using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace CorexProd.Negocio.Negocio
@@ -9,6 +10,31 @@ namespace CorexProd.Negocio.Negocio
     public class ProformaNegocio
     {
         private readonly ProformaDatos _proformaDatos = new();
+        private readonly ParametroDatos _parametroDatos = new();
+
+        public (decimal Porcentaje, bool Activo, string Condicion) ObtenerConfiguracionIgv()
+        {
+            Parametro? porcentajeParametro = _parametroDatos.ObtenerPorCodigo("IGV_PORCENTAJE");
+            Parametro? activoParametro = _parametroDatos.ObtenerPorCodigo("IGV_ACTIVO");
+
+            if (porcentajeParametro == null || !porcentajeParametro.Estado
+                || !decimal.TryParse(porcentajeParametro.ValorParametro, NumberStyles.Number,
+                    CultureInfo.InvariantCulture, out decimal porcentaje)
+                || porcentaje < 0)
+            {
+                throw new InvalidOperationException("El parametro IGV_PORCENTAJE no esta configurado correctamente");
+            }
+
+            if (activoParametro == null || !activoParametro.Estado)
+                throw new InvalidOperationException("El parametro IGV_ACTIVO no esta configurado correctamente");
+
+            string valorActivo = activoParametro.ValorParametro.Trim();
+            if (valorActivo != "0" && valorActivo != "1")
+                throw new InvalidOperationException("El parametro IGV_ACTIVO debe tener el valor 0 o 1");
+
+            bool activo = valorActivo == "1";
+            return (porcentaje, activo, activo ? "Gravado con IGV" : "Exonerado de IGV");
+        }
 
         public List<Proforma> Listar()
         {
@@ -35,6 +61,17 @@ namespace CorexProd.Negocio.Negocio
             proforma.OrdenCompraCliente = proforma.OrdenCompraCliente.Trim();
             proforma.Observacion = proforma.Observacion.Trim();
             proforma.UsuarioGenerador = proforma.UsuarioGenerador.Trim();
+
+            if (proforma.IdProforma > 0)
+            {
+                Proforma? proformaActual = _proformaDatos.Obtener(proforma.IdProforma);
+
+                if (proformaActual == null)
+                    return "No se encontro la proforma";
+
+                if (proformaActual.TieneOrdenCompraInterna)
+                    return "La proforma ya tiene una OCI emitida y solo esta disponible para consulta";
+            }
 
             if (proforma.FechaEmision == DateTime.MinValue)
                 return "La fecha de emision es obligatoria";
@@ -70,10 +107,34 @@ namespace CorexProd.Negocio.Negocio
                 detalle.Importe = Math.Max(0, (detalle.Cantidad * detalle.PrecioUnitario) - detalle.Descuento);
             }
 
-            proforma.Subtotal = proforma.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+            proforma.Subtotal = proforma.Detalles.Sum(d => d.Importe);
             proforma.Descuento = proforma.Detalles.Sum(d => d.Descuento);
-            proforma.Igv = 0;
-            proforma.Total = proforma.Detalles.Sum(d => d.Importe);
+
+            if (proforma.IdProforma > 0)
+            {
+                Proforma proformaEmitida = _proformaDatos.Obtener(proforma.IdProforma)!;
+                proforma.IgvPorcentaje = proformaEmitida.IgvPorcentaje;
+                proforma.CondicionTributaria = proformaEmitida.CondicionTributaria;
+            }
+            else
+            {
+                try
+                {
+                    (decimal porcentaje, bool activo, string condicion) = ObtenerConfiguracionIgv();
+                    proforma.IgvPorcentaje = porcentaje;
+                    proforma.CondicionTributaria = condicion;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return ex.Message;
+                }
+            }
+
+            bool aplicaIgv = !proforma.CondicionTributaria.Equals("Exonerado de IGV", StringComparison.OrdinalIgnoreCase);
+            proforma.Igv = aplicaIgv
+                ? Math.Round(proforma.Subtotal * proforma.IgvPorcentaje / 100m, 2, MidpointRounding.AwayFromZero)
+                : 0m;
+            proforma.Total = proforma.Subtotal + proforma.Igv;
 
             return _proformaDatos.Guardar(proforma);
         }

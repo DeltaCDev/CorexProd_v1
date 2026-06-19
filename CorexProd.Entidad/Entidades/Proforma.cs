@@ -16,6 +16,8 @@ namespace CorexProd.Entidad.Entidades
         public decimal Subtotal { get; set; }
         public decimal Descuento { get; set; }
         public decimal Igv { get; set; }
+        public decimal IgvPorcentaje { get; set; }
+        public string CondicionTributaria { get; set; } = string.Empty;
         public decimal Total { get; set; }
         public string Estado { get; set; } = "Emitido";
         public bool TieneOrdenCompraInterna { get; set; }

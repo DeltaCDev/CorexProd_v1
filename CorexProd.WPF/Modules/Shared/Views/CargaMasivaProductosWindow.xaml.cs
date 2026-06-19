@@ -12,9 +12,21 @@ namespace CorexProd.WPF.Modules.Shared.Views
 {
     public partial class CargaMasivaProductosWindow : Window
     {
-        public CargaMasivaProductosWindow(string titulo, Func<string, CargaMasivaProductoInfo?> buscarProducto)
+        public CargaMasivaProductosWindow(
+            string titulo,
+            Func<string, CargaMasivaProductoInfo?> buscarProducto,
+            bool ampliarVentana = false)
         {
             InitializeComponent();
+
+            if (ampliarVentana)
+            {
+                Width = 1100;
+                Height = 760;
+                MinWidth = 900;
+                MinHeight = 650;
+            }
+
             DataContext = new CargaMasivaProductosViewModel(titulo, buscarProducto, this);
         }
 

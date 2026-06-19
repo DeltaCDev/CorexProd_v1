@@ -28,7 +28,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private DateTime? _fechaHasta;
 
         public ObservableCollection<OrdenCompraInterna> Ordenes { get; } = [];
-        public ObservableCollection<string> Estados { get; } = ["Todos", "Registrada", "Parcial", "Despachada", "Anulada"];
+        public ObservableCollection<string> Estados { get; } = ["Todos", "Emitida", "En proceso", "Parcial", "Entregado", "Anulado"];
 
         public string TextoBusqueda
         {

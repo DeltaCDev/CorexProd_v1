@@ -16,6 +16,8 @@ namespace CorexProd.Entidad.Entidades
         public decimal Subtotal { get; set; }
         public decimal Descuento { get; set; }
         public decimal Igv { get; set; }
+        public decimal IgvPorcentaje { get; set; }
+        public string CondicionTributaria { get; set; } = string.Empty;
         public decimal Total { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string UsuarioGenerador { get; set; } = string.Empty;
@@ -29,8 +31,7 @@ namespace CorexProd.Entidad.Entidades
         public bool TieneOrdenTrabajo { get; set; }
         public bool PuedeGenerarOt { get; set; }
         public bool PuedeGenerarGuiaSalida { get; set; }
-        public bool PuedeAnular => !Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
-            && !TieneGuiaSalida
+        public bool PuedeAnular => !Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
             && !TieneOrdenTrabajo;
         public List<OrdenCompraInternaDetalle> Detalles { get; set; } = [];
 

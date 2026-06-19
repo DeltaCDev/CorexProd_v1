@@ -276,7 +276,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 return;
             }
 
-            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva)
+            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva, ampliarVentana: true)
             {
                 Owner = Application.Current.MainWindow
             };

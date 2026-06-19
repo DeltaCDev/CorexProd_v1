@@ -151,13 +151,17 @@
                       RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal"
                       CellStyle="{StaticResource CeldaGuia}" RowStyle="{StaticResource FilaGuia}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="90">
+                    <DataGridTemplateColumn Header="Acciones" Width="125">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver detalle"
                                             Command="{Binding DataContext.VerCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
                                         <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver, imprimir o descargar PDF"
+                                            Command="{Binding DataContext.VerPdfCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xEA90;" Style="{StaticResource IconoAccion}" Foreground="#2563EB"/>
                                     </Button>
                                     <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" Margin="0" Foreground="#DC2626" BorderBrush="#FCA5A5" ToolTip="Anular"
                                             Command="{Binding DataContext.AnularCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">

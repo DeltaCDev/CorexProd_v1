@@ -109,6 +109,8 @@ namespace CorexProd.Datos.Datos
                 Subtotal = Convert.ToDecimal(dr["Subtotal"]),
                 Descuento = Convert.ToDecimal(dr["Descuento"]),
                 Igv = Convert.ToDecimal(dr["Igv"]),
+                IgvPorcentaje = Convert.ToDecimal(dr["IgvPorcentaje"]),
+                CondicionTributaria = dr["CondicionTributaria"]?.ToString() ?? string.Empty,
                 Total = Convert.ToDecimal(dr["Total"]),
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,

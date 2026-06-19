@@ -116,6 +116,8 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@Subtotal", proforma.Subtotal);
             cmd.Parameters.AddWithValue("@Descuento", proforma.Descuento);
             cmd.Parameters.AddWithValue("@Igv", proforma.Igv);
+            cmd.Parameters.AddWithValue("@IgvPorcentaje", proforma.IgvPorcentaje);
+            cmd.Parameters.AddWithValue("@CondicionTributaria", proforma.CondicionTributaria);
             cmd.Parameters.AddWithValue("@Total", proforma.Total);
             cmd.Parameters.AddWithValue("@DetallesXml", CrearDetallesXml(proforma.Detalles));
             cmd.Parameters.AddWithValue("@UsuarioGenerador", proforma.UsuarioGenerador);
@@ -202,6 +204,8 @@ namespace CorexProd.Datos.Datos
                 Subtotal = Convert.ToDecimal(dr["Subtotal"]),
                 Descuento = Convert.ToDecimal(dr["Descuento"]),
                 Igv = Convert.ToDecimal(dr["Igv"]),
+                IgvPorcentaje = Convert.ToDecimal(dr["IgvPorcentaje"]),
+                CondicionTributaria = dr["CondicionTributaria"]?.ToString() ?? string.Empty,
                 Total = Convert.ToDecimal(dr["Total"]),
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 TieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"]),

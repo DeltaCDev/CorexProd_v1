@@ -18,6 +18,16 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
         private void Continuar_Click(object sender, RoutedEventArgs e)
         {
+            AbrirEditor();
+        }
+
+        private void Preparar_Click(object sender, RoutedEventArgs e)
+        {
+            AbrirEditor();
+        }
+
+        private void AbrirEditor()
+        {
             if (!_guia.Detalles.Any(d => d.CantidadDespachar > 0))
             {
                 NotificationService.Warning("No hay productos con stock disponible para despachar.");

@@ -67,6 +67,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1*"/>
@@ -364,6 +365,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -375,10 +377,11 @@
                             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Subtotal, StringFormat=S/ {0:N2}}" TextAlignment="Right" Margin="0,0,0,8"/>
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Descuento:" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Descuento, StringFormat=S/ {0:N2}}" TextAlignment="Right" Margin="0,0,0,8"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="IGV:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding EtiquetaIgv}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Igv, StringFormat=S/ {0:N2}}" TextAlignment="Right" Margin="0,0,0,8"/>
                             <TextBlock Grid.Row="4" Grid.Column="0" Text="Total:" FontWeight="Bold" Foreground="#1D4ED8"/>
                             <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Total, StringFormat=S/ {0:N2}}" TextAlignment="Right" FontWeight="Bold" Foreground="#1D4ED8"/>
+                            <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="{Binding CondicionTributaria}" TextAlignment="Right" Foreground="#64748B" Margin="0,8,0,0"/>
                         </Grid>
                     </Border>
                 </Grid>

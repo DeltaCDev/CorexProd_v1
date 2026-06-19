@@ -33,6 +33,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public string Resumen => $"Mostrando {Guias.Count} guías internas";
         public ICommand NuevaManualCommand { get; }
         public ICommand VerCommand { get; }
+        public ICommand VerPdfCommand { get; }
         public ICommand AnularCommand { get; }
         public ICommand BuscarCommand { get; }
         public ICommand LimpiarCommand { get; }
@@ -40,6 +41,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public GuiasInternasViewModel()
         {
             NuevaManualCommand=new RelayCommand(_=>NuevaManual()); VerCommand=new RelayCommand(Ver);
+            VerPdfCommand=new RelayCommand(VerPdf);
             AnularCommand=new RelayCommand(Anular,p=>p is GuiaInterna g && g.PuedeAnular);
             BuscarCommand=new RelayCommand(_=>Cargar()); LimpiarCommand=new RelayCommand(_=>Limpiar());
             if(!DesignerProperties.GetIsInDesignMode(new DependencyObject())) { CargarAlmacenes(); Cargar(); }
@@ -72,6 +74,15 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if(p is not GuiaInterna fila)return; GuiaInterna? guia=_negocio.Obtener(fila.IdGuiaInterna);
             if(guia==null){NotificationService.Warning("No se encontró la guía interna.");return;}
             new GuiaInternaDetalleWindow(guia){Owner=Application.Current.MainWindow}.ShowDialog();
+        }
+        private void VerPdf(object? p)
+        {
+            if(p is not GuiaInterna fila)return;
+            GuiaInterna? guia=_negocio.Obtener(fila.IdGuiaInterna);
+            if(guia==null){NotificationService.Warning("No se encontró la guía interna.");return;}
+            Empresa? empresa=new EmpresaNegocio().ObtenerPredeterminada();
+            if(empresa==null){NotificationService.Warning("Debe registrar una empresa predeterminada para generar el PDF.");return;}
+            new GuiaInternaDocumentoWindow(guia,empresa){Owner=Application.Current.MainWindow}.ShowDialog();
         }
         private void Anular(object? p)
         {

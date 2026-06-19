@@ -18,8 +18,11 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         private readonly GuiaInternaNegocio _negocio = new();
         private readonly IngresoManualStockNegocio _almacenes = new();
         private readonly UsuarioNegocio _usuarios = new();
+        private readonly ClienteNegocio _clientes = new();
         private GuiaInterna _guia;
         private bool _cargando;
+        private bool _actualizandoCliente;
+        private List<Cliente> _todosLosClientes = [];
 
         public ObservableCollection<GuiaInternaManualDetalleViewModel> DetallesEdicion { get; } = [];
 
@@ -31,6 +34,13 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             DetallesEdicion.Add(CrearFila());
 
             InitializeComponent();
+            MotivoCombo.ItemsSource = new[]
+            {
+                "Entrega a cliente", "Consumo interno", "Entrega a un área", "Préstamo",
+                "Muestra", "Reposición", "Donación", "Otro tipo de salida"
+            };
+            MotivoCombo.SelectedItem = string.IsNullOrWhiteSpace(_guia.MotivoEmisionManual) ? null : _guia.MotivoEmisionManual;
+            _todosLosClientes = _clientes.Listar().Where(c => c.Estado).ToList();
             EmisorText.Text = SessionManager.UsuarioActual?.NombreCompleto ?? _guia.UsuarioEmisor;
             CargarCombos();
             DataContext = _guia;
@@ -67,12 +77,70 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             nueva.UsuarioAutorizador = _guia.UsuarioAutorizador;
             nueva.FechaEmision = _guia.FechaEmision;
             nueva.MotivoEmisionManual = _guia.MotivoEmisionManual;
+            nueva.IdCliente = _guia.IdCliente;
+            nueva.EmpresaDestino = _guia.EmpresaDestino;
+            nueva.RucDestino = _guia.RucDestino;
             nueva.Observacion = _guia.Observacion;
             _guia = nueva;
             DataContext = _guia;
 
             DetallesEdicion.Clear();
             DetallesEdicion.Add(CrearFila());
+        }
+
+        private void Motivo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MotivoCombo.SelectedItem is string motivo)
+                _guia.MotivoEmisionManual = motivo;
+        }
+
+        private void ClienteBusqueda_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_actualizandoCliente)
+                return;
+
+            _guia.IdCliente = null;
+            _guia.EmpresaDestino = string.Empty;
+            _guia.RucDestino = string.Empty;
+            string texto = ClienteBusquedaTextBox.Text.Trim();
+            if (texto.Length == 0)
+            {
+                ClientePopup.IsOpen = false;
+                return;
+            }
+
+            ClientesListBox.ItemsSource = _todosLosClientes.Where(c =>
+                c.NombreRazonSocial.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
+                c.NumeroDocumento.Contains(texto, StringComparison.OrdinalIgnoreCase)).Take(30).ToList();
+            ClientePopup.IsOpen = ClientesListBox.Items.Count > 0;
+        }
+
+        private void ClienteBusquedaListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Cliente? cliente = (e.OriginalSource as FrameworkElement)?.DataContext as Cliente
+                ?? ClientesListBox.SelectedItem as Cliente;
+            if (cliente == null)
+                return;
+
+            _guia.IdCliente = cliente.IdCliente;
+            _guia.EmpresaDestino = cliente.NombreRazonSocial;
+            _guia.RucDestino = cliente.NumeroDocumento;
+            _actualizandoCliente = true;
+            ClienteBusquedaTextBox.Text = cliente.ClienteBusqueda;
+            ClienteBusquedaTextBox.CaretIndex = ClienteBusquedaTextBox.Text.Length;
+            _actualizandoCliente = false;
+            ClientePopup.IsOpen = false;
+        }
+
+        private void LimpiarCliente_Click(object sender, RoutedEventArgs e)
+        {
+            _guia.IdCliente = null;
+            _guia.EmpresaDestino = string.Empty;
+            _guia.RucDestino = string.Empty;
+            _actualizandoCliente = true;
+            ClienteBusquedaTextBox.Clear();
+            _actualizandoCliente = false;
+            ClientePopup.IsOpen = false;
         }
 
         private GuiaInternaManualDetalleViewModel CrearFila() => new(BuscarProductos);
@@ -201,6 +269,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 _guia.IdAlmacen = almacen.IdAlmacen;
             if (AutorizadorCombo.SelectedItem is Usuario usuario)
                 _guia.UsuarioAutorizador = usuario.NombreUsuario;
+            _guia.MotivoEmisionManual = MotivoCombo.SelectedItem as string ?? string.Empty;
 
             _guia.Detalles = DetallesEdicion.Where(d => d.IdProducto > 0).Select(d => d.ToEntity()).ToList();
             if (_guia.Detalles.Any(d => d.StockActual <= 0))

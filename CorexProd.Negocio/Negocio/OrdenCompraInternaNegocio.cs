@@ -25,6 +25,7 @@ namespace CorexProd.Negocio.Negocio
             OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
             return orden != null
                 && !EsAnulada(orden)
+                && !orden.TieneOrdenTrabajo
                 && orden.Detalles.Exists(item => item.CantidadPendiente > item.StockActual);
         }
 
@@ -43,8 +44,8 @@ namespace CorexProd.Negocio.Negocio
             OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
             if (orden == null) return "No se encontró la OCI seleccionada.";
             if (EsAnulada(orden)) return "La OCI ya se encuentra anulada.";
-            if (orden.TieneGuiaSalida || orden.TieneOrdenTrabajo)
-                return "No se puede anular la OCI porque tiene documentos relacionados.";
+            if (orden.TieneOrdenTrabajo)
+                return "No se puede anular la OCI porque tiene una Orden de Trabajo emitida.";
 
             if (string.IsNullOrWhiteSpace(motivoAnulacion))
                 return "Debe ingresar el motivo de anulación.";
@@ -53,6 +54,6 @@ namespace CorexProd.Negocio.Negocio
         }
 
         private static bool EsAnulada(OrdenCompraInterna orden) =>
-            orden.Estado.Equals("Anulada", System.StringComparison.OrdinalIgnoreCase);
+            orden.Estado.Equals("Anulado", System.StringComparison.OrdinalIgnoreCase);
     }
 }

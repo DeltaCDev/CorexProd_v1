@@ -11,7 +11,9 @@ namespace CorexProd.Entidad.Entidades
         public string NumeroGuia { get; set; } = string.Empty;
         public string Origen { get; set; } = "OCI";
         public int IdOrdenCompraInterna { get; set; }
+        public int? IdCliente { get; set; }
         public string NumeroOci { get; set; } = string.Empty;
+        public string NumeroProforma { get; set; } = string.Empty;
         public string OrdenCompraCliente { get; set; } = string.Empty;
         public DateTime FechaEmision { get; set; } = DateTime.Today;
         public int IdAlmacen { get; set; }
@@ -20,6 +22,7 @@ namespace CorexProd.Entidad.Entidades
         public string EmpresaEmisora { get; set; } = string.Empty;
         public string RucDestino { get; set; } = string.Empty;
         public string EmpresaDestino { get; set; } = string.Empty;
+        public string ClienteMostrar => string.IsNullOrWhiteSpace(EmpresaDestino) ? "No especificado" : EmpresaDestino;
         public string UsuarioEmisor { get; set; } = string.Empty;
         public string UsuarioAutorizador { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
@@ -53,6 +56,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal CantidadEntregada { get; set; }
         public decimal CantidadPendiente { get; set; }
         public decimal StockActual { get; set; }
+        public decimal CantidadMaxima => Math.Max(0, Math.Min(CantidadPendiente, StockActual));
         public decimal PrecioUnitario { get; set; }
         public decimal CantidadDespachar
         {

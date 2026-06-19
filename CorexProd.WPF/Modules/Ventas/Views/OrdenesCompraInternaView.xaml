@@ -94,25 +94,37 @@
             <Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Padding" Value="8,0"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
         <Style x:Key="EstadoBadge" TargetType="Border">
-            <Setter Property="CornerRadius" Value="12"/><Setter Property="Padding" Value="10,4"/><Setter Property="Background" Value="#DCFCE7"/>
+            <Setter Property="CornerRadius" Value="12"/><Setter Property="Padding" Value="10,4"/><Setter Property="Background" Value="#DBEAFE"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                <DataTrigger Binding="{Binding Estado}" Value="En proceso">
                     <Setter Property="Background" Value="#FEF3C7"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
-                    <Setter Property="Background" Value="#FFE4E6"/>
+                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                    <Setter Property="Background" Value="#FFEDD5"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Entregado">
+                    <Setter Property="Background" Value="#DCFCE7"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Background" Value="#FEE2E2"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#166534"/>
+            <Setter Property="Foreground" Value="#1D4ED8"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                <DataTrigger Binding="{Binding Estado}" Value="En proceso">
                     <Setter Property="Foreground" Value="#92400E"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
-                    <Setter Property="Foreground" Value="#BE123C"/>
+                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                    <Setter Property="Foreground" Value="#C2410C"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Entregado">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Foreground" Value="#B91C1C"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -127,7 +139,7 @@
             <Setter Property="Visibility" Value="Collapsed"/>
             <Setter Property="ToolTip" Value="{Binding DetalleAnulacion}"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </Style.Triggers>

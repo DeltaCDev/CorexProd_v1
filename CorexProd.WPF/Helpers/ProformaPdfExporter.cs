@@ -163,8 +163,14 @@ namespace CorexProd.WPF.Helpers
 
             DibujarTotal(canvas, "Subtotal", proforma.Subtotal, xLabel, xValue, ref y, rowHeight, false);
             DibujarTotal(canvas, "Descuento", proforma.Descuento, xLabel, xValue, ref y, rowHeight, false);
-            DibujarTotal(canvas, "IGV", proforma.Igv, xLabel, xValue, ref y, rowHeight, false);
+            string etiquetaIgv = proforma.IgvPorcentaje > 0
+                && !proforma.CondicionTributaria.Equals("Exonerado de IGV", StringComparison.OrdinalIgnoreCase)
+                ? $"IGV ({proforma.IgvPorcentaje:N2}%)"
+                : "IGV";
+            DibujarTotal(canvas, etiquetaIgv, proforma.Igv, xLabel, xValue, ref y, rowHeight, false);
             DibujarTotal(canvas, "Total", proforma.Total, xLabel, xValue, ref y, rowHeight, true);
+            canvas.RightText(proforma.CondicionTributaria, xValue, y - 10, 7, false);
+            y -= 14;
             y -= 10;
         }
 
@@ -373,7 +379,7 @@ namespace CorexProd.WPF.Helpers
             }
         }
 
-        private sealed class SimplePdfDocument
+        internal sealed class SimplePdfDocument
         {
             private readonly List<PdfCanvas> _pages = [];
 
@@ -491,7 +497,7 @@ namespace CorexProd.WPF.Helpers
             }
         }
 
-        private sealed class PdfCanvas
+        internal sealed class PdfCanvas
         {
             private readonly StringBuilder _content = new();
             private int _imageCounter;
@@ -640,7 +646,7 @@ namespace CorexProd.WPF.Helpers
             }
         }
 
-        private sealed class PdfImage
+        internal sealed class PdfImage
         {
             private PdfImage(string name, int width, int height, byte[] data, string filter)
             {

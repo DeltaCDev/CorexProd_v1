@@ -4,22 +4,25 @@
         Title="Carga masiva"
         Width="820"
         Height="620"
+        MinWidth="820"
+        MinHeight="620"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
-    <Grid Margin="16">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="150"/>
+            <RowDefinition Height="2*" MinHeight="150"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="3*" MinHeight="180"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="{Binding Titulo}" FontSize="20" FontWeight="Bold" Foreground="#111827"/>
-            <TextBlock Text="Pegue dos columnas: codigo del producto y cantidad. Puede usar tabulacion de Excel o espacios."
+            <TextBlock Text="Copie y pegue dos columnas: codigo del producto y cantidad. Puede usar tabulaciones de Excel o espacios."
                        Foreground="#6B7280"
-                       Margin="0,4,0,0"/>
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"/>
         </StackPanel>
 
         <TextBox Grid.Row="1"
@@ -31,7 +34,8 @@
                  HorizontalScrollBarVisibility="Auto"
                  FontFamily="Consolas"
                  FontSize="13"
-                 Padding="10"/>
+                 Padding="12"
+                 ToolTip="Pegue aqui los codigos de producto y sus cantidades"/>
 
         <DockPanel Grid.Row="2" Margin="0,12,0,10">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
@@ -52,48 +56,63 @@
                        FontWeight="SemiBold"/>
         </DockPanel>
 
-        <DataGrid Grid.Row="3"
-                  ItemsSource="{Binding Filas}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  IsReadOnly="False"
-                  HeadersVisibility="Column"
-                  RowHeight="34"
-                  GridLinesVisibility="Horizontal">
-            <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Agregar"
-                                        Binding="{Binding Seleccionado, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="70"/>
-                <DataGridTextColumn Header="Linea"
-                                    Binding="{Binding NumeroLinea}"
-                                    IsReadOnly="True"
-                                    Width="60"/>
-                <DataGridTextColumn Header="Codigo"
-                                    Binding="{Binding Codigo}"
-                                    IsReadOnly="True"
-                                    Width="120"/>
-                <DataGridTextColumn Header="Producto"
-                                    Binding="{Binding NombreProducto}"
-                                    IsReadOnly="True"
-                                    Width="*"/>
-                <DataGridTextColumn Header="Cantidad"
-                                    Binding="{Binding Cantidad, StringFormat=N2}"
-                                    IsReadOnly="True"
-                                    Width="95"/>
-                <DataGridTextColumn Header="Estado"
-                                    Binding="{Binding Estado}"
-                                    IsReadOnly="True"
-                                    Width="85"/>
-                <DataGridTextColumn Header="Validacion"
-                                    Binding="{Binding Mensaje}"
-                                    IsReadOnly="True"
-                                    Width="230"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Vista previa y errores de validacion"
+                       Margin="0,0,0,6"
+                       FontWeight="SemiBold"
+                       Foreground="#374151"/>
+
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Filas}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="False"
+                      HeadersVisibility="Column"
+                      RowHeight="34"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="Agregar"
+                                            Binding="{Binding Seleccionado, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="70"/>
+                    <DataGridTextColumn Header="Linea"
+                                        Binding="{Binding NumeroLinea}"
+                                        IsReadOnly="True"
+                                        Width="60"/>
+                    <DataGridTextColumn Header="Codigo"
+                                        Binding="{Binding Codigo}"
+                                        IsReadOnly="True"
+                                        Width="120"/>
+                    <DataGridTextColumn Header="Producto"
+                                        Binding="{Binding NombreProducto}"
+                                        IsReadOnly="True"
+                                        Width="*"
+                                        MinWidth="220"/>
+                    <DataGridTextColumn Header="Cantidad"
+                                        Binding="{Binding Cantidad, StringFormat=N2}"
+                                        IsReadOnly="True"
+                                        Width="95"/>
+                    <DataGridTextColumn Header="Estado"
+                                        Binding="{Binding Estado}"
+                                        IsReadOnly="True"
+                                        Width="85"/>
+                    <DataGridTextColumn Header="Validacion / Error"
+                                        Binding="{Binding Mensaje}"
+                                        IsReadOnly="True"
+                                        Width="260"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
 
         <DockPanel Grid.Row="4" Margin="0,14,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
-                <Button Content="Agregar productos"
+                <Button Content="Aceptar"
                         Width="140"
                         Height="34"
                         Margin="0,0,8,0"
