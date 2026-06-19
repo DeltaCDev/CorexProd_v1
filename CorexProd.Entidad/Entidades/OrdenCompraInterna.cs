@@ -20,6 +20,11 @@ namespace CorexProd.Entidad.Entidades
         public string Estado { get; set; } = string.Empty;
         public string UsuarioGenerador { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
+        public string MotivoAnulacion { get; set; } = string.Empty;
+        public string UsuarioAnulacion { get; set; } = string.Empty;
+        public DateTime? FechaAnulacion { get; set; }
+        public string DetalleAnulacion =>
+            $"Motivo: {TextoOmitido(MotivoAnulacion)}\nUsuario: {TextoOmitido(UsuarioAnulacion)}\nFecha: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}";
         public bool TieneGuiaSalida { get; set; }
         public bool TieneOrdenTrabajo { get; set; }
         public bool PuedeGenerarOt { get; set; }
@@ -28,5 +33,8 @@ namespace CorexProd.Entidad.Entidades
             && !TieneGuiaSalida
             && !TieneOrdenTrabajo;
         public List<OrdenCompraInternaDetalle> Detalles { get; set; } = [];
+
+        private static string TextoOmitido(string valor) =>
+            string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor;
     }
 }

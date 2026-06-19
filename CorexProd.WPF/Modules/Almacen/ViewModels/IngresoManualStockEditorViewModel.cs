@@ -34,7 +34,8 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         private ProveedorStock? _proveedorSeleccionado;
         private TipoDocumentoStock? _tipoDocumentoSeleccionado;
         private string _tipoNumeracion = "Automatica";
-        private string _serie = "IMS01";
+        private string _serie = string.Empty;
+        private string _serieAutomatica = string.Empty;
         private string _numero = "Automatico";
         private AlmacenStock? _almacenSeleccionado;
         private string _observacion = string.Empty;
@@ -61,6 +62,9 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
 
             if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
+                _serieAutomatica = new SerieCorrelativoNegocio().Listar("INGRESO_PRODUCTOS")
+                    .FirstOrDefault(s => s.Activa && s.Predeterminada)?.Serie ?? string.Empty;
+                if (ingreso == null) Serie = _serieAutomatica;
                 CargarCombos();
                 CargarIngreso(ingreso);
             }
@@ -104,7 +108,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 OnPropertyChanged(nameof(SerieNumeroReadOnly));
                 if (SerieNumeroReadOnly)
                 {
-                    Serie = string.IsNullOrWhiteSpace(Serie) ? "IMS01" : Serie;
+                    Serie = string.IsNullOrWhiteSpace(Serie) ? _serieAutomatica : Serie;
                     Numero = _ingresoOriginal?.Numero ?? "Automatico";
                 }
             }
@@ -568,7 +572,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 IdProveedor = ProveedorSeleccionado?.IdProveedor ?? 0,
                 IdTipoDocumento = TipoDocumentoSeleccionado?.IdTipoDocumento ?? 0,
                 TipoNumeracion = TipoNumeracion,
-                Serie = SerieNumeroReadOnly ? "IMS01" : Serie,
+                Serie = Serie,
                 Numero = SerieNumeroReadOnly ? string.Empty : Numero,
                 IdAlmacen = AlmacenSeleccionado?.IdAlmacen ?? 0,
                 Observacion = Observacion,

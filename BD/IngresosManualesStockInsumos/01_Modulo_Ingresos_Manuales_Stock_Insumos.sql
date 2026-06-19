@@ -446,15 +446,10 @@ BEGIN
             END
             ELSE
             BEGIN
-                SELECT TOP (1) @Serie = Serie
-                FROM dbo.SerieIngresoManualStockInsumo WITH (UPDLOCK, HOLDLOCK)
-                WHERE Estado = 1
-                ORDER BY IdSerieIngresoManualStockInsumo;
-
-                UPDATE dbo.SerieIngresoManualStockInsumo
-                SET UltimoNumero = UltimoNumero + 1,
-                    @Numero = RIGHT('00000000' + CAST(UltimoNumero + 1 AS VARCHAR(8)), 8)
-                WHERE Serie = @Serie;
+                DECLARE @CorrelativoGenerado BIGINT;
+                EXEC dbo.USP_SEG_SERIE_TOMAR_SIGUIENTE
+                    @CodigoTipoDocumento='INGRESO_INSUMOS', @Serie=@Serie OUTPUT,
+                    @Correlativo=@CorrelativoGenerado OUTPUT, @Numero=@Numero OUTPUT;
             END
         END
 

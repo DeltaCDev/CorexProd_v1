@@ -277,19 +277,12 @@ BEGIN
         IF @IdProforma = 0
         BEGIN
             DECLARE @Serie VARCHAR(20);
-            DECLARE @Correlativo INT;
-
-            SELECT @Serie = ValorParametro
-            FROM dbo.Parametros WITH (UPDLOCK, HOLDLOCK)
-            WHERE CodigoParametro = 'PROFORMA_SERIE';
-
-            SELECT @Correlativo = TRY_CONVERT(INT, ValorParametro)
-            FROM dbo.Parametros WITH (UPDLOCK, HOLDLOCK)
-            WHERE CodigoParametro = 'PROFORMA_CORRELATIVO';
-
-            SET @Serie = ISNULL(NULLIF(@Serie, ''), 'PF');
-            SET @Correlativo = ISNULL(NULLIF(@Correlativo, 0), 1);
-            SET @SerieNumero = CONCAT(@Serie, '-', FORMAT(@Correlativo, '000000'));
+            DECLARE @Correlativo BIGINT;
+            DECLARE @Numero VARCHAR(30);
+            EXEC dbo.USP_SEG_SERIE_TOMAR_SIGUIENTE
+                @CodigoTipoDocumento='PROFORMA', @Serie=@Serie OUTPUT,
+                @Correlativo=@Correlativo OUTPUT, @Numero=@Numero OUTPUT;
+            SET @SerieNumero = CONCAT(@Serie, '-', @Numero);
 
             INSERT INTO dbo.Proformas
             (
@@ -324,9 +317,6 @@ BEGIN
 
             SET @IdGenerado = SCOPE_IDENTITY();
 
-            UPDATE dbo.Parametros
-            SET ValorParametro = CONVERT(VARCHAR(20), @Correlativo + 1)
-            WHERE CodigoParametro = 'PROFORMA_CORRELATIVO';
         END
         ELSE
         BEGIN

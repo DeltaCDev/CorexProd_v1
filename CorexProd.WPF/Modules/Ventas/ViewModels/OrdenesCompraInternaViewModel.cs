@@ -20,6 +20,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     public class OrdenesCompraInternaViewModel : BaseViewModel
     {
         private readonly OrdenCompraInternaNegocio _negocio = new();
+        private readonly GuiaInternaNegocio _guiaInternaNegocio = new();
         private readonly List<OrdenCompraInterna> _todas = [];
         private string _textoBusqueda = string.Empty;
         private string _estadoFiltro = "Todos";
@@ -27,7 +28,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private DateTime? _fechaHasta;
 
         public ObservableCollection<OrdenCompraInterna> Ordenes { get; } = [];
-        public ObservableCollection<string> Estados { get; } = ["Todos", "Registrada", "Despachada", "Anulada"];
+        public ObservableCollection<string> Estados { get; } = ["Todos", "Registrada", "Parcial", "Despachada", "Anulada"];
 
         public string TextoBusqueda
         {
@@ -173,7 +174,20 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 return;
             }
 
-            NotificationService.Info("La generación de la Guía de Salida se implementará en la siguiente etapa.");
+            GuiaInterna? guia = _guiaInternaNegocio.Preparar(orden.IdOrdenCompraInterna);
+            if (guia == null || guia.Detalles.Count == 0)
+            {
+                NotificationService.Warning("No se encontraron productos pendientes para preparar la Guía Interna.");
+                Cargar();
+                return;
+            }
+
+            GuiaInternaPreviaWindow previa = new(guia)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            if (previa.ShowDialog() == true)
+                Cargar();
         }
 
         private static bool PuedeAnular(object? parametro) =>
@@ -183,13 +197,17 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             if (parametro is not OrdenCompraInterna orden) return;
 
-            bool confirmar = ConfirmDialogService.Confirmar(
-                $"¿Desea anular la OCI {orden.NumeroOci}?",
-                "Anular orden de compra interna");
-            if (!confirmar) return;
+            AnularOciWindow ventana = new(orden.NumeroOci)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            if (ventana.ShowDialog() != true) return;
 
             string usuario = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
-            string mensaje = _negocio.Anular(orden.IdOrdenCompraInterna, usuario);
+            string mensaje = _negocio.Anular(
+                orden.IdOrdenCompraInterna,
+                ventana.MotivoAnulacion,
+                usuario);
             if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
                 NotificationService.Success(mensaje);
             else

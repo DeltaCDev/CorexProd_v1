@@ -95,6 +95,67 @@
         </Style>
         <Style x:Key="EstadoBadge" TargetType="Border">
             <Setter Property="CornerRadius" Value="12"/><Setter Property="Padding" Value="10,4"/><Setter Property="Background" Value="#DCFCE7"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Background" Value="#FFE4E6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#166534"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Parcial">
+                    <Setter Property="Foreground" Value="#92400E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Foreground" Value="#BE123C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="IconoInfoAnulacion" TargetType="TextBlock">
+            <Setter Property="Text" Value="ⓘ"/>
+            <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#BE123C"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="ToolTip" Value="{Binding DetalleAnulacion}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CeldaOci" TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FilaOci" TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F0FDFA"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
@@ -105,7 +166,7 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Órdenes de Compra Interna" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
+                    <TextBlock Text="Órdenes de Compra Interna (OCI)" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                     <TextBlock Text="Gestiona las OCI generadas desde proformas" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -128,9 +189,11 @@
         </Border>
 
         <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
-            <DataGrid ItemsSource="{Binding Ordenes}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal">
+            <DataGrid ItemsSource="{Binding Ordenes}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                      RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal"
+                      CellStyle="{StaticResource CeldaOci}" RowStyle="{StaticResource FilaOci}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="235"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                    <DataGridTemplateColumn Header="Acciones" Width="260"><DataGridTemplateColumn.CellTemplate><DataTemplate>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver detalle"
                                     Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
@@ -139,14 +202,14 @@
                             <Button Style="{StaticResource BotonAccion}" ToolTip="Orden de trabajo"
                                      Command="{Binding DataContext.GenerarOtCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8A5;" Style="{StaticResource IconoAccion}" Foreground="#7E22CE" Margin="0,0,6,0"/>
+                                    <TextBlock Text="🏭" FontFamily="Segoe UI Emoji" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Text="OT" VerticalAlignment="Center" Foreground="#7E22CE"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource BotonGuiaAccion}" ToolTip="Guía Interna"
                                      Command="{Binding DataContext.GenerarGuiaSalidaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE7C8;" Style="{StaticResource IconoAccion}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="🚚" FontFamily="Segoe UI Emoji" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Text="Guía Interna" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
@@ -156,10 +219,17 @@
                             </Button>
                         </StackPanel>
                     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
-                    <DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="80" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTextColumn Header="Orden de compra" Binding="{Binding OrdenCompraCliente}" Width="120" ElementStyle="{StaticResource Celda}"/>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding NumeroProforma}" Width="100" ElementStyle="{StaticResource Celda}"/>
-                    <DataGridTemplateColumn Header="Estado" Width="103"><DataGridTemplateColumn.CellTemplate><DataTemplate><Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center"><TextBlock Text="{Binding Estado}" Foreground="#166534" FontWeight="SemiBold"/></Border></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Proforma" Binding="{Binding NumeroProforma}" Width="80" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTemplateColumn Header="Estado" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
+                            </Border>
+                            <TextBlock Style="{StaticResource IconoInfoAnulacion}"/>
+                        </StackPanel>
+                    </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                     <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="210" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTextColumn Header="Fecha emisión" Binding="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Width="105" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>

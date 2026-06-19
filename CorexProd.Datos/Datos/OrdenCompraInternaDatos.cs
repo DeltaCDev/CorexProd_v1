@@ -80,11 +80,12 @@ namespace CorexProd.Datos.Datos
             return mensaje.Value?.ToString() ?? string.Empty;
         }
 
-        public string Anular(int idOrdenCompraInterna, string usuarioAnulacion)
+        public string Anular(int idOrdenCompraInterna, string motivoAnulacion, string usuarioAnulacion)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOrdenCompraInterna);
+            cmd.Parameters.AddWithValue("@MotivoAnulacion", motivoAnulacion);
             cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
             SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
             cmd.Parameters.Add(mensaje);
@@ -112,6 +113,9 @@ namespace CorexProd.Datos.Datos
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,
                 FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
+                MotivoAnulacion = dr["MotivoAnulacion"]?.ToString() ?? string.Empty,
+                UsuarioAnulacion = dr["UsuarioAnulacion"]?.ToString() ?? string.Empty,
+                FechaAnulacion = dr["FechaAnulacion"] == DBNull.Value ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
                 TieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
                 TieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
                 PuedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),

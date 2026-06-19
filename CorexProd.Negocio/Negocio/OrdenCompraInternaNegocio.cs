@@ -36,7 +36,7 @@ namespace CorexProd.Negocio.Negocio
                 && orden.Detalles.Exists(item => item.StockActual > 0 && item.CantidadPendiente > 0);
         }
 
-        public string Anular(int idOrdenCompraInterna, string usuarioAnulacion)
+        public string Anular(int idOrdenCompraInterna, string motivoAnulacion, string usuarioAnulacion)
         {
             if (idOrdenCompraInterna <= 0) return "Debe seleccionar una OCI válida.";
 
@@ -46,8 +46,10 @@ namespace CorexProd.Negocio.Negocio
             if (orden.TieneGuiaSalida || orden.TieneOrdenTrabajo)
                 return "No se puede anular la OCI porque tiene documentos relacionados.";
 
+            if (string.IsNullOrWhiteSpace(motivoAnulacion))
+                return "Debe ingresar el motivo de anulación.";
             if (string.IsNullOrWhiteSpace(usuarioAnulacion)) usuarioAnulacion = "Sistema";
-            return _datos.Anular(idOrdenCompraInterna, usuarioAnulacion.Trim());
+            return _datos.Anular(idOrdenCompraInterna, motivoAnulacion.Trim(), usuarioAnulacion.Trim());
         }
 
         private static bool EsAnulada(OrdenCompraInterna orden) =>

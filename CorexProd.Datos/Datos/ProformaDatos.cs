@@ -80,15 +80,11 @@ namespace CorexProd.Datos.Datos
         public string ObtenerSiguienteSerieNumero()
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
-            using SqlCommand cmd = new(
-                """
-                SELECT
-                    Serie = MAX(CASE WHEN CodigoParametro = 'PROFORMA_SERIE' THEN ValorParametro END),
-                    Correlativo = MAX(CASE WHEN CodigoParametro = 'PROFORMA_CORRELATIVO' THEN ValorParametro END)
-                FROM dbo.Parametros
-                WHERE CodigoParametro IN ('PROFORMA_SERIE', 'PROFORMA_CORRELATIVO');
-                """,
-                conexion);
+            using SqlCommand cmd = new("USP_SEG_SERIE_OBTENER_PREDETERMINADA", conexion)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@CodigoTipoDocumento", "PROFORMA");
 
             conexion.Open();
 
@@ -96,23 +92,13 @@ namespace CorexProd.Datos.Datos
 
             if (!dr.Read())
             {
-                return "PF-000001";
+                return "Sin serie configurada";
             }
 
             string serie = dr["Serie"]?.ToString() ?? string.Empty;
-            string correlativoTexto = dr["Correlativo"]?.ToString() ?? string.Empty;
-
-            if (string.IsNullOrWhiteSpace(serie))
-            {
-                serie = "PF";
-            }
-
-            if (!int.TryParse(correlativoTexto, out int correlativo) || correlativo <= 0)
-            {
-                correlativo = 1;
-            }
-
-            return $"{serie}-{correlativo:000000}";
+            long correlativo = Convert.ToInt64(dr["UltimoCorrelativo"]) + 1;
+            int digitos = Convert.ToInt32(dr["CantidadDigitos"]);
+            return $"{serie}-{correlativo.ToString().PadLeft(digitos, '0')}";
         }
 
         public string Guardar(Proforma proforma)

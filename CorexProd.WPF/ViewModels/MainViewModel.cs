@@ -186,7 +186,7 @@ namespace CorexProd.WPF.ViewModels
             {
                 ventas.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Guía de Salida",
+                    Titulo = "Guía Interna",
                     Vista = "GuiaSalida"
                 });
             }
@@ -534,6 +534,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Series y Correlativos"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Series y Correlativos",
+                    Vista = "SeriesCorrelativos"
+                });
+            }
+
             if (menusPermitidos.Contains("Seguridad") && seguridad.Hijos.Count > 0)
             {
                 SidebarMenus.Add(seguridad);
@@ -591,10 +600,15 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new ParametrosView();
                     break;
 
+                case "SeriesCorrelativos":
+                    Titulo = "Series y Correlativos";
+                    VistaActual = new SeriesCorrelativosView();
+                    break;
+
                 // VENTAS
                 case "Ventas":
                 case "GuiaSalida":
-                    Titulo = vista;
+                    Titulo = vista == "GuiaSalida" ? "Guía Interna" : vista;
                     VistaActual = new VentasView();
                     break;
 

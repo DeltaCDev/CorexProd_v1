@@ -27,6 +27,287 @@ BEGIN
 END;
 GO
 
+/* GUIAS INTERNAS DE SALIDA */
+IF OBJECT_ID('dbo.GuiasInternas', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.GuiasInternas
+    (
+        IdGuiaInterna INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_GuiasInternas PRIMARY KEY,
+        NumeroGuia VARCHAR(30) NOT NULL,
+        IdOrdenCompraInterna INT NOT NULL,
+        IdAlmacen INT NOT NULL,
+        FechaEmision DATE NOT NULL,
+        RucEmisor VARCHAR(20) NOT NULL,
+        EmpresaEmisora VARCHAR(250) NOT NULL,
+        RucDestino VARCHAR(20) NOT NULL,
+        EmpresaDestino VARCHAR(250) NOT NULL,
+        UsuarioEmisor VARCHAR(80) NOT NULL,
+        UsuarioAutorizador VARCHAR(80) NOT NULL,
+        Observacion VARCHAR(500) NOT NULL CONSTRAINT DF_GuiaInterna_Observacion DEFAULT(''),
+        Estado VARCHAR(20) NOT NULL CONSTRAINT DF_GuiaInterna_Estado DEFAULT('Emitida'),
+        FechaRegistro DATETIME NOT NULL CONSTRAINT DF_GuiaInterna_FechaRegistro DEFAULT(GETDATE()),
+        CONSTRAINT UQ_GuiasInternas_Numero UNIQUE (NumeroGuia),
+        CONSTRAINT FK_GuiasInternas_OCI FOREIGN KEY (IdOrdenCompraInterna) REFERENCES dbo.OrdenesCompraInterna(IdOrdenCompraInterna),
+        CONSTRAINT FK_GuiasInternas_Almacen FOREIGN KEY (IdAlmacen) REFERENCES dbo.Almacenes(IdAlmacen)
+    );
+END;
+GO
+
+IF OBJECT_ID('dbo.GuiaInternaDetalle', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.GuiaInternaDetalle
+    (
+        IdGuiaInternaDetalle INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_GuiaInternaDetalle PRIMARY KEY,
+        IdGuiaInterna INT NOT NULL,
+        IdOrdenCompraInternaDetalle INT NOT NULL,
+        IdProducto INT NOT NULL,
+        CodigoProducto VARCHAR(100) NOT NULL,
+        NombreProducto VARCHAR(500) NOT NULL,
+        IdUnidadMedida INT NOT NULL,
+        NombreUnidad VARCHAR(100) NOT NULL,
+        CantidadRequerida DECIMAL(18,2) NOT NULL,
+        CantidadDespachada DECIMAL(18,2) NOT NULL,
+        StockAnterior DECIMAL(18,2) NOT NULL,
+        PrecioUnitario DECIMAL(18,2) NOT NULL,
+        Observacion VARCHAR(500) NOT NULL CONSTRAINT DF_GuiaInternaDetalle_Observacion DEFAULT(''),
+        CONSTRAINT FK_GuiaInternaDetalle_Guia FOREIGN KEY (IdGuiaInterna) REFERENCES dbo.GuiasInternas(IdGuiaInterna),
+        CONSTRAINT FK_GuiaInternaDetalle_OCIDetalle FOREIGN KEY (IdOrdenCompraInternaDetalle) REFERENCES dbo.OrdenCompraInternaDetalle(IdOrdenCompraInternaDetalle),
+        CONSTRAINT FK_GuiaInternaDetalle_Producto FOREIGN KEY (IdProducto) REFERENCES dbo.Productos(IdProducto),
+        CONSTRAINT FK_GuiaInternaDetalle_Unidad FOREIGN KEY (IdUnidadMedida) REFERENCES dbo.UnidadesMedida(IdUnidadMedida)
+    );
+END;
+GO
+
+IF OBJECT_ID('dbo.SerieGuiaInterna', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SerieGuiaInterna
+    (
+        Serie VARCHAR(10) NOT NULL CONSTRAINT PK_SerieGuiaInterna PRIMARY KEY,
+        UltimoNumero INT NOT NULL
+    );
+    INSERT INTO dbo.SerieGuiaInterna (Serie, UltimoNumero) VALUES ('GI01', 0);
+END;
+GO
+
+IF COL_LENGTH('dbo.KardexProductos', 'IdGuiaInterna') IS NULL
+    ALTER TABLE dbo.KardexProductos ADD IdGuiaInterna INT NULL;
+GO
+
+IF TYPE_ID('dbo.GuiaInternaDetalleType') IS NULL
+    EXEC('CREATE TYPE dbo.GuiaInternaDetalleType AS TABLE
+    (
+        IdOrdenCompraInternaDetalle INT NOT NULL,
+        CantidadDespachar DECIMAL(18,2) NOT NULL,
+        Observacion VARCHAR(500) NULL
+    )');
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_VEN_GUIA_INTERNA_PREPARAR
+    @IdOrdenCompraInterna INT,
+    @IdAlmacen INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @IdAlmacen IS NULL
+        SELECT TOP (1) @IdAlmacen = IdAlmacen FROM dbo.Almacenes WHERE Estado = 1 ORDER BY IdAlmacen;
+
+    SELECT
+        O.IdOrdenCompraInterna, O.NumeroOci, O.OrdenCompraCliente,
+        A.IdAlmacen, A.NombreAlmacen,
+        ISNULL(E.Ruc, '') AS RucEmisor,
+        ISNULL(E.Nombre, '') AS EmpresaEmisora,
+        ISNULL(C.NumeroDocumento, '') AS RucDestino,
+        O.NombreCliente AS EmpresaDestino
+    FROM dbo.OrdenesCompraInterna O
+    INNER JOIN dbo.Almacenes A ON A.IdAlmacen = @IdAlmacen AND A.Estado = 1
+    INNER JOIN dbo.Clientes C ON C.IdCliente = O.IdCliente
+    OUTER APPLY
+    (
+        SELECT TOP (1) Ruc, Nombre
+        FROM dbo.Empresas
+        WHERE Estado = 1
+        ORDER BY EsPredeterminada DESC, IdEmpresa
+    ) E
+    WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna
+      AND O.Estado <> 'Anulada';
+
+    SELECT
+        D.IdOrdenCompraInternaDetalle, D.IdProducto, D.CodigoProducto, D.NombreProducto,
+        P.IdUnidadMedida, UM.NombreUnidad,
+        D.Cantidad AS CantidadRequerida,
+        D.CantidadDespachada AS CantidadEntregada,
+        D.Cantidad - D.CantidadDespachada AS CantidadPendiente,
+        CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockActual,
+        D.PrecioUnitario,
+        CAST(CASE
+            WHEN ISNULL(S.StockActual, 0) <= 0 THEN 0
+            WHEN S.StockActual < D.Cantidad - D.CantidadDespachada THEN S.StockActual
+            ELSE D.Cantidad - D.CantidadDespachada
+        END AS DECIMAL(18,2)) AS CantidadSugerida,
+        D.Observacion
+    FROM dbo.OrdenCompraInternaDetalle D
+    INNER JOIN dbo.Productos P ON P.IdProducto = D.IdProducto
+    INNER JOIN dbo.UnidadesMedida UM ON UM.IdUnidadMedida = P.IdUnidadMedida
+    LEFT JOIN dbo.StockProductosAlmacen S ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen
+    WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
+      AND D.Cantidad > D.CantidadDespachada
+    ORDER BY D.IdOrdenCompraInternaDetalle;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_VEN_GUIA_INTERNA_EMITIR
+    @IdOrdenCompraInterna INT,
+    @IdAlmacen INT,
+    @FechaEmision DATE,
+    @UsuarioEmisor VARCHAR(80),
+    @UsuarioAutorizador VARCHAR(80),
+    @Observacion VARCHAR(500),
+    @Detalles dbo.GuiaInternaDetalleType READONLY,
+    @NumeroGuia VARCHAR(30) OUTPUT,
+    @Mensaje VARCHAR(500) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    SET @NumeroGuia = '';
+
+    IF NOT EXISTS (SELECT 1 FROM @Detalles WHERE CantidadDespachar > 0)
+    BEGIN
+        SET @Mensaje = 'Debe indicar al menos un producto para despachar.';
+        RETURN;
+    END;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS
+        (
+            SELECT 1 FROM dbo.OrdenesCompraInterna WITH (UPDLOCK, HOLDLOCK)
+            WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado <> 'Anulada'
+        )
+            THROW 51000, 'La OCI no existe o se encuentra anulada.', 1;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @Detalles T
+            LEFT JOIN dbo.OrdenCompraInternaDetalle D WITH (UPDLOCK, HOLDLOCK)
+                ON D.IdOrdenCompraInternaDetalle = T.IdOrdenCompraInternaDetalle
+               AND D.IdOrdenCompraInterna = @IdOrdenCompraInterna
+            LEFT JOIN dbo.StockProductosAlmacen S WITH (UPDLOCK, HOLDLOCK)
+                ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen
+            WHERE D.IdOrdenCompraInternaDetalle IS NULL
+               OR T.CantidadDespachar <= 0
+               OR T.CantidadDespachar > D.Cantidad - D.CantidadDespachada
+               OR T.CantidadDespachar > ISNULL(S.StockActual, 0)
+        )
+            THROW 51001, 'Las cantidades cambiaron o el stock disponible es insuficiente. Actualice la vista previa.', 1;
+
+        DECLARE @SerieGuia VARCHAR(20), @Correlativo BIGINT, @NumeroCorrelativo VARCHAR(30);
+        EXEC dbo.USP_SEG_SERIE_TOMAR_SIGUIENTE
+            @CodigoTipoDocumento='GUIA_SALIDA', @Serie=@SerieGuia OUTPUT,
+            @Correlativo=@Correlativo OUTPUT, @Numero=@NumeroCorrelativo OUTPUT;
+        SET @NumeroGuia = CONCAT(@SerieGuia, '-', @NumeroCorrelativo);
+
+        INSERT INTO dbo.GuiasInternas
+        (
+            NumeroGuia, IdOrdenCompraInterna, IdAlmacen, FechaEmision,
+            RucEmisor, EmpresaEmisora, RucDestino, EmpresaDestino,
+            UsuarioEmisor, UsuarioAutorizador, Observacion, Estado
+        )
+        SELECT
+            @NumeroGuia, O.IdOrdenCompraInterna, @IdAlmacen, @FechaEmision,
+            ISNULL(E.Ruc, ''), ISNULL(E.Nombre, ''), ISNULL(C.NumeroDocumento, ''), O.NombreCliente,
+            @UsuarioEmisor, @UsuarioAutorizador, ISNULL(@Observacion, ''), 'Emitida'
+        FROM dbo.OrdenesCompraInterna O
+        INNER JOIN dbo.Clientes C ON C.IdCliente = O.IdCliente
+        OUTER APPLY
+        (
+            SELECT TOP (1) Ruc, Nombre FROM dbo.Empresas
+            WHERE Estado = 1 ORDER BY EsPredeterminada DESC, IdEmpresa
+        ) E
+        WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+        DECLARE @IdGuiaInterna INT = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.GuiaInternaDetalle
+        (
+            IdGuiaInterna, IdOrdenCompraInternaDetalle, IdProducto, CodigoProducto, NombreProducto,
+            IdUnidadMedida, NombreUnidad, CantidadRequerida, CantidadDespachada,
+            StockAnterior, PrecioUnitario, Observacion
+        )
+        SELECT
+            @IdGuiaInterna, D.IdOrdenCompraInternaDetalle, D.IdProducto, D.CodigoProducto, D.NombreProducto,
+            P.IdUnidadMedida, U.NombreUnidad, D.Cantidad, T.CantidadDespachar,
+            S.StockActual, D.PrecioUnitario, ISNULL(T.Observacion, '')
+        FROM @Detalles T
+        INNER JOIN dbo.OrdenCompraInternaDetalle D ON D.IdOrdenCompraInternaDetalle = T.IdOrdenCompraInternaDetalle
+        INNER JOIN dbo.Productos P ON P.IdProducto = D.IdProducto
+        INNER JOIN dbo.UnidadesMedida U ON U.IdUnidadMedida = P.IdUnidadMedida
+        INNER JOIN dbo.StockProductosAlmacen S ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen;
+
+        DECLARE @IdDetalle INT, @IdProducto INT, @Cantidad DECIMAL(18,2), @StockAnterior DECIMAL(18,2);
+        DECLARE detalle_cursor CURSOR LOCAL FAST_FORWARD FOR
+            SELECT T.IdOrdenCompraInternaDetalle, D.IdProducto, T.CantidadDespachar, S.StockActual
+            FROM @Detalles T
+            INNER JOIN dbo.OrdenCompraInternaDetalle D ON D.IdOrdenCompraInternaDetalle = T.IdOrdenCompraInternaDetalle
+            INNER JOIN dbo.StockProductosAlmacen S ON S.IdProducto = D.IdProducto AND S.IdAlmacen = @IdAlmacen;
+        OPEN detalle_cursor;
+        FETCH NEXT FROM detalle_cursor INTO @IdDetalle, @IdProducto, @Cantidad, @StockAnterior;
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            UPDATE dbo.StockProductosAlmacen
+            SET StockActual = StockActual - @Cantidad, FechaActualizacion = GETDATE()
+            WHERE IdProducto = @IdProducto AND IdAlmacen = @IdAlmacen;
+
+            UPDATE dbo.StockProductos
+            SET StockActual = StockActual - @Cantidad, FechaActualizacion = GETDATE()
+            WHERE IdProducto = @IdProducto;
+
+            UPDATE dbo.OrdenCompraInternaDetalle
+            SET CantidadDespachada = CantidadDespachada + @Cantidad
+            WHERE IdOrdenCompraInternaDetalle = @IdDetalle;
+
+            INSERT INTO dbo.KardexProductos
+            (
+                TipoMovimiento, IdIngresoManualStock, IdGuiaInterna, IdProducto, IdAlmacen,
+                StockAnterior, Cantidad, StockResultante, UsuarioResponsable, FechaMovimiento, Observacion
+            )
+            VALUES
+            (
+                'GUIA_INTERNA_SALIDA', NULL, @IdGuiaInterna, @IdProducto, @IdAlmacen,
+                @StockAnterior, @Cantidad, @StockAnterior - @Cantidad, @UsuarioEmisor, GETDATE(),
+                CONCAT('Salida por ', @NumeroGuia, ' - OCI ', @IdOrdenCompraInterna)
+            );
+
+            FETCH NEXT FROM detalle_cursor INTO @IdDetalle, @IdProducto, @Cantidad, @StockAnterior;
+        END;
+        CLOSE detalle_cursor;
+        DEALLOCATE detalle_cursor;
+
+        UPDATE dbo.OrdenesCompraInterna
+        SET TieneGuiaSalida = 1,
+            Estado = CASE WHEN EXISTS
+            (
+                SELECT 1 FROM dbo.OrdenCompraInternaDetalle
+                WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND CantidadDespachada < Cantidad
+            ) THEN 'Parcial' ELSE 'Despachada' END
+        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+        COMMIT TRANSACTION;
+        SET @Mensaje = CONCAT('Guia interna ', @NumeroGuia, ' emitida correctamente.');
+    END TRY
+    BEGIN CATCH
+        IF CURSOR_STATUS('local', 'detalle_cursor') >= 0 CLOSE detalle_cursor;
+        IF CURSOR_STATUS('local', 'detalle_cursor') >= -1 DEALLOCATE detalle_cursor;
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        SET @Mensaje = ERROR_MESSAGE();
+        SET @NumeroGuia = '';
+    END CATCH;
+END;
+GO
+
 IF OBJECT_ID('dbo.OrdenCompraInternaDetalle', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.OrdenCompraInternaDetalle
@@ -67,6 +348,16 @@ IF COL_LENGTH('dbo.OrdenesCompraInterna', 'FechaAnulacion') IS NULL
     ALTER TABLE dbo.OrdenesCompraInterna ADD FechaAnulacion DATETIME NULL;
 GO
 
+IF COL_LENGTH('dbo.OrdenesCompraInterna', 'MotivoAnulacion') IS NULL
+    ALTER TABLE dbo.OrdenesCompraInterna ADD MotivoAnulacion VARCHAR(500) NULL;
+GO
+
+UPDATE dbo.OrdenesCompraInterna
+SET MotivoAnulacion = 'No registrado (anulacion anterior)'
+WHERE Estado = 'Anulada'
+  AND NULLIF(LTRIM(RTRIM(MotivoAnulacion)), '') IS NULL;
+GO
+
 IF COL_LENGTH('dbo.OrdenCompraInternaDetalle', 'CantidadDespachada') IS NULL
     ALTER TABLE dbo.OrdenCompraInternaDetalle ADD CantidadDespachada DECIMAL(18,2) NOT NULL
         CONSTRAINT DF_OCID_CantidadDespachada DEFAULT(0) WITH VALUES;
@@ -104,6 +395,9 @@ BEGIN
         O.Estado,
         O.UsuarioGenerador,
         O.FechaRegistro,
+        O.MotivoAnulacion,
+        O.UsuarioAnulacion,
+        O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
         CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
@@ -151,6 +445,9 @@ BEGIN
         O.Estado,
         O.UsuarioGenerador,
         O.FechaRegistro,
+        O.MotivoAnulacion,
+        O.UsuarioAnulacion,
+        O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
         CAST(CASE WHEN O.Estado <> 'Anulada' AND EXISTS
@@ -196,14 +493,31 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.USP_VEN_OCI_ANULAR
     @IdOrdenCompraInterna INT,
+    @MotivoAnulacion VARCHAR(500),
     @UsuarioAnulacion VARCHAR(80),
     @Mensaje VARCHAR(500) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    SET @MotivoAnulacion = LTRIM(RTRIM(ISNULL(@MotivoAnulacion, '')));
+    SET @UsuarioAnulacion = LTRIM(RTRIM(ISNULL(@UsuarioAnulacion, '')));
+
+    IF @MotivoAnulacion = ''
+    BEGIN
+        SET @Mensaje = 'Debe ingresar el motivo de anulacion.';
+        RETURN;
+    END;
+
+    IF @UsuarioAnulacion = ''
+    BEGIN
+        SET @Mensaje = 'No se pudo identificar al usuario que anula la OCI.';
+        RETURN;
+    END;
+
     UPDATE dbo.OrdenesCompraInterna WITH (UPDLOCK)
     SET Estado = 'Anulada',
+        MotivoAnulacion = @MotivoAnulacion,
         UsuarioAnulacion = @UsuarioAnulacion,
         FechaAnulacion = GETDATE()
     WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
