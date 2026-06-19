@@ -171,11 +171,41 @@
 
             <!-- HEADER -->
             <Border Grid.Row="0" Background="White">
-                <TextBlock Text="{Binding Titulo}"
-                           FontSize="22"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Margin="25,0,0,0"/>
+                <Grid Margin="25,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Titulo}"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    <StackPanel x:Name="ListadoHerramientas"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed">
+                        <TextBlock x:Name="CantidadItemsText"
+                                   Foreground="#475569"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,14,0"/>
+                        <Button Click="ExportarListado_Click"
+                                Height="36"
+                                MinWidth="100"
+                                Padding="14,0"
+                                Background="#16A34A"
+                                BorderBrush="#16A34A"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
+                                <TextBlock Text="Exportar"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <!-- ÁREA CENTRAL -->
@@ -184,7 +214,7 @@
                     Background="White"
                     CornerRadius="10">
 
-                <ContentControl Content="{Binding VistaActual}"/>
+                <ContentControl x:Name="ContenidoPrincipal" Content="{Binding VistaActual}"/>
 
             </Border>
         </Grid>

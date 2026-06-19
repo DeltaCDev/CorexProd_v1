@@ -378,11 +378,6 @@
                     <StackPanel Grid.Row="0"
                                 Grid.Column="0"
                                 Margin="0,0,16,14">
-                        <TextBlock Text="Proformas"
-                                   FontSize="22"
-                                   FontWeight="Bold"
-                                   Foreground="#0F172A"
-                                   Margin="0,0,0,4"/>
                         <TextBlock Text="Consulta, filtra y gestiona documentos de venta"
                                    FontSize="13"
                                    Foreground="#64748B"/>

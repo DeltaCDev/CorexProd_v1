@@ -2,10 +2,12 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
@@ -22,6 +24,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private byte _digitos = 6;
         private bool _activa = true;
         private bool _predeterminada;
+        private bool _soloLectura;
 
         public ObservableCollection<TipoDocumentoNumeracion> Tipos { get; } = [];
         public ObservableCollection<SerieCorrelativo> Series { get; } = [];
@@ -31,7 +34,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public SerieCorrelativo? SerieSeleccionada
         {
             get => _seleccionada;
-            set { _seleccionada=value; OnPropertyChanged(); if (value != null) Editar(value); }
+            set { _seleccionada=value; OnPropertyChanged(); }
         }
         public int IdSerieCorrelativo { get => _id; set { _id=value; OnPropertyChanged(); } }
         public string Serie { get => _serie; set { _serie=value; OnPropertyChanged(); OnPropertyChanged(nameof(VistaPrevia)); } }
@@ -39,19 +42,31 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public byte CantidadDigitos { get => _digitos; set { _digitos=value; OnPropertyChanged(); OnPropertyChanged(nameof(VistaPrevia)); } }
         public bool Activa { get => _activa; set { _activa=value; OnPropertyChanged(); } }
         public bool Predeterminada { get => _predeterminada; set { _predeterminada=value; if (value) Activa=true; OnPropertyChanged(); } }
+        public bool SoloLectura { get => _soloLectura; private set { _soloLectura=value; OnPropertyChanged(); OnPropertyChanged(nameof(PuedeEditar)); OnPropertyChanged(nameof(TituloModal)); OnPropertyChanged(nameof(SubtituloModal)); } }
+        public bool PuedeEditar => !SoloLectura;
+        public string TituloModal => SoloLectura ? "Detalle de serie y correlativo" : IdSerieCorrelativo > 0 ? "Editar serie y correlativo" : "Nueva serie y correlativo";
+        public string SubtituloModal => SoloLectura ? "Información registrada e historial de cambios." : "Configure la numeración automática del documento.";
         public string VistaPrevia => $"{Serie.Trim().ToUpperInvariant()}-{UltimoCorrelativo.ToString().PadLeft(CantidadDigitos, '0')}";
 
         public ICommand NuevoCommand { get; }
         public ICommand GuardarCommand { get; }
         public ICommand ActualizarCommand { get; }
         public ICommand QuitarFiltroCommand { get; }
+        public ICommand EditarCommand { get; }
+        public ICommand VerCommand { get; }
+        public ICommand CerrarCommand { get; }
+
+        public Action? CerrarVentana { get; set; }
 
         public SeriesCorrelativosViewModel()
         {
-            NuevoCommand = new RelayCommand(_ => Nuevo());
+            NuevoCommand = new RelayCommand(_ => AbrirModal(null, false));
             GuardarCommand = new RelayCommand(_ => Guardar());
             ActualizarCommand = new RelayCommand(_ => Cargar());
             QuitarFiltroCommand = new RelayCommand(_ => TipoFiltro=null);
+            EditarCommand = new RelayCommand(item => AbrirModal(item as SerieCorrelativo, false));
+            VerCommand = new RelayCommand(item => AbrirModal(item as SerieCorrelativo, true));
+            CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             Cargar();
         }
 
@@ -75,6 +90,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             SerieSeleccionada=null; IdSerieCorrelativo=0; Serie=string.Empty; UltimoCorrelativo=0;
             CantidadDigitos=6; Activa=true; Predeterminada=false;
             TipoEdicion=TipoFiltro ?? Tipos.FirstOrDefault(); Historial.Clear();
+            OnPropertyChanged(nameof(TituloModal));
         }
 
         private void Editar(SerieCorrelativo item)
@@ -83,6 +99,22 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             Serie=item.Serie; UltimoCorrelativo=item.UltimoCorrelativo; CantidadDigitos=item.CantidadDigitos;
             Activa=item.Activa; Predeterminada=item.Predeterminada;
             Historial.Clear(); foreach (SerieCorrelativoHistorial h in _negocio.ListarHistorial(item.IdSerieCorrelativo)) Historial.Add(h);
+            OnPropertyChanged(nameof(TituloModal));
+        }
+
+        private void AbrirModal(SerieCorrelativo? item, bool soloLectura)
+        {
+            SoloLectura = soloLectura;
+            if (item == null) Nuevo(); else Editar(item);
+
+            SerieCorrelativoEditorWindow ventana = new()
+            {
+                DataContext = this,
+                Owner = Application.Current.MainWindow
+            };
+            CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+            CerrarVentana = null;
         }
 
         private void Guardar()
@@ -96,7 +128,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             string usuario=SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
             string mensaje=_negocio.Guardar(item,usuario);
             if (!mensaje.Contains("correctamente",StringComparison.OrdinalIgnoreCase)) { NotificationService.Warning(mensaje); return; }
-            NotificationService.Success(mensaje); CargarSeries(); Nuevo();
+            NotificationService.Success(mensaje); CargarSeries(); CerrarVentana?.Invoke();
         }
     }
 }

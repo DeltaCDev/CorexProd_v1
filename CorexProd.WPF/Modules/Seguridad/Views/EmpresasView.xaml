@@ -150,11 +150,6 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
-                    <TextBlock Text="Empresas"
-                               FontSize="22"
-                               FontWeight="Bold"
-                               Foreground="#0F172A"
-                               Margin="0,0,0,6"/>
                     <TextBlock Text="{Binding ResumenRegistros}"
                                FontSize="13"
                                Foreground="#64748B"/>
@@ -222,6 +217,24 @@
                       GridLinesVisibility="Horizontal"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Acciones" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource BotonAccionTabla}" ToolTip="Editar"
+                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccionTabla}" Foreground="#0369A1"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAnularTabla}" ToolTip="Eliminar"
+                                            Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding IdEmpresa}">
+                                        <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccionTabla}"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdEmpresa}" Width="50"/>
                     <DataGridTextColumn Header="RUC" Binding="{Binding Ruc}" Width="85" ElementStyle="{StaticResource CeldaCentro}"/>
                     <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="210" ElementStyle="{StaticResource CeldaTexto}"/>
@@ -261,27 +274,6 @@
                     <DataGridCheckBoxColumn Header="Default" Binding="{Binding EsPredeterminada}" Width="70"/>
                     <DataGridCheckBoxColumn Header="Activa" Binding="{Binding Estado}" Width="65"/>
 
-                    <DataGridTemplateColumn Header="Acciones" Width="110">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Style="{StaticResource BotonIcono}"
-                                            ToolTip="Editar"
-                                            Margin="0,0,8,0"
-                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource BotonIcono}"
-                                            ToolTip="Eliminar"
-                                            Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding IdEmpresa}">
-                                        <TextBlock Text="&#xE74D;" Style="{StaticResource IconoAccion}" Foreground="#DC2626"/>
-                                    </Button>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

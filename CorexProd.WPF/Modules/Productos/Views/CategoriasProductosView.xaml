@@ -99,7 +99,6 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Categorias de Productos" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                         <TextBlock Text="Administra las familias usadas para clasificar productos" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">

@@ -145,7 +145,6 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Insumos" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                         <TextBlock Text="Administra codigos, categorias, unidades y stock minimo" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                     </StackPanel>
 

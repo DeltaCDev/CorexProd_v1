@@ -43,10 +43,6 @@
 
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Gestion de Proveedores"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Margin="0,0,0,6"/>
                     <TextBlock Text="Listado de proveedores registrados"
                                FontSize="14"
                                Foreground="#6B7280"/>
@@ -199,30 +195,33 @@
                       GridLinesVisibility="Horizontal">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding IdProveedor}" Width="50"/>
-                    <DataGridTextColumn Header="Documento" Binding="{Binding TipoDocumento}" Width="87"/>
-                    <DataGridTextColumn Header="Nro Documento" Binding="{Binding NumeroDocumento}" Width="110"/>
-                    <DataGridTextColumn Header="Nombre / Razon Social" Binding="{Binding NombreRazonSocial}" Width="350"/>
-                    <DataGridTextColumn Header="Direccion" Binding="{Binding Direccion}" Width="200"/>
-                    <DataGridTextColumn Header="Telefono" Binding="{Binding Telefono}" Width="90"/>
-                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="120"/>
-                    <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="80"/>
-
-                    <DataGridTemplateColumn Header="Acciones" Width="160">
+                    <DataGridTemplateColumn Header="Acciones" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="Editar"
-                                            Margin="0,0,8,0"
+                                    <Button Style="{StaticResource BotonAccionTabla}" ToolTip="Editar"
                                             Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                    <Button Content="Eliminar"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccionTabla}" Foreground="#0369A1"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAnularTabla}" ToolTip="Eliminar"
                                             Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding IdProveedor}"/>
+                                            CommandParameter="{Binding IdProveedor}">
+                                        <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccionTabla}"/>
+                                    </Button>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdProveedor}" Width="40"/>
+                    <DataGridTextColumn Header="Documento" Binding="{Binding TipoDocumento}" Width="87"/>
+                    <DataGridTextColumn Header="Nro Documento" Binding="{Binding NumeroDocumento}" Width="110"/>
+                    <DataGridTextColumn Header="Nombre / Razon Social" Binding="{Binding NombreRazonSocial}" Width="250"/>
+                    <DataGridTextColumn Header="Direccion" Binding="{Binding Direccion}" Width="200"/>
+                    <DataGridTextColumn Header="Telefono" Binding="{Binding Telefono}" Width="90"/>
+                    <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="120"/>
+                    <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="70"/>
+
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

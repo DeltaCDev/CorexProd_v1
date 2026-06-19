@@ -9,6 +9,7 @@ namespace CorexProd.Entidad.Entidades
     {
         public int IdGuiaInterna { get; set; }
         public string NumeroGuia { get; set; } = string.Empty;
+        public string Origen { get; set; } = "OCI";
         public int IdOrdenCompraInterna { get; set; }
         public string NumeroOci { get; set; } = string.Empty;
         public string OrdenCompraCliente { get; set; } = string.Empty;
@@ -22,7 +23,18 @@ namespace CorexProd.Entidad.Entidades
         public string UsuarioEmisor { get; set; } = string.Empty;
         public string UsuarioAutorizador { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
+        public string MotivoEmisionManual { get; set; } = string.Empty;
         public string Estado { get; set; } = "Borrador";
+        public string UsuarioAnulacion { get; set; } = string.Empty;
+        public DateTime? FechaAnulacion { get; set; }
+        public string MotivoAnulacion { get; set; } = string.Empty;
+        public DateTime FechaRegistro { get; set; }
+        public bool EsManual => Origen.Equals("Manual", StringComparison.OrdinalIgnoreCase);
+        public bool EsAnulada => Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase);
+        public bool PuedeAnular => !EsAnulada;
+        public string DetalleAnulacion => EsAnulada
+            ? $"Motivo: {MotivoAnulacion}\nUsuario: {UsuarioAnulacion}\nFecha: {FechaAnulacion:dd/MM/yyyy HH:mm}"
+            : string.Empty;
         public List<GuiaInternaDetalle> Detalles { get; set; } = [];
     }
 

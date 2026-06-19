@@ -38,10 +38,6 @@
 
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Gestión de Clientes"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Margin="0,0,0,6"/>
                     <TextBlock Text="Listado de clientes registrados"
                                FontSize="14"
                                Foreground="#6B7280"/>
@@ -194,6 +190,24 @@
                       GridLinesVisibility="Horizontal">
 
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Acciones" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource BotonAccionTabla}" ToolTip="Editar"
+                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccionTabla}" Foreground="#0369A1"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAnularTabla}" ToolTip="Eliminar"
+                                            Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding IdCliente}">
+                                        <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccionTabla}"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="ID" Binding="{Binding IdCliente}" Width="50"/>
                     <DataGridTextColumn Header="Documento" Binding="{Binding TipoDocumento}" Width="87"/>
                     <DataGridTextColumn Header="Nro Documento" Binding="{Binding NumeroDocumento}" Width="110"/>
@@ -203,21 +217,6 @@
                     <DataGridTextColumn Header="Correo" Binding="{Binding Correo}" Width="120"/>
                     <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="80"/>
 
-                    <DataGridTemplateColumn Header="Acciones" Width="160">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="Editar"
-                                            Margin="0,0,8,0"
-                                            Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
-                                    <Button Content="Eliminar"
-                                            Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding IdCliente}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

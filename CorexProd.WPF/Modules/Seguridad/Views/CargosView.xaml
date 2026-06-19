@@ -59,7 +59,6 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Cargos" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                         <TextBlock Text="Administra los cargos disponibles para empleados" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">

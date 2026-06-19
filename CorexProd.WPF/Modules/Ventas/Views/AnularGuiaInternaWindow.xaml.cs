@@ -1,0 +1,2 @@
+using System.Windows;
+namespace CorexProd.WPF.Modules.Ventas.Views { public partial class AnularGuiaInternaWindow:Window { public string MotivoAnulacion{get;private set;}=string.Empty; public AnularGuiaInternaWindow(string numero){InitializeComponent();NumeroText.Text=numero;} private void Confirmar_Click(object sender,RoutedEventArgs e){MotivoAnulacion=MotivoText.Text.Trim();if(string.IsNullOrWhiteSpace(MotivoAnulacion)){ErrorText.Text="Debe ingresar el motivo.";return;}DialogResult=true;} } }

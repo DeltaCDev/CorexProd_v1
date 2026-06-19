@@ -49,9 +49,6 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,20,16">
-                    <TextBlock Text="Stock de Productos Terminados"
-                               FontSize="24"
-                               FontWeight="Bold"/>
                     <TextBlock Text="Consulta de código, producto y cantidad disponible."
                                Foreground="#6B7280"
                                Margin="0,4,0,0"/>

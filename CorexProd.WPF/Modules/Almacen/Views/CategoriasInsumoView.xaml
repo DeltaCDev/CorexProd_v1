@@ -184,10 +184,6 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Categorias de Insumos"
-                                   FontSize="22"
-                                   FontWeight="Bold"
-                                   Foreground="#0F172A"/>
                         <TextBlock Text="Administra las familias usadas para clasificar insumos"
                                    FontSize="13"
                                    Foreground="#64748B"

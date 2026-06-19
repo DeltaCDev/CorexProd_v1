@@ -1,0 +1,192 @@
+<UserControl x:Class="CorexProd.WPF.Modules.Ventas.Views.GuiasInternasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Boton" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="MinWidth" Value="94"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource Boton}">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="BotonAccion" TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="Padding" Value="9,0"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ActionBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#EFF6FF"/>
+                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#DBEAFE"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="IconoAccion" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Etiqueta" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="Campo" TargetType="Control">
+            <Setter Property="Height" Value="34"/>
+        </Style>
+        <Style x:Key="Celda" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="CeldaGuia" TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FilaGuia" TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F0FDFA"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoBadge" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Background" Value="#DCFCE7"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Background" Value="#FFE4E6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#166534"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Foreground" Value="#BE123C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20" MaxWidth="1400" HorizontalAlignment="Center">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,12">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="Salidas de productos originadas por OCI o por regularización manual"
+                           FontSize="13" Foreground="#64748B" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Style="{StaticResource BotonPrimario}" Command="{Binding NuevaManualCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
+                        <TextBlock Text="Nueva guía manual"/>
+                    </StackPanel>
+                </Button>
+                <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,18,0,0">
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Desde" Style="{StaticResource Etiqueta}"/><DatePicker Style="{StaticResource Campo}" Width="135" SelectedDate="{Binding FechaDesde}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Hasta" Style="{StaticResource Etiqueta}"/><DatePicker Style="{StaticResource Campo}" Width="135" SelectedDate="{Binding FechaHasta}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Almacén" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="170" ItemsSource="{Binding Almacenes}" DisplayMemberPath="NombreAlmacen" SelectedItem="{Binding AlmacenFiltro}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Origen" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="110" ItemsSource="{Binding Origenes}" SelectedItem="{Binding OrigenFiltro}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="110" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Buscar" Style="{StaticResource Etiqueta}"/><TextBox Style="{StaticResource Campo}" Width="190" Text="{Binding TextoBusqueda,UpdateSourceTrigger=PropertyChanged}" Padding="8,0" VerticalContentAlignment="Center"/></StackPanel>
+                    <Button Style="{StaticResource Boton}" Command="{Binding BuscarCommand}" VerticalAlignment="Bottom" Margin="0,0,8,0" Content="Buscar"/>
+                    <Button Style="{StaticResource Boton}" Command="{Binding LimpiarCommand}" VerticalAlignment="Bottom" Content="Quitar filtros"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+            <DataGrid ItemsSource="{Binding Guias}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal"
+                      CellStyle="{StaticResource CeldaGuia}" RowStyle="{StaticResource FilaGuia}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Acciones" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver detalle"
+                                            Command="{Binding DataContext.VerCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" Margin="0" Foreground="#DC2626" BorderBrush="#FCA5A5" ToolTip="Anular"
+                                            Command="{Binding DataContext.AnularCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                        <TextBlock Text="&#xE711;" Style="{StaticResource IconoAccion}"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Fecha" Binding="{Binding FechaEmision,StringFormat=dd/MM/yyyy}" Width="90" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="N° Guía" Binding="{Binding NumeroGuia}" Width="125" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Almacén" Binding="{Binding NombreAlmacen}" Width="145" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Origen" Binding="{Binding Origen}" Width="75" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="100" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Orden compra" Binding="{Binding OrdenCompraCliente}" Width="110" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Emitido por" Binding="{Binding UsuarioEmisor}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Autorizado por" Binding="{Binding UsuarioAutorizador}" Width="110" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTemplateColumn Header="Estado" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Motivo manual / Observación" Binding="{Binding MotivoEmisionManual}" Width="*" ElementStyle="{StaticResource Celda}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>

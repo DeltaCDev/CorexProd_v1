@@ -99,6 +99,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.SeriesCorrelativos WHERE CodigoTipoDocumento='I
 IF NOT EXISTS (SELECT 1 FROM dbo.SeriesCorrelativos WHERE CodigoTipoDocumento='GUIA_SALIDA')
     INSERT INTO dbo.SeriesCorrelativos(CodigoTipoDocumento,Serie,UltimoCorrelativo,CantidadDigitos,Activa,Predeterminada,UsuarioModificacion)
     SELECT TOP 1 'GUIA_SALIDA', Serie, UltimoNumero, 8, 1, 1, 'MIGRACION' FROM dbo.SerieGuiaInterna ORDER BY Serie;
+
+IF EXISTS (SELECT 1 FROM dbo.SeriesCorrelativos WHERE CodigoTipoDocumento='PROFORMA')
+    DELETE FROM dbo.Parametros
+    WHERE CodigoParametro IN ('PROFORMA_SERIE', 'PROFORMA_CORRELATIVO');
 GO
 
 CREATE OR ALTER PROCEDURE dbo.USP_SEG_SERIE_LISTAR

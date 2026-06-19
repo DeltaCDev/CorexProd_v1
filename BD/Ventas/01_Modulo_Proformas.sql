@@ -124,20 +124,6 @@ BEGIN
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM dbo.Parametros WHERE CodigoParametro = 'PROFORMA_SERIE')
-BEGIN
-    INSERT INTO dbo.Parametros(CodigoParametro, NombreParametro, ValorParametro, Descripcion)
-    VALUES ('PROFORMA_SERIE', 'Serie de proforma', 'PF', 'Serie usada para generar el ID de proforma');
-END
-GO
-
-IF NOT EXISTS (SELECT 1 FROM dbo.Parametros WHERE CodigoParametro = 'PROFORMA_CORRELATIVO')
-BEGIN
-    INSERT INTO dbo.Parametros(CodigoParametro, NombreParametro, ValorParametro, Descripcion)
-    VALUES ('PROFORMA_CORRELATIVO', 'Correlativo de proforma', '1', 'Siguiente correlativo para generar proformas');
-END
-GO
-
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
