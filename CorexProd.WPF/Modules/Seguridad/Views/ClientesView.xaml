@@ -190,7 +190,7 @@
                       GridLinesVisibility="Horizontal">
 
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="80">
+                    <DataGridTemplateColumn Header="Acciones" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

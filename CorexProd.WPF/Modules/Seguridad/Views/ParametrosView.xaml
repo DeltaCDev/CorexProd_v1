@@ -152,7 +152,7 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="ID"
                                         Binding="{Binding IdParametro}"
-                                        Width="60"/>
+                                        Width="45"/>
 
                     <DataGridTextColumn Header="Código"
                                         Binding="{Binding CodigoParametro}"
@@ -160,11 +160,11 @@
 
                     <DataGridTextColumn Header="Nombre"
                                         Binding="{Binding NombreParametro}"
-                                        Width="220"/>
+                                        Width="190"/>
 
                     <DataGridTextColumn Header="Valor"
                                         Binding="{Binding ValorParametro}"
-                                        Width="260"/>
+                                        Width="190"/>
 
                     <DataGridTextColumn Header="Descripción"
                                         Binding="{Binding Descripcion}"

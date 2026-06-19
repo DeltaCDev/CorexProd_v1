@@ -9,6 +9,240 @@
         Closing="Window_Closing"
         Background="#F3F4F6">
 
+    <Window.Resources>
+
+        <!-- Botón principal del menú lateral -->
+        <Style x:Key="MenuButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Margin" Value="10,2"/>
+            <Setter Property="Padding" Value="13,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="7">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#172033"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#1D4ED8"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.50"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botones de los submenús -->
+        <Style x:Key="SubMenuButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="20,2,8,2"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="SubMenuBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="SubMenuBorder"
+                                        Property="Background"
+                                        Value="#1E293B"/>
+                                <Setter Property="Foreground"
+                                        Value="White"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="SubMenuBorder"
+                                        Property="Background"
+                                        Value="#1D4ED8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón para contraer o expandir -->
+        <Style x:Key="SidebarToggleButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ToggleBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ToggleBorder"
+                                        Property="Background"
+                                        Value="#1E293B"/>
+                                <Setter TargetName="ToggleBorder"
+                                        Property="BorderBrush"
+                                        Value="#60A5FA"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ToggleBorder"
+                                        Property="Background"
+                                        Value="#1D4ED8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón mostrado cuando la barra está contraída -->
+        <Style x:Key="CollapsedMenuButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Margin" Value="0,3"/>
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="CollapsedBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CollapsedBorder"
+                                        Property="Background"
+                                        Value="#1D4ED8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Encabezado de los módulos dinámicos -->
+        <DataTemplate x:Key="SidebarModuleHeaderTemplate">
+            <Grid Height="38">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="ModuleIcon"
+                           Grid.Column="0"
+                           Text="&#xE8B7;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="16"
+                           Foreground="#93C5FD"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Titulo}"
+                           Foreground="White"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+            </Grid>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Titulo}" Value="Ventas">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE8A5;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#60A5FA"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Almacén">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE8B7;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#4ADE80"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Productos">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE719;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#FBBF24"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Producción">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE9F5;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#F59E0B"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Destajo y Pagos">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE8C7;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#A78BFA"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Reportes">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE9D2;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#38BDF8"/>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding Titulo}" Value="Seguridad">
+                    <Setter TargetName="ModuleIcon" Property="Text" Value="&#xE72E;"/>
+                    <Setter TargetName="ModuleIcon" Property="Foreground" Value="#FB7185"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{Binding DataContext.SidebarWidth, ElementName=RootWindow}"/>
@@ -19,136 +253,230 @@
         <Border Grid.Column="0" Background="#020617">
             <DockPanel LastChildFill="True">
 
-                <!-- TOP SIDEBAR -->
-                <StackPanel DockPanel.Dock="Top" Margin="0,10,0,0">
-                    <Button Content="{Binding SidebarToggleText}"
-                            Command="{Binding ToggleSidebarCommand}"
-                            ToolTip="{Binding SidebarToggleToolTip}"
-                            Width="36"
-                            Height="30"
-                            Margin="0,0,12,8"
-                            HorizontalAlignment="Right"
-                            Background="#111827"
-                            Foreground="White"
-                            BorderBrush="#334155"
-                            BorderThickness="1"
-                            FontWeight="Bold"
-                            Cursor="Hand"/>
+                <!-- PARTE SUPERIOR: BARRA EXPANDIDA Y CONTRAÍDA -->
+                <Grid DockPanel.Dock="Top">
 
+                    <!-- VISTA EXPANDIDA -->
                     <StackPanel Visibility="{Binding SidebarExpandedVisibility}">
-                        <Image Source="/Images/LOGO.png"
-                               Height="110"
-                               Margin="10,0,10,20"
-                               Stretch="Uniform"/>
 
-                        <Button Content="Inicio"
-                                Style="{StaticResource MenuButtonStyle}"
-                                Command="{Binding IrInicioCommand}"/>
-                    </StackPanel>
+                        <!-- Logo y botón de contracción en la misma fila -->
+                        <Grid Margin="10,10,10,6" Height="62">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                    <StackPanel Visibility="{Binding SidebarCollapsedVisibility}">
-                        <Image Source="/Images/LOGO.png"
-                               Width="42"
-                               Height="42"
-                               Margin="10,0,10,10"
-                               Stretch="Uniform"/>
+                            <Border Grid.Column="0"
+                                    Width="170"
+                                    Height="58"
+                                    Margin="0,0,8,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Background="White"
+                                    CornerRadius="7"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1">
 
-                        <Button Content="I"
+                                <Image Source="/Images/LOGO.png"
+                                       Height="50"
+                                       Margin="6,3"
+                                       Stretch="Uniform"/>
+                            </Border>
+
+                            <Button Grid.Column="1"
+                                    Content="{Binding SidebarToggleText}"
+                                    Command="{Binding ToggleSidebarCommand}"
+                                    ToolTip="{Binding SidebarToggleToolTip}"
+                                    Style="{StaticResource SidebarToggleButtonStyle}"
+                                    VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Inicio con el mismo estilo que los módulos -->
+                        <Button Style="{StaticResource MenuButtonStyle}"
                                 Command="{Binding IrInicioCommand}"
-                                ToolTip="Inicio"
-                                Width="40"
-                                Height="40"
-                                Margin="12,0"
-                                Background="#111827"
-                                Foreground="White"
-                                BorderThickness="0"
-                                FontWeight="SemiBold"
-                                Cursor="Hand"/>
+                                ToolTip="Inicio">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE80F;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="17"
+                                           Foreground="#60A5FA"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Column="1"
+                                           Text="Inicio"
+                                           Foreground="White"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Margin="4,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button>
                     </StackPanel>
-                </StackPanel>
+
+                    <!-- VISTA CONTRAÍDA -->
+                    <StackPanel Visibility="{Binding SidebarCollapsedVisibility}"
+                                Margin="0,7,0,0">
+
+                        <Grid Height="50">
+                            <Image Source="/Images/LOGO.png"
+                                   Width="38"
+                                   Height="38"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Stretch="Uniform"/>
+
+                            <Button Content="{Binding SidebarToggleText}"
+                                    Command="{Binding ToggleSidebarCommand}"
+                                    ToolTip="{Binding SidebarToggleToolTip}"
+                                    Width="24"
+                                    Height="24"
+                                    Margin="0,0,3,0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#111827"
+                                    Foreground="White"
+                                    BorderBrush="#334155"
+                                    BorderThickness="1"
+                                    FontSize="10"
+                                    FontWeight="Bold"
+                                    Cursor="Hand"/>
+                        </Grid>
+
+                        <Button Command="{Binding IrInicioCommand}"
+                                ToolTip="Inicio"
+                                Style="{StaticResource CollapsedMenuButtonStyle}">
+                            <TextBlock Text="&#xE80F;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"/>
+                        </Button>
+                    </StackPanel>
+
+                </Grid>
 
                 <!-- USUARIO -->
                 <Border DockPanel.Dock="Bottom"
-                        Margin="12"
-                        Padding="11"
+                        Margin="10"
+                        Padding="10"
                         Background="#18243A"
-                        CornerRadius="8"
+                        CornerRadius="9"
                         BorderBrush="#334155"
                         BorderThickness="1"
                         Visibility="{Binding SidebarExpandedVisibility}">
 
                     <StackPanel>
-                        <StackPanel Margin="0,0,0,10">
-                            <TextBlock Text="{Binding NombreUsuario}"
-                                       FontWeight="SemiBold"
-                                       FontSize="13"
-                                       Foreground="White"
-                                       TextTrimming="CharacterEllipsis"/>
 
-                            <TextBlock Text="{Binding NombreRol}"
-                                       FontSize="12"
-                                       Foreground="#CBD5E1"
-                                       Margin="0,3,0,0"/>
-                        </StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="38"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Content="Cambiar clave"
+                            <Border Grid.Column="0"
+                                    Width="34"
+                                    Height="34"
+                                    Background="#1D4ED8"
+                                    CornerRadius="17"
+                                    VerticalAlignment="Center">
+
+                                <TextBlock Text="&#xE77B;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+
+                            <StackPanel Grid.Column="1"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center">
+
+                                <TextBlock Text="{Binding NombreUsuario}"
+                                           FontWeight="SemiBold"
+                                           FontSize="12"
+                                           Foreground="White"
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <TextBlock Text="{Binding NombreRol}"
+                                           FontSize="11"
+                                           Foreground="#CBD5E1"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="38"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0"
+                                    Content="Cambiar clave"
                                     Command="{Binding CambiarClaveCommand}"
-                                    Width="132"
-                                    Height="32"
-                                    Margin="0,0,8,0"
+                                    Height="31"
+                                    Margin="0,0,7,0"
                                     Background="#3B82F6"
                                     Foreground="White"
                                     BorderThickness="0"
+                                    FontSize="11"
                                     FontWeight="SemiBold"
                                     Cursor="Hand"/>
 
-                            <Button Command="{Binding CerrarSesionCommand}"
-                                    Width="38"
-                                    Height="32"
+                            <Button Grid.Column="1"
+                                    Command="{Binding CerrarSesionCommand}"
+                                    Width="36"
+                                    Height="31"
                                     Background="#EF4444"
                                     Foreground="White"
                                     BorderThickness="0"
                                     Cursor="Hand"
                                     ToolTip="Cerrar sesión">
+
                                 <TextBlock Text="&#xE8AC;"
                                            FontFamily="Segoe MDL2 Assets"
-                                           FontSize="15"
+                                           FontSize="14"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"/>
                             </Button>
-                        </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- MENÚ DINÁMICO -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Margin="0,2,0,4"
                               Visibility="{Binding SidebarExpandedVisibility}">
+
                     <ItemsControl ItemsSource="{Binding SidebarMenus}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Expander Header="{Binding Titulo}"
+
+                                <Expander Header="{Binding}"
+                                          HeaderTemplate="{StaticResource SidebarModuleHeaderTemplate}"
                                           Foreground="White"
                                           Background="#020617"
-                                          Margin="10,3"
+                                          Margin="10,2"
+                                          HorizontalContentAlignment="Stretch"
                                           IsExpanded="False">
 
                                     <ItemsControl ItemsSource="{Binding Hijos}"
-                                                  Margin="10,4,0,4">
+                                                  Margin="0,3,0,5">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
+
                                                 <Button Content="{Binding Titulo}"
-                                                        Command="{Binding DataContext.IrVistaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        Command="{Binding DataContext.IrVistaCommand,
+                                                                          RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding Vista}"
-                                                        Height="34"
-                                                        Margin="12,2,8,2"
-                                                        Padding="14,0,0,0"
-                                                        Background="#111827"
-                                                        Foreground="White"
-                                                        BorderThickness="0"
-                                                        HorizontalAlignment="Stretch"
-                                                        HorizontalContentAlignment="Left"
-                                                        Cursor="Hand"/>
+                                                        Style="{StaticResource SubMenuButtonStyle}"/>
+
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -176,20 +504,24 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+
                     <TextBlock Text="{Binding Titulo}"
                                FontSize="22"
                                FontWeight="Bold"
                                VerticalAlignment="Center"/>
+
                     <StackPanel x:Name="ListadoHerramientas"
                                 Grid.Column="1"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center"
                                 Visibility="Collapsed">
+
                         <TextBlock x:Name="CantidadItemsText"
                                    Foreground="#475569"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
                                    Margin="0,0,14,0"/>
+
                         <Button Click="ExportarListado_Click"
                                 Height="36"
                                 MinWidth="100"
@@ -199,8 +531,11 @@
                                 Foreground="White"
                                 FontWeight="SemiBold"
                                 Cursor="Hand">
+
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>
+                                <TextBlock Text="&#xE74E;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           Margin="0,0,8,0"/>
                                 <TextBlock Text="Exportar"/>
                             </StackPanel>
                         </Button>
@@ -214,7 +549,8 @@
                     Background="White"
                     CornerRadius="10">
 
-                <ContentControl x:Name="ContenidoPrincipal" Content="{Binding VistaActual}"/>
+                <ContentControl x:Name="ContenidoPrincipal"
+                                Content="{Binding VistaActual}"/>
 
             </Border>
         </Grid>
