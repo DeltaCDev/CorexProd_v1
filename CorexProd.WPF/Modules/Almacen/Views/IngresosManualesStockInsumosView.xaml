@@ -286,6 +286,8 @@
                         <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="230" ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Documento" Binding="{Binding NumeroDocumento}" Width="120" ElementStyle="{StaticResource CeldaCentro}"/>
                         <DataGridTextColumn Header="Almacen" Binding="{Binding NombreAlmacen}" Width="130" ElementStyle="{StaticResource CeldaCentro}"/>
+                        <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioCreador}" Width="120" ElementStyle="{StaticResource CeldaCentro}"/>
+                        <DataGridTextColumn Header="Hora" Binding="{Binding FechaCreacion, StringFormat=HH:mm}" Width="70" ElementStyle="{StaticResource CeldaCentro}"/>
                         <DataGridTemplateColumn Header="Estado" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

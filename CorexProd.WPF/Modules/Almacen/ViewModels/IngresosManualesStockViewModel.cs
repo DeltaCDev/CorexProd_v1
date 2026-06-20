@@ -188,20 +188,27 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
 
         private void AbrirEditor(IngresoManualStock? ingreso)
         {
-            IngresoManualStockEditorViewModel viewModel = new(ingreso);
-            IngresoManualStockEditorWindow ventana = new()
+            try
             {
-                DataContext = viewModel,
-                Owner = Application.Current.MainWindow
-            };
+                IngresoManualStockEditorViewModel viewModel = new(ingreso);
+                IngresoManualStockEditorWindow ventana = new()
+                {
+                    DataContext = viewModel,
+                    Owner = Application.Current.MainWindow
+                };
 
-            viewModel.CerrarVentana = ventana.Close;
-            ventana.ShowDialog();
+                viewModel.CerrarVentana = ventana.Close;
+                ventana.ShowDialog();
 
-            if (viewModel.Guardado)
+                if (viewModel.Guardado)
+                {
+                    CargarCombos();
+                    CargarIngresos();
+                }
+            }
+            catch (Exception ex)
             {
-                CargarCombos();
-                CargarIngresos();
+                NotificationService.Error($"No se pudo abrir el ingreso manual de stock: {ex.Message}");
             }
         }
 

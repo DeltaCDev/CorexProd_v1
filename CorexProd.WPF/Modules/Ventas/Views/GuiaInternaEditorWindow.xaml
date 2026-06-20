@@ -1,7 +1,7 @@
 <Window x:Class="CorexProd.WPF.Modules.Ventas.Views.GuiaInternaEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Nueva Guía Interna" Width="1080" Height="700" WindowStartupLocation="CenterOwner"
+        Title="Nueva Guía Interna" Width="1080" Height="700" WindowState="Maximized" WindowStartupLocation="CenterOwner"
         MinWidth="940" MinHeight="600" Background="#F8FAFC">
     <Window.Resources>
         <Style x:Key="Etiqueta" TargetType="TextBlock">
@@ -39,11 +39,12 @@
         </Grid>
         <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,18,0,12">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                 <StackPanel><TextBlock Text="ORIGEN" Style="{StaticResource Etiqueta}"/><TextBlock Text="OCI" Style="{StaticResource SoloLectura}"/></StackPanel>
                 <StackPanel Grid.Column="1"><TextBlock Text="NÚMERO OCI" Style="{StaticResource Etiqueta}"/><TextBlock Text="{Binding NumeroOci}" Style="{StaticResource SoloLectura}"/></StackPanel>
-                <StackPanel Grid.Column="2"><TextBlock Text="ALMACÉN" Style="{StaticResource Etiqueta}"/><ComboBox x:Name="AlmacenCombo" Style="{StaticResource Campo}" DisplayMemberPath="NombreAlmacen" SelectionChanged="AlmacenCombo_SelectionChanged"/></StackPanel>
-                <StackPanel Grid.Column="3"><TextBlock Text="FECHA DE EMISIÓN" Style="{StaticResource Etiqueta}"/><DatePicker SelectedDate="{Binding FechaEmision}" Style="{StaticResource Campo}"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="OC CLIENTE" Style="{StaticResource Etiqueta}"/><TextBlock Text="{Binding OrdenCompraCliente}" Style="{StaticResource SoloLectura}"/></StackPanel>
+                <StackPanel Grid.Column="3"><TextBlock Text="ALMACÉN" Style="{StaticResource Etiqueta}"/><ComboBox x:Name="AlmacenCombo" Style="{StaticResource Campo}" DisplayMemberPath="NombreAlmacen" SelectionChanged="AlmacenCombo_SelectionChanged"/></StackPanel>
+                <StackPanel Grid.Column="4"><TextBlock Text="FECHA DE EMISIÓN" Style="{StaticResource Etiqueta}"/><DatePicker SelectedDate="{Binding FechaEmision}" Style="{StaticResource Campo}"/></StackPanel>
             </Grid>
         </Border>
         <Border Grid.Row="2" Background="#F0FDFA" BorderBrush="#99F6E4" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,12">
@@ -59,7 +60,8 @@
             <DataGrid x:Name="DetallesGrid" ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False"
                       GridLinesVisibility="Horizontal" RowHeight="44" BorderThickness="0">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="100" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*" MinWidth="280" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="80" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Requerido" Binding="{Binding CantidadRequerida, StringFormat=N2}" Width="82" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="82" IsReadOnly="True"/>

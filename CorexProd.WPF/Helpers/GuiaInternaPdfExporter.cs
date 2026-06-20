@@ -21,9 +21,10 @@ namespace CorexProd.WPF.Helpers
             DibujarDatos(canvas, guia, ref y);
             DibujarCabeceraDetalle(canvas, ref y);
 
-            foreach (GuiaInternaDetalle detalle in guia.Detalles)
+            foreach (GuiaInternaDetalle detalle in guia.Detalles.Where(d => d.CantidadDespachar >= 1))
             {
-                if (y < 155)
+                double altoDetalle = AltoDetalle(detalle);
+                if (y - altoDetalle < 155)
                 {
                     canvas = NuevaPagina(document, empresa, guia, out y);
                     DibujarCabeceraDetalle(canvas, ref y);
@@ -73,7 +74,8 @@ namespace CorexProd.WPF.Helpers
             string fechaHora = $"{g.FechaEmision:dd/MM/yyyy} {g.FechaRegistro:HH:mm}";
             FilaDato(c, x, y, half, "FECHA Y HORA", fechaHora); FilaDato(c, x + half, y, half, "ALMACEN", g.NombreAlmacen); y -= h;
             FilaDato(c, x, y, half, "CLIENTE", g.ClienteMostrar); FilaDato(c, x + half, y, half, "DOCUMENTO", Valor(g.RucDestino)); y -= h;
-            FilaDato(c, x, y, half, "N. OCI", Valor(g.NumeroOci)); FilaDato(c, x + half, y, half, "N. PROFORMA", Valor(g.NumeroProforma)); y -= h;
+            FilaDato(c, x, y, half, "N. OCI", Valor(g.NumeroOci)); FilaDato(c, x + half, y, half, "OC CLIENTE", Valor(g.OrdenCompraCliente)); y -= h;
+            FilaDato(c, x, y, half, "N. PROFORMA", Valor(g.NumeroProforma)); FilaDato(c, x + half, y, half, "ORIGEN", Valor(g.Origen)); y -= h;
             FilaDato(c, x, y, w, "MOTIVO SALIDA", Valor(g.MotivoEmisionManual)); y -= h;
             FilaDato(c, x, y, half, "RESPONSABLE", g.UsuarioEmisor); FilaDato(c, x + half, y, half, "AUTORIZADO", g.UsuarioAutorizador); y -= h + 14;
         }
@@ -91,25 +93,27 @@ namespace CorexProd.WPF.Helpers
             c.Rectangle(x, y - 21, w, 21);
             c.Text("CODIGO", x + 5, y - 14, 7, true);
             c.Text("PRODUCTO", x + 70, y - 14, 7, true);
-            c.Text("UNIDAD", x + 292, y - 14, 7, true);
-            c.RightText("DESPACHADA", x + 414, y - 14, 7, true);
-            c.RightText("PENDIENTE", x + 486, y - 14, 7, true);
-            c.Text("OBS.", x + 492, y - 14, 7, true);
+            c.RightText("CANTIDAD", x + 432, y - 14, 7, true);
+            c.Text("ESTADO", x + 447, y - 14, 7, true);
             y -= 21;
         }
 
         private static void DibujarDetalle(ProformaPdfExporter.PdfCanvas c, GuiaInternaDetalle d, ref double y)
         {
-            const double h = 23; double x = Margin, w = PageWidth - Margin * 2;
+            List<string> lineasProducto = DividirLineas(Limpiar(ProductoConObservacion(d)), 62);
+            double h = Math.Max(23, 8 + lineasProducto.Count * 10);
+            double x = Margin, w = PageWidth - Margin * 2;
             c.Rectangle(x, y - h, w, h);
             c.Text(Truncar(Limpiar(d.CodigoProducto), 12), x + 5, y - 15, 7.5);
-            c.Text(Truncar(Limpiar(d.NombreProducto), 41), x + 70, y - 15, 7.5);
-            c.Text(Truncar(Limpiar(d.NombreUnidad), 12), x + 292, y - 15, 7.5);
-            c.RightText(d.CantidadDespachar.ToString("N2"), x + 414, y - 15, 7.5);
-            c.RightText(d.CantidadPendiente.ToString("N2"), x + 486, y - 15, 7.5);
-            c.Text(Truncar(Limpiar(d.Observacion), 14), x + 492, y - 15, 7);
+            for (int i = 0; i < lineasProducto.Count; i++)
+                c.Text(lineasProducto[i], x + 70, y - 15 - i * 10, 7.5);
+            c.RightText(d.CantidadDespachar.ToString("N2"), x + 432, y - 15, 7.5);
+            c.Text(EstadoDetalle(d), x + 447, y - 15, 7, true);
             y -= h;
         }
+
+        private static double AltoDetalle(GuiaInternaDetalle detalle) =>
+            Math.Max(23, 8 + DividirLineas(Limpiar(ProductoConObservacion(detalle)), 62).Count * 10);
 
         private static void DibujarCierre(ProformaPdfExporter.PdfCanvas c, GuiaInterna g, ref double y)
         {
@@ -139,6 +143,24 @@ namespace CorexProd.WPF.Helpers
         }
 
         private static string Valor(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+        private static string ProductoConObservacion(GuiaInternaDetalle detalle) => string.IsNullOrWhiteSpace(detalle.Observacion)
+            ? detalle.NombreProducto
+            : $"{detalle.NombreProducto} ({detalle.Observacion.Trim()})";
+        private static string EstadoDetalle(GuiaInternaDetalle detalle) => detalle.CantidadPendiente > 0 ? "PARCIAL" : "COMPLETO";
+        private static List<string> DividirLineas(string texto, int maximo)
+        {
+            List<string> lineas = [];
+            string pendiente = texto.Trim();
+            while (pendiente.Length > maximo)
+            {
+                int corte = pendiente.LastIndexOf(' ', maximo);
+                if (corte <= 0) corte = maximo;
+                lineas.Add(pendiente[..corte].Trim());
+                pendiente = pendiente[corte..].TrimStart();
+            }
+            lineas.Add(string.IsNullOrWhiteSpace(pendiente) ? "-" : pendiente);
+            return lineas;
+        }
         private static string Unir(params string[] values) => string.Join(" - ", values.Where(v => !string.IsNullOrWhiteSpace(v)));
         private static string Truncar(string value, int max) => value.Length <= max ? value : value[..Math.Max(0, max - 3)] + "...";
         private static string Limpiar(string? value)

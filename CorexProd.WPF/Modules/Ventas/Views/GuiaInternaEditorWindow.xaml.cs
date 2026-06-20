@@ -86,6 +86,9 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
             NotificationService.Success($"{mensaje} Stock y kardex actualizados.");
             _guia.NumeroGuia = numeroGuia;
+            string? errorImpresion = GuiaInternaImpresionService.ImprimirOriginal(numeroGuia);
+            if (errorImpresion != null)
+                NotificationService.Warning(errorImpresion);
             DialogResult = true;
         }
 

@@ -1,6 +1,7 @@
 using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CorexProd.Negocio.Negocio
 {
@@ -9,6 +10,17 @@ namespace CorexProd.Negocio.Negocio
         private readonly SerieCorrelativoDatos _datos = new();
         public List<TipoDocumentoNumeracion> ListarTipos() => _datos.ListarTipos();
         public List<SerieCorrelativo> Listar(string? tipo = null) => _datos.Listar(tipo);
+        public string ObtenerSiguienteNumero(string tipo)
+        {
+            SerieCorrelativo? serie = _datos.Listar(tipo)
+                .FirstOrDefault(s => s.Activa && s.Predeterminada);
+            if (serie == null) return "Sin serie configurada";
+
+            string correlativo = (serie.UltimoCorrelativo + 1)
+                .ToString()
+                .PadLeft(serie.CantidadDigitos, '0');
+            return $"{serie.Serie}-{correlativo}";
+        }
         public List<SerieCorrelativoHistorial> ListarHistorial(int id) => id > 0 ? _datos.ListarHistorial(id) : [];
         public string Guardar(SerieCorrelativo serie, string usuario)
         {

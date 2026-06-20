@@ -2,16 +2,20 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.WPF.Helpers;
 using Microsoft.Win32;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Printing;
 
 namespace CorexProd.WPF.Modules.Ventas.Views
 {
     public partial class GuiaInternaDocumentoWindow : Window
     {
+        private const double AnchoA4 = 793.7007874015749;
+        private const double AltoA4 = 1122.51968503937;
         private readonly GuiaInterna _guia;
         private readonly Empresa _empresa;
         private readonly FlowDocument _documento;
@@ -25,9 +29,18 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             Visor.Document = _documento;
         }
 
-        private FlowDocument CrearDocumento()
+        private FlowDocument CrearDocumento(GuiaInternaImpresion? impresion = null)
         {
-            FlowDocument doc = new() { PageWidth = 793, PageHeight = 1122, PagePadding = new Thickness(46), FontFamily = new FontFamily("Segoe UI"), FontSize = 11 };
+            FlowDocument doc = new()
+            {
+                PageWidth = AnchoA4,
+                PageHeight = AltoA4,
+                PagePadding = new Thickness(46),
+                ColumnWidth = AnchoA4 - 92,
+                ColumnGap = 0,
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = 11
+            };
             Table cabecera = new() { CellSpacing = 0 };
             cabecera.Columns.Add(new TableColumn { Width = new GridLength(430) });
             cabecera.Columns.Add(new TableColumn { Width = new GridLength(250) });
@@ -54,20 +67,22 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             Table info = NuevaTabla(4, 170);
             AgregarFila(info, "Fecha y hora", FechaHora(), "Almacén", _guia.NombreAlmacen);
             AgregarFila(info, "Cliente / destinatario", _guia.ClienteMostrar, "RUC / documento", Valor(_guia.RucDestino));
-            AgregarFila(info, "Número de OCI", Valor(_guia.NumeroOci), "Número de proforma", Valor(_guia.NumeroProforma));
+            AgregarFila(info, "Número de OCI", Valor(_guia.NumeroOci), "Orden compra cliente", Valor(_guia.OrdenCompraCliente));
+            AgregarFila(info, "Número de proforma", Valor(_guia.NumeroProforma), "Origen", Valor(_guia.Origen));
             AgregarFila(info, "Motivo de salida", Valor(_guia.MotivoEmisionManual), "Destino", _guia.ClienteMostrar);
             AgregarFila(info, "Usuario responsable", _guia.UsuarioEmisor, "Autorizado por", _guia.UsuarioAutorizador);
             doc.Blocks.Add(info);
 
             Paragraph titulo = new(new Run("DETALLE DE PRODUCTOS")) { FontWeight = FontWeights.Bold, Margin = new Thickness(0, 18, 0, 7) };
             doc.Blocks.Add(titulo);
-            Table detalle = NuevaTabla(6, 0);
-            detalle.Columns[0].Width = new GridLength(75); detalle.Columns[1].Width = new GridLength(260);
-            detalle.Columns[2].Width = new GridLength(70); detalle.Columns[3].Width = new GridLength(90);
-            detalle.Columns[4].Width = new GridLength(90); detalle.Columns[5].Width = new GridLength(130);
-            AgregarEncabezado(detalle, "Código", "Producto", "Unidad", "Despachada", "Pendiente", "Observación");
-            foreach (GuiaInternaDetalle d in _guia.Detalles)
-                AgregarFilaSimple(detalle, d.CodigoProducto, d.NombreProducto, d.NombreUnidad, d.CantidadDespachar.ToString("N2"), d.CantidadPendiente.ToString("N2"), d.Observacion);
+            Table detalle = NuevaTabla(4, 0);
+            detalle.Columns[0].Width = new GridLength(100);
+            detalle.Columns[1].Width = new GridLength(400);
+            detalle.Columns[2].Width = new GridLength(90);
+            detalle.Columns[3].Width = new GridLength(110);
+            AgregarEncabezado(detalle, "Código", "Producto (observación)", "Cantidad", "Estado");
+            foreach (GuiaInternaDetalle d in _guia.Detalles.Where(d => d.CantidadDespachar >= 1))
+                AgregarFilaSimple(detalle, d.CodigoProducto, ProductoConObservacion(d), d.CantidadDespachar.ToString("N2"), EstadoDetalle(d));
             doc.Blocks.Add(detalle);
 
             doc.Blocks.Add(new Paragraph(new Run("OBSERVACIONES")) { FontWeight = FontWeights.Bold, Margin = new Thickness(0, 16, 0, 4) });
@@ -75,6 +90,26 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             Table firmas = NuevaTabla(3, 0); firmas.Margin = new Thickness(0, 65, 0, 0);
             AgregarFilaSimple(firmas, "________________________\nENTREGADO POR", "________________________\nRECIBIDO POR", "________________________\nAUTORIZADO POR");
             doc.Blocks.Add(firmas);
+            if (impresion != null)
+            {
+                string tituloAuditoria = impresion.EsReimpresion ? "REIMPRESIÓN" : "IMPRESIÓN ORIGINAL";
+                string usuario = impresion.EsReimpresion ? "Reimpreso por" : "Impreso por";
+                string fecha = impresion.EsReimpresion ? "Fecha y hora de reimpresión" : "Fecha y hora de impresión";
+                doc.Blocks.Add(new Paragraph(new Run(tituloAuditoria))
+                {
+                    FontWeight = FontWeights.Bold,
+                    FontSize = impresion.EsReimpresion ? 13 : 10,
+                    Foreground = impresion.EsReimpresion ? Brushes.DarkRed : Brushes.Black,
+                    Margin = new Thickness(0, 24, 0, 2),
+                    KeepTogether = true
+                });
+                doc.Blocks.Add(new Paragraph(new Run($"{usuario}: {impresion.NombreUsuario}\n{fecha}: {impresion.FechaImpresion:dd/MM/yyyy HH:mm:ss}"))
+                {
+                    FontSize = 9,
+                    Margin = new Thickness(0),
+                    KeepTogether = true
+                });
+            }
             return doc;
         }
 
@@ -88,8 +123,36 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
         private void Imprimir_Click(object sender, RoutedEventArgs e)
         {
-            PrintDialog dialog = new();
-            if (dialog.ShowDialog() == true) dialog.PrintDocument(((IDocumentPaginatorSource)_documento).DocumentPaginator, $"Guía interna {_guia.NumeroGuia}");
+            string? error = GuiaInternaImpresionService.Reimprimir(_guia);
+            if (error == null)
+                NotificationService.Success("Reimpresión enviada y registrada correctamente.");
+            else
+                NotificationService.Warning(error);
+        }
+
+        internal void EnviarAImpresora(PrintQueue cola, GuiaInternaImpresion impresion)
+        {
+            FlowDocument documento = CrearDocumento(impresion);
+            PrintTicket solicitado = new()
+            {
+                PageMediaSize = new PageMediaSize(PageMediaSizeName.ISOA4, AnchoA4, AltoA4),
+                PageOrientation = PageOrientation.Portrait
+            };
+            PrintTicket validado = cola.MergeAndValidatePrintTicket(cola.UserPrintTicket, solicitado).ValidatedPrintTicket;
+            PrintDialog dialog = new()
+            {
+                PrintQueue = cola,
+                PrintTicket = validado
+            };
+
+            double anchoPagina = validado.PageMediaSize?.Width ?? AnchoA4;
+            double altoPagina = validado.PageMediaSize?.Height ?? AltoA4;
+            documento.PageWidth = anchoPagina;
+            documento.PageHeight = altoPagina;
+            documento.ColumnWidth = Math.Max(1, anchoPagina - documento.PagePadding.Left - documento.PagePadding.Right);
+            DocumentPaginator paginador = ((IDocumentPaginatorSource)documento).DocumentPaginator;
+            paginador.PageSize = new Size(anchoPagina, altoPagina);
+            dialog.PrintDocument(paginador, $"Guía interna {_guia.NumeroGuia}");
         }
 
         private Image? CrearLogo()
@@ -107,6 +170,10 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
         private string NombreEmpresa() => string.IsNullOrWhiteSpace(_empresa.NombreComercial) ? _empresa.Nombre : _empresa.NombreComercial;
         private string FechaHora() => $"{_guia.FechaEmision:dd/MM/yyyy} {_guia.FechaRegistro:HH:mm}";
+        private static string ProductoConObservacion(GuiaInternaDetalle detalle) => string.IsNullOrWhiteSpace(detalle.Observacion)
+            ? detalle.NombreProducto
+            : $"{detalle.NombreProducto} ({detalle.Observacion.Trim()})";
+        private static string EstadoDetalle(GuiaInternaDetalle detalle) => detalle.CantidadPendiente > 0 ? "PARCIAL" : "COMPLETO";
         private static string Valor(string? valor) => string.IsNullOrWhiteSpace(valor) ? "-" : valor;
         private static TextBlock Texto(string text, double size = 11, FontWeight? weight = null, TextAlignment alignment = TextAlignment.Left) => new() { Text = Valor(text), FontSize = size, FontWeight = weight ?? FontWeights.Normal, TextAlignment = alignment, TextWrapping = TextWrapping.Wrap };
         private static TableCell Celda(Block block, Thickness padding, Brush background) => new(block) { Padding = padding, Background = background, BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(1) };

@@ -6,6 +6,7 @@
         Height="620"
         MinWidth="820"
         MinHeight="620"
+        WindowState="Maximized"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
     <Grid Margin="20">

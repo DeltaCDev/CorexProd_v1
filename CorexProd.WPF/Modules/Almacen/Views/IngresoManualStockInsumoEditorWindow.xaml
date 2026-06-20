@@ -99,7 +99,7 @@
 
                             <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,14">
                                 <TextBlock Text="Documento" Style="{StaticResource LabelCampo}"/>
-                                <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Serie}" IsReadOnly="True" ToolTip="El correlativo automatico se genera definitivamente al guardar"/>
+                                <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Documento, Mode=OneWay}" IsReadOnly="True" ToolTip="El correlativo automatico se confirma definitivamente al guardar"/>
                             </StackPanel>
 
                             <Border Grid.Row="2" Grid.ColumnSpan="4" Visibility="{Binding ProveedorRapidoVisibility}" Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,4">

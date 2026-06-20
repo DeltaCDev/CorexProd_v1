@@ -36,6 +36,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         private string _tipoNumeracion = "Automatica";
         private string _serie = string.Empty;
         private string _serieAutomatica = string.Empty;
+        private string _numeroAutomatico = string.Empty;
         private string _numero = "Automatico";
         private AlmacenStock? _almacenSeleccionado;
         private string _observacion = string.Empty;
@@ -62,9 +63,17 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
 
             if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
-                _serieAutomatica = new SerieCorrelativoNegocio().Listar("INGRESO_PRODUCTOS")
-                    .FirstOrDefault(s => s.Activa && s.Predeterminada)?.Serie ?? string.Empty;
-                if (ingreso == null) Serie = _serieAutomatica;
+                SerieCorrelativo? serieAutomatica = new SerieCorrelativoNegocio().Listar("INGRESO_PRODUCTOS")
+                    .FirstOrDefault(s => s.Activa && s.Predeterminada);
+                _serieAutomatica = serieAutomatica?.Serie ?? string.Empty;
+                _numeroAutomatico = serieAutomatica == null
+                    ? "Sin serie configurada"
+                    : (serieAutomatica.UltimoCorrelativo + 1).ToString().PadLeft(serieAutomatica.CantidadDigitos, '0');
+                if (ingreso == null)
+                {
+                    Serie = _serieAutomatica;
+                    Numero = _numeroAutomatico;
+                }
                 CargarCombos();
                 CargarIngreso(ingreso);
             }
@@ -109,7 +118,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 if (SerieNumeroReadOnly)
                 {
                     Serie = string.IsNullOrWhiteSpace(Serie) ? _serieAutomatica : Serie;
-                    Numero = _ingresoOriginal?.Numero ?? "Automatico";
+                    Numero = _ingresoOriginal?.Numero ?? _numeroAutomatico;
                 }
             }
         }
@@ -119,14 +128,16 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
         public string Serie
         {
             get => _serie;
-            set { _serie = value; OnPropertyChanged(); }
+            set { _serie = value; OnPropertyChanged(); OnPropertyChanged(nameof(Documento)); }
         }
 
         public string Numero
         {
             get => _numero;
-            set { _numero = value; OnPropertyChanged(); }
+            set { _numero = value; OnPropertyChanged(); OnPropertyChanged(nameof(Documento)); }
         }
+
+        public string Documento => string.IsNullOrWhiteSpace(Numero) ? Serie : $"{Serie}-{Numero}";
 
         public AlmacenStock? AlmacenSeleccionado
         {
@@ -276,7 +287,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
                 return;
             }
 
-            CargaMasivaProductosWindow ventana = new("Carga masiva de productos", BuscarProductoCargaMasiva, ampliarVentana: true)
+            CargaMasivaProductosWindow ventana = new($"Carga masiva de productos - {Documento}", BuscarProductoCargaMasiva, ampliarVentana: true)
             {
                 Owner = Application.Current.MainWindow
             };

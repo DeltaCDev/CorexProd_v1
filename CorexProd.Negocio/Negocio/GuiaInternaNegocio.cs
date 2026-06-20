@@ -15,6 +15,19 @@ namespace CorexProd.Negocio.Negocio
 
         public GuiaInterna? Obtener(int idGuiaInterna) => idGuiaInterna > 0 ? _datos.Obtener(idGuiaInterna) : null;
 
+        public GuiaInterna? ObtenerPorNumero(string numeroGuia) =>
+            string.IsNullOrWhiteSpace(numeroGuia) ? null : _datos.ObtenerPorNumero(numeroGuia.Trim());
+
+        public bool ExisteImpresionOriginal(int idGuiaInterna) =>
+            idGuiaInterna > 0 && _datos.ExisteImpresionOriginal(idGuiaInterna);
+
+        public void RegistrarImpresion(GuiaInternaImpresion impresion)
+        {
+            if (impresion.IdGuiaInterna <= 0) throw new ArgumentException("La guía interna no es válida.");
+            if (impresion.IdUsuario <= 0) throw new ArgumentException("No se pudo identificar al usuario que imprime.");
+            _datos.RegistrarImpresion(impresion);
+        }
+
         public GuiaInterna? Preparar(int idOrdenCompraInterna, int? idAlmacen = null) =>
             idOrdenCompraInterna > 0 ? _datos.Preparar(idOrdenCompraInterna, idAlmacen) : null;
 

@@ -460,7 +460,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private void AbrirCargaMasiva()
         {
             CargaMasivaProductosWindow ventana = new(
-                "Carga masiva de productos",
+                $"Carga masiva de productos - {SerieNumero}",
                 BuscarProductoCargaMasiva,
                 ampliarVentana: true)
             {

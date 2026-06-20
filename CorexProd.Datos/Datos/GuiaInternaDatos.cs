@@ -36,6 +36,41 @@ namespace CorexProd.Datos.Datos
             return guia;
         }
 
+        public GuiaInterna? ObtenerPorNumero(string numeroGuia)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("SELECT IdGuiaInterna FROM dbo.GuiasInternas WHERE NumeroGuia = @NumeroGuia", conexion);
+            cmd.Parameters.Add("@NumeroGuia", SqlDbType.VarChar, 30).Value = numeroGuia;
+            conexion.Open();
+            object? id = cmd.ExecuteScalar();
+            return id == null || id == DBNull.Value ? null : Obtener(Convert.ToInt32(id));
+        }
+
+        public bool ExisteImpresionOriginal(int idGuiaInterna)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("SELECT COUNT(1) FROM dbo.GuiaInternaImpresiones WHERE IdGuiaInterna = @IdGuiaInterna AND TipoImpresion = 'ORIGINAL'", conexion);
+            cmd.Parameters.Add("@IdGuiaInterna", SqlDbType.Int).Value = idGuiaInterna;
+            conexion.Open();
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
+
+        public void RegistrarImpresion(GuiaInternaImpresion impresion)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(@"INSERT INTO dbo.GuiaInternaImpresiones
+                (IdGuiaInterna, IdUsuario, NombreUsuario, FechaImpresion, TipoImpresion, NombreImpresora)
+                VALUES (@IdGuiaInterna, @IdUsuario, @NombreUsuario, @FechaImpresion, @TipoImpresion, @NombreImpresora)", conexion);
+            cmd.Parameters.Add("@IdGuiaInterna", SqlDbType.Int).Value = impresion.IdGuiaInterna;
+            cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = impresion.IdUsuario;
+            cmd.Parameters.Add("@NombreUsuario", SqlDbType.VarChar, 150).Value = impresion.NombreUsuario;
+            cmd.Parameters.Add("@FechaImpresion", SqlDbType.DateTime2).Value = impresion.FechaImpresion;
+            cmd.Parameters.Add("@TipoImpresion", SqlDbType.VarChar, 20).Value = impresion.TipoImpresion;
+            cmd.Parameters.Add("@NombreImpresora", SqlDbType.NVarChar, 260).Value = impresion.NombreImpresora;
+            conexion.Open();
+            cmd.ExecuteNonQuery();
+        }
+
         public GuiaInterna? Preparar(int idOrdenCompraInterna, int? idAlmacen = null)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();

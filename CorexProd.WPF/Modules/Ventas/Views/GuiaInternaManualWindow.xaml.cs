@@ -31,6 +31,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             _guia = guia;
             _guia.Detalles.Clear();
             _guia.UsuarioEmisor = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
+            _guia.NumeroGuia = new SerieCorrelativoNegocio().ObtenerSiguienteNumero("GUIA_SALIDA");
             DetallesEdicion.Add(CrearFila());
 
             InitializeComponent();
@@ -81,6 +82,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             nueva.EmpresaDestino = _guia.EmpresaDestino;
             nueva.RucDestino = _guia.RucDestino;
             nueva.Observacion = _guia.Observacion;
+            nueva.NumeroGuia = _guia.NumeroGuia;
             _guia = nueva;
             DataContext = _guia;
 
@@ -198,7 +200,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 return;
             }
 
-            CargaMasivaProductosWindow ventana = new("Carga masiva de productos para guía", BuscarProductoCargaMasiva)
+            CargaMasivaProductosWindow ventana = new($"Carga masiva de productos para guía - {_guia.NumeroGuia}", BuscarProductoCargaMasiva)
             {
                 Owner = this
             };
@@ -287,6 +289,9 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
             _guia.NumeroGuia = numero;
             NotificationService.Success($"{mensaje} Stock y kardex actualizados.");
+            string? errorImpresion = GuiaInternaImpresionService.ImprimirOriginal(numero);
+            if (errorImpresion != null)
+                NotificationService.Warning(errorImpresion);
             DialogResult = true;
         }
     }
