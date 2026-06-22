@@ -673,7 +673,13 @@ namespace CorexProd.WPF.ViewModels
 
                 // PRODUCCIÓN
                 case "Producción":
+                    Titulo = "Producción";
+                    VistaActual = new ProduccionView();
+                    break;
                 case "AreasProduccion":
+                    Titulo = "Áreas de Producción";
+                    VistaActual = new AreasProduccionView();
+                    break;
                 case "OT":
                 case "SeguimientoOT":
                     Titulo = vista;

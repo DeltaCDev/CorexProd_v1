@@ -1,0 +1,45 @@
+<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.AreaProduccionEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Titulo}" Width="760" Height="620" MinWidth="720" MinHeight="580"
+        WindowStartupLocation="CenterOwner" Background="#F3F4F6">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
+        <Style x:Key="Etiqueta" TargetType="TextBlock"><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="#374151"/><Setter Property="Margin" Value="0,0,0,5"/></Style>
+        <Style x:Key="Campo" TargetType="TextBox"><Setter Property="Height" Value="34"/><Setter Property="Padding" Value="8,0"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+        <Style x:Key="Boton" TargetType="Button"><Setter Property="MinWidth" Value="100"/><Setter Property="Height" Value="36"/><Setter Property="Padding" Value="14,0"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock Text="{Binding Titulo}" FontSize="22" FontWeight="Bold" Foreground="#F97316" Margin="0,0,0,14"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel IsEnabled="{Binding PuedeEditar}">
+                <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,12"><TextBlock Text="Código *" Style="{StaticResource Etiqueta}"/><TextBox Text="{Binding CodigoArea, UpdateSourceTrigger=PropertyChanged}" MaxLength="20" CharacterCasing="Upper" Style="{StaticResource Campo}"/></StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,0,12"><TextBlock Text="Nombre del área *" Style="{StaticResource Etiqueta}"/><TextBox Text="{Binding NombreArea, UpdateSourceTrigger=PropertyChanged}" MaxLength="100" Style="{StaticResource Campo}"/></StackPanel>
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,0,12"><TextBlock Text="Descripción" Style="{StaticResource Etiqueta}"/><TextBox Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="70" Padding="8" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/></StackPanel>
+                        <StackPanel Grid.Row="2"><TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/><CheckBox Content="Área activa" IsChecked="{Binding Activo}" Margin="0,7,0,0"/></StackPanel>
+                    </Grid>
+                </Border>
+                <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,14"><TextBlock Text="Orden de secuencia *" Style="{StaticResource Etiqueta}"/><TextBox Text="{Binding OrdenSecuencia, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Campo}"/></StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,0,14"><TextBlock Text="Modo de envío *" Style="{StaticResource Etiqueta}"/><ComboBox ItemsSource="{Binding ModosEnvio}" SelectedItem="{Binding ModoEnvio}" Height="34"/></StackPanel>
+                        <CheckBox Grid.Row="1" Content="Es área de inicio" IsChecked="{Binding EsInicio}" Margin="0,6,12,12"/>
+                        <CheckBox Grid.Row="1" Grid.Column="1" Content="Es área de término" IsChecked="{Binding EsTermino}" Margin="0,6,0,12"/>
+                        <CheckBox Grid.Row="2" Content="Maneja merma" IsChecked="{Binding ManejaMerma}" Margin="0,6,12,0"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cerrar" Command="{Binding CancelarCommand}" Style="{StaticResource Boton}" Margin="0,0,8,0"/>
+            <Button Content="Guardar" Command="{Binding GuardarCommand}" Style="{StaticResource Boton}" Background="#F97316" BorderBrush="#F97316" Foreground="White" Visibility="{Binding PuedeEditar, Converter={StaticResource BooleanToVisibility}}"/>
+        </StackPanel>
+    </Grid>
+</Window>
