@@ -20,5 +20,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal Descuento { get; set; }
         public decimal Importe { get; set; }
         public string Observacion { get; set; } = string.Empty;
+        public bool Seleccionado { get; set; }
+        public decimal CantidadPlanificada { get; set; }
     }
 }

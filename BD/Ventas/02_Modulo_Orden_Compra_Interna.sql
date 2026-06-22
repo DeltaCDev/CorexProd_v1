@@ -781,9 +781,8 @@ BEGIN
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
-            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
+              AND D.Cantidad - D.CantidadDespachada > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
@@ -833,9 +832,8 @@ BEGIN
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
-            LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - D.CantidadDespachada > ISNULL(S.StockActual, 0)
+              AND D.Cantidad - D.CantidadDespachada > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (

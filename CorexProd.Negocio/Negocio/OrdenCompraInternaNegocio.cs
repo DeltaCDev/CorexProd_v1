@@ -26,7 +26,7 @@ namespace CorexProd.Negocio.Negocio
             return orden != null
                 && !EsAnulada(orden)
                 && !orden.TieneOrdenTrabajo
-                && orden.Detalles.Exists(item => item.CantidadPendiente > item.StockActual);
+                && orden.Detalles.Exists(item => item.CantidadPendiente > 0);
         }
 
         public bool PuedeGenerarGuiaSalida(int idOrdenCompraInterna)

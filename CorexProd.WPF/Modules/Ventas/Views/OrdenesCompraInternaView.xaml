@@ -99,6 +99,9 @@
                 <DataTrigger Binding="{Binding Estado}" Value="En proceso">
                     <Setter Property="Background" Value="#FEF3C7"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="PROCESO">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Estado}" Value="Parcial">
                     <Setter Property="Background" Value="#FFEDD5"/>
                 </DataTrigger>
@@ -115,6 +118,9 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Estado}" Value="En proceso">
+                    <Setter Property="Foreground" Value="#92400E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="PROCESO">
                     <Setter Property="Foreground" Value="#92400E"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Estado}" Value="Parcial">

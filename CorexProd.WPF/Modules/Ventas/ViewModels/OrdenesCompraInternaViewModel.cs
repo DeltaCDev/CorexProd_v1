@@ -3,6 +3,7 @@ using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Ventas.Views;
+using CorexProd.WPF.Modules.Produccion.Views;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
 using System;
@@ -28,7 +29,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private DateTime? _fechaHasta;
 
         public ObservableCollection<OrdenCompraInterna> Ordenes { get; } = [];
-        public ObservableCollection<string> Estados { get; } = ["Todos", "Emitida", "En proceso", "Parcial", "Entregado", "Anulado"];
+        public ObservableCollection<string> Estados { get; } = ["Todos", "Emitida", "PROCESO", "Parcial", "Entregado", "Anulado"];
 
         public string TextoBusqueda
         {
@@ -158,7 +159,26 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 return;
             }
 
-            NotificationService.Info("No existe stock suficiente para completar el despacho de esta OCI.");
+            OrdenCompraInterna? completa = _negocio.Obtener(orden.IdOrdenCompraInterna);
+            if (completa == null || completa.Detalles.Count == 0)
+            {
+                NotificationService.Warning("No se encontraron productos pendientes para planificar la OT.");
+                return;
+            }
+
+            OrdenTrabajoNegocio otNegocio = new();
+            List<OrdenTrabajoValidacionProducto> validacion = otNegocio.ValidarInsumos(completa.IdOrdenCompraInterna);
+            if (validacion.Count == 0)
+            {
+                NotificationService.Warning("La OCI no tiene productos pendientes para generar una OT.");
+                return;
+            }
+
+            ValidacionInsumosWindow alerta = new(validacion) { Owner = Application.Current.MainWindow };
+            if (alerta.ShowDialog() != true) return;
+
+            OrdenTrabajoCrearWindow ventana = new(completa, validacion) { Owner = Application.Current.MainWindow };
+            if (ventana.ShowDialog() == true) Cargar();
         }
 
         private static bool PuedeGenerarGuiaSalida(object? parametro) =>
