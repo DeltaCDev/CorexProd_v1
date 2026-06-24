@@ -11,9 +11,11 @@ using CorexProd.WPF.Modules.Ventas.Views;
 using CorexProd.WPF.Views;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows;
+using CorexProd.Negocio.Negocio;
 
 namespace CorexProd.WPF.ViewModels
 {
@@ -157,6 +159,9 @@ namespace CorexProd.WPF.ViewModels
             var menusPermitidos =
                 SessionManager.MenusPermitidos ?? [];
 
+            var ordenMenus = ObtenerOrdenMenus();
+            List<MenuItemSistema> menusConstruidos = [];
+
             // VENTAS
             MenuItemSistema ventas = new()
             {
@@ -193,7 +198,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Ventas") && ventas.Hijos.Count > 0)
             {
-                SidebarMenus.Add(ventas);
+                menusConstruidos.Add(ventas);
             }
 
             // ALMACÉN
@@ -259,7 +264,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Almacén") && almacen.Hijos.Count > 0)
             {
-                SidebarMenus.Add(almacen);
+                menusConstruidos.Add(almacen);
             }
 
             // PRODUCTOS
@@ -289,7 +294,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Productos") && productos.Hijos.Count > 0)
             {
-                SidebarMenus.Add(productos);
+                menusConstruidos.Add(productos);
             }
 
             // PRODUCCIÓN
@@ -328,7 +333,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Producción") && produccion.Hijos.Count > 0)
             {
-                SidebarMenus.Add(produccion);
+                menusConstruidos.Add(produccion);
             }
 
             // DESTAJO Y PAGOS
@@ -404,7 +409,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Destajo y Pagos") && destajoPagos.Hijos.Count > 0)
             {
-                SidebarMenus.Add(destajoPagos);
+                menusConstruidos.Add(destajoPagos);
             }
 
             // REPORTES
@@ -452,7 +457,7 @@ namespace CorexProd.WPF.ViewModels
 
             if (menusPermitidos.Contains("Reportes") && reportes.Hijos.Count > 0)
             {
-                SidebarMenus.Add(reportes);
+                menusConstruidos.Add(reportes);
             }
 
             // SEGURIDAD
@@ -543,10 +548,85 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Menú") || menusPermitidos.Contains("Menu"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Menú",
+                    Vista = "Menus"
+                });
+            }
+
             if (menusPermitidos.Contains("Seguridad") && seguridad.Hijos.Count > 0)
             {
-                SidebarMenus.Add(seguridad);
+                menusConstruidos.Add(seguridad);
             }
+
+            foreach (MenuItemSistema menu in menusConstruidos)
+            {
+                OrdenarHijos(menu, ordenMenus);
+            }
+
+            foreach (MenuItemSistema menu in menusConstruidos
+                .OrderBy(x => ObtenerOrden(ordenMenus, null, x.Titulo)))
+            {
+                SidebarMenus.Add(menu);
+            }
+        }
+
+        private static void OrdenarHijos(MenuItemSistema menu, Dictionary<string, int> ordenMenus)
+        {
+            var hijosOrdenados = menu.Hijos
+                .OrderBy(x => ObtenerOrden(ordenMenus, menu.Titulo, x.Titulo))
+                .ToList();
+
+            menu.Hijos.Clear();
+
+            foreach (MenuItemSistema hijo in hijosOrdenados)
+            {
+                menu.Hijos.Add(hijo);
+            }
+        }
+
+        private static Dictionary<string, int> ObtenerOrdenMenus()
+        {
+            try
+            {
+                return new MenuSistemaNegocio()
+                    .Listar()
+                    .GroupBy(x => LlaveMenu(string.IsNullOrWhiteSpace(x.NombrePadre) ? null : x.NombrePadre, x.NombreMenu))
+                    .ToDictionary(x => x.Key, x => x.First().Orden);
+            }
+            catch
+            {
+                return new Dictionary<string, int>
+                {
+                    [LlaveMenu(null, "Ventas")] = 2,
+                    [LlaveMenu(null, "Producción")] = 3,
+                    [LlaveMenu(null, "Reportes")] = 4,
+                    [LlaveMenu(null, "Almacén")] = 5,
+                    [LlaveMenu(null, "Productos")] = 6,
+                    [LlaveMenu(null, "Destajo y Pagos")] = 7,
+                    [LlaveMenu(null, "Seguridad")] = 8
+                };
+            }
+        }
+
+        private static int ObtenerOrden(Dictionary<string, int> ordenMenus, string? padre, string titulo)
+        {
+            return ordenMenus.TryGetValue(LlaveMenu(padre, titulo), out int orden) ? orden : 999;
+        }
+
+        private static string LlaveMenu(string? padre, string titulo)
+        {
+            return $"{NormalizarMenu(padre ?? string.Empty)}|{NormalizarMenu(titulo)}";
+        }
+
+        private static string NormalizarMenu(string texto)
+        {
+            return texto
+                .Replace("Menú", "Menu")
+                .Trim();
         }
 
         private void IrInicio()
@@ -603,6 +683,11 @@ namespace CorexProd.WPF.ViewModels
                 case "SeriesCorrelativos":
                     Titulo = "Series y Correlativos";
                     VistaActual = new SeriesCorrelativosView();
+                    break;
+
+                case "Menus":
+                    Titulo = "Menú";
+                    VistaActual = new MenusView();
                     break;
 
                 // VENTAS

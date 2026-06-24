@@ -149,4 +149,14 @@ namespace CorexProd.Entidad.Entidades
         public string Usuario { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
     }
+
+    public class OrdenTrabajoKardexIngreso
+    {
+        public string CodigoProducto { get; set; } = string.Empty;
+        public string NombreProducto { get; set; } = string.Empty;
+        public decimal Cantidad { get; set; }
+        public string Almacen { get; set; } = string.Empty;
+        public DateTime FechaMovimiento { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+    }
 }

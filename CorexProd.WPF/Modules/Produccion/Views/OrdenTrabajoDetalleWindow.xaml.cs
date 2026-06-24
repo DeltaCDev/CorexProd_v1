@@ -192,6 +192,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             if (ventana.ShowDialog() != true) return;
             try
             {
+                int completadosAntes = _ot.Detalles.Count(x => x.Estado == "TERMINADO");
+                string estadoAntes = _ot.Estado;
                 string nombreUsuario = SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty;
                 Usuario autoriza = _negocio.Autorizar(nombreUsuario, ventana.Clave);
                 OrdenTrabajoTransferenciaItem item = new() { IdDetalleOT = celda.Area.IdDetalleOT, Cantidad = ventana.Cantidad };
@@ -219,13 +221,47 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     ? esTerminacion
                         ? _negocio.TerminarConMerma(_id, celda.Area.IdAreaProduccion, celda.Area.IdDetalleArea, idSesion, autoriza, ventana.CantidadMerma, ventana.MotivoMerma, ventana.ObservacionMerma, [item])
                         : _negocio.TransferirConMerma(_id, celda.Area.IdAreaProduccion, celda.Area.IdDetalleArea, idSesion, autoriza, ventana.CantidadMerma, ventana.MotivoMerma, ventana.ObservacionMerma, [item])
-                    : esTerminacion
+                        : esTerminacion
                         ? _negocio.Terminar(_id, celda.Area.IdAreaProduccion, idSesion, autoriza, string.Empty, [item])
                         : _negocio.Transferir(_id, celda.Area.IdAreaProduccion, idSesion, autoriza, string.Empty, [item]);
-                NotificationService.Success(esTerminacion
-                    ? $"Terminacion #{operacion}: {ventana.Cantidad:N2} unidades a stock{(ventana.RegistrarMerma ? $" y merma de {ventana.CantidadMerma:N2}" : string.Empty)}."
-                    : $"Transferencia #{operacion}: {ventana.Cantidad:N2} unidades a {celda.AreaDestino}{(ventana.RegistrarMerma ? $" y merma de {ventana.CantidadMerma:N2}" : string.Empty)}.");
                 Cargar();
+                int totalProductos = _ot.Detalles.Count;
+                int completadosDespues = _ot.Detalles.Count(x => x.Estado == "TERMINADO");
+                decimal saldoOrigen = Math.Max(0, celda.Area.CantidadPendiente - ventana.Cantidad - (ventana.RegistrarMerma ? ventana.CantidadMerma : 0));
+                string titulo = esTerminacion ? "Producto Terminado Correctamente" : "Transferencia Realizada Correctamente";
+                string mensaje = esTerminacion
+                    ? $"✅ Producto {completadosDespues} de {totalProductos} completado correctamente."
+                    : $"✅ Proceso completado con éxito.\n\nSe transfirieron {ventana.Cantidad:N3} unidades desde el área {celda.Area.NombreArea} hacia {celda.AreaDestino}.";
+                string estado = saldoOrigen <= 0
+                    ? "🎉 No existen unidades pendientes en el área de origen. El flujo de producción continúa correctamente."
+                    : "El área de origen aún mantiene saldo pendiente.";
+                new ProduccionResultadoWindow(
+                    titulo,
+                    mensaje,
+                    celda.Area.NombreArea,
+                    esTerminacion ? "PRODUCTOS TERMINADOS" : celda.AreaDestino,
+                    ventana.Cantidad,
+                    saldoOrigen,
+                    estado)
+                {
+                    Owner = this
+                }.ShowDialog();
+
+                if (estadoAntes != "TERMINADA" && _ot.Estado == "TERMINADA")
+                {
+                    new ProduccionResultadoWindow(
+                        "Producción finalizada exitosamente",
+                        "🎉 Todos los productos de la Orden de Trabajo fueron procesados.\n\nGenerando movimientos de inventario...",
+                        "PRODUCCION",
+                        "INVENTARIO",
+                        _ot.Detalles.Sum(x => x.CantidadProducida),
+                        0,
+                        "Kardex generado correctamente.")
+                    {
+                        Owner = this
+                    }.ShowDialog();
+                    new OrdenTrabajoKardexWindow(_ot) { Owner = this }.ShowDialog();
+                }
             }
             catch (Exception ex) { NotificationService.Error(ex.Message); }
         }

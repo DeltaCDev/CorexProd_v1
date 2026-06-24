@@ -16,6 +16,12 @@ namespace CorexProd.Entidad.Entidades
 
         public int Orden { get; set; }
 
+        public bool Estado { get; set; } = true;
+
+        public string NombrePadre { get; set; } = string.Empty;
+
+        public string Tipo => IdMenuPadre == null ? "Módulo" : "Submenú";
+
         public bool TienePermiso
         {
             get => _tienePermiso;

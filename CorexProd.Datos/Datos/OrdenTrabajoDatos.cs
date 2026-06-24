@@ -132,7 +132,7 @@ namespace CorexProd.Datos.Datos
         {
             const string sql = @"
 SELECT t.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,ao.NombreArea Origen,ad.NombreArea Destino,
-       td.CantidadEnviada Cantidad,'TRANSFERENCIA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
+       td.CantidadEnviada Cantidad,'AVANCE_AREA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
 FROM dbo.OrdenTrabajoTransferencia t
 JOIN dbo.OrdenTrabajoTransferenciaDetalle td ON td.IdOperacionTransferencia=t.IdOperacionTransferencia
 JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT
@@ -143,7 +143,7 @@ LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=t.IdUsuarioAutoriza
 WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
 UNION ALL
 SELECT m.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,a.NombreArea Origen,'' Destino,
-       m.Cantidad,'MERMA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,
+       m.Cantidad,'REGISTRO_MERMA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,
        CONCAT(m.Motivo,CASE WHEN NULLIF(m.Observacion,'') IS NULL THEN '' ELSE CONCAT(' - ',m.Observacion) END) Observacion
 FROM dbo.OrdenTrabajoMerma m
 JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=m.IdDetalleOT
@@ -154,7 +154,7 @@ LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=m.IdUsuarioAutoriza
 WHERE m.IdOrdenTrabajo=@IdOrdenTrabajo
 UNION ALL
 SELECT c.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,'INSUMOS' Origen,'PRODUCCION' Destino,
-       SUM(c.CantidadConsumida) Cantidad,'CONSUMO' Accion,u.NombreUsuario Usuario,'' Observacion
+       SUM(c.CantidadConsumida) Cantidad,'CONSUMO_INSUMOS' Accion,u.NombreUsuario Usuario,'' Observacion
 FROM dbo.OrdenTrabajoConsumoInsumo c
 JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=c.IdDetalleOT
 JOIN dbo.Usuarios u ON u.IdUsuario=c.IdUsuario
@@ -162,13 +162,22 @@ WHERE c.IdOrdenTrabajo=@IdOrdenTrabajo
 GROUP BY c.FechaRegistro,d.CodigoProducto,d.NombreProducto,u.NombreUsuario
 UNION ALL
 SELECT t.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,a.NombreArea Origen,'PRODUCTO TERMINADO' Destino,
-       td.Cantidad,'TERMINACION' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
+       td.Cantidad,'CIERRE_PRODUCCION' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
 FROM dbo.OrdenTrabajoTerminacion t
 JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
 JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT
 JOIN dbo.AreaProduccion a ON a.IdAreaProduccion=t.IdAreaTermino
 JOIN dbo.Usuarios us ON us.IdUsuario=t.IdUsuarioSesion
 LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=t.IdUsuarioAutoriza
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+UNION ALL
+SELECT k.FechaMovimiento FechaHora,d.CodigoProducto,d.NombreProducto,'PRODUCCION' Origen,al.NombreAlmacen Destino,
+       k.Cantidad,'INGRESO_KARDEX' Accion,k.UsuarioResponsable Usuario,k.Observacion
+FROM dbo.KardexProductos k
+JOIN dbo.OrdenTrabajoTerminacion t ON t.IdOperacionTerminacion=k.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT AND d.IdProducto=k.IdProducto
+JOIN dbo.Almacenes al ON al.IdAlmacen=k.IdAlmacen
 WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
 ORDER BY FechaHora DESC;";
 
@@ -191,6 +200,39 @@ ORDER BY FechaHora DESC;";
                     Accion = Texto(dr, "Accion"),
                     Usuario = Texto(dr, "Usuario"),
                     Observacion = Texto(dr, "Observacion")
+                });
+            }
+            return lista;
+        }
+
+        public List<OrdenTrabajoKardexIngreso> ListarIngresosKardex(int idOrdenTrabajo)
+        {
+            const string sql = @"
+SELECT d.CodigoProducto,d.NombreProducto,k.Cantidad,al.NombreAlmacen Almacen,k.FechaMovimiento,k.UsuarioResponsable Usuario
+FROM dbo.KardexProductos k
+JOIN dbo.OrdenTrabajoTerminacion t ON t.IdOperacionTerminacion=k.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT AND d.IdProducto=k.IdProducto
+JOIN dbo.Almacenes al ON al.IdAlmacen=k.IdAlmacen
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+ORDER BY k.FechaMovimiento DESC;";
+
+            List<OrdenTrabajoKardexIngreso> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(sql, cn);
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo);
+            cn.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new OrdenTrabajoKardexIngreso
+                {
+                    CodigoProducto = Texto(dr, "CodigoProducto"),
+                    NombreProducto = Texto(dr, "NombreProducto"),
+                    Cantidad = Decimal(dr, "Cantidad"),
+                    Almacen = Texto(dr, "Almacen"),
+                    FechaMovimiento = Convert.ToDateTime(dr["FechaMovimiento"]),
+                    Usuario = Texto(dr, "Usuario")
                 });
             }
             return lista;

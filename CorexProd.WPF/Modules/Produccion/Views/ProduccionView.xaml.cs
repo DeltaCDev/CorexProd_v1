@@ -16,7 +16,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
   private void Actualizar_Click(object sender,RoutedEventArgs e)=>Cargar();
   private void Abrir_Click(object sender,RoutedEventArgs e){if((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot)Abrir(ot);}
   private void OrdenesGrid_MouseDoubleClick(object sender,MouseButtonEventArgs e){if(OrdenesGrid.SelectedItem is OrdenTrabajo ot)Abrir(ot);}
-  private void Kardex_Click(object sender,RoutedEventArgs e){if((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot)AbrirVentana(()=>new OrdenTrabajoDetalleWindow(ot.IdOrdenTrabajo){Owner=Application.Current.MainWindow,Title=$"Kardex de {ot.NumeroOT}"});}
+  private void Kardex_Click(object sender,RoutedEventArgs e){if((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot)AbrirVentana(()=>new OrdenTrabajoKardexWindow(ot){Owner=Application.Current.MainWindow,Title=$"Kardex de {ot.NumeroOT}"});}
   private void Historial_Click(object sender,RoutedEventArgs e){if((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot)AbrirVentana(()=>new OrdenTrabajoHistorialWindow(ot){Owner=Application.Current.MainWindow,Title=$"Historial de {ot.NumeroOT}"});}
   private void Abrir(OrdenTrabajo ot){AbrirVentana(()=>new OrdenTrabajoDetalleWindow(ot.IdOrdenTrabajo){Owner=Application.Current.MainWindow});Cargar();}
   private static void AbrirVentana(Func<Window> crear){try{crear().ShowDialog();}catch(Exception ex){NotificationService.Error($"No se pudo abrir la ventana: {ex.Message}");}}

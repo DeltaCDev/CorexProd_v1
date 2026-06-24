@@ -14,6 +14,7 @@ namespace CorexProd.Negocio.Negocio
         public List<OrdenTrabajo> Listar()=>_datos.Listar();
         public OrdenTrabajo? Obtener(int id)=>_datos.Obtener(id);
         public List<OrdenTrabajoMovimiento> ListarMovimientos(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarMovimientos(idOrdenTrabajo):[];
+        public List<OrdenTrabajoKardexIngreso> ListarIngresosKardex(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarIngresosKardex(idOrdenTrabajo):[];
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)=>_datos.ValidarInsumos(idOci);
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)=>_datos.DetalleInsumos(idDetalleOci);
         public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items)=>_datos.Crear(idOci,idUsuario,observacion,items);
