@@ -113,7 +113,10 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockTotal { get; set; }
         public decimal Deficit { get; set; }
         public string EstadoInsumos { get; set; } = string.Empty;
-        public string Alerta => EstadoInsumos == "DISPONIBLES" ? "OK" : "!";
+        public bool TieneFichaTecnica =>
+            !EstadoInsumos.Equals("Sin ficha tecnica", StringComparison.OrdinalIgnoreCase);
+        public bool TieneSuministrosDisponibles =>
+            EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase);
     }
 
     public class OrdenTrabajoInsumoDetalle

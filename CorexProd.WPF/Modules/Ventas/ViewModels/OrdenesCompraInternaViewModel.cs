@@ -174,11 +174,17 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 return;
             }
 
-            ValidacionInsumosWindow alerta = new(validacion) { Owner = Application.Current.MainWindow };
-            if (alerta.ShowDialog() != true) return;
+            ValidacionInsumosWindow ventana = new(completa, validacion)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            if (ventana.ShowDialog() != true) return;
 
-            OrdenTrabajoCrearWindow ventana = new(completa, validacion) { Owner = Application.Current.MainWindow };
-            if (ventana.ShowDialog() == true) Cargar();
+            OrdenTrabajoCrearWindow crear = new(completa, validacion)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            if (crear.ShowDialog() == true) Cargar();
         }
 
         private static bool PuedeGenerarGuiaSalida(object? parametro) =>

@@ -70,8 +70,21 @@ BEGIN
            CONVERT(DECIMAL(18,3),ISNULL(ap.StockAcabado,0)) StockAcabado,
            CONVERT(DECIMAL(18,3),ISNULL(sp.StockActual,0)+ISNULL(ap.StockCorte,0)+ISNULL(ap.StockConfeccion,0)+ISNULL(ap.StockAcabado,0)) StockTotal,
            CONVERT(DECIMAL(18,3),CASE WHEN f.CantidadRequerida-(ISNULL(sp.StockActual,0)+ISNULL(ap.StockCorte,0)+ISNULL(ap.StockConfeccion,0)+ISNULL(ap.StockAcabado,0))>0 THEN f.CantidadRequerida-(ISNULL(sp.StockActual,0)+ISNULL(ap.StockCorte,0)+ISNULL(ap.StockConfeccion,0)+ISNULL(ap.StockAcabado,0)) ELSE 0 END) Deficit,
-           CASE WHEN f.IdFichaTecnica IS NULL OR NOT EXISTS(SELECT 1 FROM dbo.FichaTecnicaDetalle fd WHERE fd.IdFichaTecnica=f.IdFichaTecnica AND fd.Estado=1) THEN 'SIN FICHA'
-                WHEN EXISTS(SELECT 1 FROM dbo.FichaTecnicaDetalle fd LEFT JOIN dbo.StockInsumos si ON si.IdInsumo=fd.IdInsumo WHERE fd.IdFichaTecnica=f.IdFichaTecnica AND fd.Estado=1 AND ISNULL(si.StockActual,0)<fd.Cantidad*f.CantidadRequerida) THEN 'FALTANTES' ELSE 'DISPONIBLES' END EstadoInsumos
+           CASE
+                WHEN f.IdFichaTecnica IS NULL
+                     OR NOT EXISTS(SELECT 1 FROM dbo.FichaTecnicaDetalle fd WHERE fd.IdFichaTecnica=f.IdFichaTecnica AND fd.Estado=1)
+                    THEN 'Sin ficha tecnica'
+                WHEN EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.FichaTecnicaDetalle fd
+                    LEFT JOIN dbo.StockInsumos si ON si.IdInsumo=fd.IdInsumo
+                    WHERE fd.IdFichaTecnica=f.IdFichaTecnica
+                      AND fd.Estado=1
+                      AND ISNULL(si.StockActual,0)<fd.Cantidad*f.CantidadRequerida
+                ) THEN 'Faltantes'
+                ELSE 'Completo para producir'
+           END EstadoInsumos
     FROM Ficha f
     OUTER APPLY(SELECT SUM(s.StockActual) StockActual FROM dbo.StockProductosAlmacen s WHERE s.IdProducto=f.IdProducto)sp
     OUTER APPLY(SELECT SUM(CASE WHEN a.NombreArea LIKE '%CORTE%' THEN da.CantidadPendiente ELSE 0 END) StockCorte,SUM(CASE WHEN a.NombreArea LIKE '%CONFECCI%' THEN da.CantidadPendiente ELSE 0 END) StockConfeccion,SUM(CASE WHEN a.NombreArea LIKE '%ACABADO%' THEN da.CantidadPendiente ELSE 0 END) StockAcabado FROM dbo.OrdenTrabajoDetalle od JOIN dbo.OrdenTrabajoDetalleArea da ON da.IdDetalleOT=od.IdDetalleOT JOIN dbo.AreaProduccion a ON a.IdAreaProduccion=da.IdAreaProduccion WHERE od.IdProducto=f.IdProducto AND od.Estado NOT IN('TERMINADO','ANULADO'))ap
@@ -90,7 +103,10 @@ BEGIN
            CONVERT(DECIMAL(18,3),fd.Cantidad*@Cantidad) CantidadNecesaria,CONVERT(DECIMAL(18,3),ISNULL(si.StockActual,0)) StockActual,
            CONVERT(DECIMAL(18,3),ISNULL(si.StockActual,0)-fd.Cantidad*@Cantidad) StockProyectado,
            CONVERT(DECIMAL(18,3),CASE WHEN fd.Cantidad*@Cantidad-ISNULL(si.StockActual,0)>0 THEN fd.Cantidad*@Cantidad-ISNULL(si.StockActual,0) ELSE 0 END) CantidadFaltante,
-           CASE WHEN ISNULL(si.StockActual,0)>=fd.Cantidad*@Cantidad THEN 'DISPONIBLE' ELSE 'FALTA' END Estado
+           CASE
+                WHEN ISNULL(si.StockActual,0)>=fd.Cantidad*@Cantidad THEN 'Completo'
+                ELSE 'Faltante'
+           END Estado
     FROM dbo.FichaTecnicaDetalle fd JOIN dbo.Insumos i ON i.IdInsumo=fd.IdInsumo JOIN dbo.UnidadesMedida um ON um.IdUnidadMedida=fd.IdUnidadMedida LEFT JOIN dbo.StockInsumos si ON si.IdInsumo=fd.IdInsumo
     WHERE fd.IdFichaTecnica=@IdFicha AND fd.Estado=1 ORDER BY i.NombreInsumo;
 END;
