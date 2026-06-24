@@ -9,6 +9,55 @@ UPDATE dbo.Menu SET Orden = 6 WHERE NombreMenu = 'Productos' AND IdMenuPadre IS 
 UPDATE dbo.Menu SET Orden = 7 WHERE NombreMenu = 'Destajo y Pagos' AND IdMenuPadre IS NULL;
 UPDATE dbo.Menu SET Orden = 8 WHERE NombreMenu = 'Seguridad' AND IdMenuPadre IS NULL;
 
+DECLARE @IdVentas INT;
+DECLARE @IdProduccion INT;
+
+SELECT @IdVentas = IdMenu
+FROM dbo.Menu
+WHERE NombreMenu = 'Ventas'
+  AND IdMenuPadre IS NULL;
+
+SELECT @IdProduccion = IdMenu
+FROM dbo.Menu
+WHERE NombreMenu LIKE 'Producci%'
+  AND IdMenuPadre IS NULL;
+
+IF @IdVentas IS NOT NULL
+BEGIN
+    UPDATE dbo.Menu
+    SET IdMenuPadre = @IdVentas,
+        Orden = 3
+    WHERE NombreMenu = 'Orden de Trabajo';
+
+    UPDATE dbo.Menu
+    SET Orden = 1
+    WHERE NombreMenu = 'Proformas'
+      AND IdMenuPadre = @IdVentas;
+
+    UPDATE dbo.Menu
+    SET Orden = 2
+    WHERE NombreMenu = 'OCI'
+      AND IdMenuPadre = @IdVentas;
+
+    UPDATE dbo.Menu
+    SET Orden = 4
+    WHERE NombreMenu LIKE 'Gu%Salida'
+      AND IdMenuPadre = @IdVentas;
+END;
+
+IF @IdProduccion IS NOT NULL
+BEGIN
+    UPDATE dbo.Menu
+    SET Orden = 1
+    WHERE NombreMenu = 'Áreas de Producción'
+      AND IdMenuPadre = @IdProduccion;
+
+    UPDATE dbo.Menu
+    SET Orden = 2
+    WHERE NombreMenu = 'Seguimiento OT'
+      AND IdMenuPadre = @IdProduccion;
+END;
+
 DECLARE @IdSeguridad INT;
 DECLARE @NombreMenuAdministracion NVARCHAR(80) = N'Men' + NCHAR(250);
 

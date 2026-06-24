@@ -5,6 +5,9 @@ namespace CorexProd.Entidad.Entidades
         public int IdInsumo { get; set; }
         public string Codigo { get; set; } = string.Empty;
         public string NombreInsumo { get; set; } = string.Empty;
+        public string InsumoBusqueda => string.IsNullOrWhiteSpace(Codigo)
+            ? NombreInsumo
+            : $"{Codigo} - {NombreInsumo}";
         public int IdCategoriaInsumo { get; set; }
         public string NombreCategoria { get; set; } = string.Empty;
         public int IdUnidadMedida { get; set; }

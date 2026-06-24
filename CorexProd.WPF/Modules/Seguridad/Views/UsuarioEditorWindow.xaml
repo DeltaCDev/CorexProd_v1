@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding TituloEditor}"
         Width="680"
-        Height="430"
-        MinHeight="430"
+        Height="520"
+        MinHeight="520"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -73,7 +73,7 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid>
+                <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -89,6 +89,37 @@
                     </StackPanel>
                     <CheckBox Grid.Column="2" Content="Activo" IsChecked="{Binding Estado}" FontWeight="SemiBold" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
                 </Grid>
+
+                <Border Background="#F8FAFC"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Permisos operativos del rol seleccionado"
+                                   FontWeight="Bold"
+                                   Foreground="#374151"
+                                   Margin="0,0,0,8"/>
+                        <UniformGrid Columns="3">
+                            <CheckBox Content="Generar OT"
+                                      IsChecked="{Binding PuedeGenerarOtRol, Mode=OneWay}"
+                                      IsEnabled="False"
+                                      FontWeight="SemiBold"/>
+                            <CheckBox Content="Generar Guía Interna"
+                                      IsChecked="{Binding PuedeGenerarGuiaRol, Mode=OneWay}"
+                                      IsEnabled="False"
+                                      FontWeight="SemiBold"/>
+                            <CheckBox Content="Transferir en OT"
+                                      IsChecked="{Binding PuedeTransferirOtRol, Mode=OneWay}"
+                                      IsEnabled="False"
+                                      FontWeight="SemiBold"/>
+                        </UniformGrid>
+                        <TextBlock Text="Para activar o desactivar estos permisos, edite el rol en Seguridad > Roles."
+                                   Foreground="#64748B"
+                                   FontSize="12"
+                                   Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </Border>
 

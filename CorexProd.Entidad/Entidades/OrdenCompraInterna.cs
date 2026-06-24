@@ -32,6 +32,7 @@ namespace CorexProd.Entidad.Entidades
         public bool PuedeGenerarOt { get; set; }
         public bool PuedeGenerarGuiaSalida { get; set; }
         public bool PuedeAnular => !Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
+            && !TieneGuiaSalida
             && !TieneOrdenTrabajo;
         public List<OrdenCompraInternaDetalle> Detalles { get; set; } = [];
 

@@ -43,6 +43,24 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         public ICommand CopiarPermisosCommand { get; }
 
+        public bool PermisoOrdenTrabajo
+        {
+            get => ObtenerPermiso("Orden de Trabajo");
+            set => EstablecerPermiso("Orden de Trabajo", value);
+        }
+
+        public bool PermisoGuiaInterna
+        {
+            get => ObtenerPermiso("Guía de Salida");
+            set => EstablecerPermiso("Guía de Salida", value);
+        }
+
+        public bool PermisoTransferenciasOt
+        {
+            get => ObtenerPermiso("Orden de Trabajo");
+            set => EstablecerPermiso("Orden de Trabajo", value);
+        }
+
         public int IdRol
         {
             get => _idRol;
@@ -88,6 +106,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     Estado = value.Estado;
 
                     CargarMenusPorRol(value.IdRol);
+                    NotificarPermisosOperativos();
                 }
             }
         }
@@ -206,6 +225,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
                 Menus.Add(padre);
             }
+
+            NotificarPermisosOperativos();
         }
 
         private void GuardarPermisos()
@@ -257,6 +278,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
 
             OnPropertyChanged(nameof(Menus));
+            NotificarPermisosOperativos();
         }
 
         private void QuitarSeleccion()
@@ -272,6 +294,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
 
             OnPropertyChanged(nameof(Menus));
+            NotificarPermisosOperativos();
         }
 
         private void CopiarPermisos()
@@ -334,6 +357,33 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             );
 
             OnPropertyChanged(nameof(Menus));
+            NotificarPermisosOperativos();
+        }
+
+        private bool ObtenerPermiso(string nombreMenu)
+        {
+            return Menus.SelectMany(x => x.Hijos.Append(x))
+                .Any(x => x.NombreMenu == nombreMenu && x.TienePermiso);
+        }
+
+        private void EstablecerPermiso(string nombreMenu, bool valor)
+        {
+            MenuSistema? menu = Menus.SelectMany(x => x.Hijos.Append(x))
+                .FirstOrDefault(x => x.NombreMenu == nombreMenu);
+
+            if (menu == null)
+                return;
+
+            menu.TienePermiso = valor;
+            OnPropertyChanged(nameof(Menus));
+            NotificarPermisosOperativos();
+        }
+
+        private void NotificarPermisosOperativos()
+        {
+            OnPropertyChanged(nameof(PermisoOrdenTrabajo));
+            OnPropertyChanged(nameof(PermisoGuiaInterna));
+            OnPropertyChanged(nameof(PermisoTransferenciasOt));
         }
 
     }

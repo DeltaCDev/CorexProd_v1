@@ -115,6 +115,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -129,8 +130,29 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
 
+                    <Border Grid.Row="2"
+                            Background="White"
+                            BorderBrush="#FCD34D"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Permisos operativos clave"
+                                       FontWeight="Bold"
+                                       Foreground="#92400E"
+                                       Margin="0,0,0,6"/>
+                            <CheckBox Content="Generar OT / Operar y transferir en Orden de Trabajo"
+                                      IsChecked="{Binding PermisoOrdenTrabajo, Mode=TwoWay}"
+                                      Margin="0,3"/>
+                            <CheckBox Content="Generar Guía Interna de Salida"
+                                      IsChecked="{Binding PermisoGuiaInterna, Mode=TwoWay}"
+                                      Margin="0,3"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- COPIAR ROL -->
-                    <Grid Grid.Row="2"
+                    <Grid Grid.Row="3"
                           Margin="0,0,0,10">
 
                         <Grid.ColumnDefinitions>
@@ -151,7 +173,7 @@
                                 Command="{Binding CopiarPermisosCommand}"/>
                     </Grid>
 
-                    <ScrollViewer Grid.Row="3"
+                    <ScrollViewer Grid.Row="4"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
                                   Margin="0,0,0,10"
@@ -183,7 +205,7 @@
 
                     </ScrollViewer>
 
-                    <Grid Grid.Row="4"
+                    <Grid Grid.Row="5"
                           Margin="0,0,0,10">
 
                         <Grid.ColumnDefinitions>
@@ -203,7 +225,7 @@
                                 Command="{Binding QuitarSeleccionCommand}"/>
                     </Grid>
 
-                    <Button Grid.Row="5"
+                    <Button Grid.Row="6"
                             Content="Guardar Permisos"
                             Height="38"
                             Background="#16A34A"

@@ -18,11 +18,13 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private readonly OrdenTrabajoNegocio _negocio = new();
         private OrdenTrabajo _ot = null!;
         private List<OrdenTrabajoDetalleArea> _visibles = [];
+        private readonly bool _puedeOperarOt;
 
         public OrdenTrabajoDetalleWindow(int id)
         {
             InitializeComponent();
             _id = id;
+            _puedeOperarOt = PermissionService.PuedeOperarOrdenTrabajo;
             try
             {
                 Cargar();
@@ -137,6 +139,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             boton.SetValue(Control.VerticalContentAlignmentProperty, VerticalAlignment.Center);
             boton.SetBinding(Control.BackgroundProperty, new Binding($"{propiedad}.Fondo"));
             boton.SetBinding(Control.ForegroundProperty, new Binding($"{propiedad}.TextoColor"));
+            boton.SetValue(UIElement.IsEnabledProperty, _puedeOperarOt);
 
             FrameworkElementFactory contenido = new(typeof(StackPanel));
             contenido.SetValue(StackPanel.OrientationProperty, Orientation.Vertical);
@@ -166,6 +169,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void AreaResumen_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidarPermisoOperacion()) return;
+
             if ((sender as FrameworkElement)?.Tag is not ResumenAreaCelda celda) return;
             if (!celda.Area.EsTermino && string.IsNullOrWhiteSpace(celda.AreaDestino))
             {
@@ -274,10 +279,23 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         }
 
         private void AreaCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => MostrarArea();
-        private void EnviarTodos_Click(object sender, RoutedEventArgs e) { foreach (OrdenTrabajoDetalleArea x in _visibles) { x.Seleccionado = x.Disponible; x.CantidadOperacion = x.Disponible ? x.CantidadPendiente : 0; } ItemsGrid.Items.Refresh(); }
+        private void EnviarTodos_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidarPermisoOperacion()) return;
+
+            foreach (OrdenTrabajoDetalleArea x in _visibles)
+            {
+                x.Seleccionado = x.Disponible;
+                x.CantidadOperacion = x.Disponible ? x.CantidadPendiente : 0;
+            }
+
+            ItemsGrid.Items.Refresh();
+        }
 
         private void Transferir_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidarPermisoOperacion()) return;
+
             try
             {
                 ItemsGrid.CommitEdit();
@@ -295,6 +313,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Iniciar_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidarPermisoOperacion()) return;
+
             try
             {
                 ItemsGrid.CommitEdit();
@@ -314,6 +334,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Merma_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidarPermisoOperacion()) return;
+
             try
             {
                 if (ItemsGrid.SelectedItem is not OrdenTrabajoDetalleArea item) throw new InvalidOperationException("Seleccione el producto donde registrará la merma.");
@@ -331,6 +353,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Consumo_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidarPermisoOperacion()) return;
+
             try
             {
                 if (ItemsGrid.SelectedItem is not OrdenTrabajoDetalleArea area) throw new InvalidOperationException("Seleccione el producto cuyo consumo real desea confirmar.");
@@ -361,6 +385,15 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Fondo = new SolidColorBrush(pendiente ? fuerte : suave);
                 TextoColor = new SolidColorBrush(pendiente ? Colors.Black : Color.FromRgb(100, 116, 139));
             }
+        }
+
+        private bool ValidarPermisoOperacion()
+        {
+            if (_puedeOperarOt)
+                return true;
+
+            PermissionService.MostrarSinPermiso();
+            return false;
         }
     }
 }

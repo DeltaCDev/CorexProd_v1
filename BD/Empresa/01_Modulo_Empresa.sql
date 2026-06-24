@@ -13,6 +13,7 @@ BEGIN
         Distrito VARCHAR(80) NOT NULL CONSTRAINT DF_Empresas_Distrito DEFAULT(''),
         Direccion VARCHAR(250) NOT NULL CONSTRAINT DF_Empresas_Direccion DEFAULT(''),
         Logo VARBINARY(MAX) NULL,
+        Icono VARBINARY(MAX) NULL,
         CodigoCliente VARCHAR(80) NOT NULL CONSTRAINT DF_Empresas_CodigoCliente DEFAULT(''),
         LicenciaActivacion VARCHAR(500) NOT NULL CONSTRAINT DF_Empresas_LicenciaActivacion DEFAULT(''),
         EsPredeterminada BIT NOT NULL CONSTRAINT DF_Empresas_EsPredeterminada DEFAULT(0),
@@ -44,6 +45,13 @@ IF COL_LENGTH('dbo.Empresas', 'Logo') IS NULL
 BEGIN
     ALTER TABLE dbo.Empresas
     ADD Logo VARBINARY(MAX) NULL;
+END
+GO
+
+IF COL_LENGTH('dbo.Empresas', 'Icono') IS NULL
+BEGIN
+    ALTER TABLE dbo.Empresas
+    ADD Icono VARBINARY(MAX) NULL;
 END
 GO
 
@@ -91,6 +99,7 @@ BEGIN
         Distrito,
         Direccion,
         Logo,
+        Icono,
         CodigoCliente,
         LicenciaActivacion,
         EsPredeterminada,
@@ -118,6 +127,7 @@ BEGIN
         Distrito,
         Direccion,
         Logo,
+        Icono,
         CodigoCliente,
         LicenciaActivacion,
         EsPredeterminada,
@@ -140,6 +150,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_SEG_EMPRESA_REGISTRAR
     @Distrito VARCHAR(80),
     @Direccion VARCHAR(250),
     @Logo VARBINARY(MAX),
+    @Icono VARBINARY(MAX),
     @CodigoCliente VARCHAR(80),
     @LicenciaActivacion VARCHAR(500),
     @EsPredeterminada BIT,
@@ -182,6 +193,7 @@ BEGIN
             Distrito,
             Direccion,
             Logo,
+            Icono,
             CodigoCliente,
             LicenciaActivacion,
             EsPredeterminada,
@@ -199,6 +211,7 @@ BEGIN
             @Distrito,
             @Direccion,
             @Logo,
+            @Icono,
             @CodigoCliente,
             @LicenciaActivacion,
             @EsPredeterminada,
@@ -232,6 +245,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_SEG_EMPRESA_EDITAR
     @Distrito VARCHAR(80),
     @Direccion VARCHAR(250),
     @Logo VARBINARY(MAX),
+    @Icono VARBINARY(MAX),
     @CodigoCliente VARCHAR(80),
     @LicenciaActivacion VARCHAR(500),
     @EsPredeterminada BIT,
@@ -285,6 +299,7 @@ BEGIN
             Distrito = @Distrito,
             Direccion = @Direccion,
             Logo = @Logo,
+            Icono = @Icono,
             CodigoCliente = @CodigoCliente,
             LicenciaActivacion = @LicenciaActivacion,
             EsPredeterminada = @EsPredeterminada,

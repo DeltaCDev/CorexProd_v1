@@ -40,7 +40,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _distrito = string.Empty;
         private string _direccion = string.Empty;
         private byte[]? _logo;
+        private byte[]? _icono;
         private string _logoResumen = "Sin logo seleccionado";
+        private string _iconoResumen = "Sin icono seleccionado";
         private string _codigoCliente = string.Empty;
         private string _licenciaActivacion = string.Empty;
         private bool _esPredeterminada;
@@ -165,12 +167,35 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         public bool TieneLogo => Logo?.Length > 0;
 
+        public byte[]? Icono
+        {
+            get => _icono;
+            set
+            {
+                _icono = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TieneIcono));
+            }
+        }
+
+        public bool TieneIcono => Icono?.Length > 0;
+
         public string LogoResumen
         {
             get => _logoResumen;
             set
             {
                 _logoResumen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string IconoResumen
+        {
+            get => _iconoResumen;
+            set
+            {
+                _iconoResumen = value;
                 OnPropertyChanged();
             }
         }
@@ -229,6 +254,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public ICommand GuardarCommand { get; }
         public ICommand CancelarCommand { get; }
         public ICommand SeleccionarLogoCommand { get; }
+        public ICommand SeleccionarIconoCommand { get; }
         public ICommand ValidarLicenciaCommand { get; }
         public ICommand ConsultarRucCommand { get; }
 
@@ -237,6 +263,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             GuardarCommand = new RelayCommand(_ => Guardar());
             CancelarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
             SeleccionarLogoCommand = new RelayCommand(_ => SeleccionarLogo());
+            SeleccionarIconoCommand = new RelayCommand(_ => SeleccionarIcono());
             ValidarLicenciaCommand = new RelayCommand(_ => NotificationService.Info("Activacion de licencia en mantenimiento"));
             ConsultarRucCommand = new RelayCommand(
                 async _ => await ConsultarRucAsync(),
@@ -388,6 +415,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 Distrito = Distrito,
                 Direccion = Direccion,
                 Logo = Logo,
+                Icono = Icono,
                 CodigoCliente = CodigoCliente,
                 LicenciaActivacion = LicenciaActivacion,
                 EsPredeterminada = EsPredeterminada,
@@ -410,17 +438,33 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         private void SeleccionarLogo()
         {
+            if (SeleccionarImagen("Seleccionar logo") is not (byte[] bytes, string nombre))
+                return;
+
+            Logo = bytes;
+            LogoResumen = nombre;
+        }
+
+        private void SeleccionarIcono()
+        {
+            if (SeleccionarImagen("Seleccionar icono") is not (byte[] bytes, string nombre))
+                return;
+
+            Icono = bytes;
+            IconoResumen = nombre;
+        }
+
+        private static (byte[] bytes, string nombre)? SeleccionarImagen(string titulo)
+        {
             OpenFileDialog dialog = new()
             {
-                Title = "Seleccionar logo",
-                Filter = "Imagenes|*.png;*.jpg;*.jpeg;*.bmp|Todos los archivos|*.*"
+                Title = titulo,
+                Filter = "Imagenes|*.png;*.jpg;*.jpeg;*.bmp;*.ico|Todos los archivos|*.*"
             };
 
-            if (dialog.ShowDialog() == true)
-            {
-                Logo = File.ReadAllBytes(dialog.FileName);
-                LogoResumen = Path.GetFileName(dialog.FileName);
-            }
+            return dialog.ShowDialog() == true
+                ? (File.ReadAllBytes(dialog.FileName), Path.GetFileName(dialog.FileName))
+                : null;
         }
 
         private void CargarEmpresa(Empresa empresa)
@@ -436,7 +480,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             Distrito = empresa.Distrito;
             Direccion = empresa.Direccion;
             Logo = empresa.Logo;
+            Icono = empresa.Icono;
             LogoResumen = TieneLogo ? "Logo guardado en BD" : "Sin logo seleccionado";
+            IconoResumen = TieneIcono ? "Icono guardado en BD" : "Sin icono seleccionado";
             CodigoCliente = empresa.CodigoCliente;
             LicenciaActivacion = empresa.LicenciaActivacion;
             EsPredeterminada = empresa.EsPredeterminada;

@@ -147,10 +147,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         }
 
         private static bool PuedeGenerarOt(object? parametro) =>
-            parametro is OrdenCompraInterna orden && orden.PuedeGenerarOt;
+            PermissionService.PuedeGenerarOrdenTrabajo
+            && parametro is OrdenCompraInterna orden
+            && orden.PuedeGenerarOt;
 
         private void GenerarOt(object? parametro)
         {
+            if (!PermissionService.PuedeGenerarOrdenTrabajo)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
             if (parametro is not OrdenCompraInterna orden
                 || !_negocio.RequiereOrdenTrabajo(orden.IdOrdenCompraInterna))
             {
@@ -188,10 +196,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         }
 
         private static bool PuedeGenerarGuiaSalida(object? parametro) =>
-            parametro is OrdenCompraInterna orden && orden.PuedeGenerarGuiaSalida;
+            PermissionService.PuedeGenerarGuiaInterna
+            && parametro is OrdenCompraInterna orden
+            && orden.PuedeGenerarGuiaSalida;
 
         private void GenerarGuiaSalida(object? parametro)
         {
+            if (!PermissionService.PuedeGenerarGuiaInterna)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
             if (parametro is not OrdenCompraInterna orden
                 || !_negocio.PuedeGenerarGuiaSalida(orden.IdOrdenCompraInterna))
             {

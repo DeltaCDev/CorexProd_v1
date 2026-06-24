@@ -13,10 +13,21 @@
             </Grid>
         </Border>
         <Border Grid.Row="2" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14">
-            <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal">
+            <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowHeight="48">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="100"/>
-                    <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*" MinWidth="260"/>
+                    <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="360">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding NombreProducto}"
+                                           TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxHeight="36"
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding NombreProducto}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Requerida" Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
                     <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="90"/>
                     <DataGridTextColumn Header="Despachada" Binding="{Binding CantidadDespachada, StringFormat=N2}" Width="95"/>

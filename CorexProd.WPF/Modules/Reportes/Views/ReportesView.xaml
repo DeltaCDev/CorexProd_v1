@@ -1,7 +1,154 @@
-﻿<UserControl x:Class="CorexProd.WPF.Modules.Reportes.Views.ReportesView"
+<UserControl x:Class="CorexProd.WPF.Modules.Reportes.Views.ReportesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CorexProd.WPF.Modules.Reportes.ViewModels">
 
-    <Grid Background="White">
+    <UserControl.DataContext>
+        <vm:ReportesViewModel/>
+    </UserControl.DataContext>
+
+    <UserControl.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#F8FAFC" Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Text="Reportes comerciales" FontSize="26" FontWeight="Bold" Foreground="#0F172A"/>
+            <TextBlock Text="Despachos, clientes, OCI entregadas y ranking de usuarios por proformas."
+                       Foreground="#64748B" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,14">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Width="160" Margin="0,0,12,0">
+                    <TextBlock Text="Desde" Style="{StaticResource Label}"/>
+                    <DatePicker SelectedDate="{Binding FechaDesde}" Height="32"/>
+                </StackPanel>
+                <StackPanel Width="160" Margin="0,0,16,0">
+                    <TextBlock Text="Hasta" Style="{StaticResource Label}"/>
+                    <DatePicker SelectedDate="{Binding FechaHasta}" Height="32"/>
+                </StackPanel>
+                <Button Content="Consultar"
+                        Width="125"
+                        Height="34"
+                        Margin="0,20,0,0"
+                        Background="#2563EB"
+                        Foreground="White"
+                        BorderThickness="0"
+                        FontWeight="SemiBold"
+                        Command="{Binding ConsultarCommand}"/>
+            </StackPanel>
+        </Border>
+
+        <TabControl Grid.Row="2" Background="Transparent">
+            <TabItem Header="Productos despachados">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{Binding TotalProductos, StringFormat=Registros: {0}}" Foreground="#0F766E" FontWeight="SemiBold"/>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Productos}" AutoGenerateColumns="True" IsReadOnly="True"
+                              CanUserAddRows="False" RowHeight="38" Margin="0,8,0,0"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Clientes">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{Binding TotalClientes, StringFormat=Registros: {0}}" Foreground="#0F766E" FontWeight="SemiBold"/>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Clientes}" AutoGenerateColumns="True" IsReadOnly="True"
+                              CanUserAddRows="False" RowHeight="38" Margin="0,8,0,0"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="OCI despachadas">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="220"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{Binding TotalOcis, StringFormat=Registros: {0}}" Foreground="#0F766E" FontWeight="SemiBold"/>
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding Ocis}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              RowHeight="38"
+                              Margin="0,8,0,12">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Detalle" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Ver"
+                                                Height="28"
+                                                Padding="10,0"
+                                                Command="{Binding DataContext.VerDetalleOciCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="OCI" Binding="{Binding [OCI]}" Width="115"/>
+                            <DataGridTextColumn Header="Cliente" Binding="{Binding [Cliente]}" Width="2*"/>
+                            <DataGridTextColumn Header="Proforma" Binding="{Binding [Proforma]}" Width="115"/>
+                            <DataGridTextColumn Header="OT" Binding="{Binding [OT]}" Width="115"/>
+                            <DataGridTextColumn Header="Estado" Binding="{Binding [Estado]}" Width="100"/>
+                            <DataGridTextColumn Header="Fecha Guía" Binding="{Binding [Fecha generacion Guia], StringFormat=dd/MM/yyyy HH:mm}" Width="150"/>
+                            <DataGridTextColumn Header="Usuario" Binding="{Binding [Usuario responsable]}" Width="130"/>
+                            <DataGridTextColumn Header="Total solicitado" Binding="{Binding [Total solicitado], StringFormat=N2}" Width="115"/>
+                            <DataGridTextColumn Header="Total producido" Binding="{Binding [Total producido], StringFormat=N2}" Width="115"/>
+                            <DataGridTextColumn Header="Total despachado" Binding="{Binding [Total despachado], StringFormat=N2}" Width="125"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding TotalOciDetalle, StringFormat=Detalle de productos de la OCI seleccionada: {0} registro(s)}"
+                               Foreground="#475569"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
+
+                    <DataGrid Grid.Row="3"
+                              ItemsSource="{Binding OciDetalle}"
+                              AutoGenerateColumns="True"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              RowHeight="36"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Usuarios / Proformas">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{Binding TotalUsuarios, StringFormat=Registros: {0}}" Foreground="#0F766E" FontWeight="SemiBold"/>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Usuarios}" AutoGenerateColumns="True" IsReadOnly="True"
+                              CanUserAddRows="False" RowHeight="38" Margin="0,8,0,0"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

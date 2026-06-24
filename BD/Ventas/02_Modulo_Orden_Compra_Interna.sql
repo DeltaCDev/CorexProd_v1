@@ -775,8 +775,26 @@ BEGIN
         O.MotivoAnulacion,
         O.UsuarioAnulacion,
         O.FechaAnulacion,
-        O.TieneGuiaSalida,
-        O.TieneOrdenTrabajo,
+        CAST(CASE
+            WHEN EXISTS
+              (
+                  SELECT 1
+                  FROM dbo.GuiasInternas G
+                  WHERE G.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                    AND G.Estado <> 'Anulado'
+              )
+            THEN 1 ELSE 0
+        END AS BIT) AS TieneGuiaSalida,
+        CAST(CASE
+            WHEN EXISTS
+              (
+                  SELECT 1
+                  FROM dbo.OrdenTrabajo OT
+                  WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                    AND UPPER(OT.Estado) <> 'ANULADA'
+              )
+            THEN 1 ELSE 0
+        END AS BIT) AS TieneOrdenTrabajo,
         CAST(CASE WHEN O.Estado <> 'Anulado'
              AND NOT EXISTS
              (
@@ -843,8 +861,26 @@ BEGIN
         O.MotivoAnulacion,
         O.UsuarioAnulacion,
         O.FechaAnulacion,
-        O.TieneGuiaSalida,
-        O.TieneOrdenTrabajo,
+        CAST(CASE
+            WHEN EXISTS
+              (
+                  SELECT 1
+                  FROM dbo.GuiasInternas G
+                  WHERE G.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                    AND G.Estado <> 'Anulado'
+              )
+            THEN 1 ELSE 0
+        END AS BIT) AS TieneGuiaSalida,
+        CAST(CASE
+            WHEN EXISTS
+              (
+                  SELECT 1
+                  FROM dbo.OrdenTrabajo OT
+                  WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                    AND UPPER(OT.Estado) <> 'ANULADA'
+              )
+            THEN 1 ELSE 0
+        END AS BIT) AS TieneOrdenTrabajo,
         CAST(CASE WHEN O.Estado <> 'Anulado'
              AND NOT EXISTS
              (
@@ -933,7 +969,20 @@ BEGIN
         FechaAnulacion = GETDATE()
     WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
       AND Estado <> 'Anulado'
-      AND TieneOrdenTrabajo = 0;
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.OrdenTrabajo OT
+          WHERE OT.IdOrdenCompraInterna = @IdOrdenCompraInterna
+            AND UPPER(OT.Estado) <> 'ANULADA'
+      )
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.GuiasInternas G
+          WHERE G.IdOrdenCompraInterna = @IdOrdenCompraInterna
+            AND G.Estado <> 'Anulado'
+      );
 
     IF @@ROWCOUNT = 1
     BEGIN
@@ -949,6 +998,22 @@ BEGIN
         WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna AND Estado = 'Anulado'
     )
         SET @Mensaje = 'La OCI ya se encuentra anulada.';
+    ELSE IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.GuiasInternas
+        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+          AND Estado <> 'Anulado'
+    )
+        SET @Mensaje = 'No se puede anular la OCI porque tiene una Guia Interna emitida. Primero debe anular la guia.';
+    ELSE IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenTrabajo
+        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+          AND UPPER(Estado) <> 'ANULADA'
+    )
+        SET @Mensaje = 'No se puede anular la OCI porque tiene una Orden de Trabajo emitida.';
     ELSE
         SET @Mensaje = 'No se puede anular la OCI porque tiene una Orden de Trabajo emitida.';
 END;

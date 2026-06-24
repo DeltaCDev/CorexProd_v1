@@ -27,6 +27,24 @@
 
         <StackPanel x:Name="CantidadOperacionPanel" Grid.Row="3">
             <TextBlock x:Name="CantidadLabel" Text="Cantidad a transferir:" FontWeight="SemiBold"/>
+            <Border x:Name="AjusteInicioInfo"
+                    Visibility="Collapsed"
+                    Background="#FEF3C7"
+                    BorderBrush="#F59E0B"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="10"
+                    Margin="0,4,0,8">
+                <StackPanel>
+                    <TextBlock Text="Es área de inicio"
+                               Foreground="#92400E"
+                               FontWeight="Bold"/>
+                    <TextBlock Text="Se puede enviar más de la cantidad requerida si producción necesita aprovechar material disponible."
+                               Foreground="#92400E"
+                               TextWrapping="Wrap"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+            </Border>
             <TextBox x:Name="CantidadTextBox" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
         </StackPanel>
 

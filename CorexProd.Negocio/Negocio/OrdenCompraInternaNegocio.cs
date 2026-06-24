@@ -43,6 +43,8 @@ namespace CorexProd.Negocio.Negocio
             OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
             if (orden == null) return "No se encontró la OCI seleccionada.";
             if (EsAnulada(orden)) return "La OCI ya se encuentra anulada.";
+            if (orden.TieneGuiaSalida)
+                return "No se puede anular la OCI porque tiene una Guia Interna emitida. Primero debe anular la guia.";
             if (orden.TieneOrdenTrabajo)
                 return "No se puede anular la OCI porque tiene una Orden de Trabajo emitida.";
 

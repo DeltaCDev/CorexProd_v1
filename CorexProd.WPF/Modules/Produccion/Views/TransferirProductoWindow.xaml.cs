@@ -33,6 +33,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             _tituloOperacion = esTerminacion ? "Ingresar a productos terminados" : $"Transferir a {destino}";
             TituloText.Text = _tituloOperacion;
             CantidadLabel.Text = esTerminacion ? "Cantidad terminada:" : "Cantidad a transferir:";
+            AjusteInicioInfo.Visibility = _permiteAjusteInicial ? Visibility.Visible : Visibility.Collapsed;
             ProductoText.Text = $"{origen.CodigoProducto} - {origen.NombreProducto}";
             CantidadTextBox.Text = _disponible.ToString("0.##", CultureInfo.CurrentCulture);
             RegistrarMermaCheckBox.Visibility = origen.ManejaMerma ? Visibility.Visible : Visibility.Collapsed;

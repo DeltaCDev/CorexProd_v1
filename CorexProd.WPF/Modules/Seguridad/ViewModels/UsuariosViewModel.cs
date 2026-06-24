@@ -6,6 +6,7 @@ using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
@@ -16,6 +17,7 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private readonly UsuarioNegocio _usuarioNegocio = new();
         private readonly EmpleadoNegocio _empleadoNegocio = new();
         private readonly RolNegocio _rolNegocio = new();
+        private readonly PermisoMenuRolNegocio _permisoMenuRolNegocio = new();
 
         private int _idUsuario;
         private int _idEmpleado;
@@ -23,6 +25,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _clave = string.Empty;
         private int _idRol;
         private bool _estado = true;
+        private bool _puedeGenerarOtRol;
+        private bool _puedeGenerarGuiaRol;
+        private bool _puedeTransferirOtRol;
         private Usuario? _usuarioSeleccionado;
 
         public ObservableCollection<Usuario> Usuarios { get; set; } = [];
@@ -56,13 +61,36 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public int IdRol
         {
             get => _idRol;
-            set { _idRol = value; OnPropertyChanged(); }
+            set
+            {
+                _idRol = value;
+                OnPropertyChanged();
+                ActualizarPermisosDelRol();
+            }
         }
 
         public bool Estado
         {
             get => _estado;
             set { _estado = value; OnPropertyChanged(); }
+        }
+
+        public bool PuedeGenerarOtRol
+        {
+            get => _puedeGenerarOtRol;
+            private set { _puedeGenerarOtRol = value; OnPropertyChanged(); }
+        }
+
+        public bool PuedeGenerarGuiaRol
+        {
+            get => _puedeGenerarGuiaRol;
+            private set { _puedeGenerarGuiaRol = value; OnPropertyChanged(); }
+        }
+
+        public bool PuedeTransferirOtRol
+        {
+            get => _puedeTransferirOtRol;
+            private set { _puedeTransferirOtRol = value; OnPropertyChanged(); }
         }
 
         public Usuario? UsuarioSeleccionado
@@ -98,7 +126,11 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         public string TituloEditor => IdUsuario > 0 ? "Editar Usuario" : "Nuevo Usuario";
         public string ResumenRegistros => $"Mostrando {Usuarios.Count} usuarios";
 
-        public UsuariosViewModel()
+        public UsuariosViewModel() : this(true)
+        {
+        }
+
+        private UsuariosViewModel(bool cargarListadoUsuarios)
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
@@ -110,7 +142,11 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
             CargarEmpleados();
             CargarRoles();
-            CargarUsuarios();
+
+            if (cargarListadoUsuarios)
+            {
+                CargarUsuarios();
+            }
         }
 
         private void CargarUsuarios()
@@ -250,32 +286,39 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         private void AbrirEditor(Usuario? usuario)
         {
-            UsuariosViewModel viewModel = new();
-
-            if (usuario != null)
+            try
             {
-                viewModel.IdUsuario = usuario.IdUsuario;
-                viewModel.IdEmpleado = usuario.IdEmpleado;
-                viewModel.NombreUsuario = usuario.NombreUsuario;
-                viewModel.Clave = string.Empty;
-                viewModel.IdRol = usuario.IdRol;
-                viewModel.Estado = usuario.Estado;
-                viewModel.OnPropertyChanged(nameof(TituloEditor));
+                UsuariosViewModel viewModel = new(false);
+
+                if (usuario != null)
+                {
+                    viewModel.IdUsuario = usuario.IdUsuario;
+                    viewModel.IdEmpleado = usuario.IdEmpleado;
+                    viewModel.NombreUsuario = usuario.NombreUsuario;
+                    viewModel.Clave = string.Empty;
+                    viewModel.IdRol = usuario.IdRol;
+                    viewModel.Estado = usuario.Estado;
+                    viewModel.OnPropertyChanged(nameof(TituloEditor));
+                }
+
+                UsuarioEditorWindow ventana = new()
+                {
+                    DataContext = viewModel,
+                    Owner = Application.Current.MainWindow
+                };
+
+                viewModel.CerrarVentana = ventana.Close;
+                ventana.ShowDialog();
+
+                if (viewModel.Guardado)
+                {
+                    Refrescar();
+                    Limpiar();
+                }
             }
-
-            UsuarioEditorWindow ventana = new()
+            catch (Exception ex)
             {
-                DataContext = viewModel,
-                Owner = Application.Current.MainWindow
-            };
-
-            viewModel.CerrarVentana = ventana.Close;
-            ventana.ShowDialog();
-
-            if (viewModel.Guardado)
-            {
-                Refrescar();
-                Limpiar();
+                NotificationService.Error($"No se pudo abrir el editor de usuario: {ex.Message}");
             }
         }
 
@@ -288,6 +331,33 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
 
             AbrirEditor(usuario);
+        }
+
+        private void ActualizarPermisosDelRol()
+        {
+            PuedeGenerarOtRol = false;
+            PuedeGenerarGuiaRol = false;
+            PuedeTransferirOtRol = false;
+
+            if (IdRol <= 0)
+                return;
+
+            try
+            {
+                var permisos = _permisoMenuRolNegocio.ListarMenusPorRol(IdRol);
+                bool ordenTrabajo = permisos.Any(x => x.NombreMenu == "Orden de Trabajo" && x.TienePermiso);
+                bool guiaInterna = permisos.Any(x => x.NombreMenu == "Guía de Salida" && x.TienePermiso);
+
+                PuedeGenerarOtRol = ordenTrabajo;
+                PuedeTransferirOtRol = ordenTrabajo;
+                PuedeGenerarGuiaRol = guiaInterna;
+            }
+            catch
+            {
+                PuedeGenerarOtRol = false;
+                PuedeTransferirOtRol = false;
+                PuedeGenerarGuiaRol = false;
+            }
         }
     }
 }

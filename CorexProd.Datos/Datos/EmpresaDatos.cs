@@ -139,6 +139,11 @@ namespace CorexProd.Datos.Datos
                 Value = empresa.Logo == null || empresa.Logo.Length == 0 ? DBNull.Value : empresa.Logo
             };
             cmd.Parameters.Add(logoParam);
+            SqlParameter iconoParam = new("@Icono", SqlDbType.VarBinary, -1)
+            {
+                Value = empresa.Icono == null || empresa.Icono.Length == 0 ? DBNull.Value : empresa.Icono
+            };
+            cmd.Parameters.Add(iconoParam);
             cmd.Parameters.AddWithValue("@CodigoCliente", empresa.CodigoCliente);
             cmd.Parameters.AddWithValue("@LicenciaActivacion", empresa.LicenciaActivacion);
             cmd.Parameters.AddWithValue("@EsPredeterminada", empresa.EsPredeterminada);
@@ -159,6 +164,7 @@ namespace CorexProd.Datos.Datos
                 Distrito = dr["Distrito"]?.ToString() ?? string.Empty,
                 Direccion = dr["Direccion"]?.ToString() ?? string.Empty,
                 Logo = dr["Logo"] == DBNull.Value ? null : (byte[])dr["Logo"],
+                Icono = dr["Icono"] == DBNull.Value ? null : (byte[])dr["Icono"],
                 CodigoCliente = dr["CodigoCliente"]?.ToString() ?? string.Empty,
                 LicenciaActivacion = dr["LicenciaActivacion"]?.ToString() ?? string.Empty,
                 EsPredeterminada = Convert.ToBoolean(dr["EsPredeterminada"]),

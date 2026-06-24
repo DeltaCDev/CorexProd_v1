@@ -26,6 +26,8 @@ namespace CorexProd.WPF.ViewModels
         private string _nombreUsuario = string.Empty;
         private string _nombreRol = string.Empty;
         private bool _isSidebarCollapsed;
+        private byte[]? _logoMenu;
+        private byte[]? _iconoMenu;
 
         public string NombreRol
         {
@@ -65,6 +67,26 @@ namespace CorexProd.WPF.ViewModels
         public string SidebarToggleText => IsSidebarCollapsed ? ">>" : "<<";
 
         public string SidebarToggleToolTip => IsSidebarCollapsed ? "Expandir menu" : "Minimizar menu";
+
+        public byte[]? LogoMenu
+        {
+            get => _logoMenu;
+            set
+            {
+                _logoMenu = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public byte[]? IconoMenu
+        {
+            get => _iconoMenu;
+            set
+            {
+                _iconoMenu = value;
+                OnPropertyChanged();
+            }
+        }
 
         public bool OmitirConfirmacionCierre { get; private set; }
 
@@ -116,8 +138,48 @@ namespace CorexProd.WPF.ViewModels
             IrVistaCommand = new RelayCommand(parametro => IrVista(parametro?.ToString() ?? string.Empty));
 
             CargarMenus();
+            CargarMarcaEmpresa();
 
             IrInicio();
+        }
+
+        private void CargarMarcaEmpresa()
+        {
+            try
+            {
+                Empresa? empresa = new EmpresaNegocio().ObtenerPredeterminada();
+                LogoMenu = empresa?.Logo ?? CargarRecursoImagen("Images/LOGO.png");
+                IconoMenu = empresa?.Icono ?? CargarRecursoImagen("Assets/CorexProd.ico") ?? LogoMenu;
+            }
+            catch
+            {
+                LogoMenu = CargarRecursoImagen("Images/LOGO.png");
+                IconoMenu = CargarRecursoImagen("Assets/CorexProd.ico") ?? LogoMenu;
+            }
+        }
+
+        private static byte[]? CargarRecursoImagen(string rutaRelativa)
+        {
+            try
+            {
+                string ruta = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, rutaRelativa);
+                if (System.IO.File.Exists(ruta))
+                    return System.IO.File.ReadAllBytes(ruta);
+
+                System.Windows.Resources.StreamResourceInfo? recurso =
+                    Application.GetResourceStream(new System.Uri($"pack://application:,,,/{rutaRelativa}", System.UriKind.Absolute));
+
+                if (recurso?.Stream == null)
+                    return null;
+
+                using System.IO.MemoryStream memoria = new();
+                recurso.Stream.CopyTo(memoria);
+                return memoria.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
         }
         private void CerrarSesion()
         {
@@ -184,6 +246,15 @@ namespace CorexProd.WPF.ViewModels
                 {
                     Titulo = "OCI",
                     Vista = "OCI"
+                });
+            }
+
+            if (menusPermitidos.Contains("Orden de Trabajo"))
+            {
+                ventas.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Orden de Trabajo",
+                    Vista = "OT"
                 });
             }
 
@@ -310,15 +381,6 @@ namespace CorexProd.WPF.ViewModels
                 {
                     Titulo = "Áreas de Producción",
                     Vista = "AreasProduccion"
-                });
-            }
-
-            if (menusPermitidos.Contains("Orden de Trabajo"))
-            {
-                produccion.Hijos.Add(new MenuItemSistema
-                {
-                    Titulo = "Orden de Trabajo",
-                    Vista = "OT"
                 });
             }
 
@@ -452,6 +514,15 @@ namespace CorexProd.WPF.ViewModels
                 {
                     Titulo = "Kardex Insumos",
                     Vista = "KardexInsumos"
+                });
+            }
+
+            if (menusPermitidos.Contains("Reportes"))
+            {
+                reportes.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Estadísticas",
+                    Vista = "Reportes"
                 });
             }
 
@@ -827,10 +898,18 @@ namespace CorexProd.WPF.ViewModels
                     break;
 
                 case "Reportes":
-                case "KardexProductos":
-                case "KardexInsumos":
-                    Titulo = vista;
+                    Titulo = "Reportes";
                     VistaActual = new ReportesView();
+                    break;
+
+                case "KardexProductos":
+                    Titulo = "Kardex Productos";
+                    VistaActual = new KardexProductosView();
+                    break;
+
+                case "KardexInsumos":
+                    Titulo = "Kardex Insumos";
+                    VistaActual = new KardexInsumosView();
                     break;
 
                 default:
