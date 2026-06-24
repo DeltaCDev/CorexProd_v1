@@ -3,6 +3,14 @@ SET QUOTED_IDENTIFIER ON;
 SET XACT_ABORT ON;
 GO
 
+IF EXISTS(SELECT 1 FROM sys.key_constraints WHERE name='UQ_OrdenTrabajo_OCI' AND parent_object_id=OBJECT_ID('dbo.OrdenTrabajo'))
+    ALTER TABLE dbo.OrdenTrabajo DROP CONSTRAINT UQ_OrdenTrabajo_OCI;
+GO
+
+IF EXISTS(SELECT 1 FROM sys.key_constraints WHERE name='UQ_OTDetalle_OCI' AND parent_object_id=OBJECT_ID('dbo.OrdenTrabajoDetalle'))
+    ALTER TABLE dbo.OrdenTrabajoDetalle DROP CONSTRAINT UQ_OTDetalle_OCI;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.USP_VEN_OCI_LISTAR
 AS
 BEGIN

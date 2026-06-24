@@ -8,8 +8,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
     public partial class TransferirProductoWindow : Window
     {
         private readonly decimal _disponible;
+        private readonly bool _permiteAjusteInicial;
         private readonly string _tituloOperacion;
         private readonly string _nombreArea;
+
         public decimal Cantidad { get; private set; }
         public bool RegistrarMerma { get; private set; }
         public decimal CantidadMerma { get; private set; }
@@ -17,10 +19,15 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         public string ObservacionMerma => ObservacionMermaTextBox.Text.Trim();
         public string Clave => ClavePasswordBox.Password;
 
-        public TransferirProductoWindow(OrdenTrabajoDetalleArea origen, string destino, bool esTerminacion = false)
+        public TransferirProductoWindow(
+            OrdenTrabajoDetalleArea origen,
+            string destino,
+            bool esTerminacion = false,
+            bool permiteAjusteInicial = false)
         {
             InitializeComponent();
             _disponible = origen.CantidadPendiente;
+            _permiteAjusteInicial = permiteAjusteInicial;
             _nombreArea = origen.NombreArea;
             Title = esTerminacion ? "Ingresar producto terminado" : "Transferir producto";
             _tituloOperacion = esTerminacion ? "Ingresar a productos terminados" : $"Transferir a {destino}";
@@ -60,20 +67,24 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             decimal merma = 0;
             if (RegistrarMermaCheckBox.IsChecked == true)
                 decimal.TryParse(CantidadMermaTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out merma);
-            decimal resultante = Math.Max(0, _disponible - transferencia - merma);
-            StockText.Text = $"Pendiente en {_nombreArea}: {_disponible:N2}\nPendiente despues de la operacion: {resultante:N2}";
+
+            decimal totalOperacion = transferencia + merma;
+            decimal resultante = Math.Max(0, _disponible - totalOperacion);
+            StockText.Text = _permiteAjusteInicial && totalOperacion > _disponible
+                ? $"Pendiente en {_nombreArea}: {_disponible:N2}\nSe ajustara el inicio de produccion a {totalOperacion:N2}."
+                : $"Pendiente en {_nombreArea}: {_disponible:N2}\nPendiente despues de la operacion: {resultante:N2}";
         }
 
         private void Confirmar_Click(object sender, RoutedEventArgs e)
         {
             if (!decimal.TryParse(CantidadTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad) || cantidad <= 0)
             {
-                MessageBox.Show(this, "Ingrese una cantidad válida mayor que cero.", "Cantidad inválida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, "Ingrese una cantidad valida mayor que cero.", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (cantidad > _disponible)
+            if (!_permiteAjusteInicial && cantidad > _disponible)
             {
-                MessageBox.Show(this, $"La cantidad no puede superar el pendiente disponible ({_disponible:N2}).", "Cantidad inválida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, $"La cantidad no puede superar el pendiente disponible ({_disponible:N2}).", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             Cantidad = cantidad;
@@ -85,9 +96,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     MessageBox.Show(this, "Ingrese una cantidad de merma mayor que cero.", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
-                if (merma + cantidad > _disponible)
+                if (!_permiteAjusteInicial && merma + cantidad > _disponible)
                 {
-                    MessageBox.Show(this, $"La transferencia ({cantidad:N2}) más la merma ({merma:N2}) no puede superar el pendiente ({_disponible:N2}).", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, $"La transferencia ({cantidad:N2}) mas la merma ({merma:N2}) no puede superar el pendiente ({_disponible:N2}).", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(ObservacionMerma))
@@ -100,7 +111,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             }
             if (string.IsNullOrWhiteSpace(Clave))
             {
-                MessageBox.Show(this, "Ingrese la clave del usuario en sesión.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, "Ingrese la clave del usuario en sesion.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             DialogResult = true;

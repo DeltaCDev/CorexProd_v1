@@ -179,7 +179,16 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             }
 
             bool esTerminacion = celda.Area.EsTermino;
-            TransferirProductoWindow ventana = new(celda.Area, esTerminacion ? "Productos terminados" : celda.AreaDestino, esTerminacion) { Owner = this };
+            OrdenTrabajoDetalle? detalle = _ot.Detalles.FirstOrDefault(x => x.IdDetalleOT == celda.Area.IdDetalleOT);
+            bool permiteAjusteInicial = celda.EsPrimerProceso && detalle?.Estado == "PENDIENTE";
+            TransferirProductoWindow ventana = new(
+                celda.Area,
+                esTerminacion ? "Productos terminados" : celda.AreaDestino,
+                esTerminacion,
+                permiteAjusteInicial)
+            {
+                Owner = this
+            };
             if (ventana.ShowDialog() != true) return;
             try
             {
@@ -187,6 +196,25 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Usuario autoriza = _negocio.Autorizar(nombreUsuario, ventana.Clave);
                 OrdenTrabajoTransferenciaItem item = new() { IdDetalleOT = celda.Area.IdDetalleOT, Cantidad = ventana.Cantidad };
                 int idSesion = SessionManager.UsuarioActual?.IdUsuario ?? 0;
+                if (permiteAjusteInicial)
+                {
+                    decimal cantidadLanzada = ventana.Cantidad + (ventana.RegistrarMerma ? ventana.CantidadMerma : 0);
+                    _negocio.Lanzar(
+                        _id,
+                        idSesion,
+                        autoriza,
+                        [
+                            new OrdenTrabajoLanzamiento
+                            {
+                                IdDetalleOT = celda.Area.IdDetalleOT,
+                                CantidadLanzada = cantidadLanzada,
+                                Motivo = detalle != null && cantidadLanzada != detalle.CantidadPlanificada ? "AJUSTE POR APROVECHAMIENTO" : string.Empty,
+                                Observacion = cantidadLanzada > celda.Area.CantidadPendiente
+                                    ? $"Cantidad ajustada en area de inicio de {celda.Area.CantidadPendiente:N2} a {cantidadLanzada:N2}."
+                                    : string.Empty
+                            }
+                        ]);
+                }
                 long operacion = ventana.RegistrarMerma
                     ? esTerminacion
                         ? _negocio.TerminarConMerma(_id, celda.Area.IdAreaProduccion, celda.Area.IdDetalleArea, idSesion, autoriza, ventana.CantidadMerma, ventana.MotivoMerma, ventana.ObservacionMerma, [item])
@@ -284,11 +312,13 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             public string AreaDestino { get; }
             public Brush Fondo { get; }
             public Brush TextoColor { get; }
+            public bool EsPrimerProceso { get; }
             public string Ayuda => Area.EsTermino ? "Clic para ingresar a productos terminados" : Area.CantidadPendiente > 0 ? $"Clic para transferir a {AreaDestino}" : $"Sin stock disponible en {Area.NombreArea}";
             public ResumenAreaCelda(OrdenTrabajoDetalleArea area, string destino, int indice)
             {
                 Area = area;
                 AreaDestino = destino;
+                EsPrimerProceso = indice == 0;
                 bool pendiente = area.CantidadPendiente > 0;
                 Color fuerte = indice % 3 == 0 ? Color.FromRgb(255, 87, 34) : indice % 3 == 1 ? Color.FromRgb(33, 150, 243) : Color.FromRgb(255, 193, 7);
                 Color suave = indice % 3 == 0 ? Color.FromRgb(255, 204, 188) : indice % 3 == 1 ? Color.FromRgb(187, 222, 251) : Color.FromRgb(255, 236, 179);
