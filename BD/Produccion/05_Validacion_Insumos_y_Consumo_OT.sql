@@ -56,8 +56,19 @@ BEGIN
     ;WITH ProductosOCI AS
     (
         SELECT d.IdOrdenCompraInternaDetalle,d.IdProducto,d.CodigoProducto,d.NombreProducto,d.Observacion,
-               CONVERT(DECIMAL(18,3),d.Cantidad-d.CantidadDespachada) CantidadRequerida
-        FROM dbo.OrdenCompraInternaDetalle d WHERE d.IdOrdenCompraInterna=@IdOrdenCompraInterna AND d.Cantidad>d.CantidadDespachada
+               CONVERT(DECIMAL(18,3),d.Cantidad-CASE WHEN d.CantidadDespachada>ISNULL(prod.CantidadAplicada,0) THEN d.CantidadDespachada ELSE ISNULL(prod.CantidadAplicada,0) END) CantidadRequerida
+        FROM dbo.OrdenCompraInternaDetalle d
+        OUTER APPLY
+        (
+            SELECT SUM(od.CantidadAplicada) CantidadAplicada
+            FROM dbo.OrdenTrabajoDetalle od
+            JOIN dbo.OrdenTrabajo ot ON ot.IdOrdenTrabajo=od.IdOrdenTrabajo
+            WHERE od.IdOrdenCompraInternaDetalle=d.IdOrdenCompraInternaDetalle
+              AND ot.Estado<>'ANULADA'
+              AND od.Estado<>'ANULADO'
+        )prod
+        WHERE d.IdOrdenCompraInterna=@IdOrdenCompraInterna
+          AND d.Cantidad-CASE WHEN d.CantidadDespachada>ISNULL(prod.CantidadAplicada,0) THEN d.CantidadDespachada ELSE ISNULL(prod.CantidadAplicada,0) END>0
     ), Ficha AS
     (
         SELECT p.*,f.IdFichaTecnica,ROW_NUMBER()OVER(PARTITION BY p.IdProducto ORDER BY f.Version DESC,f.IdFichaTecnica DESC) rn
@@ -97,7 +108,18 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @IdProducto INT,@Cantidad DECIMAL(18,3),@IdFicha INT;
-    SELECT @IdProducto=IdProducto,@Cantidad=Cantidad-CantidadDespachada FROM dbo.OrdenCompraInternaDetalle WHERE IdOrdenCompraInternaDetalle=@IdOrdenCompraInternaDetalle;
+    SELECT @IdProducto=d.IdProducto,@Cantidad=d.Cantidad-CASE WHEN d.CantidadDespachada>ISNULL(prod.CantidadAplicada,0) THEN d.CantidadDespachada ELSE ISNULL(prod.CantidadAplicada,0) END
+    FROM dbo.OrdenCompraInternaDetalle d
+    OUTER APPLY
+    (
+        SELECT SUM(od.CantidadAplicada) CantidadAplicada
+        FROM dbo.OrdenTrabajoDetalle od
+        JOIN dbo.OrdenTrabajo ot ON ot.IdOrdenTrabajo=od.IdOrdenTrabajo
+        WHERE od.IdOrdenCompraInternaDetalle=d.IdOrdenCompraInternaDetalle
+          AND ot.Estado<>'ANULADA'
+          AND od.Estado<>'ANULADO'
+    )prod
+    WHERE d.IdOrdenCompraInternaDetalle=@IdOrdenCompraInternaDetalle;
     SELECT TOP(1)@IdFicha=IdFichaTecnica FROM dbo.FichaTecnica WHERE IdProducto=@IdProducto AND Estado=1 ORDER BY Version DESC,IdFichaTecnica DESC;
     SELECT fd.IdInsumo,i.Codigo CodigoInsumo,i.NombreInsumo,um.Abreviatura UnidadMedida,CONVERT(DECIMAL(18,3),fd.Cantidad) ConsumoUnitario,@Cantidad CantidadProduccion,
            CONVERT(DECIMAL(18,3),fd.Cantidad*@Cantidad) CantidadNecesaria,CONVERT(DECIMAL(18,3),ISNULL(si.StockActual,0)) StockActual,

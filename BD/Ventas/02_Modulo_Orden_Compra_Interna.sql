@@ -799,7 +799,7 @@ BEGIN
                   AND OD.Estado <> 'ANULADO'
             ) PROD
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - ISNULL(PROD.CantidadAplicada, 0) > 0
+              AND D.Cantidad - CASE WHEN D.CantidadDespachada>ISNULL(PROD.CantidadAplicada,0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada,0) END > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
@@ -867,7 +867,7 @@ BEGIN
                   AND OD.Estado <> 'ANULADO'
             ) PROD
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - ISNULL(PROD.CantidadAplicada, 0) > 0
+              AND D.Cantidad - CASE WHEN D.CantidadDespachada>ISNULL(PROD.CantidadAplicada,0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada,0) END > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
