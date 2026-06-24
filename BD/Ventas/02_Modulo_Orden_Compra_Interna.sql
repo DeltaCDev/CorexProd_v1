@@ -777,12 +777,29 @@ BEGIN
         O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
-        CAST(CASE WHEN O.Estado <> 'Anulado' AND O.TieneOrdenTrabajo = 0 AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado'
+             AND NOT EXISTS
+             (
+                 SELECT 1
+                 FROM dbo.OrdenTrabajo OT
+                 WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                   AND OT.Estado IN ('PENDIENTE','EMITIDA','EN_PROCESO','PARCIAL')
+             )
+             AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
+            OUTER APPLY
+            (
+                SELECT SUM(OD.CantidadAplicada) CantidadAplicada
+                FROM dbo.OrdenTrabajoDetalle OD
+                JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+                WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+                  AND OT.Estado <> 'ANULADA'
+                  AND OD.Estado <> 'ANULADO'
+            ) PROD
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - D.CantidadDespachada > 0
+              AND D.Cantidad - ISNULL(PROD.CantidadAplicada, 0) > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
@@ -828,12 +845,29 @@ BEGIN
         O.FechaAnulacion,
         O.TieneGuiaSalida,
         O.TieneOrdenTrabajo,
-        CAST(CASE WHEN O.Estado <> 'Anulado' AND O.TieneOrdenTrabajo = 0 AND EXISTS
+        CAST(CASE WHEN O.Estado <> 'Anulado'
+             AND NOT EXISTS
+             (
+                 SELECT 1
+                 FROM dbo.OrdenTrabajo OT
+                 WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                   AND OT.Estado IN ('PENDIENTE','EMITIDA','EN_PROCESO','PARCIAL')
+             )
+             AND EXISTS
         (
             SELECT 1
             FROM dbo.OrdenCompraInternaDetalle D
+            OUTER APPLY
+            (
+                SELECT SUM(OD.CantidadAplicada) CantidadAplicada
+                FROM dbo.OrdenTrabajoDetalle OD
+                JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+                WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+                  AND OT.Estado <> 'ANULADA'
+                  AND OD.Estado <> 'ANULADO'
+            ) PROD
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-              AND D.Cantidad - D.CantidadDespachada > 0
+              AND D.Cantidad - ISNULL(PROD.CantidadAplicada, 0) > 0
         ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (

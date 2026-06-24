@@ -65,7 +65,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             productoStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
             productoStyle.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(4, 6, 4, 6)));
 
-            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Codigo", Binding = new Binding("Codigo"), Width = 90 });
+            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Codigo", Binding = new Binding("Codigo"), Width = 80 });
             ResumenGrid.Columns.Add(new DataGridTextColumn
             {
                 Header = "Nombre de producto",
@@ -73,7 +73,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Width = 270,
                 ElementStyle = productoStyle
             });
-            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Cant.\nRequerida", Binding = new Binding("Cantidad") { StringFormat = "N2" }, Width = 70 });
+            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Cant.\nRequerida", Binding = new Binding("Cantidad") { StringFormat = "N2" }, Width = 90 });
 
             List<OrdenTrabajoDetalleArea> areas = _ot.Areas.GroupBy(x => x.IdAreaProduccion).Select(g => g.First()).OrderBy(x => x.OrdenSecuencia).ToList();
             for (int i = 0; i < areas.Count; i++)
