@@ -22,7 +22,8 @@ namespace CorexProd.Negocio.Negocio
         public Usuario Autorizar(string usuario,string clave)
         {
             Usuario? u=_usuarios.Login(usuario.Trim());
-            if(u==null || !u.Estado || !PasswordService.VerifyPassword(clave,u.Clave)) throw new InvalidOperationException("Las credenciales del usuario autorizador no son válidas.");
+            if(u==null || !u.Estado) throw new InvalidOperationException("Usuario autorizador no válido.");
+            if(!PasswordService.VerifyPassword(clave,u.Clave)) throw new InvalidOperationException("Clave incorrecta.");
             return u;
         }
 

@@ -1,9 +1,11 @@
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Reportes.Views;
 using CorexProd.WPF.ViewModels;
 using System;
 using System.Data;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Reportes.ViewModels
@@ -69,7 +71,14 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
 
             try
             {
-                OciDetalle = _negocio.OciDespachadaDetalle(idOrdenCompraInterna).DefaultView;
+                DataView detalle = _negocio.OciDespachadaDetalle(idOrdenCompraInterna).DefaultView;
+
+                OciDespachadaDetalleWindow ventana = new(fila, detalle)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+
+                ventana.ShowDialog();
             }
             catch (Exception ex)
             {

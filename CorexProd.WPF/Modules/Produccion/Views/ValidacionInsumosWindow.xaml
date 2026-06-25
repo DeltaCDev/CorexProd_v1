@@ -73,6 +73,9 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Cantidad a elaborar"
+                                        Binding="{Binding CantidadRequerida, StringFormat=N3}"
+                                        Width="140"/>
                     <DataGridTemplateColumn Header="Estado" Width="180">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

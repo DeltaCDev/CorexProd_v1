@@ -67,7 +67,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             productoStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
             productoStyle.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(4, 6, 4, 6)));
 
-            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Codigo", Binding = new Binding("Codigo"), Width = 80 });
+            ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Codigo", Binding = new Binding("Codigo"), Width = 115 });
             ResumenGrid.Columns.Add(new DataGridTextColumn
             {
                 Header = "Nombre de producto",

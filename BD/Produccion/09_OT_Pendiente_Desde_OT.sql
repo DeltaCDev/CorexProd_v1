@@ -50,18 +50,30 @@ BEGIN
              AND EXISTS
              (
                  SELECT 1
-                 FROM dbo.OrdenCompraInternaDetalle D
-                 OUTER APPLY
+                 FROM
                  (
-                     SELECT SUM(OD.CantidadAplicada) CantidadAplicada
-                     FROM dbo.OrdenTrabajoDetalle OD
-                     JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
-                     WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
-                       AND OT.Estado <> 'ANULADA'
-                       AND OD.Estado <> 'ANULADO'
-                 ) PROD
-                 WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-                   AND D.Cantidad - CASE WHEN D.CantidadDespachada>ISNULL(PROD.CantidadAplicada,0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada,0) END > 0
+                     SELECT
+                         D.IdProducto,
+                         SUM(CASE
+                             WHEN D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END > 0
+                                 THEN D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
+                             ELSE 0
+                         END) AS CantidadPendiente
+                     FROM dbo.OrdenCompraInternaDetalle D
+                     OUTER APPLY
+                     (
+                         SELECT SUM(OD.CantidadAplicada) CantidadAplicada
+                         FROM dbo.OrdenTrabajoDetalle OD
+                         JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+                         WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+                           AND OT.Estado <> 'ANULADA'
+                           AND OD.Estado <> 'ANULADO'
+                     ) PROD
+                     WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                     GROUP BY D.IdProducto
+                 ) PEND
+                 LEFT JOIN dbo.StockProductos S ON S.IdProducto = PEND.IdProducto
+                 WHERE PEND.CantidadPendiente > ISNULL(S.StockActual, 0)
              ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (
@@ -118,18 +130,30 @@ BEGIN
              AND EXISTS
              (
                  SELECT 1
-                 FROM dbo.OrdenCompraInternaDetalle D
-                 OUTER APPLY
+                 FROM
                  (
-                     SELECT SUM(OD.CantidadAplicada) CantidadAplicada
-                     FROM dbo.OrdenTrabajoDetalle OD
-                     JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
-                     WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
-                       AND OT.Estado <> 'ANULADA'
-                       AND OD.Estado <> 'ANULADO'
-                 ) PROD
-                 WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-                   AND D.Cantidad - CASE WHEN D.CantidadDespachada>ISNULL(PROD.CantidadAplicada,0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada,0) END > 0
+                     SELECT
+                         D.IdProducto,
+                         SUM(CASE
+                             WHEN D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END > 0
+                                 THEN D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
+                             ELSE 0
+                         END) AS CantidadPendiente
+                     FROM dbo.OrdenCompraInternaDetalle D
+                     OUTER APPLY
+                     (
+                         SELECT SUM(OD.CantidadAplicada) CantidadAplicada
+                         FROM dbo.OrdenTrabajoDetalle OD
+                         JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+                         WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+                           AND OT.Estado <> 'ANULADA'
+                           AND OD.Estado <> 'ANULADO'
+                     ) PROD
+                     WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+                     GROUP BY D.IdProducto
+                 ) PEND
+                 LEFT JOIN dbo.StockProductos S ON S.IdProducto = PEND.IdProducto
+                 WHERE PEND.CantidadPendiente > ISNULL(S.StockActual, 0)
              ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
         CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
         (

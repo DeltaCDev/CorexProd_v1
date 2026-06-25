@@ -236,7 +236,31 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
             {
-                NotificationService.Success(mensaje);
+                OrdenCompraInterna? ociGenerada = _ordenCompraInternaNegocio
+                    .Listar()
+                    .Where(oci => oci.IdProforma == proforma.IdProforma)
+                    .OrderByDescending(oci => oci.FechaRegistro)
+                    .FirstOrDefault();
+
+                if (ociGenerada != null)
+                {
+                    ociGenerada = _ordenCompraInternaNegocio.Obtener(ociGenerada.IdOrdenCompraInterna) ?? ociGenerada;
+                    string productos = ociGenerada.Detalles.Count == 0
+                        ? "Sin detalle de productos."
+                        : string.Join(Environment.NewLine, ociGenerada.Detalles.Select(detalle =>
+                            $"• {detalle.CodigoProducto} - {detalle.NombreProducto} | Cantidad: {detalle.Cantidad:N2}"));
+
+                    MessageBox.Show(
+                        $"Se generó la OCI correctamente: {ociGenerada.NumeroOci}.\n\nPor los siguientes productos:\n{productos}",
+                        "OCI generada correctamente",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    NotificationService.Success(mensaje);
+                }
+
                 CargarProformas();
             }
             else

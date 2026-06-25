@@ -130,8 +130,15 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     ObservacionText.Text.Trim(),
                     items);
 
-                NotificationService.Success(
-                    $"Se creo {numero} con {items.Count} producto(s). La OCI paso a PROCESO.");
+                string productos = string.Join(Environment.NewLine, _productos.Select(producto =>
+                    $"• {producto.CodigoProducto} - {producto.NombreProducto} | Cantidad: {producto.CantidadRequerida:N3}"));
+
+                MessageBox.Show(
+                    $"Se generó la OT correctamente: {numero}.\n\nPara producir los siguientes productos:\n{productos}",
+                    "OT generada correctamente",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
                 DialogResult = true;
             }
             catch (Exception ex)

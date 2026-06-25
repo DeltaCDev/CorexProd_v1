@@ -60,7 +60,7 @@ namespace CorexProd.WPF.ViewModels
 
                 if (usuarioLogueado == null)
                 {
-                    Mensaje = "Usuario o contraseña incorrectos";
+                    Mensaje = "Clave incorrecta.";
                     return;
                 }
 
