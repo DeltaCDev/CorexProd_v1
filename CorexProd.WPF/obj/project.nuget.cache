@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "HsJAKvi4Ewk=",
+  "dgSpecHash": "tHiDFTe3xKo=",
   "success": true,
   "projectFilePath": "D:\\CorexProd_v1\\CorexProd.WPF\\CorexProd.WPF.csproj",
   "expectedPackageFiles": [
@@ -24,6 +24,7 @@
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\8.16.0\\microsoft.identitymodel.protocols.openidconnect.8.16.0.nupkg.sha512",
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.16.0\\microsoft.identitymodel.tokens.8.16.0.nupkg.sha512",
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\microsoft.sqlserver.server\\1.0.0\\microsoft.sqlserver.server.1.0.0.nupkg.sha512",
+    "C:\\Users\\Luis Solis B\\.nuget\\packages\\microsoft.web.webview2\\1.0.4022.49\\microsoft.web.webview2.1.0.4022.49.nupkg.sha512",
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
     "C:\\Users\\Luis Solis B\\.nuget\\packages\\runtime.win-x64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",

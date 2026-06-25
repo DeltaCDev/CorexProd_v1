@@ -15,8 +15,8 @@
         <Border Grid.Row="2" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14">
             <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowHeight="48">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="120"/>
-                    <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="360">
+                    <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="100"/>
+                    <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="300">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding NombreProducto}"
@@ -32,7 +32,7 @@
                     <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="90"/>
                     <DataGridTextColumn Header="Despachada" Binding="{Binding CantidadDespachada, StringFormat=N2}" Width="95"/>
                     <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="90"/>
-                    <DataGridTemplateColumn Header="Estado de envío" Width="240">
+                    <DataGridTemplateColumn Header="Estado de envío" Width="285">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border CornerRadius="8"
@@ -41,7 +41,8 @@
                                         Background="{Binding EstadoEnvioFondo}">
                                     <TextBlock Text="{Binding EstadoEnvioStock}"
                                                FontWeight="SemiBold"
-                                               Foreground="{Binding EstadoEnvioColor}"/>
+                                               Foreground="{Binding EstadoEnvioColor}"
+                                               TextWrapping="NoWrap"/>
                                 </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

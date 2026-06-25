@@ -4,7 +4,6 @@ using CorexProd.WPF.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -74,11 +73,16 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     return;
                 }
 
-                string rutaPdf = Path.Combine(rutaBase, $"{producto.CodigoProducto}.pdf");
+                string? rutaPdf = FichaTecnicaArchivoHelper.BuscarRutaPdf(
+                    rutaBase,
+                    producto.CodigoProducto);
 
-                if (!File.Exists(rutaPdf))
+                if (rutaPdf == null)
                 {
-                    NotificationService.Warning($"No hay ficha tecnica en la ruta:\n{rutaPdf}");
+                    string rutaEsperada = FichaTecnicaArchivoHelper.RutaEsperada(
+                        rutaBase,
+                        producto.CodigoProducto);
+                    NotificationService.Warning($"No hay ficha tecnica en la ruta:\n{rutaEsperada}");
                     return;
                 }
 
@@ -130,14 +134,19 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     ObservacionText.Text.Trim(),
                     items);
 
-                string productos = string.Join(Environment.NewLine, _productos.Select(producto =>
-                    $"• {producto.CodigoProducto} - {producto.NombreProducto} | Cantidad: {producto.CantidadRequerida:N3}"));
-
-                MessageBox.Show(
-                    $"Se generó la OT correctamente: {numero}.\n\nPara producir los siguientes productos:\n{productos}",
+                new DocumentoGeneradoResumenWindow(
                     "OT generada correctamente",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    $"Se generó la OT correctamente: {numero}.",
+                    "Para producir los siguientes productos:",
+                    _productos.Select(producto => new DocumentoGeneradoProducto
+                    {
+                        Codigo = producto.CodigoProducto,
+                        Producto = producto.NombreProducto,
+                        Cantidad = producto.CantidadRequerida
+                    }))
+                {
+                    Owner = this
+                }.ShowDialog();
 
                 DialogResult = true;
             }

@@ -588,11 +588,16 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                     return;
                 }
 
-                string rutaPdf = Path.Combine(rutaBase, $"{codigo}.pdf");
+                string? rutaPdf = FichaTecnicaArchivoHelper.BuscarRutaPdf(
+                    rutaBase,
+                    codigo);
 
-                if (!File.Exists(rutaPdf))
+                if (rutaPdf == null)
                 {
-                    NotificationService.Warning($"No se encontró la ficha técnica:\n{rutaPdf}");
+                    string rutaEsperada = FichaTecnicaArchivoHelper.RutaEsperada(
+                        rutaBase,
+                        codigo);
+                    NotificationService.Warning($"No se encontró la ficha técnica:\n{rutaEsperada}");
                     return;
                 }
 

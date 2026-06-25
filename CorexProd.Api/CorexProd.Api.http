@@ -1,0 +1,6 @@
+@CorexProd.Api_HostAddress = http://localhost:5008
+
+GET {{CorexProd.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

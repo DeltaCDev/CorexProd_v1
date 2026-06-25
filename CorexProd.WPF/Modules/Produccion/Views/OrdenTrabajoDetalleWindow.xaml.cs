@@ -16,9 +16,12 @@ namespace CorexProd.WPF.Modules.Produccion.Views
     {
         private readonly int _id;
         private readonly OrdenTrabajoNegocio _negocio = new();
+        private readonly OrdenCompraInternaNegocio _ociNegocio = new();
+        private readonly ParametroNegocio _parametroNegocio = new();
         private OrdenTrabajo _ot = null!;
         private List<OrdenTrabajoDetalleArea> _visibles = [];
         private readonly bool _puedeOperarOt;
+        private Dictionary<int, string> _observacionesDetalleOci = [];
 
         public OrdenTrabajoDetalleWindow(int id)
         {
@@ -39,6 +42,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private void Cargar()
         {
             _ot = _negocio.Obtener(_id) ?? throw new InvalidOperationException("No se encontró la OT.");
+            _observacionesDetalleOci = _ociNegocio.Obtener(_ot.IdOrdenCompraInterna)?
+                .Detalles
+                .ToDictionary(x => x.IdOrdenCompraInternaDetalle, x => x.Observacion ?? string.Empty)
+                ?? [];
             NumeroText.Text = $"Número OT: {_ot.NumeroOT}";
             OciText.Text = $"Número OCI: {_ot.NumeroOci}";
             OrdenCompraText.Text = $"Orden de compra: {_ot.OrdenCompraCliente}";
@@ -60,6 +67,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             tabla.Columns.Add("Codigo", typeof(string));
             tabla.Columns.Add("Producto", typeof(string));
             tabla.Columns.Add("Cantidad", typeof(decimal));
+            tabla.Columns.Add("Detalle", typeof(OrdenTrabajoDetalle));
 
             Style productoStyle = new(typeof(TextBlock));
             productoStyle.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap));
@@ -75,6 +83,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Width = 270,
                 ElementStyle = productoStyle
             });
+            ResumenGrid.Columns.Add(CrearColumnaFichaTecnica());
             ResumenGrid.Columns.Add(new DataGridTextColumn { Header = "Cant.\nRequerida", Binding = new Binding("Cantidad") { StringFormat = "N2" }, Width = 90 });
 
             List<OrdenTrabajoDetalleArea> areas = _ot.Areas.GroupBy(x => x.IdAreaProduccion).Select(g => g.First()).OrderBy(x => x.OrdenSecuencia).ToList();
@@ -103,6 +112,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 fila["Codigo"] = detalle.CodigoProducto;
                 fila["Producto"] = detalle.NombreProducto;
                 fila["Cantidad"] = detalle.CantidadRequerida;
+                fila["Detalle"] = detalle;
                 for (int i = 0; i < areas.Count; i++)
                 {
                     OrdenTrabajoDetalleArea? area = _ot.Areas.FirstOrDefault(x => x.IdDetalleOT == detalle.IdDetalleOT && x.IdAreaProduccion == areas[i].IdAreaProduccion);
@@ -123,6 +133,66 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 tabla.Rows.Add(fila);
             }
             ResumenGrid.ItemsSource = tabla.DefaultView;
+        }
+
+        private DataGridTemplateColumn CrearColumnaFichaTecnica()
+        {
+            FrameworkElementFactory boton = new(typeof(Button));
+            boton.SetValue(ContentControl.ContentProperty, "Ver");
+            boton.SetBinding(FrameworkElement.TagProperty, new Binding("Detalle"));
+            boton.SetValue(FrameworkElement.ToolTipProperty, "Ver ficha técnica y observaciones");
+            boton.SetValue(Control.PaddingProperty, new Thickness(8, 3, 8, 3));
+            boton.SetValue(Control.MarginProperty, new Thickness(4));
+            boton.SetValue(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Center);
+            boton.SetValue(Control.VerticalContentAlignmentProperty, VerticalAlignment.Center);
+            boton.AddHandler(Button.ClickEvent, new RoutedEventHandler(VerFichaTecnica_Click));
+
+            return new DataGridTemplateColumn
+            {
+                Header = "Ficha / Obs.",
+                Width = 85,
+                CellTemplate = new DataTemplate { VisualTree = boton }
+            };
+        }
+
+        private void VerFichaTecnica_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.Tag is not OrdenTrabajoDetalle detalle)
+                return;
+
+            string observacionOci = _observacionesDetalleOci.TryGetValue(detalle.IdOrdenCompraInternaDetalle, out string? obs)
+                ? obs
+                : string.Empty;
+            string observacion = string.Join(
+                Environment.NewLine + Environment.NewLine,
+                new[]
+                {
+                    observacionOci,
+                    detalle.ObservacionDiferencia
+                }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+            new FichaTecnicaProductoPreviewWindow(
+                detalle.CodigoProducto,
+                detalle.NombreProducto,
+                observacion,
+                ObtenerRutaFichaTecnica(detalle.CodigoProducto))
+            {
+                Owner = this
+            }.ShowDialog();
+        }
+
+        private string? ObtenerRutaFichaTecnica(string codigoProducto)
+        {
+            if (string.IsNullOrWhiteSpace(codigoProducto))
+                return null;
+
+            var parametroRuta = _parametroNegocio.ObtenerPorCodigo("RUTA_FICHA_TECNICA");
+            if (parametroRuta == null || string.IsNullOrWhiteSpace(parametroRuta.ValorParametro))
+                return null;
+
+            return FichaTecnicaArchivoHelper.BuscarRutaPdf(
+                parametroRuta.ValorParametro,
+                codigoProducto);
         }
 
         private DataGridTemplateColumn CrearColumnaArea(OrdenTrabajoDetalleArea area, string propiedad, int indice)

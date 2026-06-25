@@ -295,6 +295,10 @@
               "target": "Package",
               "version": "[3.5.1, )"
             },
+            "Microsoft.Web.WebView2": {
+              "target": "Package",
+              "version": "[1.0.4022.49, )"
+            },
             "System.Configuration.ConfigurationManager": {
               "target": "Package",
               "version": "[10.0.7, )"

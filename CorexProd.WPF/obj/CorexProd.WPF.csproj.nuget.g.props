@@ -14,6 +14,7 @@
     <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_Web_WebView2 Condition=" '$(PkgMicrosoft_Web_WebView2)' == '' ">C:\Users\Luis Solis B\.nuget\packages\microsoft.web.webview2\1.0.4022.49</PkgMicrosoft_Web_WebView2>
     <PkgHandyControl Condition=" '$(PkgHandyControl)' == '' ">C:\Users\Luis Solis B\.nuget\packages\handycontrol\3.5.1</PkgHandyControl>
   </PropertyGroup>
 </Project>

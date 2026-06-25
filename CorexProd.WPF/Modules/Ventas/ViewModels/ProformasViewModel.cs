@@ -2,6 +2,7 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Produccion.Views;
 using CorexProd.WPF.Modules.Ventas.Views;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
@@ -245,16 +246,19 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 if (ociGenerada != null)
                 {
                     ociGenerada = _ordenCompraInternaNegocio.Obtener(ociGenerada.IdOrdenCompraInterna) ?? ociGenerada;
-                    string productos = ociGenerada.Detalles.Count == 0
-                        ? "Sin detalle de productos."
-                        : string.Join(Environment.NewLine, ociGenerada.Detalles.Select(detalle =>
-                            $"• {detalle.CodigoProducto} - {detalle.NombreProducto} | Cantidad: {detalle.Cantidad:N2}"));
-
-                    MessageBox.Show(
-                        $"Se generó la OCI correctamente: {ociGenerada.NumeroOci}.\n\nPor los siguientes productos:\n{productos}",
+                    new DocumentoGeneradoResumenWindow(
                         "OCI generada correctamente",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        $"Se generó la OCI correctamente: {ociGenerada.NumeroOci}.",
+                        "Por los siguientes productos:",
+                        ociGenerada.Detalles.Select(detalle => new DocumentoGeneradoProducto
+                        {
+                            Codigo = detalle.CodigoProducto,
+                            Producto = detalle.NombreProducto,
+                            Cantidad = detalle.Cantidad
+                        }))
+                    {
+                        Owner = Application.Current.MainWindow
+                    }.ShowDialog();
                 }
                 else
                 {
