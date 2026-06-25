@@ -17,6 +17,8 @@ namespace CorexProd.WPF.Helpers
         public int NumeroLinea { get; set; }
         public string Codigo { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
+        public int IdSuperCategoriaProducto { get; set; }
+        public string NombreSuperCategoria { get; set; } = string.Empty;
         public int IdCategoriaProducto { get; set; }
         public string NombreCategoria { get; set; } = string.Empty;
         public int IdUnidadMedida { get; set; }
@@ -61,6 +63,7 @@ namespace CorexProd.WPF.Helpers
                 Codigo = Codigo,
                 NombreProducto = NombreProducto,
                 Descripcion = string.Empty,
+                IdSuperCategoriaProducto = IdSuperCategoriaProducto,
                 IdCategoriaProducto = IdCategoriaProducto,
                 IdUnidadMedida = IdUnidadMedida,
                 StockMinimo = StockMinimo,
@@ -86,6 +89,7 @@ namespace CorexProd.WPF.Helpers
         public static CreacionMasivaProductosResultado Procesar(
             string texto,
             IEnumerable<Producto> productosExistentes,
+            IEnumerable<SuperCategoriaProducto> superCategorias,
             IEnumerable<CategoriaProducto> categorias,
             IEnumerable<UnidadMedida> unidadesMedida)
         {
@@ -95,7 +99,14 @@ namespace CorexProd.WPF.Helpers
                 .Where(codigo => !string.IsNullOrWhiteSpace(codigo))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             HashSet<string> codigosCarga = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<int, SuperCategoriaProducto> superCategoriasPorId = superCategorias.ToDictionary(superCategoria => superCategoria.IdSuperCategoriaProducto);
+            Dictionary<string, List<SuperCategoriaProducto>> superCategoriasPorNombre = superCategorias
+                .GroupBy(superCategoria => superCategoria.NombreSuperCategoria.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.ToList(), StringComparer.OrdinalIgnoreCase);
             Dictionary<int, CategoriaProducto> categoriasPorId = categorias.ToDictionary(categoria => categoria.IdCategoriaProducto);
+            Dictionary<string, List<CategoriaProducto>> categoriasPorNombre = categorias
+                .GroupBy(categoria => categoria.NombreCategoria.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.ToList(), StringComparer.OrdinalIgnoreCase);
             Dictionary<int, UnidadMedida> unidadesPorId = unidadesMedida.ToDictionary(unidad => unidad.IdUnidadMedida);
 
             string[] lineas = (texto ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
@@ -115,9 +126,9 @@ namespace CorexProd.WPF.Helpers
                     ? linea.Split('\t', StringSplitOptions.None)
                     : linea.Split(';', StringSplitOptions.None);
 
-                if (columnas.Length != 5)
+                if (columnas.Length != 5 && columnas.Length != 6)
                 {
-                    resultado.Filas.Add(CrearError(numeroLinea, columnas.FirstOrDefault()?.Trim().ToUpperInvariant() ?? string.Empty, "Cantidad incorrecta de columnas"));
+                    resultado.Filas.Add(CrearError(numeroLinea, columnas.FirstOrDefault()?.Trim().ToUpperInvariant() ?? string.Empty, "Cantidad incorrecta de columnas. Use 5 columnas o 6 si incluye supercategoría"));
                     continue;
                 }
 
@@ -126,7 +137,10 @@ namespace CorexProd.WPF.Helpers
                     columnas,
                     codigosExistentes,
                     codigosCarga,
+                    superCategoriasPorId,
+                    superCategoriasPorNombre,
                     categoriasPorId,
+                    categoriasPorNombre,
                     unidadesPorId);
 
                 resultado.Filas.Add(fila);
@@ -140,16 +154,21 @@ namespace CorexProd.WPF.Helpers
             string[] columnas,
             HashSet<string> codigosExistentes,
             HashSet<string> codigosCarga,
+            Dictionary<int, SuperCategoriaProducto> superCategoriasPorId,
+            Dictionary<string, List<SuperCategoriaProducto>> superCategoriasPorNombre,
             Dictionary<int, CategoriaProducto> categoriasPorId,
+            Dictionary<string, List<CategoriaProducto>> categoriasPorNombre,
             Dictionary<int, UnidadMedida> unidadesPorId)
         {
             List<string> errores = [];
             string codigoOriginal = columnas[0];
             string codigo = codigoOriginal.Trim().ToUpperInvariant();
             string nombre = columnas[1].Trim();
-            string categoriaTexto = columnas[2].Trim();
-            string unidadTexto = columnas[3].Trim();
-            string stockTexto = columnas[4].Trim();
+            bool incluyeSuperCategoria = columnas.Length == 6;
+            string superCategoriaTexto = incluyeSuperCategoria ? columnas[2].Trim() : string.Empty;
+            string categoriaTexto = columnas[incluyeSuperCategoria ? 3 : 2].Trim();
+            string unidadTexto = columnas[incluyeSuperCategoria ? 4 : 3].Trim();
+            string stockTexto = columnas[incluyeSuperCategoria ? 5 : 4].Trim();
 
             if (string.IsNullOrWhiteSpace(codigo))
             {
@@ -178,18 +197,39 @@ namespace CorexProd.WPF.Helpers
                 errores.Add("Nombre vacio");
             }
 
-            CategoriaProducto? categoria = null;
-            if (!int.TryParse(categoriaTexto, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idCategoria))
+            SuperCategoriaProducto? superCategoria = null;
+            if (!string.IsNullOrWhiteSpace(superCategoriaTexto))
             {
-                errores.Add("Categoria ID invalida");
+                superCategoria = ResolverSuperCategoria(superCategoriaTexto, superCategoriasPorId, superCategoriasPorNombre, errores);
             }
-            else if (!categoriasPorId.TryGetValue(idCategoria, out categoria))
-            {
-                errores.Add("Categoria inexistente");
-            }
-            else if (!categoria.Estado)
+
+            CategoriaProducto? categoria = ResolverCategoria(
+                categoriaTexto,
+                categoriasPorId,
+                categoriasPorNombre,
+                superCategoria,
+                errores);
+
+            if (categoria != null && !categoria.Estado)
             {
                 errores.Add("Categoria inactiva");
+            }
+
+            if (categoria != null)
+            {
+                if (superCategoria == null)
+                {
+                    superCategoriasPorId.TryGetValue(categoria.IdSuperCategoriaProducto, out superCategoria);
+                }
+                else if (categoria.IdSuperCategoriaProducto != superCategoria.IdSuperCategoriaProducto)
+                {
+                    errores.Add("La categoria no pertenece a la supercategoria indicada");
+                }
+            }
+
+            if (superCategoria != null && !superCategoria.Estado)
+            {
+                errores.Add("Supercategoria inactiva");
             }
 
             UnidadMedida? unidad = null;
@@ -229,6 +269,8 @@ namespace CorexProd.WPF.Helpers
                 NumeroLinea = numeroLinea,
                 Codigo = codigo,
                 NombreProducto = nombre,
+                IdSuperCategoriaProducto = superCategoria?.IdSuperCategoriaProducto ?? 0,
+                NombreSuperCategoria = superCategoria?.NombreSuperCategoria ?? string.Empty,
                 IdCategoriaProducto = categoria?.IdCategoriaProducto ?? 0,
                 NombreCategoria = categoria?.NombreCategoria ?? string.Empty,
                 IdUnidadMedida = unidad?.IdUnidadMedida ?? 0,
@@ -238,6 +280,97 @@ namespace CorexProd.WPF.Helpers
                 Estado = valido ? "Valido" : "Error",
                 Validacion = valido ? "Correcto" : string.Join("; ", errores)
             };
+        }
+
+        private static SuperCategoriaProducto? ResolverSuperCategoria(
+            string texto,
+            Dictionary<int, SuperCategoriaProducto> superCategoriasPorId,
+            Dictionary<string, List<SuperCategoriaProducto>> superCategoriasPorNombre,
+            List<string> errores)
+        {
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                return null;
+            }
+
+            if (int.TryParse(texto, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idSuperCategoria))
+            {
+                if (superCategoriasPorId.TryGetValue(idSuperCategoria, out SuperCategoriaProducto? superCategoriaPorId))
+                {
+                    return superCategoriaPorId;
+                }
+
+                errores.Add("Supercategoria inexistente");
+                return null;
+            }
+
+            if (!superCategoriasPorNombre.TryGetValue(texto.Trim(), out List<SuperCategoriaProducto>? coincidencias)
+                || coincidencias.Count == 0)
+            {
+                errores.Add("Supercategoria inexistente");
+                return null;
+            }
+
+            if (coincidencias.Count > 1)
+            {
+                errores.Add("Supercategoria ambigua");
+                return null;
+            }
+
+            return coincidencias[0];
+        }
+
+        private static CategoriaProducto? ResolverCategoria(
+            string texto,
+            Dictionary<int, CategoriaProducto> categoriasPorId,
+            Dictionary<string, List<CategoriaProducto>> categoriasPorNombre,
+            SuperCategoriaProducto? superCategoria,
+            List<string> errores)
+        {
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                errores.Add("Categoria vacia");
+                return null;
+            }
+
+            if (int.TryParse(texto, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idCategoria))
+            {
+                if (categoriasPorId.TryGetValue(idCategoria, out CategoriaProducto? categoriaPorId))
+                {
+                    return categoriaPorId;
+                }
+
+                errores.Add("Categoria inexistente");
+                return null;
+            }
+
+            if (!categoriasPorNombre.TryGetValue(texto.Trim(), out List<CategoriaProducto>? coincidencias)
+                || coincidencias.Count == 0)
+            {
+                errores.Add("Categoria inexistente");
+                return null;
+            }
+
+            if (superCategoria != null)
+            {
+                coincidencias = coincidencias
+                    .Where(categoria => categoria.IdSuperCategoriaProducto == superCategoria.IdSuperCategoriaProducto)
+                    .ToList();
+            }
+
+            if (coincidencias.Count == 0)
+            {
+                errores.Add("Categoria inexistente para la supercategoria indicada");
+                return null;
+            }
+
+            if (coincidencias.Count > 1)
+            {
+                errores.Add("Categoria ambigua. Indique la supercategoria o use el ID de categoria");
+                return null;
+            }
+
+            return coincidencias[0];
         }
 
         private static CreacionMasivaProductoFila CrearError(int numeroLinea, string codigo, string mensaje)

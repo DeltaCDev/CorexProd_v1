@@ -28,6 +28,21 @@ namespace CorexProd.Negocio.Negocio
             if (producto.IdCategoriaProducto <= 0)
                 return "Debe seleccionar una categoría.";
 
+            if (producto.IdSuperCategoriaProducto <= 0)
+            {
+                CategoriaProducto? categoria = new CategoriaProductoNegocio()
+                    .Listar()
+                    .Find(categoria => categoria.IdCategoriaProducto == producto.IdCategoriaProducto);
+
+                if (categoria != null)
+                {
+                    producto.IdSuperCategoriaProducto = categoria.IdSuperCategoriaProducto;
+                }
+            }
+
+            if (producto.IdSuperCategoriaProducto <= 0)
+                return "Debe seleccionar una supercategoría.";
+
             if (producto.IdUnidadMedida <= 0)
                 return "Debe seleccionar una unidad de medida.";
 

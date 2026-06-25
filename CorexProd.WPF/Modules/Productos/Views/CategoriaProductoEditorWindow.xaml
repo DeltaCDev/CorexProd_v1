@@ -87,6 +87,16 @@
                     <Run Text=" son obligatorios."/>
                 </TextBlock>
                 <StackPanel Margin="0,0,0,16">
+                    <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Supercategoría "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                    <ComboBox Height="32"
+                              Padding="6,0"
+                              VerticalContentAlignment="Center"
+                              ItemsSource="{Binding SuperCategorias}"
+                              DisplayMemberPath="NombreSuperCategoria"
+                              SelectedValuePath="IdSuperCategoriaProducto"
+                              SelectedValue="{Binding IdSuperCategoriaProducto}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,16">
                     <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Nombre Categoria "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
                     <TextBox Style="{StaticResource CampoTexto}" Text="{Binding NombreCategoria, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>

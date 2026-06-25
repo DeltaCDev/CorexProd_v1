@@ -25,6 +25,8 @@ namespace CorexProd.Datos.Datos
                 lista.Add(new CategoriaProducto
                 {
                     IdCategoriaProducto = Convert.ToInt32(dr["IdCategoriaProducto"]),
+                    IdSuperCategoriaProducto = Convert.ToInt32(dr["IdSuperCategoriaProducto"]),
+                    NombreSuperCategoria = dr["NombreSuperCategoria"]?.ToString() ?? string.Empty,
                     NombreCategoria = dr["NombreCategoria"]?.ToString() ?? string.Empty,
                     Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
                     Estado = Convert.ToBoolean(dr["Estado"]),
@@ -45,6 +47,7 @@ namespace CorexProd.Datos.Datos
 
             cmd.Parameters.AddWithValue("@NombreCategoria", categoria.NombreCategoria);
             cmd.Parameters.AddWithValue("@Descripcion", categoria.Descripcion);
+            cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", categoria.IdSuperCategoriaProducto);
 
             SqlParameter resultado = new("@Resultado", SqlDbType.Bit)
             {
@@ -78,6 +81,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@IdCategoriaProducto", categoria.IdCategoriaProducto);
             cmd.Parameters.AddWithValue("@NombreCategoria", categoria.NombreCategoria);
             cmd.Parameters.AddWithValue("@Descripcion", categoria.Descripcion);
+            cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", categoria.IdSuperCategoriaProducto);
             cmd.Parameters.AddWithValue("@Estado", categoria.Estado);
 
             SqlParameter resultado = new("@Resultado", SqlDbType.Bit)

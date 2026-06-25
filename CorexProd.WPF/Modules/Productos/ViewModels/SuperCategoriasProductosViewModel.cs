@@ -1,4 +1,4 @@
-﻿using CorexProd.Entidad.Entidades;
+using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
@@ -11,30 +11,17 @@ using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Productos.ViewModels
 {
-    public class CategoriasProductosViewModel : BaseViewModel
+    public class SuperCategoriasProductosViewModel : BaseViewModel
     {
-        private readonly CategoriaProductoNegocio _categoriaProductoNegocio = new();
         private readonly SuperCategoriaProductoNegocio _superCategoriaProductoNegocio = new();
 
-        private int _idCategoriaProducto;
         private int _idSuperCategoriaProducto;
-        private string _nombreCategoria = string.Empty;
+        private string _nombreSuperCategoria = string.Empty;
         private string _descripcion = string.Empty;
         private bool _estado = true;
-        private CategoriaProducto? _categoriaSeleccionada;
+        private SuperCategoriaProducto? _superCategoriaSeleccionada;
 
-        public ObservableCollection<CategoriaProducto> Categorias { get; set; } = [];
         public ObservableCollection<SuperCategoriaProducto> SuperCategorias { get; set; } = [];
-
-        public int IdCategoriaProducto
-        {
-            get => _idCategoriaProducto;
-            set
-            {
-                _idCategoriaProducto = value;
-                OnPropertyChanged();
-            }
-        }
 
         public int IdSuperCategoriaProducto
         {
@@ -43,15 +30,16 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 _idSuperCategoriaProducto = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(TituloEditor));
             }
         }
 
-        public string NombreCategoria
+        public string NombreSuperCategoria
         {
-            get => _nombreCategoria;
+            get => _nombreSuperCategoria;
             set
             {
-                _nombreCategoria = value;
+                _nombreSuperCategoria = value;
                 OnPropertyChanged();
             }
         }
@@ -76,21 +64,20 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             }
         }
 
-        public CategoriaProducto? CategoriaSeleccionada
+        public SuperCategoriaProducto? SuperCategoriaSeleccionada
         {
-            get => _categoriaSeleccionada;
+            get => _superCategoriaSeleccionada;
             set
             {
-                _categoriaSeleccionada = value;
+                _superCategoriaSeleccionada = value;
                 OnPropertyChanged();
 
-                if (_categoriaSeleccionada != null)
+                if (_superCategoriaSeleccionada != null)
                 {
-                    IdCategoriaProducto = _categoriaSeleccionada.IdCategoriaProducto;
-                    IdSuperCategoriaProducto = _categoriaSeleccionada.IdSuperCategoriaProducto;
-                    NombreCategoria = _categoriaSeleccionada.NombreCategoria;
-                    Descripcion = _categoriaSeleccionada.Descripcion;
-                    Estado = _categoriaSeleccionada.Estado;
+                    IdSuperCategoriaProducto = _superCategoriaSeleccionada.IdSuperCategoriaProducto;
+                    NombreSuperCategoria = _superCategoriaSeleccionada.NombreSuperCategoria;
+                    Descripcion = _superCategoriaSeleccionada.Descripcion;
+                    Estado = _superCategoriaSeleccionada.Estado;
                 }
             }
         }
@@ -105,25 +92,20 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
         public Action? CerrarVentana { get; set; }
         public bool Guardado { get; private set; }
-        public string TituloEditor => IdCategoriaProducto > 0 ? "Editar Categoria de Producto" : "Nueva Categoria de Producto";
-        public string ResumenRegistros => $"Mostrando {Categorias.Count} categorias de productos";
+        public string TituloEditor => IdSuperCategoriaProducto > 0 ? "Editar Supercategoría" : "Nueva Supercategoría";
+        public string ResumenRegistros => $"Mostrando {SuperCategorias.Count} supercategorías";
 
-        public CategoriasProductosViewModel()
+        public SuperCategoriasProductosViewModel()
         {
             GuardarCommand = new RelayCommand(_ => Guardar());
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             EliminarCommand = new RelayCommand(parametro => Eliminar(parametro));
             NuevoCommand = new RelayCommand(_ => AbrirEditor(null));
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
-            RefrescarCommand = new RelayCommand(_ =>
-            {
-                CargarSuperCategorias();
-                CargarCategorias();
-            });
+            RefrescarCommand = new RelayCommand(_ => CargarSuperCategorias());
             CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
             CargarSuperCategorias();
-            CargarCategorias();
         }
 
         private void CargarSuperCategorias()
@@ -132,20 +114,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
             foreach (SuperCategoriaProducto superCategoria in _superCategoriaProductoNegocio.Listar())
             {
-                if (superCategoria.Estado)
-                {
-                    SuperCategorias.Add(superCategoria);
-                }
-            }
-        }
-
-        private void CargarCategorias()
-        {
-            Categorias.Clear();
-
-            foreach (CategoriaProducto categoria in _categoriaProductoNegocio.Listar())
-            {
-                Categorias.Add(categoria);
+                SuperCategorias.Add(superCategoria);
             }
 
             OnPropertyChanged(nameof(ResumenRegistros));
@@ -153,10 +122,10 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
         private void Guardar()
         {
-            if (IdCategoriaProducto > 0)
+            if (IdSuperCategoriaProducto > 0)
             {
                 bool confirmar = ConfirmDialogService.Confirmar(
-                    "¿Desea actualizar la información de la categoría?",
+                    "¿Desea actualizar la información de la supercategoría?",
                     "Confirmar actualización");
 
                 if (!confirmar)
@@ -165,21 +134,20 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 }
             }
 
-            CategoriaProducto categoria = new()
+            SuperCategoriaProducto superCategoria = new()
             {
-                IdCategoriaProducto = IdCategoriaProducto,
                 IdSuperCategoriaProducto = IdSuperCategoriaProducto,
-                NombreCategoria = NombreCategoria,
+                NombreSuperCategoria = NombreSuperCategoria,
                 Descripcion = Descripcion,
                 Estado = Estado
             };
 
-            string mensaje = _categoriaProductoNegocio.Guardar(categoria);
+            string mensaje = _superCategoriaProductoNegocio.Guardar(superCategoria);
 
             if (mensaje.Contains("correctamente"))
             {
                 NotificationService.Success(mensaje);
-                CargarCategorias();
+                CargarSuperCategorias();
                 Guardado = true;
                 CerrarVentana?.Invoke();
             }
@@ -193,18 +161,18 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         {
             if (parametro == null)
             {
-                NotificationService.Warning("Debe seleccionar una categoría.");
+                NotificationService.Warning("Debe seleccionar una supercategoría.");
                 return;
             }
 
-            if (!int.TryParse(parametro.ToString(), out int idCategoriaProducto))
+            if (!int.TryParse(parametro.ToString(), out int idSuperCategoriaProducto))
             {
-                NotificationService.Warning("Id de categoría inválido.");
+                NotificationService.Warning("Id de supercategoría inválido.");
                 return;
             }
 
             bool confirmar = ConfirmDialogService.Confirmar(
-                "¿Está seguro de eliminar esta categoría?",
+                "¿Está seguro de eliminar esta supercategoría?",
                 "Confirmar eliminación");
 
             if (!confirmar)
@@ -212,12 +180,12 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 return;
             }
 
-            string mensaje = _categoriaProductoNegocio.Eliminar(idCategoriaProducto);
+            string mensaje = _superCategoriaProductoNegocio.Eliminar(idSuperCategoriaProducto);
 
             if (mensaje.Contains("correctamente"))
             {
                 NotificationService.Success(mensaje);
-                CargarCategorias();
+                CargarSuperCategorias();
                 Limpiar();
             }
             else
@@ -228,30 +196,26 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
         private void Limpiar()
         {
-            IdCategoriaProducto = 0;
             IdSuperCategoriaProducto = 0;
-            NombreCategoria = string.Empty;
+            NombreSuperCategoria = string.Empty;
             Descripcion = string.Empty;
             Estado = true;
-            CategoriaSeleccionada = null;
-            OnPropertyChanged(nameof(TituloEditor));
+            SuperCategoriaSeleccionada = null;
         }
 
-        private void AbrirEditor(CategoriaProducto? categoria)
+        private void AbrirEditor(SuperCategoriaProducto? superCategoria)
         {
-            CategoriasProductosViewModel viewModel = new();
+            SuperCategoriasProductosViewModel viewModel = new();
 
-            if (categoria != null)
+            if (superCategoria != null)
             {
-                viewModel.IdCategoriaProducto = categoria.IdCategoriaProducto;
-                viewModel.IdSuperCategoriaProducto = categoria.IdSuperCategoriaProducto;
-                viewModel.NombreCategoria = categoria.NombreCategoria;
-                viewModel.Descripcion = categoria.Descripcion;
-                viewModel.Estado = categoria.Estado;
-                viewModel.OnPropertyChanged(nameof(TituloEditor));
+                viewModel.IdSuperCategoriaProducto = superCategoria.IdSuperCategoriaProducto;
+                viewModel.NombreSuperCategoria = superCategoria.NombreSuperCategoria;
+                viewModel.Descripcion = superCategoria.Descripcion;
+                viewModel.Estado = superCategoria.Estado;
             }
 
-            CategoriaProductoEditorWindow ventana = new()
+            SuperCategoriaProductoEditorWindow ventana = new()
             {
                 DataContext = viewModel,
                 Owner = Application.Current.MainWindow
@@ -262,20 +226,20 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
             if (viewModel.Guardado)
             {
-                CargarCategorias();
+                CargarSuperCategorias();
                 Limpiar();
             }
         }
 
         private void Editar(object? parametro)
         {
-            if (parametro is not CategoriaProducto categoria)
+            if (parametro is not SuperCategoriaProducto superCategoria)
             {
-                NotificationService.Warning("Debe seleccionar una categoría.");
+                NotificationService.Warning("Debe seleccionar una supercategoría.");
                 return;
             }
 
-            AbrirEditor(categoria);
+            AbrirEditor(superCategoria);
         }
     }
 }

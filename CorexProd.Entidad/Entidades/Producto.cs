@@ -17,6 +17,9 @@ namespace CorexProd.Entidad.Entidades
             : ProductoBusqueda;
         public string Descripcion { get; set; } = string.Empty;
 
+        public int IdSuperCategoriaProducto { get; set; }
+        public string NombreSuperCategoria { get; set; } = string.Empty;
+
         public int IdCategoriaProducto { get; set; }
         public string NombreCategoria { get; set; } = string.Empty;
 

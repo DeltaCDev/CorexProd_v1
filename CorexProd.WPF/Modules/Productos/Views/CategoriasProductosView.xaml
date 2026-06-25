@@ -132,6 +132,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="ID" Binding="{Binding IdCategoriaProducto}" Width="50" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Supercategoría" Binding="{Binding NombreSuperCategoria}" Width="180" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Categoria" Binding="{Binding NombreCategoria}" Width="180" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="300" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Fecha Registro" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="140" ElementStyle="{StaticResource CeldaTexto}"/>

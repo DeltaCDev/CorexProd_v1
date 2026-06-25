@@ -28,6 +28,8 @@ namespace CorexProd.Datos.Datos
                     Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
                     NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
                     Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
+                    IdSuperCategoriaProducto = Convert.ToInt32(dr["IdSuperCategoriaProducto"]),
+                    NombreSuperCategoria = dr["NombreSuperCategoria"]?.ToString() ?? string.Empty,
                     IdCategoriaProducto = Convert.ToInt32(dr["IdCategoriaProducto"]),
                     NombreCategoria = dr["NombreCategoria"]?.ToString() ?? string.Empty,
                     IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
@@ -54,6 +56,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@NombreProducto", producto.NombreProducto);
             cmd.Parameters.AddWithValue("@Descripcion", producto.Descripcion);
             cmd.Parameters.AddWithValue("@IdCategoriaProducto", producto.IdCategoriaProducto);
+            cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", producto.IdSuperCategoriaProducto);
             cmd.Parameters.AddWithValue("@IdUnidadMedida", producto.IdUnidadMedida);
             cmd.Parameters.AddWithValue("@StockMinimo", producto.StockMinimo);
 
@@ -96,6 +99,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@NombreProducto", producto.NombreProducto);
             cmd.Parameters.AddWithValue("@Descripcion", producto.Descripcion);
             cmd.Parameters.AddWithValue("@IdCategoriaProducto", producto.IdCategoriaProducto);
+            cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", producto.IdSuperCategoriaProducto);
             cmd.Parameters.AddWithValue("@IdUnidadMedida", producto.IdUnidadMedida);
             cmd.Parameters.AddWithValue("@StockMinimo", producto.StockMinimo);
             cmd.Parameters.AddWithValue("@Estado", producto.Estado);

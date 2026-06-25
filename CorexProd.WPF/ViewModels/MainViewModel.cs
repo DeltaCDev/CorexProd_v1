@@ -345,6 +345,15 @@ namespace CorexProd.WPF.ViewModels
                 EsPadre = true
             };
 
+            if (menusPermitidos.Contains("Supercategorías"))
+            {
+                productos.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Supercategorías",
+                    Vista = "SuperCategoriasProducto"
+                });
+            }
+
             if (menusPermitidos.Contains("Categorías de Productos"))
             {
                 productos.Hijos.Add(new MenuItemSistema
@@ -817,6 +826,11 @@ namespace CorexProd.WPF.ViewModels
 
 
                 // PRODUCTOS
+                case "SuperCategoriasProducto":
+                    Titulo = "Supercategorías";
+                    VistaActual = new SuperCategoriasProductosView();
+                    break;
+
                 case "CategoriasProducto":
                     Titulo = "Categorías de Productos";
                     VistaActual = new CategoriasProductosView();

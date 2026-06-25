@@ -16,6 +16,7 @@ namespace CorexProd.WPF.Modules.Productos.Views
     {
         public CreacionMasivaProductosWindow(
             IEnumerable<Producto> productosExistentes,
+            IEnumerable<SuperCategoriaProducto> superCategorias,
             IEnumerable<CategoriaProducto> categorias,
             IEnumerable<UnidadMedida> unidadesMedida,
             Func<Producto, string> crearProducto)
@@ -23,6 +24,7 @@ namespace CorexProd.WPF.Modules.Productos.Views
             InitializeComponent();
             DataContext = new CreacionMasivaProductosViewModel(
                 productosExistentes,
+                superCategorias,
                 categorias,
                 unidadesMedida,
                 crearProducto,
@@ -34,6 +36,7 @@ namespace CorexProd.WPF.Modules.Productos.Views
         private class CreacionMasivaProductosViewModel : BaseViewModel
         {
             private readonly List<Producto> _productosExistentes;
+            private readonly List<SuperCategoriaProducto> _superCategorias;
             private readonly List<CategoriaProducto> _categorias;
             private readonly List<UnidadMedida> _unidadesMedida;
             private readonly Func<Producto, string> _crearProducto;
@@ -44,12 +47,14 @@ namespace CorexProd.WPF.Modules.Productos.Views
 
             public CreacionMasivaProductosViewModel(
                 IEnumerable<Producto> productosExistentes,
+                IEnumerable<SuperCategoriaProducto> superCategorias,
                 IEnumerable<CategoriaProducto> categorias,
                 IEnumerable<UnidadMedida> unidadesMedida,
                 Func<Producto, string> crearProducto,
                 CreacionMasivaProductosWindow ventana)
             {
                 _productosExistentes = productosExistentes.ToList();
+                _superCategorias = superCategorias.ToList();
                 _categorias = categorias.ToList();
                 _unidadesMedida = unidadesMedida.ToList();
                 _crearProducto = crearProducto;
@@ -98,6 +103,7 @@ namespace CorexProd.WPF.Modules.Productos.Views
                 CreacionMasivaProductosResultado resultado = CreacionMasivaProductosService.Procesar(
                     TextoCarga,
                     _productosExistentes,
+                    _superCategorias,
                     _categorias,
                     _unidadesMedida);
 

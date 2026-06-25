@@ -21,6 +21,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
     {
         private readonly ProductoNegocio _productoNegocio = new();
         private readonly CategoriaProductoNegocio _categoriaProductoNegocio = new();
+        private readonly SuperCategoriaProductoNegocio _superCategoriaProductoNegocio = new();
         private readonly UnidadMedidaNegocio _unidadMedidaNegocio = new();
         private readonly ParametroNegocio _parametroNegocio = new();
         private readonly List<Producto> _todosLosProductos = [];
@@ -28,6 +29,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private int _idProducto;
         private string _codigo = string.Empty;
         private string _nombreProducto = string.Empty;
+        private int _idSuperCategoriaProducto;
         private int _idCategoriaProducto;
         private int _idUnidadMedida;
         private decimal _stockMinimo;
@@ -35,9 +37,12 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private Producto? _productoSeleccionado;
         private string _filtroCodigo = string.Empty;
         private string _filtroNombre = string.Empty;
+        private int _idSuperCategoriaFiltro;
         private int _idCategoriaFiltro;
 
         public ObservableCollection<Producto> Productos { get; set; } = [];
+        public ObservableCollection<SuperCategoriaProducto> SuperCategorias { get; set; } = [];
+        public ObservableCollection<SuperCategoriaProducto> SuperCategoriasFiltro { get; set; } = [];
         public ObservableCollection<CategoriaProducto> Categorias { get; set; } = [];
         public ObservableCollection<CategoriaProducto> CategoriasFiltro { get; set; } = [];
         public ObservableCollection<UnidadMedida> UnidadesMedida { get; set; } = [];
@@ -72,6 +77,16 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             }
         }
 
+        public int IdSuperCategoriaProducto
+        {
+            get => _idSuperCategoriaProducto;
+            set
+            {
+                _idSuperCategoriaProducto = value;
+                OnPropertyChanged();
+            }
+        }
+
         public int IdCategoriaProducto
         {
             get => _idCategoriaProducto;
@@ -79,6 +94,12 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             {
                 _idCategoriaProducto = value;
                 OnPropertyChanged();
+
+                CategoriaProducto? categoria = Categorias.FirstOrDefault(categoria => categoria.IdCategoriaProducto == value);
+                if (categoria != null)
+                {
+                    IdSuperCategoriaProducto = categoria.IdSuperCategoriaProducto;
+                }
             }
         }
 
@@ -125,6 +146,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                     IdProducto = _productoSeleccionado.IdProducto;
                     Codigo = _productoSeleccionado.Codigo;
                     NombreProducto = _productoSeleccionado.NombreProducto;
+                    IdSuperCategoriaProducto = _productoSeleccionado.IdSuperCategoriaProducto;
                     IdCategoriaProducto = _productoSeleccionado.IdCategoriaProducto;
                     IdUnidadMedida = _productoSeleccionado.IdUnidadMedida;
                     StockMinimo = _productoSeleccionado.StockMinimo;
@@ -150,6 +172,17 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             set
             {
                 _filtroNombre = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public int IdSuperCategoriaFiltro
+        {
+            get => _idSuperCategoriaFiltro;
+            set
+            {
+                _idSuperCategoriaFiltro = value;
                 OnPropertyChanged();
                 AplicarFiltros();
             }
@@ -197,9 +230,30 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             ExportarCommand = new RelayCommand(_ => Exportar());
             CerrarCommand = new RelayCommand(_ => CerrarVentana?.Invoke());
 
+            CargarSuperCategorias();
             CargarCategorias();
             CargarUnidadesMedida();
             CargarProductos();
+        }
+
+        private void CargarSuperCategorias()
+        {
+            SuperCategorias.Clear();
+            SuperCategoriasFiltro.Clear();
+            SuperCategoriasFiltro.Add(new SuperCategoriaProducto
+            {
+                IdSuperCategoriaProducto = 0,
+                NombreSuperCategoria = "Todas"
+            });
+
+            foreach (SuperCategoriaProducto superCategoria in _superCategoriaProductoNegocio.Listar())
+            {
+                if (superCategoria.Estado)
+                {
+                    SuperCategorias.Add(superCategoria);
+                    SuperCategoriasFiltro.Add(superCategoria);
+                }
+            }
         }
 
         private void CargarProductos()
@@ -240,6 +294,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                         || producto.Codigo.Contains(codigo, StringComparison.OrdinalIgnoreCase))
                     && (string.IsNullOrWhiteSpace(nombre)
                         || producto.NombreProducto.Contains(nombre, StringComparison.OrdinalIgnoreCase))
+                    && (IdSuperCategoriaFiltro == 0
+                        || producto.IdSuperCategoriaProducto == IdSuperCategoriaFiltro)
                     && (IdCategoriaFiltro == 0
                         || producto.IdCategoriaProducto == IdCategoriaFiltro))
                 .ToList();
@@ -258,9 +314,11 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         {
             _filtroCodigo = string.Empty;
             _filtroNombre = string.Empty;
+            _idSuperCategoriaFiltro = 0;
             _idCategoriaFiltro = 0;
             OnPropertyChanged(nameof(FiltroCodigo));
             OnPropertyChanged(nameof(FiltroNombre));
+            OnPropertyChanged(nameof(IdSuperCategoriaFiltro));
             OnPropertyChanged(nameof(IdCategoriaFiltro));
             AplicarFiltros();
         }
@@ -289,7 +347,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             try
             {
                 StringBuilder contenido = new();
-                contenido.AppendLine("ID;Código;Producto;Categoría;Unidad;Stock mínimo;Estado");
+                contenido.AppendLine("ID;Código;Producto;Supercategoría;Categoría;Unidad;Stock mínimo;Estado");
 
                 foreach (Producto producto in Productos)
                 {
@@ -297,6 +355,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                         producto.IdProducto,
                         EscaparCsv(producto.Codigo),
                         EscaparCsv(producto.NombreProducto),
+                        EscaparCsv(producto.NombreSuperCategoria),
                         EscaparCsv(producto.NombreCategoria),
                         EscaparCsv(producto.NombreUnidad),
                         producto.StockMinimo.ToString("0.00"),
@@ -349,6 +408,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 IdProducto = IdProducto,
                 Codigo = Codigo,
                 NombreProducto = NombreProducto,
+                IdSuperCategoriaProducto = IdSuperCategoriaProducto,
                 IdCategoriaProducto = IdCategoriaProducto,
                 IdUnidadMedida = IdUnidadMedida,
                 StockMinimo = StockMinimo,
@@ -412,6 +472,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             IdProducto = 0;
             Codigo = string.Empty;
             NombreProducto = string.Empty;
+            IdSuperCategoriaProducto = 0;
             IdCategoriaProducto = 0;
             IdUnidadMedida = 0;
             StockMinimo = 0;
@@ -422,6 +483,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
 
         private void Refrescar()
         {
+            CargarSuperCategorias();
             CargarCategorias();
             CargarUnidadesMedida();
             CargarProductos();
@@ -436,6 +498,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 viewModel.IdProducto = producto.IdProducto;
                 viewModel.Codigo = producto.Codigo;
                 viewModel.NombreProducto = producto.NombreProducto;
+                viewModel.IdSuperCategoriaProducto = producto.IdSuperCategoriaProducto;
                 viewModel.IdCategoriaProducto = producto.IdCategoriaProducto;
                 viewModel.IdUnidadMedida = producto.IdUnidadMedida;
                 viewModel.StockMinimo = producto.StockMinimo;
@@ -463,6 +526,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         {
             CreacionMasivaProductosWindow ventana = new(
                 Productos.ToList(),
+                _superCategoriaProductoNegocio.Listar(),
                 _categoriaProductoNegocio.Listar(),
                 _unidadMedidaNegocio.Listar(),
                 producto => _productoNegocio.Guardar(producto))

@@ -21,6 +21,9 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(categoria.NombreCategoria))
                 return "El nombre de la categoría es obligatorio.";
 
+            if (categoria.IdSuperCategoriaProducto <= 0)
+                return "Debe seleccionar una supercategoría.";
+
             if (categoria.IdCategoriaProducto == 0)
                 return _categoriaProductoDatos.Registrar(categoria);
 

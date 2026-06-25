@@ -17,7 +17,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Creacion masiva" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
-            <TextBlock Text="Formato: CODIGO;NOMBRE;CATEGORIA_ID;UNIDAD_MEDIDA_ID;STOCK_MINIMO"
+            <TextBlock Text="Formato: CODIGO;NOMBRE;CATEGORIA;UNIDAD_MEDIDA_ID;STOCK_MINIMO  |  Opcional: CODIGO;NOMBRE;SUPERCATEGORIA;CATEGORIA;UNIDAD_MEDIDA_ID;STOCK_MINIMO"
                        Foreground="#475569"
                        Margin="0,4,0,0"/>
         </StackPanel>
@@ -55,6 +55,7 @@
                 <DataGridTextColumn Header="Linea" Binding="{Binding NumeroLinea}" Width="60"/>
                 <DataGridTextColumn Header="Codigo" Binding="{Binding Codigo}" Width="120"/>
                 <DataGridTextColumn Header="Nombre del producto" Binding="{Binding NombreProducto}" Width="*"/>
+                <DataGridTextColumn Header="Supercategoría" Binding="{Binding NombreSuperCategoria}" Width="150"/>
                 <DataGridTextColumn Header="Categoria encontrada" Binding="{Binding NombreCategoria}" Width="150"/>
                 <DataGridTextColumn Header="Unidad encontrada" Binding="{Binding NombreUnidad}" Width="140"/>
                 <DataGridTextColumn Header="Stock minimo" Binding="{Binding StockMinimo, StringFormat=N2}" Width="105"/>

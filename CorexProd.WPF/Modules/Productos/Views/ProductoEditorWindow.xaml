@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding TituloEditor}"
         Width="700"
-        Height="500"
-        MinHeight="500"
+        Height="540"
+        MinHeight="540"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -111,26 +111,29 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                        <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Supercategoría "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                        <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding SuperCategorias}" DisplayMemberPath="NombreSuperCategoria" SelectedValuePath="IdSuperCategoriaProducto" SelectedValue="{Binding IdSuperCategoriaProducto}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
                         <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Categoria "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
                         <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding Categorias}" DisplayMemberPath="NombreCategoria" SelectedValuePath="IdCategoriaProducto" SelectedValue="{Binding IdCategoriaProducto}"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Unidad "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
-                        <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding UnidadesMedida}" DisplayMemberPath="NombreUnidad" SelectedValuePath="IdUnidadMedida" SelectedValue="{Binding IdUnidadMedida}"/>
-                    </StackPanel>
                 </Grid>
-                <Grid>
+                <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                        <TextBlock Style="{StaticResource LabelCampo}"><Run Text="Unidad "/><Run Text="*" Foreground="#DC2626"/></TextBlock>
+                        <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding UnidadesMedida}" DisplayMemberPath="NombreUnidad" SelectedValuePath="IdUnidadMedida" SelectedValue="{Binding IdUnidadMedida}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
                         <TextBlock Text="Stock Minimo" Style="{StaticResource LabelCampo}"/>
                         <TextBox Style="{StaticResource CampoTexto}" Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
-                    <CheckBox Grid.Column="1" Content="Activo" IsChecked="{Binding Estado}" FontSize="13" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
                 </Grid>
+                <CheckBox Content="Activo" IsChecked="{Binding Estado}" FontSize="13" FontWeight="SemiBold" Foreground="#374151"/>
             </StackPanel>
         </Border>
 
