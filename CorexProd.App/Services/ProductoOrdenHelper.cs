@@ -6,72 +6,86 @@ public static partial class ProductoOrdenHelper
 {
     private static readonly Dictionary<string, int> Tallas = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["XXS"] = 10,
-        ["XS"] = 20,
-        ["S"] = 30,
-        ["M"] = 40,
-        ["L"] = 50,
-        ["XL"] = 60,
-        ["XXL"] = 70,
-        ["XXXL"] = 80,
-        ["XXXXL"] = 90
+        ["XXS"] = 0,
+        ["XS"] = 1,
+        ["S"] = 2,
+        ["M"] = 3,
+        ["L"] = 4,
+        ["XL"] = 5,
+        ["XXL"] = 6,
+        ["XXXL"] = 7,
+        ["XXXXL"] = 8
     };
 
-    public static (string CodigoBase, int TallaOrden, string Talla, string Codigo) CrearClave(string codigo, string nombre)
+    public static ProductoOrdenClave CrearClave(string codigo, string nombre)
     {
         codigo = (codigo ?? string.Empty).Trim().ToUpperInvariant();
         nombre = (nombre ?? string.Empty).Trim().ToUpperInvariant();
+        string codigoOrden = codigo;
 
-        string talla = ObtenerTalla(codigo, nombre);
-        string codigoBase = string.IsNullOrWhiteSpace(talla)
-            ? codigo
-            : RemoverTalla(codigo, talla);
+        Match numeroMatch = PrimerNumeroRegex().Match(codigoOrden);
+        string cliente = numeroMatch.Success ? codigoOrden[..numeroMatch.Index] : codigoOrden;
+        string desdeNumero = numeroMatch.Success ? codigoOrden[numeroMatch.Index..] : string.Empty;
 
-        return (codigoBase, ObtenerOrdenTalla(talla), talla, codigo);
+        Match numeroInicialMatch = NumeroInicialRegex().Match(desdeNumero);
+        int? numero = numeroInicialMatch.Success ? int.Parse(numeroInicialMatch.Value) : null;
+        string restoCodigo = numeroInicialMatch.Success ? desdeNumero[numeroInicialMatch.Length..] : string.Empty;
+
+        string variante = restoCodigo;
+        int ordenTalla = 0;
+        int? tallaNumero = null;
+
+        Match tallaNumericaMatch = TallaNumericaRegex().Match(restoCodigo);
+        if (tallaNumericaMatch.Success)
+        {
+            variante = tallaNumericaMatch.Groups["variante"].Value;
+            tallaNumero = int.Parse(tallaNumericaMatch.Groups["numero"].Value);
+            ordenTalla = 100;
+        }
+        else
+        {
+            string? tallaTexto = ObtenerTallaTexto(restoCodigo);
+            if (!string.IsNullOrWhiteSpace(tallaTexto))
+            {
+                variante = restoCodigo[..^tallaTexto.Length];
+                ordenTalla = Tallas[tallaTexto];
+            }
+        }
+
+        return new ProductoOrdenClave(
+            cliente,
+            numero.HasValue ? 0 : 1,
+            numero ?? int.MaxValue,
+            variante,
+            ordenTalla,
+            tallaNumero ?? int.MaxValue,
+            codigoOrden,
+            nombre);
     }
 
-    private static string ObtenerTalla(string codigo, string nombre)
+    private static string? ObtenerTallaTexto(string restoCodigo)
     {
-        Match nombreMatch = NombreTallaRegex().Match(nombre);
-        if (nombreMatch.Success)
-            return nombreMatch.Groups["talla"].Value;
-
-        Match codigoMatch = CodigoTallaRegex().Match(codigo);
-        return codigoMatch.Success ? codigoMatch.Groups["talla"].Value : string.Empty;
+        return Tallas.Keys
+            .OrderByDescending(x => x.Length)
+            .FirstOrDefault(talla => restoCodigo.EndsWith(talla, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static string RemoverTalla(string codigo, string talla)
-    {
-        if (string.IsNullOrWhiteSpace(talla) || !codigo.EndsWith(talla, StringComparison.OrdinalIgnoreCase))
-            return codigo;
+    [GeneratedRegex("[0-9]")]
+    private static partial Regex PrimerNumeroRegex();
 
-        return codigo[..^talla.Length];
-    }
+    [GeneratedRegex("^[0-9]+")]
+    private static partial Regex NumeroInicialRegex();
 
-    private static int ObtenerOrdenTalla(string talla)
-    {
-        if (string.IsNullOrWhiteSpace(talla))
-            return 9999;
-
-        if (Tallas.TryGetValue(talla, out int orden))
-            return orden;
-
-        Match xlMatch = ExtraGrandeRegex().Match(talla);
-        if (xlMatch.Success && int.TryParse(xlMatch.Groups["numero"].Value, out int numeroXl))
-            return 80 + (numeroXl * 10);
-
-        if (int.TryParse(talla, out int numero))
-            return 1000 + numero;
-
-        return 9000;
-    }
-
-    [GeneratedRegex(@"(?<talla>XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL|[2-9]XL|\d{1,3})$", RegexOptions.IgnoreCase)]
-    private static partial Regex CodigoTallaRegex();
-
-    [GeneratedRegex(@"\bTALLA\s+(?<talla>XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL|[2-9]XL|\d{1,3})\b", RegexOptions.IgnoreCase)]
-    private static partial Regex NombreTallaRegex();
-
-    [GeneratedRegex(@"^(?<numero>[2-9])XL$", RegexOptions.IgnoreCase)]
-    private static partial Regex ExtraGrandeRegex();
+    [GeneratedRegex("^(?<variante>.*)T(?<numero>[0-9]+)$", RegexOptions.IgnoreCase)]
+    private static partial Regex TallaNumericaRegex();
 }
+
+public sealed record ProductoOrdenClave(
+    string Cliente,
+    int NumeroNuloOrden,
+    int Numero,
+    string Variante,
+    int OrdenTalla,
+    int TallaNumero,
+    string CodigoOrden,
+    string NombreProducto);

@@ -48,17 +48,38 @@ public partial class OciPage : ContentPage
         ItemsView.SelectedItem = null;
         try
         {
-            OciDetalleResponse detalle = await _apiClient.GetOciDetalleAsync(item.IdOrdenCompraInterna);
-            string productos = string.Join(Environment.NewLine, detalle.Detalles.Take(8).Select(x => $"{x.CodigoProducto} x {x.Cantidad:N2} - {x.NombreProducto}"));
-            await DisplayAlertAsync(
-                detalle.Cabecera.NumeroOci,
-                $"Cliente: {detalle.Cabecera.NombreCliente}\nEstado: {detalle.Cabecera.Estado}\nTotal: S/ {detalle.Cabecera.Total:N2}\n\n{productos}",
-                "OK");
+            string action = await DisplayActionSheetAsync(item.NumeroOci, "Cancelar", null, "Ver detalle", "Anular");
+            if (action == "Ver detalle")
+                await MostrarDetalleAsync(item.IdOrdenCompraInterna);
+            else if (action == "Anular")
+                await AnularAsync(item);
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("OCI", ex.Message, "OK");
         }
+    }
+
+    private async Task MostrarDetalleAsync(int idOrdenCompraInterna)
+    {
+        OciDetalleResponse detalle = await _apiClient.GetOciDetalleAsync(idOrdenCompraInterna);
+        string productos = string.Join(Environment.NewLine, detalle.Detalles.Take(8).Select(x => $"{x.CodigoProducto} x {x.Cantidad:N2} - {x.NombreProducto}"));
+        await DisplayAlertAsync(
+            detalle.Cabecera.NumeroOci,
+            $"Cliente: {detalle.Cabecera.NombreCliente}\nEstado: {detalle.Cabecera.Estado}\nTotal: S/ {detalle.Cabecera.Total:N2}\n\n{productos}",
+            "OK");
+    }
+
+    private async Task AnularAsync(OciResumen item)
+    {
+        string? motivo = await DisplayPromptAsync("Anular OCI", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
+        if (string.IsNullOrWhiteSpace(motivo))
+            return;
+
+        SessionState session = ServiceHelper.GetRequiredService<SessionState>();
+        DocumentoAccionResponse response = await _apiClient.AnularOciAsync(item.IdOrdenCompraInterna, new(session.Usuario?.NombreUsuario ?? "Android", motivo));
+        await DisplayAlertAsync("OCI", response.Mensaje, "OK");
+        await LoadAsync();
     }
 
     private async Task LoadAsync()

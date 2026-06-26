@@ -9,9 +9,10 @@
                        Placeholder="Numero, cliente u OC"
                        SearchButtonPressed="OnSearchPressed"
                        TextChanged="OnSearchTextChanged" />
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <Label x:Name="CountLabel" Text="Sin datos" TextColor="#637083" VerticalOptions="Center" />
-                <Button Grid.Column="1" Text="Buscar" Clicked="OnBuscarClicked" />
+                <Button Grid.Column="1" Text="Nueva" Clicked="OnNuevaClicked" />
+                <Button Grid.Column="2" Text="Buscar" Clicked="OnBuscarClicked" />
             </Grid>
         </VerticalStackLayout>
 

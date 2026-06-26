@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text;
 using CorexProd.App.Models;
 using CorexProd.App.Services;
 
@@ -127,9 +128,14 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
         foreach (OrdenTrabajoArea item in _detalleActual.Areas
                      .Where(x => x.IdAreaProduccion == area.IdAreaProduccion)
-                     .OrderBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).CodigoBase)
-                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).TallaOrden)
-                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).Codigo))
+                     .OrderBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).Cliente)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).NumeroNuloOrden)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).Numero)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).Variante)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).OrdenTalla)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).TallaNumero)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).CodigoOrden)
+                     .ThenBy(x => ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto).NombreProducto))
         {
             OrdenTrabajoProducto? producto = _detalleActual.Detalles.FirstOrDefault(x => x.IdDetalleOT == item.IdDetalleOT);
             _areasVisibles.Add(new OrdenTrabajoAreaItem(item, producto, esPrimeraArea));
@@ -196,7 +202,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                 [new(area.IdDetalleOT, cantidad)]);
 
             return await _apiClient.TransferirOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
-        });
+        }, evaluarTerminacion: area.EsTermino);
     }
 
     private async void OnMermaClicked(object? sender, EventArgs e)
@@ -226,15 +232,20 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         });
     }
 
-    private async Task EjecutarOperacionAsync(Func<int, Task<OperacionOrdenTrabajoResponse>> operacion)
+    private async Task EjecutarOperacionAsync(Func<int, Task<OperacionOrdenTrabajoResponse>> operacion, bool evaluarTerminacion = false)
     {
         try
         {
             _isOperating = true;
+            int completadosAntes = _detalleActual?.Detalles.Count(x => EsTerminado(x.Estado)) ?? 0;
+            string estadoAntes = _detalleActual?.Cabecera.Estado ?? string.Empty;
             int idUsuario = _session.Usuario?.IdUsuario ?? 0;
             OperacionOrdenTrabajoResponse response = await operacion(idUsuario);
             await DisplayAlertAsync("OT Producción", response.IdOperacion.HasValue ? $"{response.Mensaje}\nOperación #{response.IdOperacion}" : response.Mensaje, "OK");
             await CargarDetalleAsync(_id, forzar: true);
+
+            if (evaluarTerminacion)
+                await MostrarResultadoTerminacionAsync(completadosAntes, estadoAntes);
         }
         catch (Exception ex)
         {
@@ -244,6 +255,57 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         {
             _isOperating = false;
         }
+    }
+
+    private async Task MostrarResultadoTerminacionAsync(int completadosAntes, string estadoAntes)
+    {
+        if (_detalleActual == null)
+            return;
+
+        int totalProductos = _detalleActual.Detalles.Count;
+        int completadosDespues = _detalleActual.Detalles.Count(x => EsTerminado(x.Estado));
+
+        if (totalProductos > 0 && completadosDespues > completadosAntes)
+            await DisplayAlertAsync("Producto completado", $"{completadosDespues} de {totalProductos} completado.", "OK");
+
+        bool estabaTerminada = EsTerminado(estadoAntes);
+        bool estaTerminada = EsTerminado(_detalleActual.Cabecera.Estado);
+        if (!estabaTerminada && estaTerminada)
+        {
+            string detalle = CrearDetalleParciales(_detalleActual);
+            await DisplayAlertAsync("OT completa", detalle, "OK");
+        }
+    }
+
+    private static bool EsTerminado(string? estado)
+        => string.Equals(estado, "TERMINADA", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(estado, "TERMINADO", StringComparison.OrdinalIgnoreCase);
+
+    private static string CrearDetalleParciales(OrdenTrabajoDetalleResponse detalle)
+    {
+        StringBuilder sb = new();
+        sb.AppendLine($"{detalle.Cabecera.NumeroOT} completada.");
+        sb.AppendLine($"OC Cliente: {detalle.Cabecera.OrdenCompraCliente}");
+        sb.AppendLine();
+        sb.AppendLine("Parciales:");
+
+        foreach (OrdenTrabajoProducto producto in detalle.Detalles
+                     .Select(x => new { Producto = x, Clave = ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto) })
+                     .OrderBy(x => x.Clave.Cliente)
+                     .ThenBy(x => x.Clave.NumeroNuloOrden)
+                     .ThenBy(x => x.Clave.Numero)
+                     .ThenBy(x => x.Clave.Variante)
+                     .ThenBy(x => x.Clave.OrdenTalla)
+                     .ThenBy(x => x.Clave.TallaNumero)
+                     .ThenBy(x => x.Clave.CodigoOrden)
+                     .ThenBy(x => x.Clave.NombreProducto)
+                     .Select(x => x.Producto))
+        {
+            sb.AppendLine($"{producto.CodigoProducto} - {producto.NombreProducto}");
+            sb.AppendLine($"Producido: {producto.CantidadProducida:N2} / Planificado: {producto.CantidadPlanificada:N2}");
+        }
+
+        return sb.ToString().Trim();
     }
 
     private async Task<decimal> PedirCantidadAsync(string titulo, decimal maximo, bool permitirMayor = false)

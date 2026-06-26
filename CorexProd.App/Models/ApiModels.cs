@@ -113,6 +113,69 @@ public sealed record DocumentoDetalle(
     decimal? StockActual = null,
     decimal? CantidadDespachada = null);
 
+public sealed record ProformaPrepararResponse(
+    string SiguienteNumero,
+    IReadOnlyList<ClienteApi> Clientes,
+    IReadOnlyList<ProductoProformaApi> Productos);
+
+public sealed record ClienteApi(
+    int IdCliente,
+    string NumeroDocumento,
+    string NombreRazonSocial)
+{
+    public string Display => string.IsNullOrWhiteSpace(NumeroDocumento)
+        ? NombreRazonSocial
+        : $"{NumeroDocumento} - {NombreRazonSocial}";
+
+    public override string ToString() => Display;
+}
+
+public sealed record ProductoProformaApi(
+    int IdProducto,
+    string Codigo,
+    string NombreProducto,
+    string EtiquetaCliente,
+    int IdUnidadMedida,
+    string NombreUnidad)
+{
+    public string Display => string.IsNullOrWhiteSpace(EtiquetaCliente)
+        ? $"{Codigo} | {NombreProducto}"
+        : $"{Codigo} | {NombreProducto} | {EtiquetaCliente}";
+
+    public override string ToString() => Display;
+}
+
+public sealed record ProformaGuardarRequest(
+    int IdCliente,
+    DateTime FechaVencimiento,
+    string OrdenCompraCliente,
+    string Observacion,
+    decimal IgvPorcentaje,
+    string CondicionTributaria,
+    string Usuario,
+    IReadOnlyList<ProformaGuardarDetalleRequest> Detalles);
+
+public sealed record ProformaGuardarDetalleRequest(
+    int IdProducto,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal Descuento,
+    string Observacion);
+
+public sealed record DocumentoAccionRequest(
+    string Usuario,
+    string Motivo);
+
+public sealed record ProformaGuardarResponse(
+    string Mensaje,
+    int IdProforma,
+    string SerieNumero,
+    decimal Subtotal,
+    decimal Igv,
+    decimal Total);
+
+public sealed record DocumentoAccionResponse(string Mensaje);
+
 public sealed record StockManualPrepararResponse(
     IReadOnlyList<ProveedorStockApi> Proveedores,
     IReadOnlyList<AlmacenStockApi> Almacenes,

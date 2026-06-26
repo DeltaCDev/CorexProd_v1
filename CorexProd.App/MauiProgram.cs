@@ -29,6 +29,7 @@ public static class MauiProgram
         builder.Services.AddTransient<StockProductosPage>();
         builder.Services.AddTransient<StockInsumosPage>();
         builder.Services.AddTransient<ProformasPage>();
+        builder.Services.AddTransient<ProformaEditorPage>();
         builder.Services.AddTransient<OciPage>();
         builder.Services.AddTransient<OrdenesTrabajoPage>();
         builder.Services.AddTransient<OrdenTrabajoDetallePage>();

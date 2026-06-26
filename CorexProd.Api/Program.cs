@@ -347,6 +347,174 @@ ORDER BY D.IdProformaDetalle;";
     return Results.Ok(new { cabecera, detalles });
 });
 
+app.MapGet("/api/proformas/preparar", async () =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    List<object> clientes = [];
+    await using (SqlCommand cmd = new(@"
+SELECT IdCliente, NumeroDocumento, NombreRazonSocial
+FROM dbo.Clientes
+WHERE Estado = 1
+ORDER BY NombreRazonSocial;", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            clientes.Add(new
+            {
+                idCliente = Convert.ToInt32(dr["IdCliente"]),
+                numeroDocumento = dr["NumeroDocumento"]?.ToString() ?? string.Empty,
+                nombreRazonSocial = dr["NombreRazonSocial"]?.ToString() ?? string.Empty
+            });
+        }
+    }
+
+    List<object> productos = [];
+    await using (SqlCommand cmd = new(@"
+SELECT IdProducto, Codigo, NombreProducto, ISNULL(EtiquetaCliente, '') AS EtiquetaCliente, IdUnidadMedida, '' AS NombreUnidad
+FROM dbo.Productos
+WHERE Estado = 1
+ORDER BY Codigo, NombreProducto;", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            productos.Add(new
+            {
+                idProducto = Convert.ToInt32(dr["IdProducto"]),
+                codigo = dr["Codigo"]?.ToString() ?? string.Empty,
+                nombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                etiquetaCliente = dr["EtiquetaCliente"]?.ToString() ?? string.Empty,
+                idUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                nombreUnidad = dr["NombreUnidad"]?.ToString() ?? string.Empty
+            });
+        }
+    }
+
+    string siguienteNumero = "Sin serie configurada";
+    await using (SqlCommand cmd = new(@"
+SELECT TOP (1) Serie, UltimoCorrelativo, CantidadDigitos
+FROM dbo.SeriesCorrelativos
+WHERE CodigoTipoDocumento = 'PROFORMA' AND Activa = 1
+ORDER BY Predeterminada DESC, IdSerieCorrelativo;", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        if (await dr.ReadAsync())
+        {
+            string serie = dr["Serie"]?.ToString() ?? string.Empty;
+            long correlativo = Convert.ToInt64(dr["UltimoCorrelativo"]) + 1;
+            int digitos = Convert.ToInt32(dr["CantidadDigitos"]);
+            siguienteNumero = $"{serie}-{correlativo.ToString().PadLeft(digitos, '0')}";
+        }
+    }
+
+    return Results.Ok(new { siguienteNumero, clientes, productos });
+});
+
+app.MapPost("/api/proformas", async (ProformaGuardarApiRequest request) =>
+{
+    if (request.IdCliente <= 0)
+        return Results.BadRequest(new { mensaje = "Seleccione un cliente." });
+
+    if (request.Detalles.Count == 0 || request.Detalles.Any(x => x.IdProducto <= 0 || x.Cantidad <= 0))
+        return Results.BadRequest(new { mensaje = "Agregue productos con cantidad mayor a cero." });
+
+    decimal subtotal = request.Detalles.Sum(x => Math.Round((x.Cantidad * x.PrecioUnitario) - x.Descuento, 2));
+    if (subtotal < 0)
+        subtotal = 0;
+
+    decimal igvPorcentaje = request.IgvPorcentaje <= 0 ? 18 : request.IgvPorcentaje;
+    decimal descuento = 0;
+    decimal igv = request.CondicionTributaria.Equals("INAFECTO", StringComparison.OrdinalIgnoreCase)
+        ? 0
+        : Math.Round(subtotal * (igvPorcentaje / 100), 2);
+    decimal total = subtotal + igv;
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    await ConfigurarOpcionesInsertAsync(conexion);
+
+    await using SqlCommand cmd = new("USP_VEN_PROFORMA_GUARDAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdProforma", SqlDbType.Int).Value = 0;
+    cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = DateTime.Today;
+    cmd.Parameters.Add("@FechaVencimiento", SqlDbType.Date).Value = request.FechaVencimiento.Date;
+    cmd.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 80).Value = request.OrdenCompraCliente?.Trim() ?? string.Empty;
+    cmd.Parameters.Add("@IdCliente", SqlDbType.Int).Value = request.IdCliente;
+    cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = request.Observacion?.Trim() ?? string.Empty;
+    cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = subtotal;
+    cmd.Parameters.Add("@Descuento", SqlDbType.Decimal).Value = descuento;
+    cmd.Parameters.Add("@Igv", SqlDbType.Decimal).Value = igv;
+    cmd.Parameters.Add("@IgvPorcentaje", SqlDbType.Decimal).Value = igvPorcentaje;
+    cmd.Parameters.Add("@CondicionTributaria", SqlDbType.VarChar, 30).Value = string.IsNullOrWhiteSpace(request.CondicionTributaria) ? "GRAVADO" : request.CondicionTributaria.Trim().ToUpperInvariant();
+    cmd.Parameters.Add("@Total", SqlDbType.Decimal).Value = total;
+    cmd.Parameters.Add("@DetallesXml", SqlDbType.Xml).Value = CrearDetallesProformaXml(request.Detalles);
+    cmd.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+
+    SqlParameter idGenerado = new("@IdGenerado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+    SqlParameter serieNumero = new("@SerieNumero", SqlDbType.VarChar, 40) { Direction = ParameterDirection.Output };
+    SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+    SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(idGenerado);
+    cmd.Parameters.Add(serieNumero);
+    cmd.Parameters.Add(resultado);
+    cmd.Parameters.Add(mensajeParam);
+    await cmd.ExecuteNonQueryAsync();
+
+    string mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+    if (resultado.Value is bool ok && !ok)
+        return Results.BadRequest(new { mensaje });
+
+    return Results.Ok(new
+    {
+        mensaje,
+        idProforma = idGenerado.Value == DBNull.Value ? 0 : Convert.ToInt32(idGenerado.Value),
+        serieNumero = serieNumero.Value?.ToString() ?? string.Empty,
+        subtotal,
+        igv,
+        total
+    });
+});
+
+app.MapPost("/api/proformas/{id:int}/generar-oci", async (int id, DocumentoAccionApiRequest request) =>
+{
+    string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_OCI_GENERAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdProforma", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = usuario;
+    cmd.Parameters.Add(new SqlParameter("@IdGenerado", SqlDbType.Int) { Direction = ParameterDirection.Output });
+    cmd.Parameters.Add(new SqlParameter("@NumeroOci", SqlDbType.VarChar, 40) { Direction = ParameterDirection.Output });
+    SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+    SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(resultado);
+    cmd.Parameters.Add(mensajeParam);
+    await conexion.OpenAsync();
+    await cmd.ExecuteNonQueryAsync();
+    string mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+    return resultado.Value is bool ok && !ok ? Results.BadRequest(new { mensaje }) : Results.Ok(new { mensaje });
+});
+
+app.MapPost("/api/proformas/{id:int}/anular", async (int id, DocumentoAccionApiRequest request) =>
+{
+    string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+    string motivo = string.IsNullOrWhiteSpace(request.Motivo) ? "Anulado desde Android" : request.Motivo.Trim();
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_PROFORMA_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdProforma", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@MotivoAnulacion", SqlDbType.VarChar, 200).Value = motivo;
+    cmd.Parameters.Add("@UsuarioAnulacion", SqlDbType.VarChar, 80).Value = usuario;
+    SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+    SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(resultado);
+    cmd.Parameters.Add(mensajeParam);
+    await conexion.OpenAsync();
+    await cmd.ExecuteNonQueryAsync();
+    string mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+    return resultado.Value is bool ok && !ok ? Results.BadRequest(new { mensaje }) : Results.Ok(new { mensaje });
+});
+
 app.MapGet("/api/oci", async (string? buscar) =>
 {
     const string sql = @"
@@ -478,6 +646,22 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
     return Results.Ok(new { cabecera, detalles });
 });
 
+app.MapPost("/api/oci/{id:int}/anular", async (int id, DocumentoAccionApiRequest request) =>
+{
+    string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+    string motivo = string.IsNullOrWhiteSpace(request.Motivo) ? "Anulado desde Android" : request.Motivo.Trim();
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@MotivoAnulacion", SqlDbType.VarChar, 200).Value = motivo;
+    cmd.Parameters.Add("@UsuarioAnulacion", SqlDbType.VarChar, 80).Value = usuario;
+    SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(mensajeParam);
+    await conexion.OpenAsync();
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = mensajeParam.Value?.ToString() ?? string.Empty });
+});
+
 app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
 {
     List<object> items = [];
@@ -505,7 +689,9 @@ app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
 
         decimal totalPlanificado = Convert.ToDecimal(dr["TotalPlanificado"]);
         decimal totalLanzado = Convert.ToDecimal(dr["TotalLanzado"]);
-        decimal avance = totalPlanificado <= 0 ? 0 : Math.Min(1, totalLanzado / totalPlanificado);
+        decimal avance = estado.Equals("TERMINADA", StringComparison.OrdinalIgnoreCase)
+            ? 1
+            : totalPlanificado <= 0 ? 0 : Math.Min(1, totalLanzado / totalPlanificado);
 
         items.Add(new
         {
@@ -1008,6 +1194,46 @@ static DataTable CrearTablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaDe
     return tabla;
 }
 
+static string CrearDetallesProformaXml(IEnumerable<ProformaGuardarDetalleApiRequest> detalles)
+{
+    System.Text.StringBuilder xml = new("<Detalles>");
+    foreach (ProformaGuardarDetalleApiRequest detalle in detalles)
+    {
+        decimal importe = Math.Max(0, Math.Round((detalle.Cantidad * detalle.PrecioUnitario) - detalle.Descuento, 2));
+        xml.Append("<Detalle ");
+        xml.Append(CrearAtributoXml("IdProducto", detalle.IdProducto.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        xml.Append(CrearAtributoXml("Cantidad", detalle.Cantidad.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        xml.Append(CrearAtributoXml("PrecioUnitario", detalle.PrecioUnitario.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        xml.Append(CrearAtributoXml("Descuento", detalle.Descuento.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        xml.Append(CrearAtributoXml("Importe", importe.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        xml.Append(CrearAtributoXml("Observacion", detalle.Observacion?.Trim() ?? string.Empty));
+        xml.Append("/>");
+    }
+
+    xml.Append("</Detalles>");
+    return xml.ToString();
+}
+
+static string CrearAtributoXml(string nombre, string valor)
+    => $"{nombre}=\"{System.Security.SecurityElement.Escape(valor) ?? string.Empty}\" ";
+
+static async Task ConfigurarOpcionesInsertAsync(SqlConnection conexion)
+{
+    await using SqlCommand cmd = new(
+        """
+        SET ANSI_NULLS ON;
+        SET ANSI_PADDING ON;
+        SET ANSI_WARNINGS ON;
+        SET ARITHABORT ON;
+        SET CONCAT_NULL_YIELDS_NULL ON;
+        SET QUOTED_IDENTIFIER ON;
+        SET NUMERIC_ROUNDABORT OFF;
+        """,
+        conexion);
+
+    await cmd.ExecuteNonQueryAsync();
+}
+
 internal sealed record FichaDocumentoApi(
     string CodigoModelo,
     string NombreArchivo,
@@ -1041,6 +1267,27 @@ internal sealed record IngresoManualApiRequest(
 internal sealed record IngresoManualDetalleApiRequest(
     int IdProducto,
     decimal Cantidad);
+
+internal sealed record ProformaGuardarApiRequest(
+    int IdCliente,
+    DateTime FechaVencimiento,
+    string? OrdenCompraCliente,
+    string? Observacion,
+    decimal IgvPorcentaje,
+    string CondicionTributaria,
+    string? Usuario,
+    List<ProformaGuardarDetalleApiRequest> Detalles);
+
+internal sealed record ProformaGuardarDetalleApiRequest(
+    int IdProducto,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal Descuento,
+    string? Observacion);
+
+internal sealed record DocumentoAccionApiRequest(
+    string? Usuario,
+    string? Motivo);
 
 internal sealed record OrdenTrabajoLanzarApiRequest(
     int IdUsuarioSesion,

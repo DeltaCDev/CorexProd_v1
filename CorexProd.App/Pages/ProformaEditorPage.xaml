@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.ProformaEditorPage"
+             Title="Nueva Proforma">
+    <Grid RowDefinitions="*,Auto" BackgroundColor="#F4F6F8">
+        <ScrollView>
+            <VerticalStackLayout Padding="14" Spacing="12">
+                <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Label x:Name="NumeroLabel" Text="Proforma" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
+                        <Picker x:Name="ClientePicker" Title="Cliente" ItemDisplayBinding="{Binding Display}" />
+                        <Entry x:Name="OrdenCompraEntry" Placeholder="OC de cliente" />
+                        <DatePicker x:Name="VencimientoPicker" />
+                        <Editor x:Name="ObservacionEditor" Placeholder="Observacion" AutoSize="TextChanges" HeightRequest="78" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Producto" FontFamily="OpenSansSemibold" TextColor="#10324A" />
+                        <SearchBar x:Name="ProductoSearch" Placeholder="Codigo, producto o etiqueta" TextChanged="OnProductoSearchChanged" />
+                        <Picker x:Name="ProductoPicker" Title="Seleccione producto" ItemDisplayBinding="{Binding Display}" />
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                            <Entry x:Name="CantidadEntry" Placeholder="Cant." Keyboard="Numeric" />
+                            <Entry x:Name="PrecioEntry" Grid.Column="1" Placeholder="Precio" Keyboard="Numeric" />
+                            <Entry x:Name="DescuentoEntry" Grid.Column="2" Placeholder="Desc." Keyboard="Numeric" />
+                        </Grid>
+                        <Entry x:Name="DetalleObservacionEntry" Placeholder="Observacion de linea" />
+                        <Button Text="Agregar producto" Clicked="OnAgregarProductoClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <CollectionView x:Name="DetallesView" SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <Label Text="Agregue productos a la proforma." Padding="18" HorizontalTextAlignment="Center" TextColor="#637083" />
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Label Text="{Binding CodigoProducto}" FontFamily="OpenSansSemibold" TextColor="#10324A" />
+                                    <Label Grid.Column="1" Text="{Binding Importe, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreProducto}" TextColor="#344054" LineBreakMode="WordWrap" />
+                                    <Label Grid.Row="2" Text="{Binding CantidadPrecio}" FontSize="12" TextColor="#667085" />
+                                    <Button Grid.Row="2" Grid.Column="1" Text="Quitar" FontSize="12" Padding="10,4" Clicked="OnQuitarProductoClicked" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="1" Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <VerticalStackLayout Spacing="2">
+                    <Label x:Name="SubtotalLabel" Text="Subtotal: S/ 0.00" TextColor="#637083" />
+                    <Label x:Name="TotalLabel" Text="Total: S/ 0.00" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1" Text="Guardar" Clicked="OnGuardarClicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

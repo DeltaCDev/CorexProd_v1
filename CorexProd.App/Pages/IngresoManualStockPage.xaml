@@ -23,7 +23,29 @@
                         <Label Text="Producto" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
                         <SearchBar x:Name="ProductoSearch" Placeholder="Codigo, producto o etiqueta" SearchButtonPressed="OnProductoSearchPressed" />
                         <Button Text="Buscar producto" Clicked="OnBuscarProductoClicked" />
-                        <Picker x:Name="ProductoPicker" Title="Producto" ItemDisplayBinding="{Binding ProductoBusqueda}" />
+                        <Label x:Name="ProductosEncontradosLabel" Text="Busque un producto para seleccionarlo." FontSize="12" TextColor="#637083" />
+                        <CollectionView x:Name="ProductosView"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnProductoSeleccionado"
+                                        MaximumHeightRequest="360">
+                            <CollectionView.EmptyView>
+                                <Label Text="Sin productos para mostrar." Padding="12" TextColor="#637083" HorizontalTextAlignment="Center" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="10" Margin="0,0,0,8" BackgroundColor="{Binding Fondo}" Stroke="{Binding Borde}">
+                                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <Label Text="{Binding Producto.Codigo}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
+                                            <Label Grid.Column="1" Text="{Binding Producto.StockActual, StringFormat='Stock {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                            <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Producto.NombreProducto}" FontSize="13" TextColor="#344054" LineBreakMode="WordWrap" />
+                                            <Label Grid.Row="2" Text="{Binding EtiquetaTexto}" FontSize="12" TextColor="#7A4B12" />
+                                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding SeleccionTexto}" FontSize="12" TextColor="#2563EB" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
                         <Entry x:Name="CantidadEntry" Placeholder="Cantidad" Keyboard="Numeric" />
                         <Button Text="Agregar" Clicked="OnAgregarClicked" />
                     </VerticalStackLayout>

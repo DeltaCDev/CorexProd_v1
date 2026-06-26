@@ -10,6 +10,8 @@ public partial class IngresoManualStockPage : ContentPage
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
     private readonly ObservableCollection<IngresoManualStockDetalleItem> _detalles = [];
+    private readonly ObservableCollection<ProductoSeleccionItem> _productos = [];
+    private ProductoStockBusquedaApi? _productoSeleccionado;
 
     public IngresoManualStockPage()
     {
@@ -17,6 +19,7 @@ public partial class IngresoManualStockPage : ContentPage
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         DetalleView.ItemsSource = _detalles;
+        ProductosView.ItemsSource = _productos;
     }
 
     protected override async void OnAppearing()
@@ -52,7 +55,7 @@ public partial class IngresoManualStockPage : ContentPage
 
     private async void OnAlmacenChanged(object? sender, EventArgs e)
     {
-        ProductoPicker.ItemsSource = null;
+        LimpiarProductosEncontrados();
         if (!string.IsNullOrWhiteSpace(ProductoSearch.Text))
             await BuscarProductosAsync();
     }
@@ -72,13 +75,43 @@ public partial class IngresoManualStockPage : ContentPage
         }
 
         ApiListResponse<ProductoStockBusquedaApi> response = await _apiClient.BuscarProductosStockManualAsync(almacen.IdAlmacen, ProductoSearch.Text);
-        ProductoPicker.ItemsSource = response.Items.ToList();
-        ProductoPicker.SelectedIndex = response.Items.Count > 0 ? 0 : -1;
+        _productos.Clear();
+        _productoSeleccionado = null;
+
+        foreach (ProductoStockBusquedaApi producto in response.Items)
+            _productos.Add(new ProductoSeleccionItem(producto, false));
+
+        if (_productos.Count > 0)
+            SeleccionarProducto(_productos[0]);
+
+        ProductosEncontradosLabel.Text = _productos.Count == 0
+            ? "No se encontraron productos."
+            : $"{_productos.Count} producto(s) encontrados. Seleccione uno para agregar stock.";
+    }
+
+    private void OnProductoSeleccionado(object? sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is ProductoSeleccionItem item)
+            SeleccionarProducto(item);
+    }
+
+    private void SeleccionarProducto(ProductoSeleccionItem item)
+    {
+        _productoSeleccionado = item.Producto;
+        for (int i = 0; i < _productos.Count; i++)
+        {
+            ProductoSeleccionItem actual = _productos[i];
+            bool seleccionado = actual.Producto.IdProducto == item.Producto.IdProducto;
+            if (actual.Seleccionado != seleccionado)
+                _productos[i] = actual with { Seleccionado = seleccionado };
+        }
+
+        ProductosView.SelectedItem = _productos.FirstOrDefault(x => x.Producto.IdProducto == item.Producto.IdProducto);
     }
 
     private async void OnAgregarClicked(object? sender, EventArgs e)
     {
-        if (ProductoPicker.SelectedItem is not ProductoStockBusquedaApi producto)
+        if (_productoSeleccionado is not ProductoStockBusquedaApi producto)
         {
             await DisplayAlertAsync("Ingreso manual", "Seleccione un producto.", "OK");
             return;
@@ -157,11 +190,19 @@ public partial class IngresoManualStockPage : ContentPage
     private void Limpiar()
     {
         ProductoSearch.Text = string.Empty;
-        ProductoPicker.ItemsSource = null;
+        LimpiarProductosEncontrados();
         CantidadEntry.Text = string.Empty;
         ObservacionEditor.Text = string.Empty;
         _detalles.Clear();
         ActualizarTotal();
+    }
+
+    private void LimpiarProductosEncontrados()
+    {
+        _productos.Clear();
+        _productoSeleccionado = null;
+        ProductosView.SelectedItem = null;
+        ProductosEncontradosLabel.Text = "Busque un producto para seleccionarlo.";
     }
 
     private void ActualizarTotal()
@@ -179,5 +220,13 @@ public partial class IngresoManualStockPage : ContentPage
 
         public ProductoStockBusquedaApi Producto { get; }
         public decimal Cantidad { get; set; }
+    }
+
+    private sealed record ProductoSeleccionItem(ProductoStockBusquedaApi Producto, bool Seleccionado)
+    {
+        public Color Fondo => Seleccionado ? Color.FromArgb("#EFF6FF") : Colors.White;
+        public Color Borde => Seleccionado ? Color.FromArgb("#2563EB") : Color.FromArgb("#D9E0E6");
+        public string EtiquetaTexto => string.IsNullOrWhiteSpace(Producto.EtiquetaCliente) ? "Sin etiqueta" : Producto.EtiquetaCliente;
+        public string SeleccionTexto => Seleccionado ? "Seleccionado" : string.Empty;
     }
 }

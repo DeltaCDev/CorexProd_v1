@@ -25,6 +25,7 @@ public partial class ProformasPage : ContentPage
     }
 
     private async void OnBuscarClicked(object? sender, EventArgs e) => await LoadAsync();
+    private async void OnNuevaClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProformaEditorPage));
     private async void OnSearchPressed(object? sender, EventArgs e) => await LoadAsync();
     private async void OnRefreshing(object? sender, EventArgs e) => await LoadAsync();
 
@@ -48,17 +49,54 @@ public partial class ProformasPage : ContentPage
         ItemsView.SelectedItem = null;
         try
         {
-            ProformaDetalleResponse detalle = await _apiClient.GetProformaDetalleAsync(item.IdProforma);
-            string productos = string.Join(Environment.NewLine, detalle.Detalles.Take(8).Select(x => $"{x.CodigoProducto} x {x.Cantidad:N2} - {x.NombreProducto}"));
-            await DisplayAlertAsync(
-                detalle.Cabecera.SerieNumero,
-                $"Cliente: {detalle.Cabecera.NombreCliente}\nEstado: {detalle.Cabecera.Estado}\nTotal: S/ {detalle.Cabecera.Total:N2}\n\n{productos}",
-                "OK");
+            string generarTexto = item.TieneOrdenCompraInterna ? "OCI ya generada" : "Generar OCI";
+            string action = await DisplayActionSheetAsync(item.SerieNumero, "Cancelar", null, "Ver detalle", generarTexto, "Anular");
+
+            if (action == "Ver detalle")
+                await MostrarDetalleAsync(item.IdProforma);
+            else if (action == "Generar OCI" && !item.TieneOrdenCompraInterna)
+                await GenerarOciAsync(item);
+            else if (action == "Anular")
+                await AnularAsync(item);
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("Proformas", ex.Message, "OK");
         }
+    }
+
+    private async Task MostrarDetalleAsync(int idProforma)
+    {
+        ProformaDetalleResponse detalle = await _apiClient.GetProformaDetalleAsync(idProforma);
+        string productos = string.Join(Environment.NewLine, detalle.Detalles.Take(8).Select(x => $"{x.CodigoProducto} x {x.Cantidad:N2} - {x.NombreProducto}"));
+        await DisplayAlertAsync(
+            detalle.Cabecera.SerieNumero,
+            $"Cliente: {detalle.Cabecera.NombreCliente}\nEstado: {detalle.Cabecera.Estado}\nTotal: S/ {detalle.Cabecera.Total:N2}\n\n{productos}",
+            "OK");
+    }
+
+    private async Task GenerarOciAsync(ProformaResumen item)
+    {
+        bool confirmar = await DisplayAlertAsync("Generar OCI", $"Generar OCI desde {item.SerieNumero}?", "Generar", "Cancelar");
+        if (!confirmar)
+            return;
+
+        SessionState session = ServiceHelper.GetRequiredService<SessionState>();
+        DocumentoAccionResponse response = await _apiClient.GenerarOciDesdeProformaAsync(item.IdProforma, new(session.Usuario?.NombreUsuario ?? "Android", string.Empty));
+        await DisplayAlertAsync("OCI", response.Mensaje, "OK");
+        await LoadAsync();
+    }
+
+    private async Task AnularAsync(ProformaResumen item)
+    {
+        string? motivo = await DisplayPromptAsync("Anular proforma", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
+        if (string.IsNullOrWhiteSpace(motivo))
+            return;
+
+        SessionState session = ServiceHelper.GetRequiredService<SessionState>();
+        DocumentoAccionResponse response = await _apiClient.AnularProformaAsync(item.IdProforma, new(session.Usuario?.NombreUsuario ?? "Android", motivo));
+        await DisplayAlertAsync("Proformas", response.Mensaje, "OK");
+        await LoadAsync();
     }
 
     private async Task LoadAsync()

@@ -101,9 +101,14 @@ public partial class StockProductosPage : ContentPage
             var response = await _apiClient.GetProductosAsync(Search.Text ?? string.Empty, EtiquetaSearch.Text ?? string.Empty);
             _productos.Clear();
             foreach (ProductoStock item in response.Items
-                         .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).CodigoBase)
-                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).TallaOrden)
-                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Codigo))
+                         .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Cliente)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NumeroNuloOrden)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Numero)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Variante)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).OrdenTalla)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).TallaNumero)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).CodigoOrden)
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NombreProducto))
             {
                 _productos.Add(item);
             }

@@ -94,6 +94,41 @@ public sealed class CorexProdApiClient
         return await GetAsync<ProformaDetalleResponse>($"api/proformas/{idProforma}", cancellationToken);
     }
 
+    public async Task<ProformaPrepararResponse> GetProformaPrepararAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ProformaPrepararResponse>("api/proformas/preparar", cancellationToken);
+    }
+
+    public async Task<ProformaGuardarResponse> GuardarProformaAsync(ProformaGuardarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl("api/proformas"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ProformaGuardarResponse>(response, cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> GenerarOciDesdeProformaAsync(int idProforma, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/proformas/{idProforma}/generar-oci"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> AnularProformaAsync(int idProforma, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/proformas/{idProforma}/anular"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
+    }
+
     public async Task<ApiListResponse<OciResumen>> GetOciAsync(string buscar, CancellationToken cancellationToken = default)
     {
         string query = string.IsNullOrWhiteSpace(buscar) ? string.Empty : $"?buscar={Uri.EscapeDataString(buscar.Trim())}";
@@ -103,6 +138,16 @@ public sealed class CorexProdApiClient
     public async Task<OciDetalleResponse> GetOciDetalleAsync(int idOrdenCompraInterna, CancellationToken cancellationToken = default)
     {
         return await GetAsync<OciDetalleResponse>($"api/oci/{idOrdenCompraInterna}", cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> AnularOciAsync(int idOrdenCompraInterna, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/oci/{idOrdenCompraInterna}/anular"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
     }
 
     public async Task<StockManualPrepararResponse> GetStockManualPrepararAsync(CancellationToken cancellationToken = default)
