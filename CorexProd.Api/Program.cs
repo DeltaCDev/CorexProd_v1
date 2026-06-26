@@ -28,12 +28,72 @@ app.MapGet("/", () => Results.Ok(new
     endpoints = new[]
     {
         "/api/health",
+        "/api/auth/login",
         "/api/stock/productos",
         "/api/stock/insumos",
         "/api/fichas-tecnicas/{codigoProducto}/info",
         "/api/fichas-tecnicas/{codigoProducto}"
     }
 }));
+
+app.MapPost("/api/auth/login", async (LoginRequest request) =>
+{
+    string nombreUsuario = request.Usuario?.Trim() ?? string.Empty;
+    string clave = request.Clave?.Trim() ?? string.Empty;
+
+    if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(clave))
+    {
+        return Results.BadRequest(new { mensaje = "Ingrese usuario y contraseña." });
+    }
+
+    const string sqlUsuario = "EXEC dbo.USP_SEG_USUARIO_LOGIN @Usuario;";
+
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sqlUsuario, conexion);
+    cmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 50).Value = nombreUsuario;
+
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+    {
+        return Results.Unauthorized();
+    }
+
+    string hash = dr["Clave"]?.ToString() ?? string.Empty;
+    bool activo = Convert.ToBoolean(dr["Estado"]);
+    if (!activo || !BCrypt.Net.BCrypt.Verify(clave, hash))
+    {
+        return Results.Unauthorized();
+    }
+
+    LoginUserResponse usuario = new(
+        Convert.ToInt32(dr["IdUsuario"]),
+        dr["NombreUsuario"]?.ToString() ?? string.Empty,
+        dr["NombreCompleto"]?.ToString() ?? string.Empty,
+        Convert.ToInt32(dr["IdRol"]),
+        dr["NombreRol"]?.ToString() ?? string.Empty);
+
+    await dr.CloseAsync();
+
+    List<string> menus = [];
+    await using SqlCommand menusCmd = new("dbo.USP_SEG_MENU_OBTENERPORROL", conexion)
+    {
+        CommandType = CommandType.StoredProcedure
+    };
+    menusCmd.Parameters.Add("@IdRol", SqlDbType.Int).Value = usuario.IdRol;
+
+    await using SqlDataReader menusReader = await menusCmd.ExecuteReaderAsync();
+    while (await menusReader.ReadAsync())
+    {
+        menus.Add(menusReader["NombreMenu"]?.ToString() ?? string.Empty);
+    }
+
+    return Results.Ok(new LoginResponse(
+        usuario,
+        menus,
+        DateTime.Now,
+        "Inicio de sesión correcto."));
+});
 
 app.MapGet("/api/health", async () =>
 {
@@ -244,3 +304,18 @@ internal sealed record FichaDocumentoApi(
     string RutaCompleta,
     int Version,
     DateTime FechaRegistro);
+
+internal sealed record LoginRequest(string? Usuario, string? Clave);
+
+internal sealed record LoginUserResponse(
+    int IdUsuario,
+    string NombreUsuario,
+    string NombreCompleto,
+    int IdRol,
+    string NombreRol);
+
+internal sealed record LoginResponse(
+    LoginUserResponse Usuario,
+    IReadOnlyList<string> Menus,
+    DateTime FechaHora,
+    string Mensaje);

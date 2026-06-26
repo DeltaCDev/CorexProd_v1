@@ -5,3 +5,5 @@ obj/
 *.suo
 *.cache
 *.pdb
+.android-sdk/
+.jdk/

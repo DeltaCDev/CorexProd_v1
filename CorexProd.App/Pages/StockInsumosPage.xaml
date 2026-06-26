@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.StockInsumosPage"
+             Title="Stock insumos">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
+        <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
+            <SearchBar x:Name="Search"
+                       Placeholder="Código o insumo"
+                       SearchButtonPressed="OnSearchPressed"
+                       TextChanged="OnSearchTextChanged" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label x:Name="CountLabel"
+                       Text="Sin datos"
+                       TextColor="#637083"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="Buscar"
+                        Clicked="OnBuscarClicked" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <RefreshView Grid.Row="1"
+                     x:Name="Refresh"
+                     Refreshing="OnRefreshing">
+            <CollectionView x:Name="ItemsView"
+                            Margin="12"
+                            SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="24" Spacing="8">
+                        <Label Text="No hay insumos para mostrar."
+                               HorizontalTextAlignment="Center"
+                               TextColor="#637083" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Label Text="{Binding Codigo}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="15"
+                                       TextColor="#10324A" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding StockActual, StringFormat='{0:N3}'}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="16"
+                                       TextColor="#067647" />
+                                <Label Grid.Row="1"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding Insumo}"
+                                       LineBreakMode="WordWrap"
+                                       TextColor="#344054" />
+                                <Label Grid.Row="2"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding Unidad}"
+                                       FontSize="12"
+                                       TextColor="#667085" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>
