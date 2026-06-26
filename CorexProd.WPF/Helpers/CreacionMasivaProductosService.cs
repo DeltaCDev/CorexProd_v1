@@ -17,6 +17,7 @@ namespace CorexProd.WPF.Helpers
         public int NumeroLinea { get; set; }
         public string Codigo { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
+        public string EtiquetaCliente { get; set; } = string.Empty;
         public int IdSuperCategoriaProducto { get; set; }
         public string NombreSuperCategoria { get; set; } = string.Empty;
         public int IdCategoriaProducto { get; set; }
@@ -62,6 +63,7 @@ namespace CorexProd.WPF.Helpers
             {
                 Codigo = Codigo,
                 NombreProducto = NombreProducto,
+                EtiquetaCliente = EtiquetaCliente,
                 Descripcion = string.Empty,
                 IdSuperCategoriaProducto = IdSuperCategoriaProducto,
                 IdCategoriaProducto = IdCategoriaProducto,
@@ -126,9 +128,9 @@ namespace CorexProd.WPF.Helpers
                     ? linea.Split('\t', StringSplitOptions.None)
                     : linea.Split(';', StringSplitOptions.None);
 
-                if (columnas.Length != 5 && columnas.Length != 6)
+                if (columnas.Length != 5 && columnas.Length != 6 && columnas.Length != 7)
                 {
-                    resultado.Filas.Add(CrearError(numeroLinea, columnas.FirstOrDefault()?.Trim().ToUpperInvariant() ?? string.Empty, "Cantidad incorrecta de columnas. Use 5 columnas o 6 si incluye supercategoría"));
+                    resultado.Filas.Add(CrearError(numeroLinea, columnas.FirstOrDefault()?.Trim().ToUpperInvariant() ?? string.Empty, "Cantidad incorrecta de columnas. Use 5 columnas, 6 si incluye supercategoria o 7 si incluye etiqueta y supercategoria"));
                     continue;
                 }
 
@@ -164,11 +166,14 @@ namespace CorexProd.WPF.Helpers
             string codigoOriginal = columnas[0];
             string codigo = codigoOriginal.Trim().ToUpperInvariant();
             string nombre = columnas[1].Trim();
-            bool incluyeSuperCategoria = columnas.Length == 6;
-            string superCategoriaTexto = incluyeSuperCategoria ? columnas[2].Trim() : string.Empty;
-            string categoriaTexto = columnas[incluyeSuperCategoria ? 3 : 2].Trim();
-            string unidadTexto = columnas[incluyeSuperCategoria ? 4 : 3].Trim();
-            string stockTexto = columnas[incluyeSuperCategoria ? 5 : 4].Trim();
+            bool incluyeEtiqueta = columnas.Length == 7;
+            bool incluyeSuperCategoria = columnas.Length >= 6;
+            string etiquetaCliente = incluyeEtiqueta ? columnas[2].Trim() : string.Empty;
+            int indiceSuperCategoria = incluyeEtiqueta ? 3 : 2;
+            string superCategoriaTexto = incluyeSuperCategoria ? columnas[indiceSuperCategoria].Trim() : string.Empty;
+            string categoriaTexto = columnas[incluyeSuperCategoria ? indiceSuperCategoria + 1 : 2].Trim();
+            string unidadTexto = columnas[incluyeSuperCategoria ? indiceSuperCategoria + 2 : 3].Trim();
+            string stockTexto = columnas[incluyeSuperCategoria ? indiceSuperCategoria + 3 : 4].Trim();
 
             if (string.IsNullOrWhiteSpace(codigo))
             {
@@ -269,6 +274,7 @@ namespace CorexProd.WPF.Helpers
                 NumeroLinea = numeroLinea,
                 Codigo = codigo,
                 NombreProducto = nombre,
+                EtiquetaCliente = etiquetaCliente,
                 IdSuperCategoriaProducto = superCategoria?.IdSuperCategoriaProducto ?? 0,
                 NombreSuperCategoria = superCategoria?.NombreSuperCategoria ?? string.Empty,
                 IdCategoriaProducto = categoria?.IdCategoriaProducto ?? 0,

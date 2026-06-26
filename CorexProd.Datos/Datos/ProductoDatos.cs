@@ -27,6 +27,7 @@ namespace CorexProd.Datos.Datos
                     IdProducto = Convert.ToInt32(dr["IdProducto"]),
                     Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
                     NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                    EtiquetaCliente = dr["EtiquetaCliente"]?.ToString() ?? string.Empty,
                     Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
                     IdSuperCategoriaProducto = Convert.ToInt32(dr["IdSuperCategoriaProducto"]),
                     NombreSuperCategoria = dr["NombreSuperCategoria"]?.ToString() ?? string.Empty,
@@ -54,6 +55,7 @@ namespace CorexProd.Datos.Datos
 
             cmd.Parameters.AddWithValue("@Codigo", producto.Codigo);
             cmd.Parameters.AddWithValue("@NombreProducto", producto.NombreProducto);
+            cmd.Parameters.AddWithValue("@EtiquetaCliente", producto.EtiquetaCliente);
             cmd.Parameters.AddWithValue("@Descripcion", producto.Descripcion);
             cmd.Parameters.AddWithValue("@IdCategoriaProducto", producto.IdCategoriaProducto);
             cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", producto.IdSuperCategoriaProducto);
@@ -97,6 +99,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@IdProducto", producto.IdProducto);
             cmd.Parameters.AddWithValue("@Codigo", producto.Codigo);
             cmd.Parameters.AddWithValue("@NombreProducto", producto.NombreProducto);
+            cmd.Parameters.AddWithValue("@EtiquetaCliente", producto.EtiquetaCliente);
             cmd.Parameters.AddWithValue("@Descripcion", producto.Descripcion);
             cmd.Parameters.AddWithValue("@IdCategoriaProducto", producto.IdCategoriaProducto);
             cmd.Parameters.AddWithValue("@IdSuperCategoriaProducto", producto.IdSuperCategoriaProducto);

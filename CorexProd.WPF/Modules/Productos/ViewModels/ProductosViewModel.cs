@@ -29,6 +29,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private int _idProducto;
         private string _codigo = string.Empty;
         private string _nombreProducto = string.Empty;
+        private string _etiquetaCliente = string.Empty;
         private int _idSuperCategoriaProducto;
         private int _idCategoriaProducto;
         private int _idUnidadMedida;
@@ -37,6 +38,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         private Producto? _productoSeleccionado;
         private string _filtroCodigo = string.Empty;
         private string _filtroNombre = string.Empty;
+        private string _filtroEtiquetaCliente = string.Empty;
         private int _idSuperCategoriaFiltro;
         private int _idCategoriaFiltro;
 
@@ -73,6 +75,16 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             set
             {
                 _nombreProducto = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string EtiquetaCliente
+        {
+            get => _etiquetaCliente;
+            set
+            {
+                _etiquetaCliente = value;
                 OnPropertyChanged();
             }
         }
@@ -146,6 +158,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                     IdProducto = _productoSeleccionado.IdProducto;
                     Codigo = _productoSeleccionado.Codigo;
                     NombreProducto = _productoSeleccionado.NombreProducto;
+                    EtiquetaCliente = _productoSeleccionado.EtiquetaCliente;
                     IdSuperCategoriaProducto = _productoSeleccionado.IdSuperCategoriaProducto;
                     IdCategoriaProducto = _productoSeleccionado.IdCategoriaProducto;
                     IdUnidadMedida = _productoSeleccionado.IdUnidadMedida;
@@ -172,6 +185,17 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             set
             {
                 _filtroNombre = value;
+                OnPropertyChanged();
+                AplicarFiltros();
+            }
+        }
+
+        public string FiltroEtiquetaCliente
+        {
+            get => _filtroEtiquetaCliente;
+            set
+            {
+                _filtroEtiquetaCliente = value;
                 OnPropertyChanged();
                 AplicarFiltros();
             }
@@ -287,6 +311,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         {
             string codigo = FiltroCodigo.Trim();
             string nombre = FiltroNombre.Trim();
+            string etiquetaCliente = FiltroEtiquetaCliente.Trim();
 
             List<Producto> filtrados = _todosLosProductos
                 .Where(producto =>
@@ -294,6 +319,8 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                         || producto.Codigo.Contains(codigo, StringComparison.OrdinalIgnoreCase))
                     && (string.IsNullOrWhiteSpace(nombre)
                         || producto.NombreProducto.Contains(nombre, StringComparison.OrdinalIgnoreCase))
+                    && (string.IsNullOrWhiteSpace(etiquetaCliente)
+                        || producto.EtiquetaCliente.Contains(etiquetaCliente, StringComparison.OrdinalIgnoreCase))
                     && (IdSuperCategoriaFiltro == 0
                         || producto.IdSuperCategoriaProducto == IdSuperCategoriaFiltro)
                     && (IdCategoriaFiltro == 0
@@ -314,10 +341,12 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
         {
             _filtroCodigo = string.Empty;
             _filtroNombre = string.Empty;
+            _filtroEtiquetaCliente = string.Empty;
             _idSuperCategoriaFiltro = 0;
             _idCategoriaFiltro = 0;
             OnPropertyChanged(nameof(FiltroCodigo));
             OnPropertyChanged(nameof(FiltroNombre));
+            OnPropertyChanged(nameof(FiltroEtiquetaCliente));
             OnPropertyChanged(nameof(IdSuperCategoriaFiltro));
             OnPropertyChanged(nameof(IdCategoriaFiltro));
             AplicarFiltros();
@@ -347,7 +376,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             try
             {
                 StringBuilder contenido = new();
-                contenido.AppendLine("ID;Código;Producto;Supercategoría;Categoría;Unidad;Stock mínimo;Estado");
+                contenido.AppendLine("ID;Código;Producto;Etiqueta cliente;Supercategoría;Categoría;Unidad;Stock mínimo;Estado");
 
                 foreach (Producto producto in Productos)
                 {
@@ -355,6 +384,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                         producto.IdProducto,
                         EscaparCsv(producto.Codigo),
                         EscaparCsv(producto.NombreProducto),
+                        EscaparCsv(producto.EtiquetaCliente),
                         EscaparCsv(producto.NombreSuperCategoria),
                         EscaparCsv(producto.NombreCategoria),
                         EscaparCsv(producto.NombreUnidad),
@@ -408,6 +438,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 IdProducto = IdProducto,
                 Codigo = Codigo,
                 NombreProducto = NombreProducto,
+                EtiquetaCliente = EtiquetaCliente,
                 IdSuperCategoriaProducto = IdSuperCategoriaProducto,
                 IdCategoriaProducto = IdCategoriaProducto,
                 IdUnidadMedida = IdUnidadMedida,
@@ -472,6 +503,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
             IdProducto = 0;
             Codigo = string.Empty;
             NombreProducto = string.Empty;
+            EtiquetaCliente = string.Empty;
             IdSuperCategoriaProducto = 0;
             IdCategoriaProducto = 0;
             IdUnidadMedida = 0;
@@ -498,6 +530,7 @@ namespace CorexProd.WPF.Modules.Productos.ViewModels
                 viewModel.IdProducto = producto.IdProducto;
                 viewModel.Codigo = producto.Codigo;
                 viewModel.NombreProducto = producto.NombreProducto;
+                viewModel.EtiquetaCliente = producto.EtiquetaCliente;
                 viewModel.IdSuperCategoriaProducto = producto.IdSuperCategoriaProducto;
                 viewModel.IdCategoriaProducto = producto.IdCategoriaProducto;
                 viewModel.IdUnidadMedida = producto.IdUnidadMedida;

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.IngresoManualStockPage"
+             Title="Ingreso manual stock">
+    <Grid RowDefinitions="*,Auto" BackgroundColor="#F4F6F8">
+        <ScrollView>
+            <VerticalStackLayout Padding="14" Spacing="12">
+                <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Cabecera" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
+                        <Picker x:Name="ProveedorPicker" Title="Proveedor" />
+                        <Picker x:Name="TipoDocumentoPicker" Title="Tipo documento" />
+                        <Picker x:Name="AlmacenPicker" Title="Almacen" SelectedIndexChanged="OnAlmacenChanged" />
+                        <Editor x:Name="ObservacionEditor" Placeholder="Observacion" AutoSize="TextChanges" HeightRequest="70" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Producto" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
+                        <SearchBar x:Name="ProductoSearch" Placeholder="Codigo, producto o etiqueta" SearchButtonPressed="OnProductoSearchPressed" />
+                        <Button Text="Buscar producto" Clicked="OnBuscarProductoClicked" />
+                        <Picker x:Name="ProductoPicker" Title="Producto" ItemDisplayBinding="{Binding ProductoBusqueda}" />
+                        <Entry x:Name="CantidadEntry" Placeholder="Cantidad" Keyboard="Numeric" />
+                        <Button Text="Agregar" Clicked="OnAgregarClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Detalle" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
+                            <Label Grid.Column="1" x:Name="TotalLabel" Text="0 producto(s)" TextColor="#637083" />
+                        </Grid>
+                        <CollectionView x:Name="DetalleView" SelectionMode="None" MaximumHeightRequest="320">
+                            <CollectionView.EmptyView>
+                                <Label Text="Agregue productos para ingresar stock." Padding="12" TextColor="#637083" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="0,8" ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="{Binding Producto.Codigo}" FontFamily="OpenSansSemibold" TextColor="#10324A" />
+                                            <Label Text="{Binding Producto.NombreProducto}" FontSize="13" TextColor="#344054" LineBreakMode="WordWrap" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid Grid.Row="1" Padding="14" BackgroundColor="White" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Button Text="Limpiar" BackgroundColor="#667085" Clicked="OnLimpiarClicked" />
+            <Button Grid.Column="1" x:Name="GuardarButton" Text="Guardar stock" Clicked="OnGuardarClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>

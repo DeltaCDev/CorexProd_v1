@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace CorexProd.WPF.Modules.Produccion.Views
 {
@@ -18,6 +19,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private readonly OrdenTrabajoNegocio _negocio = new();
         private readonly OrdenCompraInternaNegocio _ociNegocio = new();
         private readonly ParametroNegocio _parametroNegocio = new();
+        private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
         private OrdenTrabajo _ot = null!;
         private List<OrdenTrabajoDetalleArea> _visibles = [];
         private readonly bool _puedeOperarOt;
@@ -28,6 +30,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             InitializeComponent();
             _id = id;
             _puedeOperarOt = PermissionService.PuedeOperarOrdenTrabajo;
+            _refreshTimer.Tick += (_, _) => RefrescarSilencioso();
+            Loaded += (_, _) => _refreshTimer.Start();
+            Closed += (_, _) => _refreshTimer.Stop();
             try
             {
                 Cargar();
@@ -36,6 +41,18 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             {
                 NotificationService.Error($"No se pudo abrir la OT: {ex.Message}");
                 Loaded += (_, _) => Close();
+            }
+        }
+
+        private void RefrescarSilencioso()
+        {
+            try
+            {
+                Cargar();
+            }
+            catch
+            {
+                // Se evita interrumpir al operador por fallos transitorios de red/BD durante el refresco automático.
             }
         }
 

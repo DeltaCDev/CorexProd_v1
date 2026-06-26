@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.ModuloPage"
+             Title="{Binding Titulo}">
+    <Grid BackgroundColor="#F4F6F8">
+        <Border Padding="18"
+                Margin="16"
+                BackgroundColor="White"
+                Stroke="#D9E0E6"
+                VerticalOptions="Start">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <VerticalStackLayout Spacing="12">
+                <Label Text="{Binding Titulo}"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="20"
+                       TextColor="#10324A" />
+                <Label Text="Modulo habilitado en Android."
+                       TextColor="#344054" />
+                <Label Text="La pantalla especifica de este modulo queda lista para conectarse al flujo completo."
+                       FontSize="13"
+                       TextColor="#667085"
+                       LineBreakMode="WordWrap" />
+                <Button Text="Volver"
+                        Clicked="OnVolverClicked" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

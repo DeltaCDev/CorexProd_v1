@@ -16,6 +16,7 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
         private readonly CategoriaProductoNegocio _categoriaProductoNegocio = new();
         private readonly List<StockProducto> _stockProductos = [];
         private string _textoBusqueda = string.Empty;
+        private string _etiquetaBusqueda = string.Empty;
         private int _idCategoriaSeleccionada;
         private decimal _cantidadTotal;
 
@@ -28,6 +29,17 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
             set
             {
                 _textoBusqueda = value;
+                OnPropertyChanged();
+                Filtrar();
+            }
+        }
+
+        public string EtiquetaBusqueda
+        {
+            get => _etiquetaBusqueda;
+            set
+            {
+                _etiquetaBusqueda = value;
                 OnPropertyChanged();
                 Filtrar();
             }
@@ -98,13 +110,16 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
         private void Filtrar()
         {
             string texto = TextoBusqueda.Trim();
+            string etiqueta = EtiquetaBusqueda.Trim();
 
             List<StockProducto> filtrados = _stockProductos
                 .Where(producto =>
                     (IdCategoriaSeleccionada == 0 || producto.IdCategoriaProducto == IdCategoriaSeleccionada)
                     && (string.IsNullOrWhiteSpace(texto)
                         || producto.Codigo.Contains(texto, StringComparison.OrdinalIgnoreCase)
-                        || producto.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase)))
+                        || producto.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase))
+                    && (string.IsNullOrWhiteSpace(etiqueta)
+                        || producto.EtiquetaCliente.Contains(etiqueta, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             StockProductos.Clear();
@@ -121,8 +136,10 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
         private void LimpiarFiltros()
         {
             _textoBusqueda = string.Empty;
+            _etiquetaBusqueda = string.Empty;
             _idCategoriaSeleccionada = 0;
             OnPropertyChanged(nameof(TextoBusqueda));
+            OnPropertyChanged(nameof(EtiquetaBusqueda));
             OnPropertyChanged(nameof(IdCategoriaSeleccionada));
             Filtrar();
         }

@@ -6,15 +6,22 @@
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
             <SearchBar x:Name="Search"
-                       Placeholder="Código, modelo o producto"
+                       Placeholder="Codigo, modelo o producto"
                        SearchButtonPressed="OnSearchPressed"
                        TextChanged="OnSearchTextChanged" />
-            <Grid ColumnDefinitions="*,Auto">
+            <SearchBar x:Name="EtiquetaSearch"
+                       Placeholder="Etiqueta / Cliente"
+                       SearchButtonPressed="OnSearchPressed"
+                       TextChanged="OnSearchTextChanged" />
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <Label x:Name="CountLabel"
                        Text="Sin datos"
                        TextColor="#637083"
                        VerticalOptions="Center" />
                 <Button Grid.Column="1"
+                        Text="Exportar"
+                        Clicked="OnExportarClicked" />
+                <Button Grid.Column="2"
                         Text="Buscar"
                         Clicked="OnBuscarClicked" />
             </Grid>
@@ -39,7 +46,7 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
-                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <Label Text="{Binding Codigo}"
                                        FontFamily="OpenSansSemibold"
                                        FontSize="15"
@@ -55,6 +62,11 @@
                                        LineBreakMode="WordWrap"
                                        TextColor="#344054" />
                                 <Label Grid.Row="2"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding EtiquetaCliente}"
+                                       FontSize="12"
+                                       TextColor="#0F766E" />
+                                <Label Grid.Row="3"
                                        Grid.ColumnSpan="2"
                                        Text="{Binding Categoria}"
                                        FontSize="12"

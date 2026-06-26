@@ -4,41 +4,23 @@
              x:Class="CorexProd.App.Pages.LoginPage"
              Shell.NavBarIsVisible="False"
              Title="Inicio de sesión">
-    <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
-        <VerticalStackLayout Padding="24,36,24,22" BackgroundColor="#10324A" Spacing="6">
-            <Label Text="CorexProd"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="30"
-                   TextColor="White" />
-            <Label Text="App de planta y almacén"
-                   FontSize="14"
-                   TextColor="#CFE1EC" />
-        </VerticalStackLayout>
+    <Grid BackgroundColor="#F4F6F8">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,28" Spacing="14">
+                <Image Source="logo.png"
+                       WidthRequest="82"
+                       HeightRequest="82"
+                       HorizontalOptions="Center">
+                    <Image.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnApiIconTapped" />
+                    </Image.GestureRecognizers>
+                </Image>
 
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="14">
-                <Border Padding="16" BackgroundColor="White" Stroke="#D9E0E6">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8" />
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="Servidor API" FontFamily="OpenSansSemibold" FontSize="14" />
-                        <Entry x:Name="ServerEntry"
-                               Keyboard="Url"
-                               Placeholder="http://192.168.1.50:5000"
-                               ReturnType="Next" />
-
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <Label x:Name="ServerStatusLabel"
-                                   Text="Use la IP de la PC servidor cuando esté en planta."
-                                   TextColor="#637083"
-                                   VerticalOptions="Center" />
-                            <Button Grid.Column="1"
-                                    Text="Probar"
-                                    Clicked="OnTestConnectionClicked" />
-                        </Grid>
-                    </VerticalStackLayout>
-                </Border>
+                <Label Text="CorexProd"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="28"
+                       HorizontalTextAlignment="Center"
+                       TextColor="#101828" />
 
                 <Border Padding="16" BackgroundColor="White" Stroke="#D9E0E6">
                     <Border.StrokeShape>
@@ -58,7 +40,7 @@
                                Completed="OnPasswordCompleted" />
 
                         <Button x:Name="LoginButton"
-                                Text="Ingresar"
+                                Text="Iniciar sesión"
                                 Clicked="OnLoginClicked" />
 
                         <ActivityIndicator x:Name="BusyIndicator"
@@ -68,6 +50,34 @@
                         <Label x:Name="MessageLabel"
                                TextColor="#B42318"
                                LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="ApiPanel"
+                        Padding="16"
+                        BackgroundColor="White"
+                        Stroke="#D9E0E6"
+                        IsVisible="False">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Conexión API" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Entry x:Name="ServerEntry"
+                               Keyboard="Url"
+                               Placeholder="http://192.168.1.50:5000"
+                               ReturnType="Next" />
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Label x:Name="ServerStatusLabel"
+                                   Text="Use la IP de la PC servidor cuando esté en planta."
+                                   TextColor="#637083"
+                                   LineBreakMode="WordWrap"
+                                   VerticalOptions="Center" />
+                            <Button Grid.Column="1"
+                                    Text="Probar"
+                                    Clicked="OnTestConnectionClicked" />
+                        </Grid>
                     </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>

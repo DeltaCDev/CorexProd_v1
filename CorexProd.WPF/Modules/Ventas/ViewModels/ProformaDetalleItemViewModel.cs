@@ -221,7 +221,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             foreach (Producto producto in _productos
                 .Where(p => p.Codigo.Contains(texto, StringComparison.OrdinalIgnoreCase)
-                    || p.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase))
+                    || p.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                    || p.EtiquetaCliente.Contains(texto, StringComparison.OrdinalIgnoreCase))
                 .Take(30))
             {
                 ProductosFiltrados.Add(producto);

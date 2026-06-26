@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.OrdenTrabajoDetallePage"
+             Title="Detalle OT">
+    <Grid RowDefinitions="Auto,Auto,*" BackgroundColor="#F4F6F8">
+        <VerticalStackLayout Padding="14" Spacing="4" BackgroundColor="White">
+            <Label x:Name="TituloDetalleLabel"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="18"
+                   TextColor="#101828" />
+            <Label x:Name="ResumenDetalleLabel"
+                   TextColor="#344054"
+                   LineBreakMode="WordWrap" />
+            <Label x:Name="ActualizadoLabel"
+                   FontSize="12"
+                   TextColor="#667085" />
+        </VerticalStackLayout>
+
+        <CollectionView x:Name="AreasTabsView"
+                        Grid.Row="1"
+                        Margin="12,10,12,4"
+                        ItemsLayout="HorizontalList"
+                        SelectionMode="Single"
+                        SelectionChanged="OnAreaSelectionChanged">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Padding="14,8" Margin="0,0,8,0" BackgroundColor="{Binding BackgroundColor}" Stroke="{Binding StrokeColor}">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+                        <Label Text="{Binding NombreArea}"
+                               FontFamily="OpenSansSemibold"
+                               TextColor="{Binding TextColor}" />
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <RefreshView Grid.Row="2" x:Name="Refresh" Refreshing="OnRefreshing">
+            <CollectionView x:Name="AreasView"
+                            Margin="12"
+                            SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Label Text="No hay productos en esta área."
+                           Padding="24"
+                           HorizontalTextAlignment="Center"
+                           TextColor="#637083" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="{Binding Area.Producto}"
+                                       FontFamily="OpenSansSemibold"
+                                       TextColor="#10324A"
+                                       LineBreakMode="WordWrap" />
+                                <Label Text="{Binding Area.Cantidades}"
+                                       FontSize="12"
+                                       TextColor="#667085"
+                                       LineBreakMode="WordWrap" />
+                                <Label Text="{Binding Area.Estado}"
+                                       FontSize="12"
+                                       TextColor="#B54708" />
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                    <Button Text="Iniciar"
+                                            IsVisible="{Binding MostrarIniciar}"
+                                            IsEnabled="{Binding PuedeIniciar}"
+                                            Opacity="{Binding OpacidadIniciar}"
+                                            Clicked="OnIniciarClicked" />
+                                    <Button Grid.Column="1"
+                                            Text="{Binding Area.AccionPrincipal}"
+                                            IsVisible="{Binding MostrarTransferir}"
+                                            IsEnabled="{Binding PuedeTransferir}"
+                                            Opacity="{Binding OpacidadTransferir}"
+                                            Clicked="OnTransferirClicked" />
+                                    <Button Grid.Column="2"
+                                            Text="Merma"
+                                            IsVisible="{Binding MostrarMerma}"
+                                            IsEnabled="{Binding PuedeMerma}"
+                                            Opacity="{Binding OpacidadMerma}"
+                                            BackgroundColor="#B42318"
+                                            Clicked="OnMermaClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

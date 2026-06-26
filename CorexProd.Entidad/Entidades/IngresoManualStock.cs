@@ -86,10 +86,13 @@ namespace CorexProd.Entidad.Entidades
         public int IdProducto { get; set; }
         public string Codigo { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
+        public string EtiquetaCliente { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public int IdUnidadMedida { get; set; }
         public string NombreUnidad { get; set; } = string.Empty;
         public decimal StockActual { get; set; }
-        public string ProductoBusqueda => $"{Codigo} | {NombreProducto} | {NombreUnidad} | Stock: {StockActual:N2}";
+        public string ProductoBusqueda => string.IsNullOrWhiteSpace(EtiquetaCliente)
+            ? $"{Codigo} | {NombreProducto} | {NombreUnidad} | Stock: {StockActual:N2}"
+            : $"{Codigo} | {NombreProducto} | {EtiquetaCliente} | {NombreUnidad} | Stock: {StockActual:N2}";
     }
 }

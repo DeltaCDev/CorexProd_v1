@@ -264,6 +264,7 @@ namespace CorexProd.Datos.Datos
                     IdProducto = Convert.ToInt32(dr["IdProducto"]),
                     Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
                     NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                    EtiquetaCliente = dr["EtiquetaCliente"]?.ToString() ?? string.Empty,
                     Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
                     IdUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
                     NombreUnidad = dr["NombreUnidad"]?.ToString() ?? string.Empty,

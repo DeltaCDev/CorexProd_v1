@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.HomePage"
-             Title="Menú principal">
+             Title="Menu principal">
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="20,18" BackgroundColor="#10324A" Spacing="4">
             <Label x:Name="UserLabel"
@@ -17,7 +17,7 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="16" Spacing="12">
                 <Grid ColumnDefinitions="*,*"
-                      RowDefinitions="Auto,Auto,Auto"
+                      RowDefinitions="Auto,Auto,Auto,Auto"
                       ColumnSpacing="12"
                       RowSpacing="12">
                     <Button Text="Stock productos"
@@ -27,18 +27,21 @@
                             Clicked="OnInsumosClicked" />
                     <Button Grid.Row="1"
                             Text="Proformas"
-                            IsEnabled="False" />
+                            Clicked="OnProformasClicked" />
                     <Button Grid.Row="1"
                             Grid.Column="1"
                             Text="OCI"
-                            IsEnabled="False" />
+                            Clicked="OnOciClicked" />
                     <Button Grid.Row="2"
-                            Text="Órdenes de Trabajo"
-                            IsEnabled="False" />
+                            Text="OT Producción"
+                            Clicked="OnOrdenesTrabajoClicked" />
                     <Button Grid.Row="2"
                             Grid.Column="1"
                             Text="Kardex"
-                            IsEnabled="False" />
+                            Clicked="OnKardexClicked" />
+                    <Button Grid.Row="3"
+                            Text="Ingreso stock"
+                            Clicked="OnIngresoStockClicked" />
                 </Grid>
 
                 <Border Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
@@ -46,7 +49,7 @@
                         <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Módulos habilitados"
+                        <Label Text="Modulos habilitados"
                                FontFamily="OpenSansSemibold"
                                FontSize="15" />
                         <CollectionView x:Name="MenusView"
@@ -64,7 +67,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Button Text="Cerrar sesión"
+                <Button Text="Cerrar sesion"
                         BackgroundColor="#667085"
                         Clicked="OnLogoutClicked" />
             </VerticalStackLayout>

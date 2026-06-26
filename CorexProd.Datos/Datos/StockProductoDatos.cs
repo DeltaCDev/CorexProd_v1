@@ -28,6 +28,7 @@ namespace CorexProd.Datos.Datos
                     IdProducto = Convert.ToInt32(dr["IdProducto"]),
                     Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
                     NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                    EtiquetaCliente = dr["EtiquetaCliente"]?.ToString() ?? string.Empty,
                     IdCategoriaProducto = Convert.ToInt32(dr["IdCategoriaProducto"]),
                     NombreCategoria = dr["NombreCategoria"]?.ToString() ?? string.Empty,
                     Cantidad = Convert.ToDecimal(dr["Cantidad"])

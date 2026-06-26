@@ -6,6 +6,8 @@ public partial class LoginPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
+    private int _apiLogoTapCount;
+    private DateTime _lastApiLogoTap;
 
     public LoginPage()
     {
@@ -25,6 +27,19 @@ public partial class LoginPage : ContentPage
             ServerStatusLabel.TextColor = Color.FromArgb("#067647");
             MessageLabel.Text = string.Empty;
         });
+    }
+
+    private void OnApiIconTapped(object? sender, TappedEventArgs e)
+    {
+        DateTime now = DateTime.Now;
+        _apiLogoTapCount = (now - _lastApiLogoTap).TotalSeconds > 3 ? 1 : _apiLogoTapCount + 1;
+        _lastApiLogoTap = now;
+
+        if (_apiLogoTapCount < 4)
+            return;
+
+        _apiLogoTapCount = 0;
+        ApiPanel.IsVisible = !ApiPanel.IsVisible;
     }
 
     private async void OnLoginClicked(object? sender, EventArgs e)

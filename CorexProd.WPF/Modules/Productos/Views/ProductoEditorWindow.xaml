@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding TituloEditor}"
         Width="700"
-        Height="540"
-        MinHeight="540"
+        Height="600"
+        MinHeight="600"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -131,6 +131,12 @@
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="Stock Minimo" Style="{StaticResource LabelCampo}"/>
                         <TextBox Style="{StaticResource CampoTexto}" Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                </Grid>
+                <Grid Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Etiqueta / Cliente" Style="{StaticResource LabelCampo}"/>
+                        <TextBox Style="{StaticResource CampoTexto}" Text="{Binding EtiquetaCliente, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                 </Grid>
                 <CheckBox Content="Activo" IsChecked="{Binding Estado}" FontSize="13" FontWeight="SemiBold" Foreground="#374151"/>

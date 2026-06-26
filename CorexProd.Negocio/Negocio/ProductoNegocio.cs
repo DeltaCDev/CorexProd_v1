@@ -17,6 +17,7 @@ namespace CorexProd.Negocio.Negocio
         {
             producto.Codigo = producto.Codigo.Trim();
             producto.NombreProducto = producto.NombreProducto.Trim();
+            producto.EtiquetaCliente = producto.EtiquetaCliente.Trim();
             producto.Descripcion = producto.Descripcion.Trim();
 
             if (string.IsNullOrWhiteSpace(producto.Codigo))

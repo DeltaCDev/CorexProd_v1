@@ -1,10 +1,57 @@
-<UserControl x:Class="CorexProd.WPF.Modules.Produccion.Views.ProduccionView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
- <Grid Margin="20"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <DockPanel><StackPanel DockPanel.Dock="Left"><TextBlock Text="Órdenes de Trabajo" FontSize="22" FontWeight="Bold"/><TextBlock Text="Lista" Foreground="#7E22CE" FontWeight="SemiBold"/></StackPanel><Button Content="Actualizar" Width="100" Height="34" HorizontalAlignment="Right" Click="Actualizar_Click"/></DockPanel>
-  <TextBlock Grid.Row="1" Text="Doble clic o Ver para consultar productos y avance dinámico por áreas." Foreground="#64748B" Margin="0,10,0,12"/>
-  <DataGrid x:Name="OrdenesGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" MouseDoubleClick="OrdenesGrid_MouseDoubleClick"><DataGrid.Columns>
-   <DataGridTemplateColumn Header="Acciones" Width="220"><DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel Orientation="Horizontal"><Button Content="Ver" Padding="10,4" Margin="0,0,5,0" Click="Abrir_Click"/><Button Content="Kardex" Padding="10,4" Margin="0,0,5,0" Click="Kardex_Click"/><Button Content="Historial" Padding="10,4" Click="Historial_Click"/></StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
-   <DataGridTextColumn Header="Número de OT" Binding="{Binding NumeroOT}" Width="105"/><DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="100"/><DataGridTextColumn Header="Tipo de OT" Binding="{Binding TipoOT}" Width="80"/><DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="105"/><DataGridTextColumn Header="Orden de compra" Binding="{Binding OrdenCompraCliente}" Width="110"/><DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100"/><DataGridTextColumn Header="Usuario emite" Binding="{Binding UsuarioCreacion}" Width="110"/><DataGridTextColumn Header="Usuario autoriza" Binding="{Binding UsuarioAutoriza}" Width="120"/><DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="*"/>
-  </DataGrid.Columns></DataGrid>
- </Grid>
+<UserControl x:Class="CorexProd.WPF.Modules.Produccion.Views.ProduccionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock Text="Ordenes de Trabajo" FontSize="22" FontWeight="Bold"/>
+                <TextBlock Text="Lista" Foreground="#7E22CE" FontWeight="SemiBold"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="UltimaActualizacionText" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Button Content="Actualizar" Width="100" Height="34" Click="Actualizar_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <TextBlock Grid.Row="1"
+                   Text="Doble clic o Ver para consultar productos y avance dinamico por areas. La vista se actualiza automaticamente cada 15 segundos."
+                   Foreground="#64748B"
+                   Margin="0,10,0,12"/>
+
+        <DataGrid x:Name="OrdenesGrid"
+                  Grid.Row="2"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  MouseDoubleClick="OrdenesGrid_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Acciones" Width="220">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Ver" Padding="10,4" Margin="0,0,5,0" Click="Abrir_Click"/>
+                                <Button Content="Kardex" Padding="10,4" Margin="0,0,5,0" Click="Kardex_Click"/>
+                                <Button Content="Historial" Padding="10,4" Click="Historial_Click"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Numero de OT" Binding="{Binding NumeroOT}" Width="105"/>
+                <DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="100"/>
+                <DataGridTextColumn Header="Tipo de OT" Binding="{Binding TipoOT}" Width="80"/>
+                <DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="105"/>
+                <DataGridTextColumn Header="Orden de compra" Binding="{Binding OrdenCompraCliente}" Width="110"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100"/>
+                <DataGridTextColumn Header="Usuario emite" Binding="{Binding UsuarioCreacion}" Width="110"/>
+                <DataGridTextColumn Header="Usuario autoriza" Binding="{Binding UsuarioAutoriza}" Width="120"/>
+                <DataGridTextColumn Header="Cliente" Binding="{Binding NombreCliente}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
 </UserControl>
