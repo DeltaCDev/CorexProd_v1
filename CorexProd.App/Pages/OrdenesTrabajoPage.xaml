@@ -37,7 +37,7 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
-                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <Label Text="{Binding NumeroOT}"
                                        FontFamily="OpenSansSemibold"
                                        FontSize="15"
@@ -52,7 +52,7 @@
                                        LineBreakMode="WordWrap"
                                        TextColor="#344054" />
                                 <Label Grid.Row="2"
-                                       Text="{Binding NumeroOci}"
+                                       Text="{Binding NumeroOci, StringFormat='OCI: {0}'}"
                                        FontSize="12"
                                        TextColor="#667085" />
                                 <Label Grid.Row="2"
@@ -60,6 +60,11 @@
                                        Text="{Binding Avance, StringFormat='{0:P0}'}"
                                        FontFamily="OpenSansSemibold"
                                        TextColor="#067647" />
+                                <Label Grid.Row="3"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding OrdenCompraCliente, StringFormat='OC Cliente: {0}'}"
+                                       FontSize="12"
+                                       TextColor="#475467" />
                             </Grid>
                         </Border>
                     </DataTemplate>

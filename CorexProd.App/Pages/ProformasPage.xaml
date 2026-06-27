@@ -17,7 +17,7 @@
         </VerticalStackLayout>
 
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
-            <CollectionView x:Name="ItemsView" Margin="12" SelectionMode="Single" SelectionChanged="OnSelectionChanged">
+            <CollectionView x:Name="ItemsView" Margin="12" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No hay proformas para mostrar." Padding="24" HorizontalTextAlignment="Center" TextColor="#637083" />
                 </CollectionView.EmptyView>
@@ -25,13 +25,33 @@
                     <DataTemplate>
                         <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
                             <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Text="{Binding SerieNumero}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
-                                <Label Grid.Column="1" Text="{Binding Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
-                                <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" />
-                                <Label Grid.Row="2" Text="{Binding Estado}" FontSize="12" TextColor="#667085" />
-                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
-                            </Grid>
+                            <VerticalStackLayout Spacing="10">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Label Text="{Binding Item.SerieNumero}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
+                                    <Label Grid.Column="1" Text="{Binding Item.Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Item.NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" />
+                                    <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding OcClienteTexto}" FontSize="12" TextColor="#475467" />
+                                    <Label Grid.Row="3" Text="{Binding Item.Estado}" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding Item.FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                    <Button Text="👁 Ver detalle" FontSize="12" Padding="8,6" Clicked="OnVerDetalleClicked" />
+                                    <Button Grid.Column="1"
+                                            Text="{Binding OciAccionTexto}"
+                                            FontSize="12"
+                                            Padding="8,6"
+                                            BackgroundColor="{Binding OciAccionColor}"
+                                            TextColor="White"
+                                            IsEnabled="{Binding PuedeGenerarOci}"
+                                            Clicked="OnGenerarOciClicked" />
+                                    <Button Grid.Column="2"
+                                            Text="🗑 Anular"
+                                            FontSize="12"
+                                            Padding="8,6"
+                                            BackgroundColor="#B42318"
+                                            Clicked="OnAnularClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

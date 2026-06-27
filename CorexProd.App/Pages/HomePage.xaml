@@ -3,46 +3,70 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.HomePage"
              Title="Menu principal">
-    <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
-        <VerticalStackLayout Padding="20,18" BackgroundColor="#10324A" Spacing="4">
-            <Label x:Name="UserLabel"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="18"
-                   TextColor="White" />
-            <Label x:Name="RoleLabel"
-                   FontSize="13"
-                   TextColor="#CFE1EC" />
-        </VerticalStackLayout>
+    <Grid ColumnDefinitions="150,*" BackgroundColor="#F4F6F8">
+        <ScrollView BackgroundColor="#10324A">
+            <VerticalStackLayout Padding="10,16" Spacing="10">
+                <Label Text="CorexProd"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="18"
+                       TextColor="White" />
+                <Label x:Name="UserLabel"
+                       FontSize="12"
+                       TextColor="#CFE1EC"
+                       LineBreakMode="WordWrap" />
+                <BoxView HeightRequest="1" Color="#2E5B73" />
 
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="16" Spacing="12">
-                <Grid ColumnDefinitions="*,*"
-                      RowDefinitions="Auto,Auto,Auto,Auto"
-                      ColumnSpacing="12"
-                      RowSpacing="12">
-                    <Button Text="Stock productos"
-                            Clicked="OnProductosClicked" />
-                    <Button Grid.Column="1"
-                            Text="Stock insumos"
-                            Clicked="OnInsumosClicked" />
-                    <Button Grid.Row="1"
-                            Text="Proformas"
-                            Clicked="OnProformasClicked" />
-                    <Button Grid.Row="1"
-                            Grid.Column="1"
-                            Text="OCI"
-                            Clicked="OnOciClicked" />
-                    <Button Grid.Row="2"
-                            Text="OT Producción"
-                            Clicked="OnOrdenesTrabajoClicked" />
-                    <Button Grid.Row="2"
-                            Grid.Column="1"
-                            Text="Kardex"
-                            Clicked="OnKardexClicked" />
-                    <Button Grid.Row="3"
-                            Text="Ingreso stock"
-                            Clicked="OnIngresoStockClicked" />
-                </Grid>
+                <Label Text="Almacen" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
+                <Button Text="Stock productos" FontSize="12" Padding="8,6" Clicked="OnProductosClicked" />
+                <Button Text="Stock insumos" FontSize="12" Padding="8,6" Clicked="OnInsumosClicked" />
+                <Button Text="Ingreso stock" FontSize="12" Padding="8,6" Clicked="OnIngresoStockClicked" />
+
+                <Label Text="Ventas" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
+                <Button Text="Proformas" FontSize="12" Padding="8,6" Clicked="OnProformasClicked" />
+                <Button Text="OCI" FontSize="12" Padding="8,6" Clicked="OnOciClicked" />
+                <Button Text="Guia Interna" FontSize="12" Padding="8,6" Clicked="OnGuiaInternaClicked" />
+
+                <Label Text="Produccion" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
+                <Button Text="OT Produccion" FontSize="12" Padding="8,6" Clicked="OnOrdenesTrabajoClicked" />
+
+                <Label Text="Reportes" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
+                <Button Text="Kardex" FontSize="12" Padding="8,6" Clicked="OnKardexClicked" />
+
+                <BoxView HeightRequest="1" Color="#2E5B73" />
+                <Button Text="Cerrar sesion"
+                        FontSize="12"
+                        Padding="8,6"
+                        BackgroundColor="#667085"
+                        Clicked="OnLogoutClicked" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="16" Spacing="14">
+                <Border Padding="16" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Image x:Name="CompanyLogo"
+                               Source="logo.png"
+                               WidthRequest="118"
+                               HeightRequest="118"
+                               Aspect="AspectFit" />
+                        <Label x:Name="WelcomeLabel"
+                               Text="Bienvenido"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="22"
+                               TextColor="#101828"
+                               HorizontalTextAlignment="Center"
+                               LineBreakMode="WordWrap" />
+                        <Label x:Name="RoleLabel"
+                               FontSize="13"
+                               TextColor="#667085"
+                               HorizontalTextAlignment="Center"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
 
                 <Border Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
                     <Border.StrokeShape>
@@ -66,10 +90,6 @@
                         </CollectionView>
                     </VerticalStackLayout>
                 </Border>
-
-                <Button Text="Cerrar sesion"
-                        BackgroundColor="#667085"
-                        Clicked="OnLogoutClicked" />
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

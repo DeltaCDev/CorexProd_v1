@@ -337,8 +337,6 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             using StringContent contenido = new(json, Encoding.UTF8, "application/json");
             using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
 
-            response.EnsureSuccessStatusCode();
-
             await using Stream stream = await response.Content.ReadAsStreamAsync();
             return await JsonDocument.ParseAsync(stream);
         }
@@ -369,8 +367,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 return (NormalizarEspacios(nombreCompleto), string.Empty);
             }
 
-            string nombres = string.Join(" ", partes.Take(partes.Length - 2));
-            string apellidos = string.Join(" ", partes.Skip(partes.Length - 2));
+            string apellidos = string.Join(" ", partes.Take(2));
+            string nombres = string.Join(" ", partes.Skip(2));
 
             return (nombres, apellidos);
         }

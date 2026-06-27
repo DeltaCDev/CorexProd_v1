@@ -17,6 +17,8 @@ public partial class OrdenTrabajoDetallePage : ContentPage
     private IDispatcherTimer? _refreshTimer;
     private bool _isRefreshing;
     private bool _isOperating;
+    private int? _areaSeleccionadaDespuesOperacion;
+    private int? _areaSeleccionadaActual;
     private int _id;
 
     public OrdenTrabajoDetallePage()
@@ -66,10 +68,17 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         {
             _isRefreshing = true;
             Refresh.IsRefreshing = true;
-            int? areaSeleccionada = (AreasTabsView.SelectedItem as AreaFiltro)?.IdAreaProduccion;
-            _detalleActual = await _apiClient.GetOrdenTrabajoDetalleAsync(idOrdenTrabajo);
+            int? areaSeleccionada = _areaSeleccionadaDespuesOperacion
+                ?? _areaSeleccionadaActual;
+            _areaSeleccionadaDespuesOperacion = null;
+            _detalleActual = _session.EsDemo
+                ? DemoData.OrdenTrabajoDetalle(idOrdenTrabajo)
+                : await _apiClient.GetOrdenTrabajoDetalleAsync(idOrdenTrabajo);
             TituloDetalleLabel.Text = _detalleActual.Cabecera.NumeroOT;
-            ResumenDetalleLabel.Text = $"{_detalleActual.Cabecera.NombreCliente}\nOCI: {_detalleActual.Cabecera.NumeroOci} | OC Cliente: {_detalleActual.Cabecera.OrdenCompraCliente}\nEstado: {_detalleActual.Cabecera.Estado}";
+            ClienteDetalleLabel.Text = _detalleActual.Cabecera.NombreCliente;
+            OciDetalleLabel.Text = _detalleActual.Cabecera.NumeroOci;
+            OcClienteDetalleLabel.Text = TextoVacio(_detalleActual.Cabecera.OrdenCompraCliente);
+            EstadoDetalleLabel.Text = _detalleActual.Cabecera.Estado;
             ActualizadoLabel.Text = $"Actualizado: {DateTime.Now:HH:mm:ss}";
             CargarAreas(areaSeleccionada);
         }
@@ -99,17 +108,18 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         foreach (AreaFiltro area in areas)
             _areasFiltro.Add(area with { EstaSeleccionada = seleccion?.IdAreaProduccion == area.IdAreaProduccion });
 
-        AreasTabsView.SelectedItem = _areasFiltro.FirstOrDefault(x => x.IdAreaProduccion == seleccion?.IdAreaProduccion);
+        _areaSeleccionadaActual = seleccion?.IdAreaProduccion;
         MostrarAreaSeleccionada();
     }
 
-    private void OnAreaSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnAreaTapped(object? sender, TappedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is AreaFiltro selected)
-        {
-            for (int i = 0; i < _areasFiltro.Count; i++)
-                _areasFiltro[i] = _areasFiltro[i] with { EstaSeleccionada = _areasFiltro[i].IdAreaProduccion == selected.IdAreaProduccion };
-        }
+        if ((sender as BindableObject)?.BindingContext is not AreaFiltro selected)
+            return;
+
+        _areaSeleccionadaActual = selected.IdAreaProduccion;
+        for (int i = 0; i < _areasFiltro.Count; i++)
+            _areasFiltro[i] = _areasFiltro[i] with { EstaSeleccionada = _areasFiltro[i].IdAreaProduccion == selected.IdAreaProduccion };
 
         MostrarAreaSeleccionada();
     }
@@ -117,7 +127,12 @@ public partial class OrdenTrabajoDetallePage : ContentPage
     private void MostrarAreaSeleccionada()
     {
         _areasVisibles.Clear();
-        if (_detalleActual == null || AreasTabsView.SelectedItem is not AreaFiltro area)
+        if (_detalleActual == null)
+            return;
+
+        AreaFiltro? area = _areasFiltro.FirstOrDefault(x => x.IdAreaProduccion == _areaSeleccionadaActual)
+            ?? _areasFiltro.FirstOrDefault();
+        if (area == null)
             return;
 
         bool esPrimeraArea = _detalleActual.Areas
@@ -159,14 +174,39 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         if (cantidad <= 0)
             return;
 
+        int? idAreaDestino = ObtenerIdSiguienteArea(area);
+        string destino = idAreaDestino.HasValue ? ObtenerDestino(area) : "siguiente area";
+        bool confirmar = await DisplayAlertAsync(
+            "Confirmar",
+            $"Se iniciaran {cantidad:N2} y se transferiran automaticamente desde {area.NombreArea} hacia {destino}.",
+            "Confirmar",
+            "Cancelar");
+        if (!confirmar)
+            return;
+
+        _areaSeleccionadaDespuesOperacion = idAreaDestino;
         await EjecutarOperacionAsync(async idUsuario =>
         {
+            if (_session.EsDemo)
+                return new OperacionOrdenTrabajoResponse("Inicio y transferencia automatica simulados en modo demo.", 1001);
+
             OrdenTrabajoLanzarRequest request = new(
                 idUsuario,
                 idUsuario,
                 [new(area.IdDetalleOT, cantidad, cantidad != producto.CantidadPlanificada ? "AJUSTE DESDE ANDROID" : string.Empty, "Inicio desde Android")]);
 
-            return await _apiClient.LanzarOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
+            await _apiClient.LanzarOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
+
+            OrdenTrabajoTransferirRequest transferencia = new(
+                area.IdAreaProduccion,
+                idUsuario,
+                idUsuario,
+                false,
+                "Inicio y transferencia automatica desde Android",
+                [new(area.IdDetalleOT, cantidad)]);
+
+            OperacionOrdenTrabajoResponse response = await _apiClient.TransferirOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, transferencia);
+            return response with { Mensaje = $"Produccion iniciada y transferida a {destino} correctamente." };
         });
     }
 
@@ -193,6 +233,9 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
         await EjecutarOperacionAsync(async idUsuario =>
         {
+            if (_session.EsDemo)
+                return new OperacionOrdenTrabajoResponse("Transferencia simulada en modo demo.", 1001);
+
             OrdenTrabajoTransferirRequest request = new(
                 area.IdAreaProduccion,
                 idUsuario,
@@ -227,9 +270,40 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
         await EjecutarOperacionAsync(async idUsuario =>
         {
+            if (_session.EsDemo)
+                return new OperacionOrdenTrabajoResponse("Merma registrada en modo demo.", null);
+
             OrdenTrabajoMermaRequest request = new(area.IdDetalleArea, cantidad, "MERMA EN OPERACION", observacion, idUsuario, idUsuario);
             return await _apiClient.RegistrarMermaOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
         });
+    }
+
+    private async void OnFichaTecnicaClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not OrdenTrabajoAreaItem item)
+            return;
+
+        try
+        {
+            if (_session.EsDemo)
+            {
+                await DisplayAlertAsync("Ficha tecnica demo", $"Se abriria la ficha tecnica de {item.Area.CodigoProducto}.", "OK");
+                return;
+            }
+
+            FichaTecnicaInfo info = await _apiClient.GetFichaTecnicaInfoAsync(item.Area.CodigoProducto);
+            if (!info.Disponible)
+            {
+                await DisplayAlertAsync("Ficha tecnica", "La ficha tecnica esta registrada, pero el archivo no esta disponible.", "OK");
+                return;
+            }
+
+            await Launcher.Default.OpenAsync(_apiClient.GetFichaTecnicaUrl(item.Area.CodigoProducto));
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Ficha tecnica", ex.Message, "OK");
+        }
     }
 
     private async Task EjecutarOperacionAsync(Func<int, Task<OperacionOrdenTrabajoResponse>> operacion, bool evaluarTerminacion = false)
@@ -350,6 +424,20 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             .FirstOrDefault() ?? "siguiente área";
     }
 
+    private int? ObtenerIdSiguienteArea(OrdenTrabajoArea area)
+    {
+        if (_detalleActual == null)
+            return null;
+
+        return _detalleActual.Areas
+            .Where(x => x.OrdenSecuencia > area.OrdenSecuencia)
+            .OrderBy(x => x.OrdenSecuencia)
+            .Select(x => (int?)x.IdAreaProduccion)
+            .FirstOrDefault();
+    }
+
+    private static string TextoVacio(string? valor) => string.IsNullOrWhiteSpace(valor) ? "Sin OC cliente" : valor.Trim();
+
     private sealed record AreaFiltro(int IdAreaProduccion, string NombreArea, int OrdenSecuencia, bool EstaSeleccionada)
     {
         public Color BackgroundColor => EstaSeleccionada ? Color.FromArgb("#E0F2FE") : Colors.White;
@@ -359,10 +447,11 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
     private sealed record OrdenTrabajoAreaItem(OrdenTrabajoArea Area, OrdenTrabajoProducto? Producto, bool EsPrimeraArea)
     {
-        public bool MostrarIniciar => EsPrimeraArea;
-        public bool MostrarTransferir => !EsPrimeraArea;
+        private bool ProductoPendiente => Producto?.Estado.Equals("PENDIENTE", StringComparison.OrdinalIgnoreCase) == true;
+        public bool MostrarIniciar => EsPrimeraArea && ProductoPendiente;
+        public bool MostrarTransferir => !EsPrimeraArea || (EsPrimeraArea && !ProductoPendiente && Area.Disponible);
         public bool MostrarMerma => !EsPrimeraArea && Area.ManejaMerma;
-        public bool PuedeIniciar => MostrarIniciar && Producto?.Estado.Equals("PENDIENTE", StringComparison.OrdinalIgnoreCase) == true && Area.CantidadPendiente > 0;
+        public bool PuedeIniciar => MostrarIniciar && Area.CantidadPendiente > 0;
         public bool PuedeTransferir => MostrarTransferir && Area.Disponible;
         public bool PuedeMerma => MostrarMerma && Area.Disponible;
         public double OpacidadIniciar => PuedeIniciar ? 1 : 0.42;

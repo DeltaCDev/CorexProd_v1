@@ -66,6 +66,16 @@ public partial class LoginPage : ContentPage
                 return;
             }
 
+            if (usuario.Equals("Demo", StringComparison.OrdinalIgnoreCase)
+                && clave.Equals("demo", StringComparison.Ordinal))
+            {
+                _session.IniciarDemo();
+                MessageLabel.Text = string.Empty;
+                PasswordEntry.Text = string.Empty;
+                await Shell.Current.GoToAsync(nameof(HomePage));
+                return;
+            }
+
             var response = await _apiClient.LoginAsync(usuario, clave);
             _session.Iniciar(response);
             MessageLabel.Text = string.Empty;

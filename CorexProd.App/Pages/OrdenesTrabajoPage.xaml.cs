@@ -7,6 +7,7 @@ namespace CorexProd.App.Pages;
 public partial class OrdenesTrabajoPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
+    private readonly SessionState _session;
     private readonly ObservableCollection<OrdenTrabajoResumen> _ordenes = [];
     private CancellationTokenSource? _searchDelay;
     private IDispatcherTimer? _refreshTimer;
@@ -16,6 +17,7 @@ public partial class OrdenesTrabajoPage : ContentPage
     {
         InitializeComponent();
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
+        _session = ServiceHelper.GetRequiredService<SessionState>();
         OrdenesView.ItemsSource = _ordenes;
     }
 
@@ -75,11 +77,19 @@ public partial class OrdenesTrabajoPage : ContentPage
         {
             _isRefreshing = true;
             Refresh.IsRefreshing = true;
-            ApiListResponse<OrdenTrabajoResumen> response = await _apiClient.GetOrdenesTrabajoAsync(Search.Text ?? string.Empty);
+            IReadOnlyList<OrdenTrabajoResumen> items = _session.EsDemo
+                ? DemoData.OrdenesTrabajo
+                : (await _apiClient.GetOrdenesTrabajoAsync(Search.Text ?? string.Empty)).Items;
+            string filtro = Search.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(filtro))
+                items = items.Where(x => x.NumeroOT.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                    || x.NumeroOci.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                    || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                    || x.Estado.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
             _ordenes.Clear();
-            foreach (OrdenTrabajoResumen item in response.Items)
+            foreach (OrdenTrabajoResumen item in items)
                 _ordenes.Add(item);
-            CountLabel.Text = $"{response.Total} OT | Actualizado {DateTime.Now:HH:mm:ss}";
+            CountLabel.Text = $"{_ordenes.Count} OT | Actualizado {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
         {

@@ -4,14 +4,21 @@
              x:Class="CorexProd.App.Pages.OrdenTrabajoDetallePage"
              Title="Detalle OT">
     <Grid RowDefinitions="Auto,Auto,*" BackgroundColor="#F4F6F8">
-        <VerticalStackLayout Padding="14" Spacing="4" BackgroundColor="White">
+        <VerticalStackLayout Padding="14" Spacing="8" BackgroundColor="White">
             <Label x:Name="TituloDetalleLabel"
                    FontFamily="OpenSansSemibold"
                    FontSize="18"
                    TextColor="#101828" />
-            <Label x:Name="ResumenDetalleLabel"
-                   TextColor="#344054"
-                   LineBreakMode="WordWrap" />
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="90,*" ColumnSpacing="8" RowSpacing="4">
+                <Label Text="Cliente" FontSize="12" TextColor="#667085" />
+                <Label x:Name="ClienteDetalleLabel" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#344054" LineBreakMode="WordWrap" />
+                <Label Grid.Row="1" Text="OCI" FontSize="12" TextColor="#667085" />
+                <Label x:Name="OciDetalleLabel" Grid.Row="1" Grid.Column="1" TextColor="#344054" />
+                <Label Grid.Row="2" Text="OC Cliente" FontSize="12" TextColor="#667085" />
+                <Label x:Name="OcClienteDetalleLabel" Grid.Row="2" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#344054" LineBreakMode="WordWrap" />
+                <Label Grid.Row="3" Text="Estado" FontSize="12" TextColor="#667085" />
+                <Label x:Name="EstadoDetalleLabel" Grid.Row="3" Grid.Column="1" TextColor="#B54708" />
+            </Grid>
             <Label x:Name="ActualizadoLabel"
                    FontSize="12"
                    TextColor="#667085" />
@@ -21,11 +28,13 @@
                         Grid.Row="1"
                         Margin="12,10,12,4"
                         ItemsLayout="HorizontalList"
-                        SelectionMode="Single"
-                        SelectionChanged="OnAreaSelectionChanged">
+                        SelectionMode="None">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Border Padding="14,8" Margin="0,0,8,0" BackgroundColor="{Binding BackgroundColor}" Stroke="{Binding StrokeColor}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnAreaTapped" />
+                        </Border.GestureRecognizers>
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
@@ -65,7 +74,7 @@
                                 <Label Text="{Binding Area.Estado}"
                                        FontSize="12"
                                        TextColor="#B54708" />
-                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
                                     <Button Text="Iniciar"
                                             IsVisible="{Binding MostrarIniciar}"
                                             IsEnabled="{Binding PuedeIniciar}"
@@ -84,6 +93,10 @@
                                             Opacity="{Binding OpacidadMerma}"
                                             BackgroundColor="#B42318"
                                             Clicked="OnMermaClicked" />
+                                    <Button Grid.Column="3"
+                                            Text="Ficha"
+                                            BackgroundColor="#0E9384"
+                                            Clicked="OnFichaTecnicaClicked" />
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>

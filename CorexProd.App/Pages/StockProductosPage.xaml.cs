@@ -12,6 +12,7 @@ namespace CorexProd.App.Pages;
 public partial class StockProductosPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
+    private readonly SessionState _session;
     private readonly ObservableCollection<ProductoStock> _productos = [];
     private CancellationTokenSource? _searchDelay;
 
@@ -19,6 +20,7 @@ public partial class StockProductosPage : ContentPage
     {
         InitializeComponent();
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
+        _session = ServiceHelper.GetRequiredService<SessionState>();
         ItemsView.ItemsSource = _productos;
     }
 
@@ -98,9 +100,12 @@ public partial class StockProductosPage : ContentPage
         try
         {
             Refresh.IsRefreshing = true;
-            var response = await _apiClient.GetProductosAsync(Search.Text ?? string.Empty, EtiquetaSearch.Text ?? string.Empty);
+            IReadOnlyList<ProductoStock> items = _session.EsDemo
+                ? DemoData.Productos
+                : (await _apiClient.GetProductosAsync(Search.Text ?? string.Empty)).Items;
+            List<ProductoStock> productosFiltrados = FiltrarPorEtiquetaOCliente(FiltrarGeneral(items, Search.Text), EtiquetaSearch.Text).ToList();
             _productos.Clear();
-            foreach (ProductoStock item in response.Items
+            foreach (ProductoStock item in productosFiltrados
                          .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Cliente)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NumeroNuloOrden)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Numero)
@@ -113,7 +118,7 @@ public partial class StockProductosPage : ContentPage
                 _productos.Add(item);
             }
 
-            CountLabel.Text = $"{response.Total} producto(s)";
+            CountLabel.Text = $"{_productos.Count} producto(s)";
         }
         catch (Exception ex)
         {
@@ -237,6 +242,34 @@ public partial class StockProductosPage : ContentPage
     }
 
     private static string TextoFiltro(string? value) => string.IsNullOrWhiteSpace(value) ? "Todos" : value.Trim();
+
+    private static IEnumerable<ProductoStock> FiltrarPorEtiquetaOCliente(IEnumerable<ProductoStock> productos, string? filtro)
+    {
+        string texto = filtro?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(texto))
+            return productos;
+
+        return productos.Where(producto =>
+        {
+            ProductoOrdenClave clave = ProductoOrdenHelper.CrearClave(producto.Codigo, producto.Producto);
+            return Contiene(producto.EtiquetaCliente, texto)
+                || Contiene(producto.Codigo, texto)
+                || Contiene(producto.Producto, texto)
+                || Contiene(clave.Cliente, texto);
+        });
+    }
+
+    private static bool Contiene(string? valor, string filtro)
+        => (valor ?? string.Empty).Contains(filtro, StringComparison.OrdinalIgnoreCase);
+
+    private static IEnumerable<ProductoStock> FiltrarGeneral(IEnumerable<ProductoStock> productos, string? filtro)
+    {
+        string texto = filtro?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(texto))
+            return productos;
+
+        return productos.Where(x => Contiene(x.Codigo, texto) || Contiene(x.Producto, texto) || Contiene(x.EtiquetaCliente, texto));
+    }
 
     private static List<string> DividirLineas(string? text, APaint paint, int maxWidth)
     {

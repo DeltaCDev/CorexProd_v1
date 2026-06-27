@@ -7,6 +7,7 @@ namespace CorexProd.App.Pages;
 public partial class StockInsumosPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
+    private readonly SessionState _session;
     private readonly ObservableCollection<InsumoStock> _insumos = [];
     private CancellationTokenSource? _searchDelay;
 
@@ -14,6 +15,7 @@ public partial class StockInsumosPage : ContentPage
     {
         InitializeComponent();
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
+        _session = ServiceHelper.GetRequiredService<SessionState>();
         ItemsView.ItemsSource = _insumos;
     }
 
@@ -61,14 +63,21 @@ public partial class StockInsumosPage : ContentPage
         try
         {
             Refresh.IsRefreshing = true;
-            var response = await _apiClient.GetInsumosAsync(Search.Text ?? string.Empty);
+            IReadOnlyList<InsumoStock> items = _session.EsDemo
+                ? DemoData.Insumos
+                : (await _apiClient.GetInsumosAsync(Search.Text ?? string.Empty)).Items;
+            string filtro = Search.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(filtro))
+                items = items.Where(x => x.Codigo.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                    || x.Insumo.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                    || x.Categoria.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
             _insumos.Clear();
-            foreach (InsumoStock item in response.Items)
+            foreach (InsumoStock item in items)
             {
                 _insumos.Add(item);
             }
 
-            CountLabel.Text = $"{response.Total} insumo(s)";
+            CountLabel.Text = $"{_insumos.Count} insumo(s)";
         }
         catch (Exception ex)
         {

@@ -23,6 +23,15 @@ public sealed record HealthResponse(
     string Servidor,
     DateTime FechaHora);
 
+public sealed record EmpresaInfo(
+    int IdEmpresa,
+    string Ruc,
+    string Nombre,
+    string Telefono,
+    string Correo,
+    string Direccion,
+    string LogoBase64);
+
 public sealed record ApiListResponse<T>(
     int Total,
     IReadOnlyList<T> Items);
@@ -103,6 +112,8 @@ public sealed record OciCabecera(
     string Estado);
 
 public sealed record DocumentoDetalle(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
     string CodigoProducto,
     string NombreProducto,
     decimal Cantidad,
@@ -176,6 +187,100 @@ public sealed record ProformaGuardarResponse(
 
 public sealed record DocumentoAccionResponse(string Mensaje);
 
+public sealed record GenerarOtResponse(
+    string Mensaje,
+    int IdOrdenTrabajo,
+    string NumeroOT);
+
+public sealed record GenerarGuiaInternaResponse(
+    string Mensaje,
+    string NumeroGuia);
+
+public sealed record GuiaInternaResumen(
+    int IdGuiaInterna,
+    string NumeroGuia,
+    string Origen,
+    int IdOrdenCompraInterna,
+    int? IdCliente,
+    string NumeroOci,
+    string NumeroProforma,
+    string OrdenCompraCliente,
+    DateTime FechaEmision,
+    int IdAlmacen,
+    string NombreAlmacen,
+    string RucEmisor,
+    string EmpresaEmisora,
+    string RucDestino,
+    string EmpresaDestino,
+    string UsuarioEmisor,
+    string UsuarioAutorizador,
+    string Observacion,
+    string MotivoEmisionManual,
+    string Estado,
+    string UsuarioAnulacion,
+    DateTime? FechaAnulacion,
+    string MotivoAnulacion,
+    DateTime FechaRegistro);
+
+public sealed record GuiaInternaDetalleResponse(
+    GuiaInternaResumen Cabecera,
+    IReadOnlyList<GuiaInternaDetalleApi> Detalles);
+
+public sealed record GuiaInternaDetalleApi(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string CodigoProducto,
+    string NombreProducto,
+    int IdUnidadMedida,
+    string NombreUnidad,
+    decimal CantidadRequerida,
+    decimal CantidadEntregada,
+    decimal CantidadPendiente,
+    decimal StockActual,
+    decimal PrecioUnitario,
+    decimal CantidadDespachar,
+    string Observacion);
+
+public sealed record GuiaInternaManualPrepararResponse(
+    GuiaInternaManualCabecera Cabecera,
+    IReadOnlyList<ProductoStockBusquedaApi> Productos);
+
+public sealed record GuiaInternaManualCabecera(
+    string Origen,
+    int IdAlmacen,
+    string NombreAlmacen,
+    string RucEmisor,
+    string EmpresaEmisora,
+    DateTime FechaEmision);
+
+public sealed record GuiaInternaManualRequest(
+    int IdAlmacen,
+    DateTime FechaEmision,
+    int? IdCliente,
+    string MotivoEmisionManual,
+    string Observacion,
+    string UsuarioEmisor,
+    string UsuarioAutorizador,
+    IReadOnlyList<GuiaInternaManualDetalleRequest> Detalles);
+
+public sealed record GuiaInternaManualDetalleRequest(
+    int IdProducto,
+    decimal CantidadDespachar,
+    string Observacion);
+
+public sealed record GuiaInternaEmitirResponse(
+    string Mensaje,
+    string NumeroGuia);
+
+public sealed record FichaTecnicaInfo(
+    string CodigoProducto,
+    string CodigoModelo,
+    string NombreArchivo,
+    int Version,
+    DateTime FechaRegistro,
+    bool Disponible,
+    string Url);
+
 public sealed record StockManualPrepararResponse(
     IReadOnlyList<ProveedorStockApi> Proveedores,
     IReadOnlyList<AlmacenStockApi> Almacenes,
@@ -227,6 +332,53 @@ public sealed record IngresoManualStockResponse(
     int IdIngresoManualStock,
     string NumeroDocumento,
     decimal CantidadTotal);
+
+public sealed record IngresoManualStockResumen(
+    int IdIngresoManualStock,
+    DateTime FechaEmision,
+    string NombreProveedor,
+    string NombreTipoDocumento,
+    string NumeroDocumento,
+    string NombreAlmacen,
+    string Observacion,
+    string Estado,
+    decimal Total,
+    string UsuarioCreador,
+    DateTime FechaCreacion);
+
+public sealed record IngresoManualStockDetalleResponse(
+    IngresoManualStockCabecera Cabecera,
+    IReadOnlyList<IngresoManualStockDetalleApi> Detalles);
+
+public sealed record IngresoManualStockCabecera(
+    int IdIngresoManualStock,
+    DateTime FechaEmision,
+    string NombreProveedor,
+    string NombreTipoDocumento,
+    string NumeroDocumento,
+    string NombreAlmacen,
+    string Observacion,
+    string Estado,
+    decimal Subtotal,
+    decimal DescuentoTotal,
+    decimal Total,
+    string UsuarioCreador,
+    DateTime FechaCreacion,
+    string UsuarioAbastecimiento,
+    DateTime? FechaAbastecimiento);
+
+public sealed record IngresoManualStockDetalleApi(
+    int IdIngresoManualStockDetalle,
+    int IdIngresoManualStock,
+    int IdProducto,
+    string CodigoProducto,
+    string NombreProducto,
+    string NombreUnidad,
+    decimal StockActual,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal Descuento,
+    decimal Importe);
 
 public sealed record OrdenTrabajoResumen(
     int IdOrdenTrabajo,

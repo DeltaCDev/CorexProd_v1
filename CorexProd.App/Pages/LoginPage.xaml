@@ -16,11 +16,17 @@
                     </Image.GestureRecognizers>
                 </Image>
 
-                <Label Text="CorexProd"
-                       FontFamily="OpenSansSemibold"
-                       FontSize="28"
-                       HorizontalTextAlignment="Center"
-                       TextColor="#101828" />
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                    <Label Text="CorexProd"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="28"
+                           TextColor="#101828" />
+                    <Label Text="v 1.0"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="13"
+                           TextColor="#637083"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
 
                 <Border Padding="16" BackgroundColor="White" Stroke="#D9E0E6">
                     <Border.StrokeShape>

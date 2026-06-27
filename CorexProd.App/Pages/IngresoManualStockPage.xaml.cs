@@ -9,15 +9,18 @@ public partial class IngresoManualStockPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
+    private readonly ObservableCollection<IngresoManualStockResumen> _ingresos = [];
     private readonly ObservableCollection<IngresoManualStockDetalleItem> _detalles = [];
     private readonly ObservableCollection<ProductoSeleccionItem> _productos = [];
     private ProductoStockBusquedaApi? _productoSeleccionado;
+    private bool _combosCargados;
 
     public IngresoManualStockPage()
     {
         InitializeComponent();
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
+        IngresosView.ItemsSource = _ingresos;
         DetalleView.ItemsSource = _detalles;
         ProductosView.ItemsSource = _productos;
     }
@@ -25,15 +28,68 @@ public partial class IngresoManualStockPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (ProveedorPicker.ItemsSource == null)
+        await CargarIngresosAsync();
+    }
+
+    private async void OnIngresosRefreshing(object? sender, EventArgs e) => await CargarIngresosAsync();
+    private async void OnBuscarIngresoPressed(object? sender, EventArgs e) => await CargarIngresosAsync();
+
+    private async Task CargarIngresosAsync()
+    {
+        try
+        {
+            IngresosRefresh.IsRefreshing = true;
+            IReadOnlyList<IngresoManualStockResumen> ingresos = _session.EsDemo
+                ? DemoData.IngresosStockManual
+                    .Where(x => string.IsNullOrWhiteSpace(BuscarIngresoSearch.Text)
+                        || x.NumeroDocumento.Contains(BuscarIngresoSearch.Text, StringComparison.OrdinalIgnoreCase))
+                    .ToList()
+                : (await _apiClient.GetIngresosStockManualAsync(BuscarIngresoSearch.Text ?? string.Empty)).Items;
+
+            _ingresos.Clear();
+            foreach (IngresoManualStockResumen ingreso in ingresos)
+                _ingresos.Add(ingreso);
+
+            ResumenIngresosLabel.Text = $"{_ingresos.Count} ingreso(s) manual(es)";
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Ingreso manual", ex.Message, "OK");
+        }
+        finally
+        {
+            IngresosRefresh.IsRefreshing = false;
+        }
+    }
+
+    private async void OnNuevoIngresoClicked(object? sender, EventArgs e)
+    {
+        MostrarFormulario();
+        if (!_combosCargados)
             await CargarCombosAsync();
+    }
+
+    private async void OnVolverListadoClicked(object? sender, EventArgs e)
+    {
+        MostrarListado();
+        await CargarIngresosAsync();
+    }
+
+    private async void OnVerDetalleClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not IngresoManualStockResumen ingreso)
+            return;
+
+        await Shell.Current.GoToAsync($"{nameof(IngresoManualStockDetallePage)}?id={ingreso.IdIngresoManualStock}");
     }
 
     private async Task CargarCombosAsync()
     {
         try
         {
-            StockManualPrepararResponse data = await _apiClient.GetStockManualPrepararAsync();
+            StockManualPrepararResponse data = _session.EsDemo
+                ? DemoData.StockManualPreparar
+                : await _apiClient.GetStockManualPrepararAsync();
             ProveedorPicker.ItemsSource = data.Proveedores.ToList();
             TipoDocumentoPicker.ItemsSource = data.TiposDocumento.ToList();
             AlmacenPicker.ItemsSource = data.Almacenes.ToList();
@@ -43,6 +99,7 @@ public partial class IngresoManualStockPage : ContentPage
             ProveedorPicker.SelectedIndex = data.Proveedores.Count > 0 ? 0 : -1;
             TipoDocumentoPicker.SelectedIndex = data.TiposDocumento.Count > 0 ? 0 : -1;
             AlmacenPicker.SelectedIndex = data.Almacenes.Count > 0 ? 0 : -1;
+            _combosCargados = true;
         }
         catch (Exception ex)
         {
@@ -74,11 +131,15 @@ public partial class IngresoManualStockPage : ContentPage
             return;
         }
 
-        ApiListResponse<ProductoStockBusquedaApi> response = await _apiClient.BuscarProductosStockManualAsync(almacen.IdAlmacen, ProductoSearch.Text);
+        IReadOnlyList<ProductoStockBusquedaApi> items = _session.EsDemo
+            ? DemoData.ProductosBusqueda.Where(x => x.Codigo.Contains(ProductoSearch.Text, StringComparison.OrdinalIgnoreCase)
+                || x.NombreProducto.Contains(ProductoSearch.Text, StringComparison.OrdinalIgnoreCase)
+                || x.EtiquetaCliente.Contains(ProductoSearch.Text, StringComparison.OrdinalIgnoreCase)).ToList()
+            : (await _apiClient.BuscarProductosStockManualAsync(almacen.IdAlmacen, ProductoSearch.Text)).Items;
         _productos.Clear();
         _productoSeleccionado = null;
 
-        foreach (ProductoStockBusquedaApi producto in response.Items)
+        foreach (ProductoStockBusquedaApi producto in items)
             _productos.Add(new ProductoSeleccionItem(producto, false));
 
         if (_productos.Count > 0)
@@ -163,6 +224,15 @@ public partial class IngresoManualStockPage : ContentPage
         try
         {
             GuardarButton.IsEnabled = false;
+            if (_session.EsDemo)
+            {
+                await DisplayAlertAsync("Ingreso manual demo", $"Se registraria ingreso de {_detalles.Sum(x => x.Cantidad):N2} unidades en {almacen.NombreAlmacen}.", "OK");
+                Limpiar();
+                MostrarListado();
+                await CargarIngresosAsync();
+                return;
+            }
+
             IngresoManualStockRequest request = new(
                 proveedor.IdProveedor,
                 tipo.IdTipoDocumento,
@@ -174,6 +244,8 @@ public partial class IngresoManualStockPage : ContentPage
             IngresoManualStockResponse response = await _apiClient.IngresarStockManualAsync(request);
             await DisplayAlertAsync("Ingreso manual", $"{response.Mensaje}\nDocumento: {response.NumeroDocumento}", "OK");
             Limpiar();
+            MostrarListado();
+            await CargarIngresosAsync();
         }
         catch (Exception ex)
         {
@@ -186,6 +258,18 @@ public partial class IngresoManualStockPage : ContentPage
     }
 
     private void OnLimpiarClicked(object? sender, EventArgs e) => Limpiar();
+
+    private void MostrarListado()
+    {
+        ListadoPanel.IsVisible = true;
+        FormularioPanel.IsVisible = false;
+    }
+
+    private void MostrarFormulario()
+    {
+        ListadoPanel.IsVisible = false;
+        FormularioPanel.IsVisible = true;
+    }
 
     private void Limpiar()
     {

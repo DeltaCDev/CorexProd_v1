@@ -369,8 +369,6 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             using StringContent contenido = new(json, Encoding.UTF8, "application/json");
             using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
 
-            response.EnsureSuccessStatusCode();
-
             await using Stream stream = await response.Content.ReadAsStreamAsync();
             return await JsonDocument.ParseAsync(stream);
         }

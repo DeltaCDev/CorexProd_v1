@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.IngresoManualStockDetallePage"
+             Title="Detalle ingreso">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
+        <VerticalStackLayout Padding="16" Spacing="10" BackgroundColor="White">
+            <Label x:Name="DocumentoLabel" FontFamily="OpenSansSemibold" FontSize="20" TextColor="#10324A" />
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="92,*" RowSpacing="5" ColumnSpacing="8">
+                <Label Text="Proveedor" TextColor="#667085" FontSize="12" />
+                <Label x:Name="ProveedorLabel" Grid.Column="1" TextColor="#344054" LineBreakMode="WordWrap" />
+                <Label Grid.Row="1" Text="Almacen" TextColor="#667085" FontSize="12" />
+                <Label x:Name="AlmacenLabel" Grid.Row="1" Grid.Column="1" TextColor="#344054" />
+                <Label Grid.Row="2" Text="Estado" TextColor="#667085" FontSize="12" />
+                <Label x:Name="EstadoLabel" Grid.Row="2" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                <Label Grid.Row="3" Text="Fecha" TextColor="#667085" FontSize="12" />
+                <Label x:Name="FechaLabel" Grid.Row="3" Grid.Column="1" TextColor="#344054" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <CollectionView x:Name="DetalleView" Grid.Row="1" Margin="12" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="Sin productos." Padding="24" HorizontalTextAlignment="Center" TextColor="#637083" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4" ColumnSpacing="10">
+                            <Label Text="{Binding CodigoProducto}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
+                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                            <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreProducto}" TextColor="#344054" LineBreakMode="WordWrap" />
+                            <Label Grid.Row="2" Text="{Binding NombreUnidad}" FontSize="12" TextColor="#667085" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>
