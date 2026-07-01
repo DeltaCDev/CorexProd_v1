@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using CorexProd.App.Models;
 using CorexProd.App.Services;
+using Microsoft.Maui.Controls.Shapes;
 
 namespace CorexProd.App.Pages;
 
@@ -50,6 +51,148 @@ public partial class OrdenTrabajoDetallePage : ContentPage
     }
 
     private async void OnRefreshing(object? sender, EventArgs e) => await CargarDetalleAsync(_id);
+
+    private async void OnKardexClicked(object? sender, EventArgs e)
+    {
+        if (_detalleActual == null)
+            return;
+
+        try
+        {
+            ApiListResponse<OrdenTrabajoKardexItem> response = _session.EsDemo
+                ? new ApiListResponse<OrdenTrabajoKardexItem>(0, [])
+                : await _apiClient.GetOrdenTrabajoKardexAsync(_detalleActual.Cabecera.IdOrdenTrabajo);
+            await Navigation.PushModalAsync(CrearKardexPage(response.Items));
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Kardex", ex.Message, "OK");
+        }
+    }
+
+    private async void OnHistorialClicked(object? sender, EventArgs e)
+    {
+        if (_detalleActual == null)
+            return;
+
+        try
+        {
+            ApiListResponse<OrdenTrabajoMovimientoItem> response = _session.EsDemo
+                ? new ApiListResponse<OrdenTrabajoMovimientoItem>(0, [])
+                : await _apiClient.GetOrdenTrabajoMovimientosAsync(_detalleActual.Cabecera.IdOrdenTrabajo);
+            await Navigation.PushModalAsync(CrearHistorialPage(response.Items));
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Historial", ex.Message, "OK");
+        }
+    }
+
+    private static ContentPage CrearKardexPage(IReadOnlyList<OrdenTrabajoKardexItem> items)
+    {
+        VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
+        contenido.Add(new Label { Text = "Kardex de OT", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
+        contenido.Add(new Label { Text = $"{items.Count} ingreso(s) a kardex", FontSize = 12, TextColor = Color.FromArgb("#667085") });
+
+        foreach (OrdenTrabajoKardexItem item in items)
+            contenido.Add(CrearKardexCard(item));
+
+        if (items.Count == 0)
+            contenido.Add(new Label { Text = "No hay ingresos a kardex para esta OT.", Padding = 12, TextColor = Color.FromArgb("#667085") });
+
+        return CrearModalListado("Kardex", contenido);
+    }
+
+    private static ContentPage CrearHistorialPage(IReadOnlyList<OrdenTrabajoMovimientoItem> items)
+    {
+        VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
+        contenido.Add(new Label { Text = "Historial de movimientos", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
+
+        Picker productoPicker = CrearFiltroPicker(
+            "Todas las prendas",
+            items.Select(x => $"{x.CodigoProducto} - {x.NombreProducto}").Distinct().OrderBy(x => x));
+        Picker usuarioPicker = CrearFiltroPicker(
+            "Todos los usuarios",
+            items.Select(x => x.Usuario).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().OrderBy(x => x));
+        Picker areaPicker = CrearFiltroPicker(
+            "Todas las areas",
+            items.SelectMany(x => new[] { x.Origen, x.Destino }).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().OrderBy(x => x));
+        Entry desdeEntry = new() { Placeholder = "Desde dd/mm/aaaa", BackgroundColor = Colors.White, Keyboard = Keyboard.Text };
+        Entry hastaEntry = new() { Placeholder = "Hasta dd/mm/aaaa", BackgroundColor = Colors.White, Keyboard = Keyboard.Text };
+        Label contador = new() { FontSize = 12, TextColor = Color.FromArgb("#667085") };
+
+        Grid filtros = new()
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto)
+            },
+            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) },
+            RowSpacing = 8,
+            ColumnSpacing = 8
+        };
+        filtros.Add(productoPicker, 0, 0);
+        filtros.SetColumnSpan(productoPicker, 2);
+        filtros.Add(usuarioPicker, 0, 1);
+        filtros.Add(areaPicker, 1, 1);
+        filtros.Add(desdeEntry, 0, 2);
+        filtros.Add(hastaEntry, 1, 2);
+        contenido.Add(filtros);
+
+        Button aplicar = new() { Text = "Aplicar filtros", BackgroundColor = Color.FromArgb("#7A5AF8"), TextColor = Colors.White };
+        contenido.Add(aplicar);
+        contenido.Add(contador);
+        VerticalStackLayout lista = new() { Spacing = 10 };
+        contenido.Add(lista);
+
+        Button cerrar = new() { Text = "Cerrar", BackgroundColor = Color.FromArgb("#3F1D95"), TextColor = Colors.White };
+        contenido.Add(cerrar);
+
+        ContentPage page = new()
+        {
+            Title = "Historial",
+            BackgroundColor = Color.FromArgb("#F4F6F8"),
+            Content = new ScrollView { Content = contenido }
+        };
+        cerrar.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+        aplicar.Clicked += (_, _) => AplicarFiltros();
+        AplicarFiltros();
+        return page;
+
+        void AplicarFiltros()
+        {
+            string producto = productoPicker.SelectedIndex <= 0 ? string.Empty : productoPicker.SelectedItem?.ToString() ?? string.Empty;
+            string usuario = usuarioPicker.SelectedIndex <= 0 ? string.Empty : usuarioPicker.SelectedItem?.ToString() ?? string.Empty;
+            string area = areaPicker.SelectedIndex <= 0 ? string.Empty : areaPicker.SelectedItem?.ToString() ?? string.Empty;
+            DateTime? desde = ParseFechaFiltro(desdeEntry.Text);
+            DateTime? hasta = ParseFechaFiltro(hastaEntry.Text)?.Date.AddDays(1).AddTicks(-1);
+
+            List<OrdenTrabajoMovimientoItem> filtrados = items
+                .Where(x => string.IsNullOrWhiteSpace(producto) || $"{x.CodigoProducto} - {x.NombreProducto}".Equals(producto, StringComparison.OrdinalIgnoreCase))
+                .Where(x => string.IsNullOrWhiteSpace(usuario) || x.Usuario.Equals(usuario, StringComparison.OrdinalIgnoreCase))
+                .Where(x => string.IsNullOrWhiteSpace(area) || x.Origen.Equals(area, StringComparison.OrdinalIgnoreCase) || x.Destino.Equals(area, StringComparison.OrdinalIgnoreCase))
+                .Where(x => !desde.HasValue || x.FechaHora >= desde.Value)
+                .Where(x => !hasta.HasValue || x.FechaHora <= hasta.Value)
+                .OrderBy(x => x.CodigoProducto)
+                .ThenBy(x => x.FechaHora)
+                .ThenBy(x => x.Origen)
+                .ThenBy(x => x.Destino)
+                .ToList();
+
+            lista.Children.Clear();
+            foreach (OrdenTrabajoMovimientoItem item in filtrados)
+                lista.Add(CrearMovimientoCard(item, area));
+
+            if (filtrados.Count == 0)
+                lista.Add(new Label { Text = "No hay movimientos con los filtros seleccionados.", Padding = 12, TextColor = Color.FromArgb("#667085") });
+
+            contador.Text = string.IsNullOrWhiteSpace(area)
+                ? $"{filtrados.Count} movimiento(s)"
+                : $"{filtrados.Count} movimiento(s) de entrada/salida en {area}";
+        }
+    }
 
     private IDispatcherTimer CrearTimer()
     {
@@ -283,22 +426,27 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         if ((sender as BindableObject)?.BindingContext is not OrdenTrabajoAreaItem item)
             return;
 
+        await AbrirFichaTecnicaAsync(item.Area.CodigoProducto);
+    }
+
+    private async Task AbrirFichaTecnicaAsync(string codigoProducto)
+    {
         try
         {
             if (_session.EsDemo)
             {
-                await DisplayAlertAsync("Ficha tecnica demo", $"Se abriria la ficha tecnica de {item.Area.CodigoProducto}.", "OK");
+                await DisplayAlertAsync("Ficha tecnica demo", $"Se abriria la ficha tecnica de {codigoProducto}.", "OK");
                 return;
             }
 
-            FichaTecnicaInfo info = await _apiClient.GetFichaTecnicaInfoAsync(item.Area.CodigoProducto);
+            FichaTecnicaInfo info = await _apiClient.GetFichaTecnicaInfoAsync(codigoProducto);
             if (!info.Disponible)
             {
                 await DisplayAlertAsync("Ficha tecnica", "La ficha tecnica esta registrada, pero el archivo no esta disponible.", "OK");
                 return;
             }
 
-            await Launcher.Default.OpenAsync(_apiClient.GetFichaTecnicaUrl(item.Area.CodigoProducto));
+            await Launcher.Default.OpenAsync(_apiClient.GetFichaTecnicaUrl(codigoProducto));
         }
         catch (Exception ex)
         {
@@ -437,6 +585,99 @@ public partial class OrdenTrabajoDetallePage : ContentPage
     }
 
     private static string TextoVacio(string? valor) => string.IsNullOrWhiteSpace(valor) ? "Sin OC cliente" : valor.Trim();
+
+    private static ContentPage CrearModalListado(string titulo, VerticalStackLayout contenido)
+    {
+        Button cerrar = new() { Text = "Cerrar", BackgroundColor = Color.FromArgb("#3F1D95"), TextColor = Colors.White };
+        ContentPage page = new()
+        {
+            Title = titulo,
+            BackgroundColor = Color.FromArgb("#F4F6F8"),
+            Content = new ScrollView { Content = contenido }
+        };
+        cerrar.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+        contenido.Add(cerrar);
+        return page;
+    }
+
+    private static Border CrearKardexCard(OrdenTrabajoKardexItem item)
+    {
+        Grid grid = new()
+        {
+            RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto) },
+            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
+            RowSpacing = 5,
+            ColumnSpacing = 10
+        };
+        grid.Add(new Label { Text = item.CodigoProducto, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") }, 0, 0);
+        grid.Add(new Label { Text = item.Cantidad.ToString("N2"), FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") }, 1, 0);
+        Label nombre = new() { Text = item.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap };
+        grid.Add(nombre, 0, 1);
+        grid.SetColumnSpan(nombre, 2);
+        Label meta = new() { Text = $"{item.Almacen} | {item.FechaMovimiento:dd/MM/yyyy HH:mm} | {item.Usuario}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap };
+        grid.Add(meta, 0, 2);
+        grid.SetColumnSpan(meta, 2);
+        return new Border { Padding = 12, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = grid };
+    }
+
+    private static Picker CrearFiltroPicker(string textoInicial, IEnumerable<string> valores)
+    {
+        List<string> opciones = [textoInicial];
+        opciones.AddRange(valores
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x));
+
+        Picker picker = new()
+        {
+            Title = textoInicial,
+            ItemsSource = opciones,
+            SelectedIndex = 0,
+            BackgroundColor = Colors.White,
+            TextColor = Color.FromArgb("#344054")
+        };
+        return picker;
+    }
+
+    private static DateTime? ParseFechaFiltro(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        string text = value.Trim();
+        string[] formatos = ["dd/MM/yyyy", "d/M/yyyy", "yyyy-MM-dd"];
+        if (DateTime.TryParseExact(text, formatos, CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime fecha))
+            return fecha.Date;
+        if (DateTime.TryParse(text, CultureInfo.CurrentCulture, DateTimeStyles.None, out fecha))
+            return fecha.Date;
+        if (DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha))
+            return fecha.Date;
+
+        return null;
+    }
+
+    private static Border CrearMovimientoCard(OrdenTrabajoMovimientoItem item, string areaFiltro = "")
+    {
+        VerticalStackLayout stack = new() { Spacing = 6 };
+        string enfoqueArea = string.Empty;
+        if (!string.IsNullOrWhiteSpace(areaFiltro))
+        {
+            if (item.Destino.Equals(areaFiltro, StringComparison.OrdinalIgnoreCase))
+                enfoqueArea = $"Llego a {areaFiltro}";
+            else if (item.Origen.Equals(areaFiltro, StringComparison.OrdinalIgnoreCase))
+                enfoqueArea = $"Salio de {areaFiltro}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(enfoqueArea))
+            stack.Add(new Label { Text = enfoqueArea, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#047857") });
+        stack.Add(new Label { Text = item.Accion, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") });
+        stack.Add(new Label { Text = $"{item.CodigoProducto} - {item.NombreProducto}", TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
+        stack.Add(new Label { Text = $"{item.Origen} -> {item.Destino} | Cantidad {item.Cantidad:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
+        stack.Add(new Label { Text = $"{item.FechaHora:dd/MM/yyyy HH:mm} | {item.Usuario}", FontSize = 12, TextColor = Color.FromArgb("#667085") });
+        if (!string.IsNullOrWhiteSpace(item.Observacion))
+            stack.Add(new Label { Text = item.Observacion, FontSize = 12, TextColor = Color.FromArgb("#475467"), LineBreakMode = LineBreakMode.WordWrap });
+        return new Border { Padding = 12, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = stack };
+    }
 
     private sealed record AreaFiltro(int IdAreaProduccion, string NombreArea, int OrdenSecuencia, bool EstaSeleccionada)
     {

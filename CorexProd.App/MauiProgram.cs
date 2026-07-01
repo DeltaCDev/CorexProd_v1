@@ -24,6 +24,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CorexProdApiClient>();
         builder.Services.AddSingleton<SessionState>();
 
+        builder.Services.AddTransient<SplashPage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<HomePage>();
         builder.Services.AddTransient<StockProductosPage>();

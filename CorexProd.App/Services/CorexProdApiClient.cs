@@ -143,6 +143,16 @@ public sealed class CorexProdApiClient
         return await ReadJsonAsync<GenerarOtResponse>(response, cancellationToken);
     }
 
+    public async Task<OtValidacionResponse> ValidarOtDesdeOciAsync(int idOrdenCompraInterna, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<OtValidacionResponse>($"api/oci/{idOrdenCompraInterna}/orden-trabajo/validacion", cancellationToken);
+    }
+
+    public async Task<ApiListResponse<OtValidacionInsumo>> GetDetalleInsumosOtAsync(int idOrdenCompraInternaDetalle, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ApiListResponse<OtValidacionInsumo>>($"api/oci/detalles/{idOrdenCompraInternaDetalle}/orden-trabajo/insumos", cancellationToken);
+    }
+
     public async Task<GenerarGuiaInternaResponse> GenerarGuiaInternaDesdeOciAsync(int idOrdenCompraInterna, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
@@ -151,6 +161,32 @@ public sealed class CorexProdApiClient
 
         await EnsureSuccessAsync(response, cancellationToken);
         return await ReadJsonAsync<GenerarGuiaInternaResponse>(response, cancellationToken);
+    }
+
+    public async Task<GuiaInternaPrepararResponse> PrepararGuiaInternaDesdeOciAsync(int idOrdenCompraInterna, int? idAlmacen = null, CancellationToken cancellationToken = default)
+    {
+        string query = idAlmacen.HasValue && idAlmacen.Value > 0 ? $"?idAlmacen={idAlmacen.Value}" : string.Empty;
+        return await GetAsync<GuiaInternaPrepararResponse>($"api/oci/{idOrdenCompraInterna}/guia-interna/preparar{query}", cancellationToken);
+    }
+
+    public async Task<GenerarGuiaInternaResponse> EmitirGuiaInternaDesdeOciAsync(int idOrdenCompraInterna, GuiaInternaOciRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/oci/{idOrdenCompraInterna}/guia-interna/emitir"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<GenerarGuiaInternaResponse>(response, cancellationToken);
+    }
+
+    public async Task<byte[]> GetGuiaInternaPdfAsync(int idGuiaInterna, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.GetAsync(BuildUrl($"api/guias-internas/{idGuiaInterna}/pdf"), cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
     public async Task<DocumentoAccionResponse> AnularOciAsync(int idOrdenCompraInterna, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
@@ -241,6 +277,16 @@ public sealed class CorexProdApiClient
     public async Task<OrdenTrabajoDetalleResponse> GetOrdenTrabajoDetalleAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
     {
         return await GetAsync<OrdenTrabajoDetalleResponse>($"api/ordenes-trabajo/{idOrdenTrabajo}", cancellationToken);
+    }
+
+    public async Task<ApiListResponse<OrdenTrabajoKardexItem>> GetOrdenTrabajoKardexAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ApiListResponse<OrdenTrabajoKardexItem>>($"api/ordenes-trabajo/{idOrdenTrabajo}/kardex", cancellationToken);
+    }
+
+    public async Task<ApiListResponse<OrdenTrabajoMovimientoItem>> GetOrdenTrabajoMovimientosAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ApiListResponse<OrdenTrabajoMovimientoItem>>($"api/ordenes-trabajo/{idOrdenTrabajo}/movimientos", cancellationToken);
     }
 
     public async Task<OperacionOrdenTrabajoResponse> LanzarOrdenTrabajoAsync(int idOrdenTrabajo, OrdenTrabajoLanzarRequest request, CancellationToken cancellationToken = default)

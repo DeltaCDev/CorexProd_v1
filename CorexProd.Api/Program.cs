@@ -1,6 +1,8 @@
 using CorexProd.Entidad.Utilidades;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Globalization;
+using System.Text;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -576,7 +578,14 @@ SELECT
     O.Total,
     O.Estado,
     O.TieneGuiaSalida,
-    O.TieneOrdenTrabajo
+    O.TieneOrdenTrabajo,
+    CAST(CASE WHEN EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenTrabajo OT
+        WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+          AND OT.Estado IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+    ) THEN 1 ELSE 0 END AS BIT) AS TieneOtActiva
 FROM dbo.OrdenesCompraInterna O
 INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 WHERE @Buscar = ''
@@ -605,7 +614,8 @@ ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
             total = Convert.ToDecimal(dr["Total"]),
             estado = dr["Estado"]?.ToString() ?? string.Empty,
             tieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
-            tieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"])
+            tieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
+            tieneOtActiva = Convert.ToBoolean(dr["TieneOtActiva"])
         });
     }
 
@@ -661,7 +671,7 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
     {
         idOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
         numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
-        numeroProforma = dr["NumeroProforma"]?.ToString() ?? string.Empty,
+        numeroProforma = LeerString(dr, "NumeroProforma"),
         fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
         ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
         nombreCliente = dr["NombreCliente"]?.ToString() ?? string.Empty,
@@ -704,17 +714,32 @@ app.MapPost("/api/oci/{id:int}/generar-ot", async (int id, DocumentoAccionApiReq
     string observacion = string.IsNullOrWhiteSpace(request.Motivo) ? "OT generada desde Android" : request.Motivo.Trim();
 
     const string validarSql = @"
-SELECT TOP (1) TieneOrdenTrabajo, Estado
+SELECT TOP (1) Estado
 FROM dbo.OrdenesCompraInterna
 WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
     const string detalleSql = @"
 SELECT
-    IdOrdenCompraInternaDetalle,
-    CAST(Cantidad - ISNULL(CantidadDespachada, 0) AS DECIMAL(18,2)) AS CantidadPendiente
-FROM dbo.OrdenCompraInternaDetalle
-WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
-  AND CAST(Cantidad - ISNULL(CantidadDespachada, 0) AS DECIMAL(18,2)) > 0;";
+    D.IdOrdenCompraInternaDetalle,
+    CAST(D.Cantidad - CASE
+        WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada
+        ELSE ISNULL(PROD.CantidadAplicada, 0)
+    END AS DECIMAL(18,2)) AS CantidadPendiente
+FROM dbo.OrdenCompraInternaDetalle D
+OUTER APPLY
+(
+    SELECT SUM(OD.CantidadAplicada) AS CantidadAplicada
+    FROM dbo.OrdenTrabajoDetalle OD
+    INNER JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+    WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+      AND OT.Estado <> 'ANULADA'
+      AND OD.Estado <> 'ANULADO'
+) PROD
+WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
+  AND CAST(D.Cantidad - CASE
+        WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada
+        ELSE ISNULL(PROD.CantidadAplicada, 0)
+    END AS DECIMAL(18,2)) > 0;";
 
     await using SqlConnection conexion = new(connectionString);
     await conexion.OpenAsync();
@@ -725,9 +750,6 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
         await using SqlDataReader dr = await validarCmd.ExecuteReaderAsync();
         if (!await dr.ReadAsync())
             return Results.NotFound(new { mensaje = "OCI no encontrada." });
-
-        if (Convert.ToBoolean(dr["TieneOrdenTrabajo"]))
-            return Results.BadRequest(new { mensaje = "La OCI ya tiene una OT generada." });
 
         string estado = dr["Estado"]?.ToString() ?? string.Empty;
         if (estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
@@ -749,6 +771,12 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
 
     if (detalles.Count == 0)
         return Results.BadRequest(new { mensaje = "La OCI no tiene cantidades pendientes para producir." });
+
+    List<OtValidacionProductoApi> validaciones = await ValidarOtInsumosAsync(conexion, id);
+    if (validaciones.Count == 0)
+        return Results.BadRequest(new { mensaje = "La OCI no tiene productos faltantes para producir." });
+    if (validaciones.Any(x => !OtValidacionOk(x)))
+        return Results.BadRequest(new { mensaje = "No se puede generar la OT. Revise ficha tecnica y stock de insumos antes de confirmar." });
 
     int idUsuario;
     await using (SqlCommand usuarioCmd = new("SELECT TOP (1) IdUsuario FROM dbo.Usuarios WHERE NombreUsuario = @Usuario", conexion))
@@ -779,6 +807,50 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
         idOrdenTrabajo = Convert.ToInt32(idOt.Value),
         numeroOT = numeroOt.Value?.ToString() ?? string.Empty
     });
+});
+
+app.MapGet("/api/oci/{id:int}/orden-trabajo/validacion", async (int id) =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    List<OtValidacionProductoApi> productos = await ValidarOtInsumosAsync(conexion, id);
+    if (productos.Count == 0)
+        return Results.Ok(new { puedeGenerar = false, mensaje = "No hay productos faltantes para producir.", productos });
+
+    bool puedeGenerar = productos.All(OtValidacionOk);
+    string mensaje = puedeGenerar
+        ? "Todos los productos tienen ficha tecnica y stock de insumos suficiente."
+        : "Hay productos sin ficha tecnica o con insumos insuficientes.";
+
+    return Results.Ok(new { puedeGenerar, mensaje, productos });
+});
+
+app.MapGet("/api/oci/detalles/{idDetalle:int}/orden-trabajo/insumos", async (int idDetalle) =>
+{
+    List<OtValidacionInsumoApi> insumos = [];
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_PRO_OT_DETALLE_INSUMOS", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInternaDetalle", SqlDbType.Int).Value = idDetalle;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+    {
+        insumos.Add(new OtValidacionInsumoApi(
+            Convert.ToInt32(dr["IdInsumo"]),
+            LeerString(dr, "CodigoInsumo"),
+            LeerString(dr, "NombreInsumo"),
+            LeerString(dr, "UnidadMedida"),
+            Convert.ToDecimal(dr["ConsumoUnitario"]),
+            Convert.ToDecimal(dr["CantidadProduccion"]),
+            Convert.ToDecimal(dr["CantidadNecesaria"]),
+            Convert.ToDecimal(dr["StockActual"]),
+            Convert.ToDecimal(dr["StockProyectado"]),
+            Convert.ToDecimal(dr["CantidadFaltante"]),
+            LeerString(dr, "Estado")));
+    }
+
+    return Results.Ok(new { total = insumos.Count, items = insumos });
 });
 
 app.MapPost("/api/oci/{id:int}/generar-guia-interna", async (int id, DocumentoAccionApiRequest request) =>
@@ -840,7 +912,133 @@ app.MapPost("/api/oci/{id:int}/generar-guia-interna", async (int id, DocumentoAc
     return Results.Ok(new
     {
         mensaje = mensaje.Value?.ToString() ?? $"Guía interna {numero.Value} generada correctamente.",
+        idGuiaInterna = await ObtenerIdGuiaInternaPorNumeroAsync(connectionString, numero.Value?.ToString() ?? string.Empty),
         numeroGuia = numero.Value?.ToString() ?? string.Empty
+    });
+});
+
+app.MapGet("/api/oci/{id:int}/guia-interna/preparar", async (int id, int? idAlmacen) =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_GUIA_INTERNA_PREPARAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@IdAlmacen", SqlDbType.Int).Value = idAlmacen.HasValue && idAlmacen.Value > 0 ? idAlmacen.Value : DBNull.Value;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return Results.NotFound(new { mensaje = "OCI no encontrada." });
+
+    var cabecera = new
+    {
+        origen = "OCI",
+        idOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
+        numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
+        numeroProforma = LeerString(dr, "NumeroProforma"),
+        ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
+        idAlmacen = Convert.ToInt32(dr["IdAlmacen"]),
+        nombreAlmacen = LeerString(dr, "NombreAlmacen"),
+        rucEmisor = LeerString(dr, "RucEmisor"),
+        empresaEmisora = LeerString(dr, "EmpresaEmisora"),
+        rucDestino = LeerString(dr, "RucDestino"),
+        empresaDestino = LeerString(dr, "EmpresaDestino"),
+        fechaEmision = DateTime.Today
+    };
+
+    List<object> detalles = [];
+    if (await dr.NextResultAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            detalles.Add(new
+            {
+                idOrdenCompraInternaDetalle = Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+                idProducto = Convert.ToInt32(dr["IdProducto"]),
+                codigoProducto = dr["CodigoProducto"]?.ToString() ?? string.Empty,
+                nombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                idUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                nombreUnidad = LeerString(dr, "NombreUnidad"),
+                cantidadRequerida = Convert.ToDecimal(dr["CantidadRequerida"]),
+                cantidadEntregada = Convert.ToDecimal(dr["CantidadEntregada"]),
+                cantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
+                stockActual = Convert.ToDecimal(dr["StockActual"]),
+                precioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
+                cantidadDespachar = Convert.ToDecimal(dr["CantidadSugerida"]),
+                observacion = dr["Observacion"]?.ToString() ?? string.Empty
+            });
+        }
+    }
+
+    return Results.Ok(new { cabecera, detalles });
+});
+
+app.MapPost("/api/oci/{id:int}/guia-interna/emitir", async (int id, GuiaInternaOciEmitirApiRequest request) =>
+{
+    if (request.IdAlmacen <= 0)
+        return Results.BadRequest(new { mensaje = "Seleccione almacÃ©n." });
+    if (request.Detalles.Count == 0 || request.Detalles.All(x => x.CantidadDespachar <= 0))
+        return Results.BadRequest(new { mensaje = "Ingrese al menos un producto con cantidad a despachar." });
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    Dictionary<int, decimal> maximos = [];
+    await using (SqlCommand prepararCmd = new("USP_VEN_GUIA_INTERNA_PREPARAR", conexion) { CommandType = CommandType.StoredProcedure })
+    {
+        prepararCmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+        prepararCmd.Parameters.Add("@IdAlmacen", SqlDbType.Int).Value = request.IdAlmacen;
+        await using SqlDataReader dr = await prepararCmd.ExecuteReaderAsync();
+        if (!await dr.ReadAsync())
+            return Results.NotFound(new { mensaje = "OCI no encontrada." });
+        if (await dr.NextResultAsync())
+        {
+            while (await dr.ReadAsync())
+            {
+                decimal pendiente = Convert.ToDecimal(dr["CantidadPendiente"]);
+                decimal stock = Convert.ToDecimal(dr["StockActual"]);
+                maximos[Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"])] = Math.Max(0, Math.Min(pendiente, stock));
+            }
+        }
+    }
+
+    List<GuiaInternaDetalleApiRequest> detalles = [];
+    foreach (GuiaInternaOciDetalleApiRequest detalle in request.Detalles.Where(x => x.CantidadDespachar > 0))
+    {
+        if (!maximos.TryGetValue(detalle.IdOrdenCompraInternaDetalle, out decimal maximo))
+            return Results.BadRequest(new { mensaje = "Uno de los productos no pertenece a la OCI." });
+        if (detalle.CantidadDespachar > maximo)
+            return Results.BadRequest(new { mensaje = $"La cantidad maxima para un producto es {maximo:N2}." });
+
+        detalles.Add(new(detalle.IdOrdenCompraInternaDetalle, detalle.CantidadDespachar, detalle.Observacion?.Trim() ?? string.Empty));
+    }
+
+    if (detalles.Count == 0)
+        return Results.BadRequest(new { mensaje = "No hay stock disponible para generar Guia Interna." });
+
+    string usuario = string.IsNullOrWhiteSpace(request.UsuarioEmisor) ? "Android" : request.UsuarioEmisor.Trim();
+    await using SqlCommand cmd = new("USP_VEN_GUIA_INTERNA_EMITIR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@IdAlmacen", SqlDbType.Int).Value = request.IdAlmacen;
+    cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = request.FechaEmision == default ? DateTime.Today : request.FechaEmision.Date;
+    cmd.Parameters.Add("@UsuarioEmisor", SqlDbType.VarChar, 80).Value = usuario;
+    cmd.Parameters.Add("@UsuarioAutorizador", SqlDbType.VarChar, 80).Value = string.IsNullOrWhiteSpace(request.UsuarioAutorizador) ? usuario : request.UsuarioAutorizador.Trim();
+    cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = request.Observacion?.Trim() ?? string.Empty;
+    cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured)
+    {
+        TypeName = "dbo.GuiaInternaDetalleType",
+        Value = CrearTablaGuiaInterna(detalles)
+    });
+    SqlParameter numero = new("@NumeroGuia", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+    SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(numero);
+    cmd.Parameters.Add(mensaje);
+    await cmd.ExecuteNonQueryAsync();
+
+    string numeroGuia = numero.Value?.ToString() ?? string.Empty;
+    return Results.Ok(new
+    {
+        mensaje = mensaje.Value?.ToString() ?? $"Guia interna {numeroGuia} generada correctamente.",
+        idGuiaInterna = await ObtenerIdGuiaInternaPorNumeroAsync(connectionString, numeroGuia),
+        numeroGuia
     });
 });
 
@@ -898,6 +1096,30 @@ app.MapGet("/api/guias-internas/{id:int}", async (int id) =>
     }
 
     return Results.Ok(new { cabecera, detalles });
+});
+
+app.MapGet("/api/guias-internas/{id:int}/pdf", async (int id) =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_GUIA_INTERNA_OBTENER", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdGuiaInterna", SqlDbType.Int).Value = id;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return Results.NotFound(new { mensaje = "Guia interna no encontrada." });
+
+    GuiaInternaPdfCabecera cabecera = LeerGuiaInternaPdfCabecera(dr);
+    List<GuiaInternaPdfDetalle> detalles = [];
+    if (await dr.NextResultAsync())
+    {
+        while (await dr.ReadAsync())
+            detalles.Add(LeerGuiaInternaPdfDetalle(dr));
+    }
+
+    EmpresaPdfInfo empresa = await ObtenerEmpresaPdfAsync(connectionString);
+    byte[] pdf = CrearGuiaInternaPdf(empresa, cabecera, detalles);
+    string fileName = string.IsNullOrWhiteSpace(cabecera.NumeroGuia) ? $"guia-interna-{id}.pdf" : $"{cabecera.NumeroGuia}.pdf";
+    return Results.File(pdf, "application/pdf", fileName);
 });
 
 app.MapGet("/api/guias-internas/manual/preparar", async (int? idAlmacen) =>
@@ -1125,6 +1347,114 @@ app.MapGet("/api/ordenes-trabajo/{id:int}", async (int id) =>
     }
 
     return Results.Ok(new { cabecera, detalles, areas });
+});
+
+app.MapGet("/api/ordenes-trabajo/{id:int}/kardex", async (int id) =>
+{
+    const string sql = @"
+SELECT d.CodigoProducto,d.NombreProducto,k.Cantidad,al.NombreAlmacen Almacen,k.FechaMovimiento,k.UsuarioResponsable Usuario
+FROM dbo.KardexProductos k
+JOIN dbo.OrdenTrabajoTerminacion t ON t.IdOperacionTerminacion=k.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT AND d.IdProducto=k.IdProducto
+JOIN dbo.Almacenes al ON al.IdAlmacen=k.IdAlmacen
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+ORDER BY k.FechaMovimiento DESC;";
+
+    List<OrdenTrabajoKardexApi> items = [];
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+    {
+        items.Add(new OrdenTrabajoKardexApi(
+            LeerString(dr, "CodigoProducto"),
+            LeerString(dr, "NombreProducto"),
+            Convert.ToDecimal(dr["Cantidad"]),
+            LeerString(dr, "Almacen"),
+            Convert.ToDateTime(dr["FechaMovimiento"]),
+            LeerString(dr, "Usuario")));
+    }
+
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/ordenes-trabajo/{id:int}/movimientos", async (int id) =>
+{
+    const string sql = @"
+SELECT t.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,ao.NombreArea Origen,ad.NombreArea Destino,
+       td.CantidadEnviada Cantidad,'AVANCE_AREA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
+FROM dbo.OrdenTrabajoTransferencia t
+JOIN dbo.OrdenTrabajoTransferenciaDetalle td ON td.IdOperacionTransferencia=t.IdOperacionTransferencia
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT
+JOIN dbo.AreaProduccion ao ON ao.IdAreaProduccion=t.IdAreaOrigen
+JOIN dbo.AreaProduccion ad ON ad.IdAreaProduccion=t.IdAreaDestino
+JOIN dbo.Usuarios us ON us.IdUsuario=t.IdUsuarioSesion
+LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=t.IdUsuarioAutoriza
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+UNION ALL
+SELECT m.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,a.NombreArea Origen,'' Destino,
+       m.Cantidad,'REGISTRO_MERMA' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,
+       CONCAT(m.Motivo,CASE WHEN NULLIF(m.Observacion,'') IS NULL THEN '' ELSE CONCAT(' - ',m.Observacion) END) Observacion
+FROM dbo.OrdenTrabajoMerma m
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=m.IdDetalleOT
+JOIN dbo.OrdenTrabajoDetalleArea da ON da.IdDetalleArea=m.IdDetalleArea
+JOIN dbo.AreaProduccion a ON a.IdAreaProduccion=da.IdAreaProduccion
+JOIN dbo.Usuarios us ON us.IdUsuario=m.IdUsuarioSesion
+LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=m.IdUsuarioAutoriza
+WHERE m.IdOrdenTrabajo=@IdOrdenTrabajo
+UNION ALL
+SELECT c.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,'INSUMOS' Origen,'PRODUCCION' Destino,
+       SUM(c.CantidadConsumida) Cantidad,'CONSUMO_INSUMOS' Accion,u.NombreUsuario Usuario,'' Observacion
+FROM dbo.OrdenTrabajoConsumoInsumo c
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=c.IdDetalleOT
+JOIN dbo.Usuarios u ON u.IdUsuario=c.IdUsuario
+WHERE c.IdOrdenTrabajo=@IdOrdenTrabajo
+GROUP BY c.FechaRegistro,d.CodigoProducto,d.NombreProducto,u.NombreUsuario
+UNION ALL
+SELECT t.FechaRegistro FechaHora,d.CodigoProducto,d.NombreProducto,a.NombreArea Origen,'PRODUCTO TERMINADO' Destino,
+       td.Cantidad,'CIERRE_PRODUCCION' Accion,ISNULL(ua.NombreUsuario,us.NombreUsuario) Usuario,t.Observacion
+FROM dbo.OrdenTrabajoTerminacion t
+JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT
+JOIN dbo.AreaProduccion a ON a.IdAreaProduccion=t.IdAreaTermino
+JOIN dbo.Usuarios us ON us.IdUsuario=t.IdUsuarioSesion
+LEFT JOIN dbo.Usuarios ua ON ua.IdUsuario=t.IdUsuarioAutoriza
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+UNION ALL
+SELECT k.FechaMovimiento FechaHora,d.CodigoProducto,d.NombreProducto,'PRODUCCION' Origen,al.NombreAlmacen Destino,
+       k.Cantidad,'INGRESO_KARDEX' Accion,k.UsuarioResponsable Usuario,k.Observacion
+FROM dbo.KardexProductos k
+JOIN dbo.OrdenTrabajoTerminacion t ON t.IdOperacionTerminacion=k.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoTerminacionDetalle td ON td.IdOperacionTerminacion=t.IdOperacionTerminacion
+JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=td.IdDetalleOT AND d.IdProducto=k.IdProducto
+JOIN dbo.Almacenes al ON al.IdAlmacen=k.IdAlmacen
+WHERE t.IdOrdenTrabajo=@IdOrdenTrabajo
+ORDER BY FechaHora DESC;";
+
+    List<OrdenTrabajoMovimientoApi> items = [];
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+    {
+        items.Add(new OrdenTrabajoMovimientoApi(
+            Convert.ToDateTime(dr["FechaHora"]),
+            LeerString(dr, "CodigoProducto"),
+            LeerString(dr, "NombreProducto"),
+            LeerString(dr, "Origen"),
+            LeerString(dr, "Destino"),
+            Convert.ToDecimal(dr["Cantidad"]),
+            LeerString(dr, "Accion"),
+            LeerString(dr, "Usuario"),
+            LeerString(dr, "Observacion")));
+    }
+
+    return Results.Ok(new { total = items.Count, items });
 });
 
 app.MapPost("/api/ordenes-trabajo/{id:int}/lanzar", async (int id, OrdenTrabajoLanzarApiRequest request) =>
@@ -1689,6 +2019,264 @@ static object MapearGuiaInternaDetalle(SqlDataReader dr) => new
     observacion = dr["Observacion"]?.ToString() ?? string.Empty
 };
 
+static async Task<List<OtValidacionProductoApi>> ValidarOtInsumosAsync(SqlConnection conexion, int idOrdenCompraInterna)
+{
+    List<OtValidacionProductoApi> productos = [];
+    await using SqlCommand cmd = new("USP_PRO_OT_VALIDAR_INSUMOS", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+    {
+        productos.Add(new OtValidacionProductoApi(
+            Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+            Convert.ToInt32(dr["IdProducto"]),
+            LeerString(dr, "CodigoProducto"),
+            LeerString(dr, "NombreProducto"),
+            LeerString(dr, "Observacion"),
+            Convert.ToDecimal(dr["CantidadRequerida"]),
+            dr["IdFichaTecnica"] == DBNull.Value ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
+            Convert.ToDecimal(dr["StockAlmacen"]),
+            Convert.ToDecimal(dr["StockCorte"]),
+            Convert.ToDecimal(dr["StockConfeccion"]),
+            Convert.ToDecimal(dr["StockAcabado"]),
+            Convert.ToDecimal(dr["StockTotal"]),
+            Convert.ToDecimal(dr["Deficit"]),
+            LeerString(dr, "EstadoInsumos")));
+    }
+
+    return productos;
+}
+
+static bool OtValidacionOk(OtValidacionProductoApi producto) =>
+    producto.IdFichaTecnica.HasValue
+    && producto.EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase)
+    && producto.Deficit <= 0;
+
+static string LeerString(SqlDataReader dr, string columna)
+{
+    for (int i = 0; i < dr.FieldCount; i++)
+    {
+        if (dr.GetName(i).Equals(columna, StringComparison.OrdinalIgnoreCase))
+            return dr.IsDBNull(i) ? string.Empty : dr.GetValue(i)?.ToString() ?? string.Empty;
+    }
+    return string.Empty;
+}
+
+static decimal LeerDecimal(SqlDataReader dr, string columna, decimal valorPredeterminado = 0)
+{
+    for (int i = 0; i < dr.FieldCount; i++)
+    {
+        if (dr.GetName(i).Equals(columna, StringComparison.OrdinalIgnoreCase))
+            return dr.IsDBNull(i) ? valorPredeterminado : Convert.ToDecimal(dr.GetValue(i));
+    }
+    return valorPredeterminado;
+}
+
+static async Task<int> ObtenerIdGuiaInternaPorNumeroAsync(string connectionString, string numeroGuia)
+{
+    if (string.IsNullOrWhiteSpace(numeroGuia))
+        return 0;
+
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("SELECT TOP (1) IdGuiaInterna FROM dbo.GuiasInternas WHERE NumeroGuia = @NumeroGuia", conexion);
+    cmd.Parameters.Add("@NumeroGuia", SqlDbType.VarChar, 30).Value = numeroGuia;
+    await conexion.OpenAsync();
+    object? value = await cmd.ExecuteScalarAsync();
+    return value == null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+}
+
+static async Task<EmpresaPdfInfo> ObtenerEmpresaPdfAsync(string connectionString)
+{
+    const string sql = @"
+SELECT TOP (1) Ruc, Nombre, Telefono, Correo, Direccion
+FROM dbo.Empresas
+WHERE Estado = 1
+ORDER BY EsPredeterminada DESC, IdEmpresa ASC;";
+
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return new EmpresaPdfInfo("CorexProd", string.Empty, string.Empty, string.Empty, string.Empty);
+
+    return new EmpresaPdfInfo(
+        dr["Nombre"]?.ToString() ?? "CorexProd",
+        dr["Ruc"]?.ToString() ?? string.Empty,
+        dr["Direccion"]?.ToString() ?? string.Empty,
+        dr["Telefono"]?.ToString() ?? string.Empty,
+        dr["Correo"]?.ToString() ?? string.Empty);
+}
+
+static GuiaInternaPdfCabecera LeerGuiaInternaPdfCabecera(SqlDataReader dr) => new(
+    Convert.ToInt32(dr["IdGuiaInterna"]),
+    LeerString(dr, "NumeroGuia"),
+    LeerString(dr, "Origen"),
+    LeerString(dr, "NumeroOci"),
+    LeerString(dr, "NumeroProforma"),
+    LeerString(dr, "OrdenCompraCliente"),
+    Convert.ToDateTime(dr["FechaEmision"]),
+    LeerString(dr, "NombreAlmacen"),
+    LeerString(dr, "RucEmisor"),
+    LeerString(dr, "EmpresaEmisora"),
+    LeerString(dr, "RucDestino"),
+    LeerString(dr, "EmpresaDestino"),
+    LeerString(dr, "UsuarioEmisor"),
+    LeerString(dr, "UsuarioAutorizador"),
+    LeerString(dr, "Observacion"),
+    LeerString(dr, "MotivoEmisionManual"),
+    LeerString(dr, "Estado"),
+    Convert.ToDateTime(dr["FechaRegistro"]));
+
+static GuiaInternaPdfDetalle LeerGuiaInternaPdfDetalle(SqlDataReader dr) => new(
+    LeerString(dr, "CodigoProducto"),
+    LeerString(dr, "NombreProducto"),
+    LeerDecimal(dr, "CantidadPendiente"),
+    LeerDecimal(dr, "CantidadDespachar", LeerDecimal(dr, "CantidadSugerida")),
+    LeerString(dr, "Observacion"));
+
+static byte[] CrearGuiaInternaPdf(EmpresaPdfInfo empresa, GuiaInternaPdfCabecera guia, IReadOnlyList<GuiaInternaPdfDetalle> detalles)
+{
+    const double pageWidth = 595;
+    const double pageHeight = 842;
+    const double margin = 34;
+    SimplePdf document = new();
+    SimplePdfPage page = NuevaPaginaGuia(document, pageWidth, pageHeight, margin, empresa, guia, out double y);
+    DibujarDatosGuia(page, margin, pageWidth, guia, ref y);
+    DibujarCabeceraDetalleGuia(page, margin, pageWidth, ref y);
+
+    foreach (GuiaInternaPdfDetalle detalle in detalles.Where(d => d.CantidadDespachar > 0))
+    {
+        double alto = Math.Max(23, 8 + DividirLineasPdf(ProductoConObservacionPdf(detalle), 62).Count * 10);
+        if (y - alto < 155)
+        {
+            page = NuevaPaginaGuia(document, pageWidth, pageHeight, margin, empresa, guia, out y);
+            DibujarCabeceraDetalleGuia(page, margin, pageWidth, ref y);
+        }
+        DibujarDetalleGuia(page, margin, pageWidth, detalle, ref y);
+    }
+
+    if (y < 145)
+        page = NuevaPaginaGuia(document, pageWidth, pageHeight, margin, empresa, guia, out y);
+
+    DibujarCierreGuia(page, margin, pageWidth, guia, ref y);
+    return document.Save();
+}
+
+static SimplePdfPage NuevaPaginaGuia(SimplePdf document, double pageWidth, double pageHeight, double margin, EmpresaPdfInfo empresa, GuiaInternaPdfCabecera guia, out double y)
+{
+    SimplePdfPage page = document.AddPage(pageWidth, pageHeight);
+    y = pageHeight - margin;
+    page.Text(LimpiarPdf(empresa.Nombre).ToUpperInvariant(), margin, y, 13, true);
+    page.Text($"RUC: {empresa.Ruc}", margin, y - 15, 9);
+    page.Text(LimpiarPdf(empresa.Direccion), margin, y - 28, 8);
+    page.Text(LimpiarPdf(string.Join(" - ", new[] { empresa.Telefono, empresa.Correo }.Where(x => !string.IsNullOrWhiteSpace(x)))), margin, y - 40, 8);
+    double boxX = 405, boxY = y - 55, boxW = 156, boxH = 58;
+    page.Rectangle(boxX, boxY, boxW, boxH);
+    page.CenterText("GUIA INTERNA DE SALIDA", boxX + boxW / 2, boxY + 37, 10, true);
+    page.CenterText(LimpiarPdf(guia.NumeroGuia), boxX + boxW / 2, boxY + 18, 12, true);
+    y -= 66;
+    if (guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
+    {
+        page.CenterText("GUIA ANULADA", pageWidth / 2, y, 24, true);
+        y -= 28;
+    }
+    return page;
+}
+
+static void DibujarDatosGuia(SimplePdfPage page, double margin, double pageWidth, GuiaInternaPdfCabecera guia, ref double y)
+{
+    const double h = 19;
+    double w = pageWidth - margin * 2, half = w / 2;
+    string fechaHora = $"{guia.FechaEmision:dd/MM/yyyy} {guia.FechaRegistro:HH:mm}";
+    FilaDatoGuia(page, margin, y, half, "FECHA Y HORA", fechaHora); FilaDatoGuia(page, margin + half, y, half, "ALMACEN", guia.NombreAlmacen); y -= h;
+    FilaDatoGuia(page, margin, y, half, "CLIENTE", string.IsNullOrWhiteSpace(guia.EmpresaDestino) ? "No especificado" : guia.EmpresaDestino); FilaDatoGuia(page, margin + half, y, half, "DOCUMENTO", guia.RucDestino); y -= h;
+    FilaDatoGuia(page, margin, y, half, "N. OCI", guia.NumeroOci); FilaDatoGuia(page, margin + half, y, half, "OC CLIENTE", guia.OrdenCompraCliente); y -= h;
+    FilaDatoGuia(page, margin, y, half, "N. PROFORMA", guia.NumeroProforma); FilaDatoGuia(page, margin + half, y, half, "ORIGEN", guia.Origen); y -= h;
+    FilaDatoGuia(page, margin, y, w, "MOTIVO SALIDA", guia.MotivoEmisionManual); y -= h;
+    FilaDatoGuia(page, margin, y, half, "RESPONSABLE", guia.UsuarioEmisor); FilaDatoGuia(page, margin + half, y, half, "AUTORIZADO", guia.UsuarioAutorizador); y -= h + 14;
+}
+
+static void FilaDatoGuia(SimplePdfPage page, double x, double y, double width, string label, string value)
+{
+    page.Rectangle(x, y - 19, width, 19);
+    page.Text(label, x + 5, y - 13, 7, true);
+    page.Text(TruncarPdf(LimpiarPdf(string.IsNullOrWhiteSpace(value) ? "-" : value), 33), x + 78, y - 13, 8);
+}
+
+static void DibujarCabeceraDetalleGuia(SimplePdfPage page, double margin, double pageWidth, ref double y)
+{
+    double w = pageWidth - margin * 2;
+    page.Rectangle(margin, y - 21, w, 21);
+    page.Text("CODIGO", margin + 5, y - 14, 7, true);
+    page.Text("PRODUCTO", margin + 70, y - 14, 7, true);
+    page.RightText("CANTIDAD", margin + 432, y - 14, 7, true);
+    page.Text("ESTADO", margin + 447, y - 14, 7, true);
+    y -= 21;
+}
+
+static void DibujarDetalleGuia(SimplePdfPage page, double margin, double pageWidth, GuiaInternaPdfDetalle detalle, ref double y)
+{
+    List<string> lineas = DividirLineasPdf(ProductoConObservacionPdf(detalle), 62);
+    double h = Math.Max(23, 8 + lineas.Count * 10);
+    double w = pageWidth - margin * 2;
+    page.Rectangle(margin, y - h, w, h);
+    page.Text(TruncarPdf(LimpiarPdf(detalle.CodigoProducto), 12), margin + 5, y - 15, 7.5);
+    for (int i = 0; i < lineas.Count; i++)
+        page.Text(lineas[i], margin + 70, y - 15 - i * 10, 7.5);
+    page.RightText(detalle.CantidadDespachar.ToString("N2"), margin + 432, y - 15, 7.5);
+    page.Text(detalle.CantidadDespachar < detalle.CantidadPendiente ? "PARCIAL" : "COMPLETO", margin + 447, y - 15, 7, true);
+    y -= h;
+}
+
+static void DibujarCierreGuia(SimplePdfPage page, double margin, double pageWidth, GuiaInternaPdfCabecera guia, ref double y)
+{
+    y -= 14; page.Text("OBSERVACIONES", margin, y, 8, true); y -= 13;
+    page.Rectangle(margin, y - 34, pageWidth - margin * 2, 38);
+    page.Text(TruncarPdf(LimpiarPdf(guia.Observacion), 105), margin + 7, y - 15, 8);
+    y -= 82;
+    double ancho = (pageWidth - margin * 2) / 3;
+    page.Line(margin + 18, y, margin + ancho - 18, y);
+    page.Line(margin + ancho + 18, y, margin + ancho * 2 - 18, y);
+    page.Line(margin + ancho * 2 + 18, y, pageWidth - margin - 18, y);
+    page.CenterText("ENTREGADO POR", margin + ancho / 2, y - 14, 8, true);
+    page.CenterText("RECIBIDO POR", margin + ancho * 1.5, y - 14, 8, true);
+    page.CenterText("AUTORIZADO POR", margin + ancho * 2.5, y - 14, 8, true);
+}
+
+static string ProductoConObservacionPdf(GuiaInternaPdfDetalle detalle) => string.IsNullOrWhiteSpace(detalle.Observacion)
+    ? LimpiarPdf(detalle.NombreProducto)
+    : LimpiarPdf($"{detalle.NombreProducto} ({detalle.Observacion.Trim()})");
+
+static List<string> DividirLineasPdf(string texto, int maximo)
+{
+    List<string> lineas = [];
+    string pendiente = LimpiarPdf(texto).Trim();
+    while (pendiente.Length > maximo)
+    {
+        int corte = pendiente.LastIndexOf(' ', maximo);
+        if (corte <= 0) corte = maximo;
+        lineas.Add(pendiente[..corte].Trim());
+        pendiente = pendiente[corte..].TrimStart();
+    }
+    lineas.Add(string.IsNullOrWhiteSpace(pendiente) ? "-" : pendiente);
+    return lineas;
+}
+
+static string TruncarPdf(string value, int max) => value.Length <= max ? value : value[..Math.Max(0, max - 3)] + "...";
+
+static string LimpiarPdf(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+    Dictionary<char, char> reemplazos = new()
+    {
+        ['á'] = 'a', ['é'] = 'e', ['í'] = 'i', ['ó'] = 'o', ['ú'] = 'u',
+        ['Á'] = 'A', ['É'] = 'E', ['Í'] = 'I', ['Ó'] = 'O', ['Ú'] = 'U',
+        ['ñ'] = 'n', ['Ñ'] = 'N'
+    };
+    return new string(value.Select(c => reemplazos.TryGetValue(c, out char r) ? r : c <= 127 ? c : ' ').ToArray());
+}
+
 static async Task<decimal> ObtenerTotalProducidoOtAsync(string connectionString, int idOrdenTrabajo)
 {
     await using SqlConnection conexion = new(connectionString);
@@ -1758,6 +2346,193 @@ static async Task ConfigurarOpcionesInsertAsync(SqlConnection conexion)
     await cmd.ExecuteNonQueryAsync();
 }
 
+internal sealed class SimplePdf
+{
+    private readonly List<SimplePdfPage> _pages = [];
+
+    public SimplePdfPage AddPage(double width, double height)
+    {
+        SimplePdfPage page = new(width, height);
+        _pages.Add(page);
+        return page;
+    }
+
+    public byte[] Save()
+    {
+        int pageCount = _pages.Count;
+        int objectCount = 4 + pageCount * 2;
+        byte[][] objects = new byte[objectCount + 1][];
+        int[] pageObjectIds = new int[pageCount];
+        int[] contentObjectIds = new int[pageCount];
+        int nextId = 5;
+
+        for (int i = 0; i < pageCount; i++)
+        {
+            pageObjectIds[i] = nextId++;
+            contentObjectIds[i] = nextId++;
+        }
+
+        string kids = string.Join(" ", pageObjectIds.Select(id => $"{id} 0 R"));
+        objects[1] = AsciiObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+        objects[2] = AsciiObject(2, $"<< /Type /Pages /Count {pageCount} /Kids [{kids}] >>");
+        objects[3] = AsciiObject(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        objects[4] = AsciiObject(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+
+        for (int i = 0; i < pageCount; i++)
+        {
+            SimplePdfPage page = _pages[i];
+            objects[pageObjectIds[i]] = AsciiObject(pageObjectIds[i],
+                $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectIds[i]} 0 R >>");
+            objects[contentObjectIds[i]] = StreamObject(contentObjectIds[i], page.Content);
+        }
+
+        using MemoryStream stream = new();
+        WriteAscii(stream, "%PDF-1.4\n");
+        long[] offsets = new long[objectCount + 1];
+        for (int id = 1; id <= objectCount; id++)
+        {
+            offsets[id] = stream.Position;
+            stream.Write(objects[id]);
+        }
+
+        long xrefOffset = stream.Position;
+        WriteAscii(stream, $"xref\n0 {objectCount + 1}\n");
+        WriteAscii(stream, "0000000000 65535 f \n");
+        for (int id = 1; id <= objectCount; id++)
+            WriteAscii(stream, $"{offsets[id]:0000000000} 00000 n \n");
+        WriteAscii(stream, $"trailer\n<< /Size {objectCount + 1} /Root 1 0 R >>\nstartxref\n{xrefOffset}\n%%EOF");
+        return stream.ToArray();
+    }
+
+    private static byte[] AsciiObject(int id, string body) => Encoding.ASCII.GetBytes($"{id} 0 obj\n{body}\nendobj\n");
+    private static byte[] StreamObject(int id, string content)
+    {
+        byte[] contentBytes = Encoding.ASCII.GetBytes(content);
+        byte[] header = Encoding.ASCII.GetBytes($"{id} 0 obj\n<< /Length {contentBytes.Length} >>\nstream\n");
+        byte[] footer = Encoding.ASCII.GetBytes("endstream\nendobj\n");
+        using MemoryStream stream = new();
+        stream.Write(header);
+        stream.Write(contentBytes);
+        stream.Write(footer);
+        return stream.ToArray();
+    }
+
+    private static void WriteAscii(Stream stream, string value) => stream.Write(Encoding.ASCII.GetBytes(value));
+    internal static string N(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+}
+
+internal sealed class SimplePdfPage(double width, double height)
+{
+    private readonly StringBuilder _content = new();
+
+    public double Width { get; } = width;
+    public double Height { get; } = height;
+    public string Content => _content.ToString();
+
+    public void Text(string text, double x, double y, double size, bool bold = false)
+    {
+        _content.Append("0 0 0 rg BT /");
+        _content.Append(bold ? "F2" : "F1");
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(size));
+        _content.Append(" Tf ");
+        _content.Append(SimplePdf.N(x));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(y));
+        _content.Append(" Td ");
+        _content.Append(PdfString(text));
+        _content.Append(" Tj ET\n");
+    }
+
+    public void RightText(string text, double rightX, double y, double size, bool bold = false)
+        => Text(text, rightX - ApproximateWidth(text, size, bold), y, size, bold);
+
+    public void CenterText(string text, double centerX, double y, double size, bool bold = false)
+        => Text(text, centerX - ApproximateWidth(text, size, bold) / 2, y, size, bold);
+
+    public void Rectangle(double x, double y, double width, double height)
+    {
+        _content.Append("0 0 0 RG ");
+        _content.Append(SimplePdf.N(x));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(y));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(width));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(height));
+        _content.Append(" re S\n");
+    }
+
+    public void Line(double x1, double y1, double x2, double y2)
+    {
+        _content.Append("0 0 0 RG ");
+        _content.Append(SimplePdf.N(x1));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(y1));
+        _content.Append(" m ");
+        _content.Append(SimplePdf.N(x2));
+        _content.Append(' ');
+        _content.Append(SimplePdf.N(y2));
+        _content.Append(" l S\n");
+    }
+
+    private static double ApproximateWidth(string text, double size, bool bold)
+    {
+        double width = 0;
+        foreach (char c in text ?? string.Empty)
+        {
+            if (char.IsDigit(c)) width += size * 0.556;
+            else if (c is '.' or ',' or '/' or ' ' or '-') width += size * 0.278;
+            else if (c is 'i' or 'l' or 'I' or 't' or 'f') width += size * 0.278;
+            else if (char.IsUpper(c) || c is 'w' or 'm') width += size * 0.722;
+            else width += size * 0.556;
+        }
+        return bold ? width * 1.05 : width;
+    }
+
+    private static string PdfString(string text)
+    {
+        StringBuilder builder = new("(");
+        foreach (char c in text ?? string.Empty)
+        {
+            if (c is '(' or ')' or '\\')
+                builder.Append('\\');
+            builder.Append(c <= 127 ? c : ' ');
+        }
+        builder.Append(')');
+        return builder.ToString();
+    }
+}
+
+internal sealed record EmpresaPdfInfo(string Nombre, string Ruc, string Direccion, string Telefono, string Correo);
+
+internal sealed record GuiaInternaPdfCabecera(
+    int IdGuiaInterna,
+    string NumeroGuia,
+    string Origen,
+    string NumeroOci,
+    string NumeroProforma,
+    string OrdenCompraCliente,
+    DateTime FechaEmision,
+    string NombreAlmacen,
+    string RucEmisor,
+    string EmpresaEmisora,
+    string RucDestino,
+    string EmpresaDestino,
+    string UsuarioEmisor,
+    string UsuarioAutorizador,
+    string Observacion,
+    string MotivoEmisionManual,
+    string Estado,
+    DateTime FechaRegistro);
+
+internal sealed record GuiaInternaPdfDetalle(
+    string CodigoProducto,
+    string NombreProducto,
+    decimal CantidadPendiente,
+    decimal CantidadDespachar,
+    string Observacion);
+
 internal sealed record FichaDocumentoApi(
     string CodigoModelo,
     string NombreArchivo,
@@ -1822,7 +2597,68 @@ internal sealed record OrdenTrabajoPlanificacionApiRequest(
     int IdOrdenCompraInternaDetalle,
     decimal CantidadPlanificada);
 
+internal sealed record OrdenTrabajoKardexApi(
+    string CodigoProducto,
+    string NombreProducto,
+    decimal Cantidad,
+    string Almacen,
+    DateTime FechaMovimiento,
+    string Usuario);
+
+internal sealed record OrdenTrabajoMovimientoApi(
+    DateTime FechaHora,
+    string CodigoProducto,
+    string NombreProducto,
+    string Origen,
+    string Destino,
+    decimal Cantidad,
+    string Accion,
+    string Usuario,
+    string Observacion);
+
+internal sealed record OtValidacionProductoApi(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string CodigoProducto,
+    string NombreProducto,
+    string Observacion,
+    decimal CantidadRequerida,
+    int? IdFichaTecnica,
+    decimal StockAlmacen,
+    decimal StockCorte,
+    decimal StockConfeccion,
+    decimal StockAcabado,
+    decimal StockTotal,
+    decimal Deficit,
+    string EstadoInsumos);
+
+internal sealed record OtValidacionInsumoApi(
+    int IdInsumo,
+    string CodigoInsumo,
+    string NombreInsumo,
+    string UnidadMedida,
+    decimal ConsumoUnitario,
+    decimal CantidadProduccion,
+    decimal CantidadNecesaria,
+    decimal StockActual,
+    decimal StockProyectado,
+    decimal CantidadFaltante,
+    string Estado);
+
 internal sealed record GuiaInternaDetalleApiRequest(
+    int IdOrdenCompraInternaDetalle,
+    decimal CantidadDespachar,
+    string? Observacion);
+
+internal sealed record GuiaInternaOciEmitirApiRequest(
+    int IdAlmacen,
+    DateTime FechaEmision,
+    string? UsuarioEmisor,
+    string? UsuarioAutorizador,
+    string? Observacion,
+    List<GuiaInternaOciDetalleApiRequest> Detalles);
+
+internal sealed record GuiaInternaOciDetalleApiRequest(
     int IdOrdenCompraInternaDetalle,
     decimal CantidadDespachar,
     string? Observacion);

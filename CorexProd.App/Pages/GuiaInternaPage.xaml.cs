@@ -9,11 +9,12 @@ public partial class GuiaInternaPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
-    private readonly ObservableCollection<GuiaInternaResumen> _guias = [];
+    private readonly ObservableCollection<GuiaInternaListItem> _guias = [];
     private readonly ObservableCollection<ProductoSeleccionItem> _productos = [];
     private readonly ObservableCollection<GuiaManualDetalleItem> _detalles = [];
     private GuiaInternaManualPrepararResponse? _preparacion;
     private ProductoStockBusquedaApi? _productoSeleccionado;
+    private int _loadVersion;
 
     public GuiaInternaPage()
     {
@@ -47,32 +48,51 @@ public partial class GuiaInternaPage : ContentPage
 
     private async Task CargarGuiasAsync()
     {
+        int loadVersion = Interlocked.Increment(ref _loadVersion);
+        string busqueda = BuscarSearch.Text ?? string.Empty;
+
         try
         {
             Refresh.IsRefreshing = true;
             IReadOnlyList<GuiaInternaResumen> guias = _session.EsDemo
                 ? DemoData.GuiasInternas
-                    .Where(x => string.IsNullOrWhiteSpace(BuscarSearch.Text)
-                        || x.NumeroGuia.Contains(BuscarSearch.Text, StringComparison.OrdinalIgnoreCase)
-                        || x.NumeroOci.Contains(BuscarSearch.Text, StringComparison.OrdinalIgnoreCase)
-                        || x.EmpresaDestino.Contains(BuscarSearch.Text, StringComparison.OrdinalIgnoreCase)
-                        || x.OrdenCompraCliente.Contains(BuscarSearch.Text, StringComparison.OrdinalIgnoreCase))
+                    .Where(x => string.IsNullOrWhiteSpace(busqueda)
+                        || x.NumeroGuia.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                        || x.NumeroOci.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                        || x.EmpresaDestino.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                        || x.OrdenCompraCliente.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
                     .ToList()
-                : (await _apiClient.GetGuiasInternasAsync(BuscarSearch.Text ?? string.Empty)).Items;
+                : (await _apiClient.GetGuiasInternasAsync(busqueda)).Items;
+
+            List<GuiaInternaListItem> nuevosItems = [];
+            foreach (GuiaInternaResumen guia in guias.GroupBy(x => x.IdGuiaInterna).Select(x => x.First()))
+            {
+                if (loadVersion != Volatile.Read(ref _loadVersion))
+                    return;
+
+                nuevosItems.Add(await CrearGuiaListItemAsync(guia));
+            }
+
+            if (loadVersion != Volatile.Read(ref _loadVersion))
+                return;
 
             _guias.Clear();
-            foreach (GuiaInternaResumen guia in guias)
+            foreach (GuiaInternaListItem guia in nuevosItems)
                 _guias.Add(guia);
 
             ResumenLabel.Text = $"{_guias.Count} guia(s) interna(s)";
         }
         catch (Exception ex)
         {
+            if (loadVersion != Volatile.Read(ref _loadVersion))
+                return;
+
             await DisplayAlertAsync("Guia Interna", ex.Message, "OK");
         }
         finally
         {
-            Refresh.IsRefreshing = false;
+            if (loadVersion == Volatile.Read(ref _loadVersion))
+                Refresh.IsRefreshing = false;
         }
     }
 
@@ -102,16 +122,38 @@ public partial class GuiaInternaPage : ContentPage
 
     private async void OnVerDetalleClicked(object? sender, EventArgs e)
     {
-        if ((sender as BindableObject)?.BindingContext is not GuiaInternaResumen guia)
+        if ((sender as BindableObject)?.BindingContext is not GuiaInternaListItem item)
             return;
 
-        await Shell.Current.GoToAsync($"{nameof(GuiaInternaDetallePage)}?id={guia.IdGuiaInterna}");
+        await Shell.Current.GoToAsync($"{nameof(GuiaInternaDetallePage)}?id={item.Guia.IdGuiaInterna}");
+    }
+
+    private async void OnImprimirClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not GuiaInternaListItem item)
+            return;
+
+        try
+        {
+            if (_session.EsDemo)
+            {
+            await DisplayAlertAsync("Imprimir guia", "Impresion simulada en modo demo.", "OK");
+                return;
+            }
+
+            await DescargarYAbrirGuiaPdfAsync(item.Guia);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Imprimir guia", ex.Message, "OK");
+        }
     }
 
     private async void OnAnularClicked(object? sender, EventArgs e)
     {
-        if ((sender as BindableObject)?.BindingContext is not GuiaInternaResumen guia)
+        if ((sender as BindableObject)?.BindingContext is not GuiaInternaListItem item)
             return;
+        GuiaInternaResumen guia = item.Guia;
 
         if (guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
         {
@@ -296,7 +338,62 @@ public partial class GuiaInternaPage : ContentPage
         TotalLabel.Text = $"{_detalles.Count} producto(s) | {_detalles.Sum(x => x.Cantidad):N2} unidades";
     }
 
+    private async Task<GuiaInternaListItem> CrearGuiaListItemAsync(GuiaInternaResumen guia)
+    {
+        try
+        {
+            GuiaInternaDetalleResponse detalle = _session.EsDemo
+                ? DemoData.GuiaInternaDetalle(guia.IdGuiaInterna)
+                : await _apiClient.GetGuiaInternaDetalleAsync(guia.IdGuiaInterna);
+
+            bool esParcial = detalle.Detalles.Any(x => x.CantidadDespachar < x.CantidadPendiente);
+            return new GuiaInternaListItem(guia, esParcial);
+        }
+        catch
+        {
+            return new GuiaInternaListItem(guia, false);
+        }
+    }
+
+    private async Task DescargarYAbrirGuiaPdfAsync(GuiaInternaResumen guia)
+    {
+        byte[] pdf = await _apiClient.GetGuiaInternaPdfAsync(guia.IdGuiaInterna);
+        string nombre = string.IsNullOrWhiteSpace(guia.NumeroGuia)
+            ? $"guia-interna-{guia.IdGuiaInterna}.pdf"
+            : $"{LimpiarNombreArchivo(guia.NumeroGuia)}.pdf";
+        string ruta = Path.Combine(FileSystem.CacheDirectory, nombre);
+        await File.WriteAllBytesAsync(ruta, pdf);
+
+        await Launcher.OpenAsync(new OpenFileRequest
+        {
+            Title = "Imprimir Guia Interna",
+            File = new ReadOnlyFile(ruta, "application/pdf")
+        });
+    }
+
+    private static string LimpiarNombreArchivo(string value)
+    {
+        char[] invalidos = Path.GetInvalidFileNameChars();
+        return new string(value.Select(c => invalidos.Contains(c) ? '-' : c).ToArray());
+    }
+
     private static string TextoVacio(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor.Trim();
+
+    private sealed record GuiaInternaListItem(GuiaInternaResumen Guia, bool EsParcial)
+    {
+        public string NumeroGuia => Guia.NumeroGuia;
+        public string EmpresaDestino => TextoVacio(Guia.EmpresaDestino);
+        public DateTime FechaEmision => Guia.FechaEmision;
+        public string Estado => Guia.Estado;
+        public string NumeroOciTexto => string.IsNullOrWhiteSpace(Guia.NumeroOci) ? "OCI: Manual" : $"OCI: {Guia.NumeroOci}";
+        public string OrdenCompraClienteTexto => string.IsNullOrWhiteSpace(Guia.OrdenCompraCliente) ? "OC Cliente: No especificado" : $"OC Cliente: {Guia.OrdenCompraCliente}";
+        public string EmisionTexto => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
+            ? "Anulada"
+            : EsParcial ? "Emitida parcial" : "Emitida completa";
+        public Color EmisionColor => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
+            ? Color.FromArgb("#B42318")
+            : EsParcial ? Color.FromArgb("#B54708") : Color.FromArgb("#067647");
+    }
 
     private sealed class GuiaManualDetalleItem
     {

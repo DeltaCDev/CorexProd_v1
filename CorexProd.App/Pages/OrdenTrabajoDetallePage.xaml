@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.OrdenTrabajoDetallePage"
              Title="Detalle OT">
-    <Grid RowDefinitions="Auto,Auto,*" BackgroundColor="#F4F6F8">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="8" BackgroundColor="White">
             <Label x:Name="TituloDetalleLabel"
                    FontFamily="OpenSansSemibold"
@@ -24,8 +24,21 @@
                    TextColor="#667085" />
         </VerticalStackLayout>
 
+        <Grid Grid.Row="1"
+              Margin="12,10,12,0"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="8">
+            <Button Text="Kardex"
+                    BackgroundColor="#2563EB"
+                    Clicked="OnKardexClicked" />
+            <Button Grid.Column="1"
+                    Text="Historial"
+                    BackgroundColor="#7A5AF8"
+                    Clicked="OnHistorialClicked" />
+        </Grid>
+
         <CollectionView x:Name="AreasTabsView"
-                        Grid.Row="1"
+                        Grid.Row="2"
                         Margin="12,10,12,4"
                         ItemsLayout="HorizontalList"
                         SelectionMode="None">
@@ -46,7 +59,7 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <RefreshView Grid.Row="2" x:Name="Refresh" Refreshing="OnRefreshing">
+        <RefreshView Grid.Row="3" x:Name="Refresh" Refreshing="OnRefreshing">
             <CollectionView x:Name="AreasView"
                             Margin="12"
                             SelectionMode="None">

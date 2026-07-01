@@ -9,6 +9,11 @@
 
     <ShellContent
         Title="CorexProd"
+        ContentTemplate="{DataTemplate pages:SplashPage}"
+        Route="splash" />
+
+    <ShellContent
+        Title="CorexProd"
         ContentTemplate="{DataTemplate pages:LoginPage}"
         Route="login" />
 </Shell>

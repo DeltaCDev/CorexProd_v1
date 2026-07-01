@@ -92,7 +92,8 @@ public sealed record OciResumen(
     decimal Total,
     string Estado,
     bool TieneGuiaSalida,
-    bool TieneOrdenTrabajo);
+    bool TieneOrdenTrabajo,
+    bool TieneOtActiva = false);
 
 public sealed record OciDetalleResponse(
     OciCabecera Cabecera,
@@ -194,7 +195,39 @@ public sealed record GenerarOtResponse(
 
 public sealed record GenerarGuiaInternaResponse(
     string Mensaje,
+    int IdGuiaInterna,
     string NumeroGuia);
+
+public sealed record GuiaInternaPrepararResponse(
+    GuiaInternaPrepararCabecera Cabecera,
+    IReadOnlyList<GuiaInternaDetalleApi> Detalles);
+
+public sealed record GuiaInternaPrepararCabecera(
+    string Origen,
+    int IdOrdenCompraInterna,
+    string NumeroOci,
+    string NumeroProforma,
+    string OrdenCompraCliente,
+    int IdAlmacen,
+    string NombreAlmacen,
+    string RucEmisor,
+    string EmpresaEmisora,
+    string RucDestino,
+    string EmpresaDestino,
+    DateTime FechaEmision);
+
+public sealed record GuiaInternaOciRequest(
+    int IdAlmacen,
+    DateTime FechaEmision,
+    string UsuarioEmisor,
+    string UsuarioAutorizador,
+    string Observacion,
+    IReadOnlyList<GuiaInternaOciDetalleRequest> Detalles);
+
+public sealed record GuiaInternaOciDetalleRequest(
+    int IdOrdenCompraInternaDetalle,
+    decimal CantidadDespachar,
+    string Observacion);
 
 public sealed record GuiaInternaResumen(
     int IdGuiaInterna,
@@ -492,6 +525,59 @@ public sealed record OrdenTrabajoMermaRequest(
 public sealed record OperacionOrdenTrabajoResponse(
     string Mensaje,
     long? IdOperacion);
+
+public sealed record OrdenTrabajoKardexItem(
+    string CodigoProducto,
+    string NombreProducto,
+    decimal Cantidad,
+    string Almacen,
+    DateTime FechaMovimiento,
+    string Usuario);
+
+public sealed record OrdenTrabajoMovimientoItem(
+    DateTime FechaHora,
+    string CodigoProducto,
+    string NombreProducto,
+    string Origen,
+    string Destino,
+    decimal Cantidad,
+    string Accion,
+    string Usuario,
+    string Observacion);
+
+public sealed record OtValidacionResponse(
+    bool PuedeGenerar,
+    string Mensaje,
+    IReadOnlyList<OtValidacionProducto> Productos);
+
+public sealed record OtValidacionProducto(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string CodigoProducto,
+    string NombreProducto,
+    string Observacion,
+    decimal CantidadRequerida,
+    int? IdFichaTecnica,
+    decimal StockAlmacen,
+    decimal StockCorte,
+    decimal StockConfeccion,
+    decimal StockAcabado,
+    decimal StockTotal,
+    decimal Deficit,
+    string EstadoInsumos);
+
+public sealed record OtValidacionInsumo(
+    int IdInsumo,
+    string CodigoInsumo,
+    string NombreInsumo,
+    string UnidadMedida,
+    decimal ConsumoUnitario,
+    decimal CantidadProduccion,
+    decimal CantidadNecesaria,
+    decimal StockActual,
+    decimal StockProyectado,
+    decimal CantidadFaltante,
+    string Estado);
 
 public sealed record ApiProblem(
     string? Mensaje,

@@ -11,6 +11,8 @@ public partial class ProformasPage : ContentPage
     private readonly SessionState _session;
     private readonly ObservableCollection<ProformaListItem> _items = [];
     private CancellationTokenSource? _searchDelay;
+    private IDispatcherTimer? _syncTimer;
+    private int _loadVersion;
 
     public ProformasPage()
     {
@@ -23,8 +25,16 @@ public partial class ProformasPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _syncTimer ??= CrearSyncTimer();
+        _syncTimer.Start();
         if (_items.Count == 0)
             await LoadAsync();
+    }
+
+    protected override void OnDisappearing()
+    {
+        _syncTimer?.Stop();
+        base.OnDisappearing();
     }
 
     private async void OnBuscarClicked(object? sender, EventArgs e) => await LoadAsync();
@@ -40,6 +50,14 @@ public partial class ProformasPage : ContentPage
     }
     private async void OnSearchPressed(object? sender, EventArgs e) => await LoadAsync();
     private async void OnRefreshing(object? sender, EventArgs e) => await LoadAsync();
+
+    private IDispatcherTimer CrearSyncTimer()
+    {
+        IDispatcherTimer timer = Dispatcher.CreateTimer();
+        timer.Interval = TimeSpan.FromSeconds(15);
+        timer.Tick += async (_, _) => await LoadAsync(silencioso: true);
+        return timer;
+    }
 
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
     {
@@ -129,31 +147,51 @@ public partial class ProformasPage : ContentPage
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool silencioso = false)
     {
+        int loadVersion = Interlocked.Increment(ref _loadVersion);
+        string busqueda = Search.Text ?? string.Empty;
+
         try
         {
-            Refresh.IsRefreshing = true;
+            if (!silencioso)
+                Refresh.IsRefreshing = true;
+
             IReadOnlyList<ProformaResumen> items = _session.EsDemo
                 ? DemoData.Proformas
-                : (await _apiClient.GetProformasAsync(Search.Text ?? string.Empty)).Items;
-            string filtro = Search.Text?.Trim() ?? string.Empty;
+                : (await _apiClient.GetProformasAsync(busqueda)).Items;
+            string filtro = busqueda.Trim();
             if (!string.IsNullOrWhiteSpace(filtro))
                 items = items.Where(x => x.SerieNumero.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.OrdenCompraCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            List<ProformaListItem> nuevosItems = items
+                .GroupBy(x => x.IdProforma)
+                .Select(x => new ProformaListItem(x.First()))
+                .ToList();
+
+            if (loadVersion != Volatile.Read(ref _loadVersion))
+                return;
+
             _items.Clear();
-            foreach (ProformaResumen item in items)
-                _items.Add(new ProformaListItem(item));
+            foreach (ProformaListItem item in nuevosItems)
+                _items.Add(item);
+
             CountLabel.Text = $"{_items.Count} proforma(s)";
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("Proformas", ex.Message, "OK");
+            if (loadVersion != Volatile.Read(ref _loadVersion))
+                return;
+
+            if (!silencioso)
+                await DisplayAlertAsync("Proformas", ex.Message, "OK");
         }
         finally
         {
-            Refresh.IsRefreshing = false;
+            if (loadVersion == Volatile.Read(ref _loadVersion) && !silencioso)
+                Refresh.IsRefreshing = false;
         }
     }
 

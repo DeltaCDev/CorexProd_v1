@@ -33,15 +33,17 @@
                         <DataTemplate>
                             <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
                                 <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="5" ColumnSpacing="10">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="5" ColumnSpacing="10">
                                     <Label Text="{Binding NumeroGuia}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
-                                    <Label Grid.Column="1" Text="{Binding Estado}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                    <Label Grid.Column="1" Text="{Binding EmisionTexto}" FontFamily="OpenSansSemibold" TextColor="{Binding EmisionColor}" />
                                     <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding EmpresaDestino}" TextColor="#344054" LineBreakMode="WordWrap" />
-                                    <Label Grid.Row="2" Text="{Binding Origen}" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="2" Text="{Binding NumeroOciTexto}" FontSize="12" TextColor="#667085" />
                                     <Label Grid.Row="2" Grid.Column="1" Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
-                                    <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,6,0,0">
-                                        <Button Text="Ver detalle" BackgroundColor="#0E9384" Clicked="OnVerDetalleClicked" />
-                                        <Button Grid.Column="1" Text="Anular" BackgroundColor="#B42318" Clicked="OnAnularClicked" />
+                                    <Label Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding OrdenCompraClienteTexto}" FontSize="12" TextColor="#667085" LineBreakMode="WordWrap" />
+                                    <Grid Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,6,0,0">
+                                        <Button Text="Ver Guia" BackgroundColor="#0E9384" Clicked="OnVerDetalleClicked" />
+                                        <Button Grid.Column="1" Text="Imprimir" BackgroundColor="#2563EB" Clicked="OnImprimirClicked" />
+                                        <Button Grid.Column="2" Text="Anular" BackgroundColor="#B42318" Clicked="OnAnularClicked" />
                                     </Grid>
                                 </Grid>
                             </Border>
