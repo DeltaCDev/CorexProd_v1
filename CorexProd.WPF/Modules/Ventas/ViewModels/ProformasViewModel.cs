@@ -26,8 +26,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private Proforma? _proformaSeleccionada;
         private string _textoBusqueda = string.Empty;
         private string _estadoFiltro = "Todos";
-        private DateTime? _fechaDesdeFiltro;
-        private DateTime? _fechaHastaFiltro;
+        private DateTime? _fechaDesdeFiltro = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        private DateTime? _fechaHastaFiltro = DateTime.Today;
 
         public ObservableCollection<Proforma> Proformas { get; set; } = [];
         public ObservableCollection<string> EstadosFiltro { get; } = ["Todos", "Emitido", "Registrado", "Anulado"];
@@ -137,8 +137,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             _textoBusqueda = string.Empty;
             _estadoFiltro = "Todos";
-            _fechaDesdeFiltro = null;
-            _fechaHastaFiltro = null;
+            _fechaDesdeFiltro = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            _fechaHastaFiltro = DateTime.Today;
 
             OnPropertyChanged(nameof(TextoBusqueda));
             OnPropertyChanged(nameof(EstadoFiltro));

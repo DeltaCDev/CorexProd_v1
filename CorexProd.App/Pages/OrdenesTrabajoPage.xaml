@@ -5,6 +5,14 @@
              Title="OT Producción">
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <VerticalStackLayout Spacing="3"><Label Text="Desde" FontSize="11" TextColor="#667085"/><DatePicker x:Name="FechaDesde" DateSelected="OnFilterChanged"/></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Hasta" FontSize="11" TextColor="#667085"/><DatePicker x:Name="FechaHasta" DateSelected="OnFilterChanged"/></VerticalStackLayout>
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Picker x:Name="EstadoPicker" Title="Estado" SelectedIndexChanged="OnFilterChanged"/>
+                <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged"/>
+            </Grid>
             <SearchBar x:Name="Search"
                        Placeholder="OT, OCI, cliente o estado"
                        SearchButtonPressed="OnSearchPressed"

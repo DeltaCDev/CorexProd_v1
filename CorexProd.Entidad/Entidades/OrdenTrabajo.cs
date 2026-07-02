@@ -11,6 +11,7 @@ namespace CorexProd.Entidad.Entidades
         public string NumeroOci { get; set; } = string.Empty;
         public string OrdenCompraCliente { get; set; } = string.Empty;
         public string TipoOT { get; set; } = "OCI";
+        public string TipoOTDescripcion => TipoOT.Equals("OCI", StringComparison.OrdinalIgnoreCase) ? "OCI" : "Manual";
         public int? IdOrdenTrabajoRelacionada { get; set; }
         public string NumeroOTRelacionada { get; set; } = string.Empty;
         public int IdCliente { get; set; }

@@ -62,7 +62,8 @@ public sealed record ProformaResumen(
     string NombreCliente,
     decimal Total,
     string Estado,
-    bool TieneOrdenCompraInterna);
+    bool TieneOrdenCompraInterna,
+    DateTime? FechaCierre = null);
 
 public sealed record ProformaDetalleResponse(
     ProformaCabecera Cabecera,
@@ -95,7 +96,8 @@ public sealed record OciResumen(
     bool TieneOrdenTrabajo,
     bool TieneOtActiva = false,
     bool PuedeGenerarOt = false,
-    bool PuedeGenerarGuiaSalida = false);
+    bool PuedeGenerarGuiaSalida = false,
+    DateTime? FechaCierre = null);
 
 public sealed record OciDetalleResponse(
     OciCabecera Cabecera,
@@ -427,7 +429,8 @@ public sealed record OrdenTrabajoResumen(
     int CantidadProductos,
     decimal TotalPlanificado,
     decimal TotalLanzado,
-    decimal Avance);
+    decimal Avance,
+    DateTime? FechaCierre = null);
 
 public sealed record OrdenTrabajoDetalleResponse(
     OrdenTrabajoCabecera Cabecera,
@@ -509,6 +512,7 @@ public sealed record OrdenTrabajoTransferirRequest(
     int IdUsuarioSesion,
     int IdUsuarioAutoriza,
     bool EsTerminacion,
+    string Clave,
     string Observacion,
     IReadOnlyList<OrdenTrabajoTransferenciaDetalleRequest> Detalles);
 

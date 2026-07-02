@@ -11,6 +11,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private readonly bool _permiteAjusteInicial;
         private readonly string _tituloOperacion;
         private readonly string _nombreArea;
+        private readonly string _destino;
+        private readonly Func<string, Usuario> _autorizar;
 
         public decimal Cantidad { get; private set; }
         public bool RegistrarMerma { get; private set; }
@@ -18,17 +20,21 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         public string MotivoMerma => "MERMA EN OPERACION";
         public string ObservacionMerma => ObservacionMermaTextBox.Text.Trim();
         public string Clave => ClavePasswordBox.Password;
+        public Usuario? UsuarioAutoriza { get; private set; }
 
         public TransferirProductoWindow(
             OrdenTrabajoDetalleArea origen,
             string destino,
             bool esTerminacion = false,
-            bool permiteAjusteInicial = false)
+            bool permiteAjusteInicial = false,
+            Func<string, Usuario>? autorizar = null)
         {
             InitializeComponent();
             _disponible = origen.CantidadPendiente;
             _permiteAjusteInicial = permiteAjusteInicial;
             _nombreArea = origen.NombreArea;
+            _destino = esTerminacion ? "Productos terminados" : destino;
+            _autorizar = autorizar ?? throw new ArgumentNullException(nameof(autorizar));
             Title = esTerminacion ? "Ingresar producto terminado" : "Transferir producto";
             _tituloOperacion = esTerminacion ? "Ingresar a productos terminados" : $"Transferir a {destino}";
             TituloText.Text = _tituloOperacion;
@@ -115,6 +121,28 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 MessageBox.Show(this, "Ingrese la clave del usuario en sesion.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            try
+            {
+                UsuarioAutoriza = _autorizar(Clave);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Contrasena incorrecta", MessageBoxButton.OK, MessageBoxImage.Error);
+                ClavePasswordBox.Clear();
+                ClavePasswordBox.Focus();
+                return;
+            }
+
+            MessageBoxResult confirmacion = MessageBox.Show(
+                this,
+                $"Desea transferir {Cantidad:N2} unidades desde {_nombreArea} hacia {_destino}?",
+                "Confirmar transferencia",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (confirmacion != MessageBoxResult.Yes)
+                return;
+
             DialogResult = true;
         }
     }

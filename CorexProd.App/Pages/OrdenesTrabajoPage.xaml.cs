@@ -12,6 +12,8 @@ public partial class OrdenesTrabajoPage : ContentPage
     private CancellationTokenSource? _searchDelay;
     private IDispatcherTimer? _refreshTimer;
     private bool _isRefreshing;
+    private bool _filtroPredeterminado = true;
+    private bool _inicializandoFiltros;
 
     public OrdenesTrabajoPage()
     {
@@ -19,7 +21,27 @@ public partial class OrdenesTrabajoPage : ContentPage
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         OrdenesView.ItemsSource = _ordenes;
+        InicializarFiltros();
     }
+
+    private void InicializarFiltros()
+    {
+        _inicializandoFiltros = true;
+        FechaDesde.Date = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        FechaHasta.Date = DateTime.Today;
+        EstadoPicker.ItemsSource = new[] { "Todos", "Pendiente", "En proceso", "Terminada", "Anulada" };
+        EstadoPicker.SelectedIndex = 0;
+        _inicializandoFiltros = false;
+    }
+
+    private async void OnFilterChanged(object? sender, EventArgs e)
+    {
+        if (_inicializandoFiltros) return;
+        _filtroPredeterminado = false;
+        await LoadAsync();
+    }
+
+    private void OnFilterTextChanged(object? sender, TextChangedEventArgs e) => OnSearchTextChanged(sender, e);
 
     protected override async void OnAppearing()
     {
@@ -86,6 +108,11 @@ public partial class OrdenesTrabajoPage : ContentPage
                     || x.NumeroOci.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.Estado.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+            string estadoFiltro = DocumentoFiltroHelper.Normalizar(EstadoPicker.SelectedItem?.ToString());
+            items = items.Where(x =>
+                DocumentoFiltroHelper.CoincideTexto(x.NombreCliente, ClienteFilter.Text)
+                && CoincideEstadoOt(x.Estado, estadoFiltro)
+                && DocumentoFiltroHelper.CoincideFecha(x.FechaEmision, x.FechaCierre, FechaDesde.Date, FechaHasta.Date, _filtroPredeterminado, EsOtActiva(x.Estado))).ToList();
             _ordenes.Clear();
             foreach (OrdenTrabajoResumen item in items)
                 _ordenes.Add(item);
@@ -101,5 +128,17 @@ public partial class OrdenesTrabajoPage : ContentPage
             Refresh.IsRefreshing = false;
             _isRefreshing = false;
         }
+    }
+
+    private static bool EsOtActiva(string estado) => DocumentoFiltroHelper.Normalizar(estado) is not ("TERMINADA" or "ANULADA" or "ANULADO");
+
+    private static bool CoincideEstadoOt(string estado, string filtro)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return filtro is "" or "TODOS"
+            || filtro == "EN_PROCESO" && valor is "EN_PROCESO" or "PARCIAL" or "EMITIDA"
+            || filtro == "PENDIENTE" && valor == "PENDIENTE"
+            || filtro == "TERMINADA" && valor == "TERMINADA"
+            || filtro == "ANULADA" && valor is "ANULADA" or "ANULADO";
     }
 }

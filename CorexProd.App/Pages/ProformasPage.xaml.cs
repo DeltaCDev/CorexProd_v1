@@ -13,6 +13,8 @@ public partial class ProformasPage : ContentPage
     private CancellationTokenSource? _searchDelay;
     private IDispatcherTimer? _syncTimer;
     private int _loadVersion;
+    private bool _filtroPredeterminado = true;
+    private bool _inicializandoFiltros;
 
     public ProformasPage()
     {
@@ -20,7 +22,27 @@ public partial class ProformasPage : ContentPage
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         ItemsView.ItemsSource = _items;
+        InicializarFiltros();
     }
+
+    private void InicializarFiltros()
+    {
+        _inicializandoFiltros = true;
+        FechaDesde.Date = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        FechaHasta.Date = DateTime.Today;
+        EstadoPicker.ItemsSource = new[] { "Todos", "Pendiente", "En proceso", "Entregada", "Anulada" };
+        EstadoPicker.SelectedIndex = 0;
+        _inicializandoFiltros = false;
+    }
+
+    private async void OnFilterChanged(object? sender, EventArgs e)
+    {
+        if (_inicializandoFiltros) return;
+        _filtroPredeterminado = false;
+        await LoadAsync();
+    }
+
+    private void OnFilterTextChanged(object? sender, TextChangedEventArgs e) => OnSearchTextChanged(sender, e);
 
     protected override async void OnAppearing()
     {
@@ -165,6 +187,11 @@ public partial class ProformasPage : ContentPage
                 items = items.Where(x => x.SerieNumero.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.OrdenCompraCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+            string estadoFiltro = DocumentoFiltroHelper.Normalizar(EstadoPicker.SelectedItem?.ToString());
+            items = items.Where(x =>
+                DocumentoFiltroHelper.CoincideTexto(x.NombreCliente, ClienteFilter.Text)
+                && CoincideEstadoProforma(x, estadoFiltro)
+                && DocumentoFiltroHelper.CoincideFecha(x.FechaEmision, x.FechaCierre, FechaDesde.Date, FechaHasta.Date, _filtroPredeterminado, EsProformaActiva(x))).ToList();
 
             List<ProformaListItem> nuevosItems = items
                 .GroupBy(x => x.IdProforma)
@@ -193,6 +220,19 @@ public partial class ProformasPage : ContentPage
             if (loadVersion == Volatile.Read(ref _loadVersion) && !silencioso)
                 Refresh.IsRefreshing = false;
         }
+    }
+
+    private static bool EsProformaActiva(ProformaResumen item) =>
+        !item.TieneOrdenCompraInterna && DocumentoFiltroHelper.Normalizar(item.Estado) is not ("ANULADA" or "ANULADO");
+
+    private static bool CoincideEstadoProforma(ProformaResumen item, string filtro)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(item.Estado);
+        return filtro is "" or "TODOS"
+            || filtro == "PENDIENTE" && !item.TieneOrdenCompraInterna && valor is "PENDIENTE" or "EMITIDA" or "EMITIDO"
+            || filtro == "EN_PROCESO" && valor is "EN_PROCESO" or "PROCESO" or "PARCIAL"
+            || filtro == "ENTREGADA" && (item.TieneOrdenCompraInterna || valor is "ENTREGADA" or "ENTREGADO")
+            || filtro == "ANULADA" && valor is "ANULADA" or "ANULADO";
     }
 
     private static ContentPage CrearDetalleDocumentoPage(

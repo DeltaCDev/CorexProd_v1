@@ -16,7 +16,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
     public class IngresosManualesStockInsumosViewModel : BaseViewModel
     {
         private readonly IngresoManualStockInsumoNegocio _negocio = new();
-        private DateTime? _fechaDesde = DateTime.Today.AddDays(-30);
+        private DateTime? _fechaDesde = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         private DateTime? _fechaHasta = DateTime.Today;
         private ProveedorStock? _proveedorFiltro;
         private AlmacenStock? _almacenFiltro;
@@ -144,8 +144,8 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
 
         private void QuitarFiltros()
         {
-            FechaDesde = null;
-            FechaHasta = null;
+            FechaDesde = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            FechaHasta = DateTime.Today;
             ProveedorFiltro = ProveedoresFiltro.FirstOrDefault();
             AlmacenFiltro = AlmacenesFiltro.FirstOrDefault();
             EstadoFiltro = "Todos";

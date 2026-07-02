@@ -25,8 +25,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private readonly List<OrdenCompraInterna> _todas = [];
         private string _textoBusqueda = string.Empty;
         private string _estadoFiltro = "Todos";
-        private DateTime? _fechaDesde;
-        private DateTime? _fechaHasta;
+        private DateTime? _fechaDesde = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        private DateTime? _fechaHasta = DateTime.Today;
+        private bool _filtroPredeterminado = true;
 
         public ObservableCollection<OrdenCompraInterna> Ordenes { get; } = [];
         public ObservableCollection<string> Estados { get; } = ["Todos", "Emitida", "PROCESO", "Parcial", "Entregado", "Anulado"];
@@ -34,25 +35,25 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public string TextoBusqueda
         {
             get => _textoBusqueda;
-            set { _textoBusqueda = value; OnPropertyChanged(); AplicarFiltros(); }
+            set { _textoBusqueda = value; _filtroPredeterminado = false; OnPropertyChanged(); AplicarFiltros(); }
         }
 
         public string EstadoFiltro
         {
             get => _estadoFiltro;
-            set { _estadoFiltro = value; OnPropertyChanged(); AplicarFiltros(); }
+            set { _estadoFiltro = value; _filtroPredeterminado = false; OnPropertyChanged(); AplicarFiltros(); }
         }
 
         public DateTime? FechaDesde
         {
             get => _fechaDesde;
-            set { _fechaDesde = value; OnPropertyChanged(); AplicarFiltros(); }
+            set { _fechaDesde = value; _filtroPredeterminado = false; OnPropertyChanged(); AplicarFiltros(); }
         }
 
         public DateTime? FechaHasta
         {
             get => _fechaHasta;
-            set { _fechaHasta = value; OnPropertyChanged(); AplicarFiltros(); }
+            set { _fechaHasta = value; _filtroPredeterminado = false; OnPropertyChanged(); AplicarFiltros(); }
         }
 
         public string Resumen => $"Mostrando {Ordenes.Count} de {_todas.Count} órdenes";
@@ -101,11 +102,13 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             string texto = TextoBusqueda.Trim();
             IEnumerable<OrdenCompraInterna> resultado = _todas;
 
-            if (EstadoFiltro != "Todos")
+            if (_filtroPredeterminado)
+                resultado = resultado.Where(o => EsOciActiva(o.Estado) || CoincideRango(o.FechaEmision));
+            else if (EstadoFiltro != "Todos")
                 resultado = resultado.Where(o => o.Estado.Equals(EstadoFiltro, StringComparison.OrdinalIgnoreCase));
-            if (FechaDesde.HasValue)
+            if (!_filtroPredeterminado && FechaDesde.HasValue)
                 resultado = resultado.Where(o => o.FechaEmision.Date >= FechaDesde.Value.Date);
-            if (FechaHasta.HasValue)
+            if (!_filtroPredeterminado && FechaHasta.HasValue)
                 resultado = resultado.Where(o => o.FechaEmision.Date <= FechaHasta.Value.Date);
             if (!string.IsNullOrWhiteSpace(texto))
             {
@@ -124,14 +127,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             _textoBusqueda = string.Empty;
             _estadoFiltro = "Todos";
-            _fechaDesde = null;
-            _fechaHasta = null;
+            _fechaDesde = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            _fechaHasta = DateTime.Today;
+            _filtroPredeterminado = true;
             OnPropertyChanged(nameof(TextoBusqueda));
             OnPropertyChanged(nameof(EstadoFiltro));
             OnPropertyChanged(nameof(FechaDesde));
             OnPropertyChanged(nameof(FechaHasta));
             AplicarFiltros();
         }
+
+        private bool CoincideRango(DateTime fecha) => (!_fechaDesde.HasValue || fecha.Date >= _fechaDesde.Value.Date) && (!_fechaHasta.HasValue || fecha.Date <= _fechaHasta.Value.Date);
+        private static bool EsOciActiva(string estado) => estado.Trim().ToUpperInvariant() is not ("ENTREGADO" or "ENTREGADA" or "ANULADO" or "ANULADA");
 
         private void Ver(object? parametro)
         {

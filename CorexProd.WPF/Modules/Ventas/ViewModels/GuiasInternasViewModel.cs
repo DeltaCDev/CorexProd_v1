@@ -17,7 +17,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     {
         private readonly GuiaInternaNegocio _negocio = new();
         private readonly IngresoManualStockNegocio _almacenNegocio = new();
-        private DateTime? _desde=DateTime.Today.AddDays(-30),_hasta=DateTime.Today;
+        private DateTime? _desde=new DateTime(DateTime.Today.Year,DateTime.Today.Month,1),_hasta=DateTime.Today;
         private AlmacenStock? _almacen;
         private string _estado="Todos",_origen="Todos",_texto=string.Empty;
         public ObservableCollection<GuiaInterna> Guias { get; }=[];
@@ -62,7 +62,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
             catch(Exception ex){ NotificationService.Error($"No se pudieron cargar las guías internas: {ex.Message}"); }
         }
-        private void Limpiar(){ FechaDesde=null;FechaHasta=null;AlmacenFiltro=Almacenes.FirstOrDefault();EstadoFiltro="Todos";OrigenFiltro="Todos";TextoBusqueda=string.Empty;Cargar(); }
+        private void Limpiar(){ FechaDesde=new DateTime(DateTime.Today.Year,DateTime.Today.Month,1);FechaHasta=DateTime.Today;AlmacenFiltro=Almacenes.FirstOrDefault();EstadoFiltro="Todos";OrigenFiltro="Todos";TextoBusqueda=string.Empty;Cargar(); }
         private void NuevaManual()
         {
             GuiaInterna? guia=_negocio.PrepararManual();

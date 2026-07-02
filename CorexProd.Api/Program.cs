@@ -283,9 +283,16 @@ SELECT
     C.NombreRazonSocial AS NombreCliente,
     P.Total,
     P.Estado,
-    P.TieneOrdenCompraInterna
+    P.TieneOrdenCompraInterna,
+    COALESCE(P.FechaAnulacion, OCI.FechaCierre) AS FechaCierre
 FROM dbo.Proformas P
 INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
+OUTER APPLY
+(
+    SELECT MAX(O.FechaRegistro) AS FechaCierre
+    FROM dbo.OrdenesCompraInterna O
+    WHERE O.IdProforma = P.IdProforma
+) OCI
 WHERE @Buscar = ''
    OR P.SerieNumero LIKE '%' + @Buscar + '%'
    OR ISNULL(P.OrdenCompraCliente, '') LIKE '%' + @Buscar + '%'
@@ -310,7 +317,8 @@ ORDER BY P.FechaEmision DESC, P.IdProforma DESC;";
             nombreCliente = dr["NombreCliente"]?.ToString() ?? string.Empty,
             total = Convert.ToDecimal(dr["Total"]),
             estado = dr["Estado"]?.ToString() ?? string.Empty,
-            tieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"])
+            tieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"]),
+            fechaCierre = dr["FechaCierre"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaCierre"])
         });
     }
 
@@ -579,6 +587,7 @@ SELECT
     O.Estado,
     O.TieneGuiaSalida,
     O.TieneOrdenTrabajo,
+    COALESCE(O.FechaAnulacion, GUIA.FechaCierre) AS FechaCierre,
     CAST(CASE WHEN EXISTS
     (
         SELECT 1
@@ -630,6 +639,13 @@ SELECT
     ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
 FROM dbo.OrdenesCompraInterna O
 INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
+OUTER APPLY
+(
+    SELECT MAX(G.FechaRegistro) AS FechaCierre
+    FROM dbo.GuiasInternas G
+    WHERE G.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+      AND UPPER(G.Estado) <> 'ANULADA'
+) GUIA
 WHERE @Buscar = ''
    OR O.NumeroOci LIKE '%' + @Buscar + '%'
    OR P.SerieNumero LIKE '%' + @Buscar + '%'
@@ -657,6 +673,7 @@ ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
             estado = dr["Estado"]?.ToString() ?? string.Empty,
             tieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
             tieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
+            fechaCierre = dr["FechaCierre"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaCierre"]),
             tieneOtActiva = Convert.ToBoolean(dr["TieneOtActiva"]),
             puedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),
             puedeGenerarGuiaSalida = Convert.ToBoolean(dr["PuedeGenerarGuiaSalida"])
@@ -782,10 +799,10 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
         return Results.BadRequest(new { mensaje = "La OCI no tiene productos faltantes para producir." });
 
     List<OrdenTrabajoPlanificacionApiRequest> detalles = validaciones
+        .Where(x => x.Deficit > 0)
         .Select(x => new OrdenTrabajoPlanificacionApiRequest(
             x.IdOrdenCompraInternaDetalle,
-            x.Deficit > 0 ? x.Deficit : x.CantidadRequerida))
-        .Where(x => x.CantidadPlanificada > 0)
+            x.Deficit))
         .ToList();
 
     if (detalles.Count == 0)
@@ -1256,6 +1273,7 @@ app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
         decimal totalLanzado = Convert.ToDecimal(dr["TotalLanzado"]);
         int idOrdenTrabajo = Convert.ToInt32(dr["IdOrdenTrabajo"]);
         decimal totalProducido = await ObtenerTotalProducidoOtAsync(connectionString, idOrdenTrabajo);
+        DateTime? fechaCierre = await ObtenerFechaCierreOtAsync(connectionString, idOrdenTrabajo);
         decimal avance = estado.Equals("TERMINADA", StringComparison.OrdinalIgnoreCase)
             ? 1
             : totalPlanificado <= 0 ? 0 : Math.Min(1, totalProducido / totalPlanificado);
@@ -1273,7 +1291,8 @@ app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
             cantidadProductos = Convert.ToInt32(dr["CantidadProductos"]),
             totalPlanificado,
             totalLanzado,
-            avance
+            avance,
+            fechaCierre
         });
     }
 
@@ -1495,7 +1514,23 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/transferir", async (int id, OrdenTrab
     if (request.Detalles.Count == 0)
         return Results.BadRequest(new { mensaje = "Seleccione al menos un producto para transferir." });
 
+    if (string.IsNullOrWhiteSpace(request.Clave))
+        return Results.BadRequest(new { mensaje = "Ingrese la contrasena del usuario." });
+
     await using SqlConnection conexion = new(connectionString);
+    await using (SqlCommand usuarioCmd = new("SELECT TOP (1) Clave, Estado FROM dbo.Usuarios WHERE IdUsuario = @IdUsuario", conexion))
+    {
+        usuarioCmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = request.IdUsuarioSesion;
+        await conexion.OpenAsync();
+        await using SqlDataReader usuario = await usuarioCmd.ExecuteReaderAsync();
+        if (!await usuario.ReadAsync()
+            || !Convert.ToBoolean(usuario["Estado"])
+            || !BCrypt.Net.BCrypt.Verify(request.Clave, usuario["Clave"]?.ToString() ?? string.Empty))
+        {
+            return Results.Json(new { mensaje = "Contrasena incorrecta." }, statusCode: StatusCodes.Status401Unauthorized);
+        }
+    }
+
     await using SqlCommand cmd = new(request.EsTerminacion ? "USP_PRO_OT_TERMINAR" : "USP_PRO_OT_TRANSFERIR", conexion)
     {
         CommandType = CommandType.StoredProcedure
@@ -1512,7 +1547,6 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/transferir", async (int id, OrdenTrab
     });
     SqlParameter op = new("@IdOperacion", SqlDbType.BigInt) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(op);
-    await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     return Results.Ok(new
     {
@@ -2300,6 +2334,18 @@ static async Task<decimal> ObtenerTotalProducidoOtAsync(string connectionString,
     return Convert.ToDecimal(await cmd.ExecuteScalarAsync());
 }
 
+static async Task<DateTime?> ObtenerFechaCierreOtAsync(string connectionString, int idOrdenTrabajo)
+{
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(
+        "SELECT MAX(FechaFin) FROM dbo.OrdenTrabajoDetalle WHERE IdOrdenTrabajo = @IdOrdenTrabajo",
+        conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOrdenTrabajo;
+    await conexion.OpenAsync();
+    object? valor = await cmd.ExecuteScalarAsync();
+    return valor == null || valor == DBNull.Value ? null : Convert.ToDateTime(valor);
+}
+
 static DataTable CrearTablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaDetalleApiRequest> detalles)
 {
     DataTable tabla = new();
@@ -2697,6 +2743,7 @@ internal sealed record OrdenTrabajoTransferirApiRequest(
     int IdUsuarioSesion,
     int IdUsuarioAutoriza,
     bool EsTerminacion,
+    string? Clave,
     string? Observacion,
     List<OrdenTrabajoTransferenciaDetalleApiRequest> Detalles);
 

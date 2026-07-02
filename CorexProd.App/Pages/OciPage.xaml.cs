@@ -13,6 +13,8 @@ public partial class OciPage : ContentPage
     private readonly ObservableCollection<OciListItem> _items = [];
     private CancellationTokenSource? _searchDelay;
     private int _loadVersion;
+    private bool _filtroPredeterminado = true;
+    private bool _inicializandoFiltros;
 
     public OciPage()
     {
@@ -20,7 +22,27 @@ public partial class OciPage : ContentPage
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         ItemsView.ItemsSource = _items;
+        InicializarFiltros();
     }
+
+    private void InicializarFiltros()
+    {
+        _inicializandoFiltros = true;
+        FechaDesde.Date = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        FechaHasta.Date = DateTime.Today;
+        EstadoPicker.ItemsSource = new[] { "Todos", "Pendiente", "En proceso", "Parcial", "Entregado", "Anulado" };
+        EstadoPicker.SelectedIndex = 0;
+        _inicializandoFiltros = false;
+    }
+
+    private async void OnFilterChanged(object? sender, EventArgs e)
+    {
+        if (_inicializandoFiltros) return;
+        _filtroPredeterminado = false;
+        await LoadAsync();
+    }
+
+    private void OnFilterTextChanged(object? sender, TextChangedEventArgs e) => OnSearchTextChanged(sender, e);
 
     protected override async void OnAppearing()
     {
@@ -348,7 +370,7 @@ public partial class OciPage : ContentPage
         contenido.Add(new Label { Text = "Revise la ficha tecnica e insumos antes de generar.", FontSize = 13, TextColor = Color.FromArgb("#667085") });
         contenido.Add(CrearResumenDocumento(oci.NombreCliente, oci.OrdenCompraCliente, oci.Estado, oci.Total));
 
-        foreach (OtValidacionProducto producto in validacion.Productos)
+        foreach (OtValidacionProducto producto in validacion.Productos.Where(x => x.Deficit > 0))
             contenido.Add(CrearOtProductoCard(producto, false));
 
         Grid acciones = new()
@@ -387,13 +409,7 @@ public partial class OciPage : ContentPage
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
         stack.Add(new Label { Text = $"Cantidad a producir: {producto.CantidadRequerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
-        stack.Add(new Label
-        {
-            Text = $"Stock prod.: {producto.StockTotal:N2} | {ObtenerOtValidacionResumen(producto)} | Insumos: {producto.EstadoInsumos}",
-            FontSize = 12,
-            TextColor = estadoColor,
-            LineBreakMode = LineBreakMode.WordWrap
-        });
+        stack.Add(CrearOtResumenLabel(producto, estadoColor));
 
         if (!string.IsNullOrWhiteSpace(producto.Observacion))
             stack.Add(new Label { Text = $"Obs.: {producto.Observacion}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
@@ -495,6 +511,11 @@ public partial class OciPage : ContentPage
                     || x.NumeroProforma.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.OrdenCompraCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+            string estadoFiltro = DocumentoFiltroHelper.Normalizar(EstadoPicker.SelectedItem?.ToString());
+            items = items.Where(x =>
+                DocumentoFiltroHelper.CoincideTexto(x.NombreCliente, ClienteFilter.Text)
+                && CoincideEstadoOci(x.Estado, estadoFiltro)
+                && DocumentoFiltroHelper.CoincideFecha(x.FechaEmision, x.FechaCierre, FechaDesde.Date, FechaHasta.Date, _filtroPredeterminado, EsOciActiva(x.Estado))).ToList();
 
             List<OciListItem> nuevosItems = [];
             foreach (OciResumen item in items)
@@ -527,6 +548,19 @@ public partial class OciPage : ContentPage
             if (loadVersion == Volatile.Read(ref _loadVersion))
                 Refresh.IsRefreshing = false;
         }
+    }
+
+    private static bool EsOciActiva(string estado) => DocumentoFiltroHelper.Normalizar(estado) is not ("ENTREGADO" or "ENTREGADA" or "ANULADO" or "ANULADA");
+
+    private static bool CoincideEstadoOci(string estado, string filtro)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return filtro is "" or "TODOS"
+            || filtro == "PENDIENTE" && valor is "PENDIENTE" or "EMITIDA" or "EMITIDO"
+            || filtro == "EN_PROCESO" && valor is "EN_PROCESO" or "PROCESO"
+            || filtro == "PARCIAL" && valor == "PARCIAL"
+            || filtro == "ENTREGADO" && valor is "ENTREGADO" or "ENTREGADA"
+            || filtro == "ANULADO" && valor is "ANULADO" or "ANULADA";
     }
 
     private async Task<GuiaDisponibilidad> ObtenerDisponibilidadGuiaAsync(OciResumen item)
@@ -996,10 +1030,34 @@ public partial class OciPage : ContentPage
             : Color.FromArgb("#067647");
     }
 
-    private static string ObtenerOtValidacionResumen(OtValidacionProducto producto) =>
-        producto.Deficit > 0
-            ? $"Deficit: {producto.Deficit:N2}"
-            : "Completo: stock suficiente";
+    private static Label CrearOtResumenLabel(OtValidacionProducto producto, Color estadoColor)
+    {
+        Color textoBase = Color.FromArgb("#667085");
+        FormattedString texto = new();
+        texto.Spans.Add(new Span
+        {
+            Text = $"Stock actual.: {producto.StockTotal:N2} | ",
+            TextColor = textoBase
+        });
+        texto.Spans.Add(new Span
+        {
+            Text = producto.Deficit > 0 ? $"Deficit: {producto.Deficit:N2}" : "Completo",
+            TextColor = estadoColor,
+            FontFamily = "OpenSansSemibold"
+        });
+        texto.Spans.Add(new Span
+        {
+            Text = $" | Insumos: {producto.EstadoInsumos}",
+            TextColor = textoBase
+        });
+
+        return new Label
+        {
+            FormattedText = texto,
+            FontSize = 12,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+    }
 
     private static Border CrearInsumoCard(OtValidacionInsumo insumo)
     {
@@ -1114,14 +1172,14 @@ public partial class OciPage : ContentPage
         public decimal Total => Item.Total;
         public string Estado => Item.Estado;
         public bool PuedeGenerarOt => (Item.PuedeGenerarOt || NecesitaOt)
+            && !Item.TieneOrdenTrabajo
+            && !Item.TieneOtActiva
             && !EsOciAnulada(Item.Estado);
         public bool PuedeGenerarGuia => (Item.PuedeGenerarGuiaSalida || TieneStockDisponible)
             && !EsOciAnulada(Item.Estado);
-        public string OtTexto => PuedeGenerarOt
-            ? Item.TieneOrdenTrabajo ? "OT faltante" : "OT"
-            : Item.TieneOtActiva ? "OT en proceso" : Item.TieneOrdenTrabajo ? "OT generada" : "Sin pendiente";
+        public string OtTexto => PuedeGenerarOt ? "OT" : Item.TieneOrdenTrabajo ? "OT" : "Sin";
         public string GuiaTexto => PuedeGenerarGuia ? "Guia" : TienePendiente ? "Sin stock" : "Sin pendiente";
-        public Color OtColor => PuedeGenerarOt ? Color.FromArgb("#7A5AF8") : Color.FromArgb("#667085");
+        public Color OtColor => PuedeGenerarOt ? Color.FromArgb("#7A5AF8") : Color.FromArgb("#98A2B3");
         public Color GuiaColor => PuedeGenerarGuia ? Color.FromArgb("#0E9384") : Color.FromArgb("#667085");
     }
 }

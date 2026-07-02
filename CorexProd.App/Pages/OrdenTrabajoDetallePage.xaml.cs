@@ -317,6 +317,12 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         if (cantidad <= 0)
             return;
 
+        string? clave = await PedirClaveAsync();
+        if (string.IsNullOrWhiteSpace(clave))
+            return;
+        if (!await ValidarClaveDemoAsync(clave))
+            return;
+
         int? idAreaDestino = ObtenerIdSiguienteArea(area);
         string destino = idAreaDestino.HasValue ? ObtenerDestino(area) : "siguiente area";
         bool confirmar = await DisplayAlertAsync(
@@ -345,6 +351,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                 idUsuario,
                 idUsuario,
                 false,
+                clave,
                 "Inicio y transferencia automatica desde Android",
                 [new(area.IdDetalleOT, cantidad)]);
 
@@ -369,8 +376,14 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         if (cantidad <= 0)
             return;
 
+        string? clave = await PedirClaveAsync();
+        if (string.IsNullOrWhiteSpace(clave))
+            return;
+        if (!await ValidarClaveDemoAsync(clave))
+            return;
+
         string destino = area.EsTermino ? "productos terminados" : ObtenerDestino(area);
-        bool confirmar = await DisplayAlertAsync("Confirmar", $"Mover {cantidad:N2} desde {area.NombreArea} hacia {destino}.", "Confirmar", "Cancelar");
+        bool confirmar = await DisplayAlertAsync("Confirmar transferencia", $"¿Desea transferir {cantidad:N2} unidades desde {area.NombreArea} hacia {destino}?", "Transferir", "Cancelar");
         if (!confirmar)
             return;
 
@@ -384,6 +397,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                 idUsuario,
                 idUsuario,
                 area.EsTermino,
+                clave,
                 "Movimiento desde Android",
                 [new(area.IdDetalleOT, cantidad)]);
 
@@ -487,16 +501,16 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         int totalProductos = _detalleActual.Detalles.Count;
         int completadosDespues = _detalleActual.Detalles.Count(x => EsTerminado(x.Estado));
 
-        if (totalProductos > 0 && completadosDespues > completadosAntes)
-            await DisplayAlertAsync("Producto completado", $"{completadosDespues} de {totalProductos} completado.", "OK");
-
         bool estabaTerminada = EsTerminado(estadoAntes);
         bool estaTerminada = EsTerminado(_detalleActual.Cabecera.Estado);
         if (!estabaTerminada && estaTerminada)
         {
-            string detalle = CrearDetalleParciales(_detalleActual);
-            await DisplayAlertAsync("OT completa", detalle, "OK");
+            await Navigation.PushModalAsync(CrearOtCompletaPage(_detalleActual));
+            return;
         }
+
+        if (totalProductos > 0 && completadosDespues > completadosAntes)
+            await DisplayAlertAsync("Producto completado", $"{completadosDespues} de {totalProductos} completado.", "OK");
     }
 
     private static bool EsTerminado(string? estado)
@@ -528,6 +542,250 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         }
 
         return sb.ToString().Trim();
+    }
+
+    private static ContentPage CrearOtCompletaPage(OrdenTrabajoDetalleResponse detalle)
+    {
+        VerticalStackLayout contenido = new()
+        {
+            Padding = 16,
+            Spacing = 14
+        };
+
+        contenido.Add(new Label
+        {
+            Text = "OT completa",
+            FontFamily = "OpenSansSemibold",
+            FontSize = 24,
+            TextColor = Color.FromArgb("#067647")
+        });
+        contenido.Add(new Label
+        {
+            Text = $"{detalle.Cabecera.NumeroOT} completada correctamente",
+            FontSize = 13,
+            TextColor = Color.FromArgb("#475467"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+
+        contenido.Add(CrearOtCompletaResumen(detalle));
+
+        Label parcialesTitulo = new()
+        {
+            Text = "Produccion completada",
+            FontFamily = "OpenSansSemibold",
+            FontSize = 16,
+            TextColor = Color.FromArgb("#101828")
+        };
+        contenido.Add(parcialesTitulo);
+
+        foreach (OrdenTrabajoProducto producto in detalle.Detalles
+                     .Select(x => new { Producto = x, Clave = ProductoOrdenHelper.CrearClave(x.CodigoProducto, x.NombreProducto) })
+                     .OrderBy(x => x.Clave.Cliente)
+                     .ThenBy(x => x.Clave.NumeroNuloOrden)
+                     .ThenBy(x => x.Clave.Numero)
+                     .ThenBy(x => x.Clave.Variante)
+                     .ThenBy(x => x.Clave.OrdenTalla)
+                     .ThenBy(x => x.Clave.TallaNumero)
+                     .ThenBy(x => x.Clave.CodigoOrden)
+                     .ThenBy(x => x.Clave.NombreProducto)
+                     .Select(x => x.Producto))
+        {
+            contenido.Add(CrearOtCompletaProductoCard(producto));
+        }
+
+        Button cerrar = new()
+        {
+            Text = "Cerrar",
+            BackgroundColor = Color.FromArgb("#16A34A"),
+            TextColor = Colors.White,
+            FontFamily = "OpenSansSemibold",
+            HeightRequest = 46
+        };
+
+        ContentPage page = new()
+        {
+            Title = "OT completa",
+            BackgroundColor = Color.FromArgb("#F4F6F8"),
+            Content = new ScrollView { Content = contenido }
+        };
+        cerrar.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+        contenido.Add(cerrar);
+        return page;
+    }
+
+    private static Border CrearOtCompletaResumen(OrdenTrabajoDetalleResponse detalle)
+    {
+        Grid grid = new()
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto)
+            },
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(new GridLength(92)),
+                new ColumnDefinition(GridLength.Star)
+            },
+            RowSpacing = 8,
+            ColumnSpacing = 10
+        };
+
+        grid.Add(CrearResumenEtiqueta("OCI"), 0, 0);
+        grid.Add(CrearResumenValor(detalle.Cabecera.NumeroOci), 1, 0);
+        grid.Add(CrearResumenEtiqueta("OC Cliente"), 0, 1);
+        grid.Add(CrearResumenValor(TextoVacio(detalle.Cabecera.OrdenCompraCliente)), 1, 1);
+        grid.Add(CrearResumenEtiqueta("Cliente"), 0, 2);
+        Label cliente = CrearResumenValor(detalle.Cabecera.NombreCliente);
+        cliente.LineBreakMode = LineBreakMode.WordWrap;
+        grid.Add(cliente, 1, 2);
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = Colors.White,
+            Stroke = Color.FromArgb("#D9E0E6"),
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Content = grid
+        };
+    }
+
+    private static Border CrearOtCompletaProductoCard(OrdenTrabajoProducto producto)
+    {
+        Grid header = new()
+        {
+            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
+            ColumnSpacing = 10
+        };
+        header.Add(new Label
+        {
+            Text = producto.CodigoProducto,
+            FontFamily = "OpenSansSemibold",
+            TextColor = Color.FromArgb("#10324A")
+        }, 0, 0);
+        header.Add(new Label
+        {
+            Text = "Completo",
+            FontFamily = "OpenSansSemibold",
+            TextColor = Color.FromArgb("#067647")
+        }, 1, 0);
+
+        VerticalStackLayout stack = new() { Spacing = 8 };
+        stack.Add(header);
+        stack.Add(new Label
+        {
+            Text = producto.NombreProducto,
+            TextColor = Color.FromArgb("#344054"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+        stack.Add(CrearProduccionCompletaLabel(producto));
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = Colors.White,
+            Stroke = Color.FromArgb("#A6F4C5"),
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Content = stack
+        };
+    }
+
+    private static Label CrearProduccionCompletaLabel(OrdenTrabajoProducto producto)
+    {
+        Color textoBase = Color.FromArgb("#667085");
+        FormattedString texto = new();
+        texto.Spans.Add(new Span { Text = "Producido: ", TextColor = textoBase });
+        texto.Spans.Add(new Span
+        {
+            Text = producto.CantidadProducida.ToString("N2"),
+            TextColor = Color.FromArgb("#067647"),
+            FontFamily = "OpenSansSemibold"
+        });
+        texto.Spans.Add(new Span
+        {
+            Text = $" / Planificado: {producto.CantidadPlanificada:N2}",
+            TextColor = textoBase
+        });
+
+        return new Label
+        {
+            FormattedText = texto,
+            FontSize = 12,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+    }
+
+    private static Label CrearResumenEtiqueta(string texto) => new()
+    {
+        Text = texto,
+        FontSize = 12,
+        TextColor = Color.FromArgb("#667085")
+    };
+
+    private static Label CrearResumenValor(string texto) => new()
+    {
+        Text = texto,
+        FontSize = 12,
+        FontFamily = "OpenSansSemibold",
+        TextColor = Color.FromArgb("#344054")
+    };
+
+    private async Task<string?> PedirClaveAsync()
+    {
+        TaskCompletionSource<string?> resultado = new();
+        Entry claveEntry = new()
+        {
+            Placeholder = "Contraseña",
+            IsPassword = true,
+            ReturnType = ReturnType.Done
+        };
+        Button aceptar = new() { Text = "Continuar" };
+        Button cancelar = new() { Text = "Cancelar" };
+        VerticalStackLayout contenido = new() { Padding = 24, Spacing = 16 };
+        contenido.Add(new Label { Text = "Ingrese la contraseña del usuario en sesión.", FontSize = 16 });
+        contenido.Add(claveEntry);
+        contenido.Add(aceptar);
+        contenido.Add(cancelar);
+
+        ContentPage dialogo = new()
+        {
+            Title = "Autorizar transferencia",
+            Content = contenido
+        };
+
+        async Task CerrarAsync(string? clave)
+        {
+            if (!resultado.TrySetResult(clave))
+                return;
+            await Navigation.PopModalAsync();
+        }
+
+        aceptar.Clicked += async (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace(claveEntry.Text))
+            {
+                await dialogo.DisplayAlertAsync("Contraseña requerida", "Ingrese su contraseña para continuar.", "OK");
+                return;
+            }
+            await CerrarAsync(claveEntry.Text);
+        };
+        cancelar.Clicked += async (_, _) => await CerrarAsync(null);
+        claveEntry.Completed += (_, _) => aceptar.SendClicked();
+        dialogo.Disappearing += (_, _) => resultado.TrySetResult(null);
+
+        await Navigation.PushModalAsync(dialogo);
+        claveEntry.Focus();
+        return await resultado.Task;
+    }
+
+    private async Task<bool> ValidarClaveDemoAsync(string clave)
+    {
+        if (!_session.EsDemo || clave.Equals("demo", StringComparison.Ordinal))
+            return true;
+
+        await DisplayAlertAsync("Contraseña incorrecta", "La contraseña ingresada es incorrecta.", "OK");
+        return false;
     }
 
     private async Task<decimal> PedirCantidadAsync(string titulo, decimal maximo, bool permitirMayor = false)
@@ -672,8 +930,16 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             stack.Add(new Label { Text = enfoqueArea, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#047857") });
         stack.Add(new Label { Text = item.Accion, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") });
         stack.Add(new Label { Text = $"{item.CodigoProducto} - {item.NombreProducto}", TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"{item.Origen} -> {item.Destino} | Cantidad {item.Cantidad:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"{item.FechaHora:dd/MM/yyyy HH:mm} | {item.Usuario}", FontSize = 12, TextColor = Color.FromArgb("#667085") });
+        FormattedString recorridoCantidad = new();
+        recorridoCantidad.Spans.Add(new Span { Text = $"{item.Origen} -> {item.Destino} | Cantidad ", TextColor = Color.FromArgb("#667085") });
+        recorridoCantidad.Spans.Add(new Span { Text = item.Cantidad.ToString("N2"), FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") });
+        stack.Add(new Label { FormattedText = recorridoCantidad, FontSize = 12, LineBreakMode = LineBreakMode.WordWrap });
+
+        FormattedString fechaUsuario = new();
+        fechaUsuario.Spans.Add(new Span { Text = item.FechaHora.ToString("dd/MM/yyyy HH:mm"), FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+        fechaUsuario.Spans.Add(new Span { Text = "  |  ", TextColor = Color.FromArgb("#98A2B3") });
+        fechaUsuario.Spans.Add(new Span { Text = item.Usuario, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#344054") });
+        stack.Add(new Label { FormattedText = fechaUsuario, FontSize = 12 });
         if (!string.IsNullOrWhiteSpace(item.Observacion))
             stack.Add(new Label { Text = item.Observacion, FontSize = 12, TextColor = Color.FromArgb("#475467"), LineBreakMode = LineBreakMode.WordWrap });
         return new Border { Padding = 12, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = stack };

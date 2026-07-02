@@ -9,8 +9,35 @@
             <Setter Property="Background" Value="#F8FAFC"/>
             <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource Boton}">
             <Setter Property="Background" Value="#2563EB"/>
@@ -68,6 +95,115 @@
         <Style x:Key="Campo" TargetType="Control">
             <Setter Property="Height" Value="34"/>
         </Style>
+        <Style x:Key="CampoTexto" TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="TextBoxBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TextBoxBorder" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="TextBoxBorder" Property="Background" Value="White"/>
+                                <Setter TargetName="TextBoxBorder" Property="BorderBrush" Value="#2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CampoCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="ComboBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="30"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0"
+                                                                  Margin="12,0,4,0"
+                                                                  HorizontalAlignment="Left"
+                                                                  VerticalAlignment="Center"
+                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
+                                                <Path Grid.Column="1"
+                                                      Width="8"
+                                                      Height="5"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Fill="#64748B"
+                                                      Data="M 0 0 L 4 5 L 8 0 Z"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#93C5FD"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="ComboBorder" Property="Background" Value="White"/>
+                                                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#2563EB"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Slide">
+                                <Border Background="White"
+                                        BorderBrush="#CBD5E1"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer Margin="4">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="Celda" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="8,0"/>
@@ -99,8 +235,10 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="EstadoBadge" TargetType="Border">
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Background" Value="#DCFCE7"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Estado}" Value="Anulada">
@@ -111,6 +249,7 @@
         <Style x:Key="EstadoBadgeTexto" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#166534"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Estado}" Value="Anulada">
                     <Setter Property="Foreground" Value="#BE123C"/>
@@ -136,10 +275,19 @@
                 <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,18,0,0">
                     <StackPanel Margin="0,0,12,0"><TextBlock Text="Desde" Style="{StaticResource Etiqueta}"/><DatePicker Style="{StaticResource Campo}" Width="135" SelectedDate="{Binding FechaDesde}"/></StackPanel>
                     <StackPanel Margin="0,0,12,0"><TextBlock Text="Hasta" Style="{StaticResource Etiqueta}"/><DatePicker Style="{StaticResource Campo}" Width="135" SelectedDate="{Binding FechaHasta}"/></StackPanel>
-                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Almacén" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="170" ItemsSource="{Binding Almacenes}" DisplayMemberPath="NombreAlmacen" SelectedItem="{Binding AlmacenFiltro}"/></StackPanel>
-                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Origen" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="110" ItemsSource="{Binding Origenes}" SelectedItem="{Binding OrigenFiltro}"/></StackPanel>
-                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource Campo}" Width="110" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/></StackPanel>
-                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Buscar" Style="{StaticResource Etiqueta}"/><TextBox Style="{StaticResource Campo}" Width="190" Text="{Binding TextoBusqueda,UpdateSourceTrigger=PropertyChanged}" Padding="8,0" VerticalContentAlignment="Center"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Almacén" Style="{StaticResource Etiqueta}"/>
+                        <ComboBox Style="{StaticResource CampoCombo}" Width="190" ItemsSource="{Binding Almacenes}" SelectedItem="{Binding AlmacenFiltro}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding NombreAlmacen}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Origen" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource CampoCombo}" Width="110" ItemsSource="{Binding Origenes}" SelectedItem="{Binding OrigenFiltro}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/><ComboBox Style="{StaticResource CampoCombo}" Width="110" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/></StackPanel>
+                    <StackPanel Margin="0,0,12,0"><TextBlock Text="Buscar" Style="{StaticResource Etiqueta}"/><TextBox Style="{StaticResource CampoTexto}" Width="190" Text="{Binding TextoBusqueda,UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
                     <Button Style="{StaticResource Boton}" Command="{Binding BuscarCommand}" VerticalAlignment="Bottom" Margin="0,0,8,0" Content="Buscar"/>
                     <Button Style="{StaticResource Boton}" Command="{Binding LimpiarCommand}" VerticalAlignment="Bottom" Content="Quitar filtros"/>
                 </WrapPanel>
@@ -182,7 +330,7 @@
                     <DataGridTemplateColumn Header="Estado" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
+                                <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
                                 </Border>
                             </DataTemplate>

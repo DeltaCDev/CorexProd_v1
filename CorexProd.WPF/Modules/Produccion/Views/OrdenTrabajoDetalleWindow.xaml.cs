@@ -277,7 +277,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 celda.Area,
                 esTerminacion ? "Productos terminados" : celda.AreaDestino,
                 esTerminacion,
-                permiteAjusteInicial)
+                permiteAjusteInicial,
+                clave => _negocio.Autorizar(SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty, clave))
             {
                 Owner = this
             };
@@ -286,8 +287,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             {
                 int completadosAntes = _ot.Detalles.Count(x => x.Estado == "TERMINADO");
                 string estadoAntes = _ot.Estado;
-                string nombreUsuario = SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty;
-                Usuario autoriza = _negocio.Autorizar(nombreUsuario, ventana.Clave);
+                Usuario autoriza = ventana.UsuarioAutoriza
+                    ?? throw new InvalidOperationException("No se pudo validar al usuario autorizador.");
                 OrdenTrabajoTransferenciaItem item = new() { IdDetalleOT = celda.Area.IdDetalleOT, Cantidad = ventana.Cantidad };
                 int idSesion = SessionManager.UsuarioActual?.IdUsuario ?? 0;
                 if (permiteAjusteInicial)
