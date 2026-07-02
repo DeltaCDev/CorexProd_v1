@@ -8,7 +8,8 @@ namespace CorexProd.App.Services;
 public sealed class CorexProdApiClient
 {
     private const string ApiBaseUrlKey = "ApiBaseUrl";
-    private const string DefaultApiBaseUrl = "http://192.168.68.112:5000";
+    private const string DefaultApiBaseUrl = "http://192.168.68.112:5055";
+    private const string LegacyApiBaseUrl = "http://192.168.68.112:5000";
 
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions = new()
@@ -23,7 +24,7 @@ public sealed class CorexProdApiClient
 
     public string BaseUrl
     {
-        get => Preferences.Get(ApiBaseUrlKey, DefaultApiBaseUrl);
+        get => NormalizeBaseUrl(Preferences.Get(ApiBaseUrlKey, DefaultApiBaseUrl));
         set => Preferences.Set(ApiBaseUrlKey, NormalizeBaseUrl(value));
     }
 
@@ -394,7 +395,11 @@ public sealed class CorexProdApiClient
     private static string NormalizeBaseUrl(string? value)
     {
         string url = (value ?? string.Empty).Trim().TrimEnd('/');
-        return string.IsNullOrWhiteSpace(url) ? DefaultApiBaseUrl : url;
+        if (string.IsNullOrWhiteSpace(url))
+            return DefaultApiBaseUrl;
+        if (url.Equals(LegacyApiBaseUrl, StringComparison.OrdinalIgnoreCase))
+            return DefaultApiBaseUrl;
+        return url;
     }
 
     private string BuildUrl(string route)

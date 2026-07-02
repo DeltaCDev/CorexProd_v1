@@ -93,7 +93,9 @@ public sealed record OciResumen(
     string Estado,
     bool TieneGuiaSalida,
     bool TieneOrdenTrabajo,
-    bool TieneOtActiva = false);
+    bool TieneOtActiva = false,
+    bool PuedeGenerarOt = false,
+    bool PuedeGenerarGuiaSalida = false);
 
 public sealed record OciDetalleResponse(
     OciCabecera Cabecera,

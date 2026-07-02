@@ -79,9 +79,9 @@ public partial class OciPage : ContentPage
                 return;
             }
 
-            OtValidacionResponse validacion = await _apiClient.ValidarOtDesdeOciAsync(item.Item.IdOrdenCompraInterna);
+            OtValidacionResponse validacion = await ObtenerValidacionOtAsync(item.Item);
             bool continuar = await MostrarValidacionOtAsync(item.Item, validacion);
-            if (!continuar || !validacion.PuedeGenerar)
+            if (!continuar || validacion.Productos.Count == 0)
                 return;
 
             bool confirmar = await MostrarConfirmacionOtAsync(item.Item, validacion);
@@ -113,7 +113,7 @@ public partial class OciPage : ContentPage
                 return;
             }
 
-            GuiaInternaPrepararResponse preparacion = await _apiClient.PrepararGuiaInternaDesdeOciAsync(item.Item.IdOrdenCompraInterna);
+            GuiaInternaPrepararResponse preparacion = await ObtenerPreparacionGuiaAsync(item.Item);
             List<GuiaInternaStockItem> stockItems = preparacion.Detalles.Select(GuiaInternaStockItem.FromApi).ToList();
             bool continuar = await MostrarEvaluacionStockAsync(preparacion, stockItems);
             if (!continuar)
@@ -123,15 +123,25 @@ public partial class OciPage : ContentPage
             if (resultado == null)
                 return;
 
-            GenerarGuiaInternaResponse response = await _apiClient.EmitirGuiaInternaDesdeOciAsync(
-                item.Item.IdOrdenCompraInterna,
-                new GuiaInternaOciRequest(
-                    preparacion.Cabecera.IdAlmacen,
-                    DateTime.Today,
-                    _session.Usuario?.NombreUsuario ?? "Android",
-                    _session.Usuario?.NombreUsuario ?? "Android",
-                    resultado.Observacion,
-                    resultado.Detalles));
+            GenerarGuiaInternaResponse response;
+            try
+            {
+                response = await _apiClient.EmitirGuiaInternaDesdeOciAsync(
+                    item.Item.IdOrdenCompraInterna,
+                    new GuiaInternaOciRequest(
+                        preparacion.Cabecera.IdAlmacen,
+                        DateTime.Today,
+                        _session.Usuario?.NombreUsuario ?? "Android",
+                        _session.Usuario?.NombreUsuario ?? "Android",
+                        resultado.Observacion,
+                        resultado.Detalles));
+            }
+            catch (InvalidOperationException ex) when (EsHttp404(ex))
+            {
+                response = await _apiClient.GenerarGuiaInternaDesdeOciAsync(
+                    item.Item.IdOrdenCompraInterna,
+                    new(_session.Usuario?.NombreUsuario ?? "Android", resultado.Observacion));
+            }
 
             await DisplayAlertAsync("Guia Interna", response.Mensaje, "OK");
             if (response.IdGuiaInterna > 0)
@@ -143,6 +153,109 @@ public partial class OciPage : ContentPage
             await DisplayAlertAsync("Guia Interna", ex.Message, "OK");
         }
     }
+
+    private async Task<OtValidacionResponse> ObtenerValidacionOtAsync(OciResumen oci)
+    {
+        try
+        {
+            return await _apiClient.ValidarOtDesdeOciAsync(oci.IdOrdenCompraInterna);
+        }
+        catch (InvalidOperationException ex) when (EsHttp404(ex))
+        {
+            OciDetalleResponse detalle = await _apiClient.GetOciDetalleAsync(oci.IdOrdenCompraInterna);
+            List<OtValidacionProducto> productos = detalle.Detalles
+                .Select(CrearOtValidacionDesdeDetalle)
+                .Where(x => x.CantidadRequerida > 0)
+                .ToList();
+
+            return new OtValidacionResponse(
+                productos.Count > 0,
+                productos.Count > 0
+                    ? "Validacion local por stock disponible. El servidor no tiene publicada la validacion de insumos."
+                    : "No hay productos faltantes para producir.",
+                productos);
+        }
+    }
+
+    private async Task<GuiaInternaPrepararResponse> ObtenerPreparacionGuiaAsync(OciResumen oci)
+    {
+        try
+        {
+            return await _apiClient.PrepararGuiaInternaDesdeOciAsync(oci.IdOrdenCompraInterna);
+        }
+        catch (InvalidOperationException ex) when (EsHttp404(ex))
+        {
+            OciDetalleResponse detalle = await _apiClient.GetOciDetalleAsync(oci.IdOrdenCompraInterna);
+            List<GuiaInternaDetalleApi> detalles = detalle.Detalles
+                .Select(CrearGuiaDetalleDesdeDocumento)
+                .Where(x => x.CantidadPendiente > 0)
+                .ToList();
+
+            GuiaInternaPrepararCabecera cabecera = new(
+                "OCI",
+                detalle.Cabecera.IdOrdenCompraInterna,
+                detalle.Cabecera.NumeroOci,
+                detalle.Cabecera.NumeroProforma,
+                detalle.Cabecera.OrdenCompraCliente,
+                1,
+                "Almacen Principal",
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                detalle.Cabecera.NombreCliente,
+                DateTime.Today);
+
+            return new GuiaInternaPrepararResponse(cabecera, detalles);
+        }
+    }
+
+    private static OtValidacionProducto CrearOtValidacionDesdeDetalle(DocumentoDetalle detalle)
+    {
+        decimal pendiente = Math.Max(0, detalle.Cantidad - (detalle.CantidadDespachada ?? 0));
+        decimal stock = Math.Max(0, detalle.StockActual ?? 0);
+        decimal deficit = Math.Max(0, pendiente - stock);
+
+        return new OtValidacionProducto(
+            detalle.IdOrdenCompraInternaDetalle,
+            detalle.IdProducto,
+            detalle.CodigoProducto,
+            detalle.NombreProducto,
+            detalle.Observacion,
+            deficit,
+            0,
+            stock,
+            0,
+            0,
+            0,
+            stock,
+            deficit,
+            "Pendiente por validar");
+    }
+
+    private static GuiaInternaDetalleApi CrearGuiaDetalleDesdeDocumento(DocumentoDetalle detalle)
+    {
+        decimal pendiente = Math.Max(0, detalle.Cantidad - (detalle.CantidadDespachada ?? 0));
+        decimal stock = Math.Max(0, detalle.StockActual ?? 0);
+        decimal sugerida = Math.Min(pendiente, stock);
+
+        return new GuiaInternaDetalleApi(
+            detalle.IdOrdenCompraInternaDetalle,
+            detalle.IdProducto,
+            detalle.CodigoProducto,
+            detalle.NombreProducto,
+            0,
+            string.Empty,
+            detalle.Cantidad,
+            detalle.CantidadDespachada ?? 0,
+            pendiente,
+            stock,
+            detalle.PrecioUnitario,
+            sugerida,
+            detalle.Observacion);
+    }
+
+    private static bool EsHttp404(Exception ex) =>
+        ex.Message.Contains("HTTP 404", StringComparison.OrdinalIgnoreCase);
 
     private async Task<bool> MostrarEvaluacionStockAsync(GuiaInternaPrepararResponse preparacion, IReadOnlyList<GuiaInternaStockItem> items)
     {
@@ -209,7 +322,7 @@ public partial class OciPage : ContentPage
             ColumnSpacing = 10
         };
         Button cancelar = new() { Text = "Cancelar", BackgroundColor = Color.FromArgb("#667085"), TextColor = Colors.White };
-        Button continuar = new() { Text = "Continuar", BackgroundColor = Color.FromArgb("#0E9384"), TextColor = Colors.White, IsEnabled = validacion.PuedeGenerar };
+        Button continuar = new() { Text = "Continuar", BackgroundColor = Color.FromArgb("#0E9384"), TextColor = Colors.White, IsEnabled = validacion.Productos.Count > 0 };
         acciones.Add(cancelar, 0, 0);
         acciones.Add(continuar, 1, 0);
         contenido.Add(acciones);
@@ -274,7 +387,13 @@ public partial class OciPage : ContentPage
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
         stack.Add(new Label { Text = $"Cantidad a producir: {producto.CantidadRequerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
-        stack.Add(new Label { Text = $"Stock prod.: {producto.StockTotal:N2} | Deficit: {producto.Deficit:N2} | Insumos: {producto.EstadoInsumos}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
+        stack.Add(new Label
+        {
+            Text = $"Stock prod.: {producto.StockTotal:N2} | {ObtenerOtValidacionResumen(producto)} | Insumos: {producto.EstadoInsumos}",
+            FontSize = 12,
+            TextColor = estadoColor,
+            LineBreakMode = LineBreakMode.WordWrap
+        });
 
         if (!string.IsNullOrWhiteSpace(producto.Observacion))
             stack.Add(new Label { Text = $"Obs.: {producto.Observacion}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
@@ -384,7 +503,7 @@ public partial class OciPage : ContentPage
                     return;
 
                 GuiaDisponibilidad disponibilidad = await ObtenerDisponibilidadGuiaAsync(item);
-                nuevosItems.Add(new OciListItem(item, disponibilidad.TieneStockDisponible, disponibilidad.TienePendiente));
+                nuevosItems.Add(new OciListItem(item, disponibilidad.TieneStockDisponible, disponibilidad.TienePendiente, disponibilidad.NecesitaOt));
             }
 
             if (loadVersion != Volatile.Read(ref _loadVersion))
@@ -412,30 +531,56 @@ public partial class OciPage : ContentPage
 
     private async Task<GuiaDisponibilidad> ObtenerDisponibilidadGuiaAsync(OciResumen item)
     {
-        if (item.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
-            return new(false, false);
+        if (EsOciAnulada(item.Estado))
+            return new(false, false, false);
 
         try
         {
             if (_session.EsDemo)
             {
-                OciDetalleResponse detalle = DemoData.OciDetalle(item.IdOrdenCompraInterna);
-                bool demoTienePendiente = detalle.Detalles.Any(x => x.Cantidad - (x.CantidadDespachada ?? 0) > 0);
-                bool demoTieneStock = detalle.Detalles.Any(x =>
-                    x.Cantidad - (x.CantidadDespachada ?? 0) > 0
-                    && (x.StockActual ?? 0) > 0);
-                return new(demoTieneStock, demoTienePendiente);
+                OciDetalleResponse demoDetalle = DemoData.OciDetalle(item.IdOrdenCompraInterna);
+                return CalcularDisponibilidadDesdeDetalle(demoDetalle.Detalles);
             }
+
+            OciDetalleResponse detalle = await _apiClient.GetOciDetalleAsync(item.IdOrdenCompraInterna);
+            GuiaDisponibilidad desdeDetalle = CalcularDisponibilidadDesdeDetalle(detalle.Detalles);
+
+            if (desdeDetalle.TieneStockDisponible || desdeDetalle.NecesitaOt)
+                return desdeDetalle;
 
             GuiaInternaPrepararResponse preparacion = await _apiClient.PrepararGuiaInternaDesdeOciAsync(item.IdOrdenCompraInterna);
             bool tienePendiente = preparacion.Detalles.Any(x => x.CantidadPendiente > 0);
             bool tieneStock = preparacion.Detalles.Any(x => x.CantidadPendiente > 0 && x.StockActual > 0);
-            return new(tieneStock, tienePendiente);
+            bool necesitaOt = preparacion.Detalles.Any(x => x.CantidadPendiente > x.StockActual);
+            return new(tieneStock, tienePendiente, necesitaOt);
         }
         catch
         {
-            return new(false, false);
+            return new(item.PuedeGenerarGuiaSalida, item.PuedeGenerarGuiaSalida, item.PuedeGenerarOt);
         }
+    }
+
+    private static GuiaDisponibilidad CalcularDisponibilidadDesdeDetalle(IReadOnlyList<DocumentoDetalle> detalles)
+    {
+        bool tienePendiente = false;
+        bool tieneStock = false;
+        bool necesitaOt = false;
+
+        foreach (DocumentoDetalle detalle in detalles)
+        {
+            decimal pendiente = Math.Max(0, detalle.Cantidad - (detalle.CantidadDespachada ?? 0));
+            decimal stock = Math.Max(0, detalle.StockActual ?? 0);
+            if (pendiente <= 0)
+                continue;
+
+            tienePendiente = true;
+            if (stock > 0)
+                tieneStock = true;
+            if (pendiente > stock)
+                necesitaOt = true;
+        }
+
+        return new(tieneStock, tienePendiente, necesitaOt);
     }
 
     private static ContentPage CrearDetalleDocumentoPage(
@@ -841,21 +986,20 @@ public partial class OciPage : ContentPage
 
     private static string ObtenerOtValidacionTexto(OtValidacionProducto producto)
     {
-        if (!producto.IdFichaTecnica.HasValue)
-            return "Sin ficha";
-        if (producto.Deficit > 0 || !producto.EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase))
-            return "Insumos faltantes";
-        return "Listo para producir";
+        return producto.Deficit > 0 ? "Deficit" : "Completo";
     }
 
     private static Color ObtenerOtValidacionColor(OtValidacionProducto producto)
     {
-        if (!producto.IdFichaTecnica.HasValue)
-            return Color.FromArgb("#B42318");
-        if (producto.Deficit > 0 || !producto.EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase))
-            return Color.FromArgb("#B54708");
-        return Color.FromArgb("#067647");
+        return producto.Deficit > 0
+            ? Color.FromArgb("#B42318")
+            : Color.FromArgb("#067647");
     }
+
+    private static string ObtenerOtValidacionResumen(OtValidacionProducto producto) =>
+        producto.Deficit > 0
+            ? $"Deficit: {producto.Deficit:N2}"
+            : "Completo: stock suficiente";
 
     private static Border CrearInsumoCard(OtValidacionInsumo insumo)
     {
@@ -954,9 +1098,13 @@ public partial class OciPage : ContentPage
         };
     }
 
-    private sealed record GuiaDisponibilidad(bool TieneStockDisponible, bool TienePendiente);
+    private static bool EsOciAnulada(string estado) =>
+        estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
+        || estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase);
 
-    private sealed record OciListItem(OciResumen Item, bool TieneStockDisponible, bool TienePendiente)
+    private sealed record GuiaDisponibilidad(bool TieneStockDisponible, bool TienePendiente, bool NecesitaOt);
+
+    private sealed record OciListItem(OciResumen Item, bool TieneStockDisponible, bool TienePendiente, bool NecesitaOt)
     {
         public string NumeroOci => Item.NumeroOci;
         public string NumeroProforma => Item.NumeroProforma;
@@ -965,10 +1113,10 @@ public partial class OciPage : ContentPage
         public string NombreCliente => Item.NombreCliente;
         public decimal Total => Item.Total;
         public string Estado => Item.Estado;
-        public bool PuedeGenerarOt => TienePendiente
-            && !Item.TieneOtActiva
-            && !Item.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase);
-        public bool PuedeGenerarGuia => TieneStockDisponible && !Item.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase);
+        public bool PuedeGenerarOt => (Item.PuedeGenerarOt || NecesitaOt)
+            && !EsOciAnulada(Item.Estado);
+        public bool PuedeGenerarGuia => (Item.PuedeGenerarGuiaSalida || TieneStockDisponible)
+            && !EsOciAnulada(Item.Estado);
         public string OtTexto => PuedeGenerarOt
             ? Item.TieneOrdenTrabajo ? "OT faltante" : "OT"
             : Item.TieneOtActiva ? "OT en proceso" : Item.TieneOrdenTrabajo ? "OT generada" : "Sin pendiente";

@@ -21,10 +21,6 @@ public sealed class SessionState
         Usuario = new LoginUser(0, "Demo", "Usuario Demo", 0, "Demostracion");
         Menus =
         [
-            "Almacen",
-            "Stock productos",
-            "Stock insumos",
-            "Ingreso stock",
             "Ventas",
             "Proformas",
             "OCI",
@@ -32,7 +28,11 @@ public sealed class SessionState
             "Produccion",
             "OT Produccion",
             "Reportes",
-            "Kardex"
+            "Kardex",
+            "Almacen",
+            "Stock productos",
+            "Stock insumos",
+            "Ingreso stock"
         ];
         EsDemo = true;
     }

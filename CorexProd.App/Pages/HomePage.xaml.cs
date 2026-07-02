@@ -31,8 +31,36 @@ public partial class HomePage : ContentPage
 
         UserLabel.Text = _session.Usuario?.NombreCompleto;
         RoleLabel.Text = $"{_session.Usuario?.NombreUsuario} - {_session.Usuario?.NombreRol}";
-        MenusView.ItemsSource = _session.Menus;
+        MenusView.ItemsSource = OrdenarMenus(_session.Menus);
         await CargarEmpresaAsync();
+    }
+
+    private static IReadOnlyList<string> OrdenarMenus(IReadOnlyList<string> menus)
+    {
+        string[] orden =
+        [
+            "Ventas",
+            "Proformas",
+            "OCI",
+            "Guia Interna",
+            "Produccion",
+            "OT Produccion",
+            "Reportes",
+            "Kardex",
+            "Almacen",
+            "Stock productos",
+            "Stock insumos",
+            "Ingreso stock"
+        ];
+
+        Dictionary<string, int> posiciones = orden
+            .Select((menu, index) => new { menu, index })
+            .ToDictionary(x => x.menu, x => x.index, StringComparer.OrdinalIgnoreCase);
+
+        return menus
+            .OrderBy(x => posiciones.TryGetValue(x, out int posicion) ? posicion : int.MaxValue)
+            .ThenBy(x => x)
+            .ToList();
     }
 
     private async Task CargarEmpresaAsync()

@@ -16,11 +16,6 @@
                        LineBreakMode="WordWrap" />
                 <BoxView HeightRequest="1" Color="#2E5B73" />
 
-                <Label Text="Almacen" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
-                <Button Text="Stock productos" FontSize="12" Padding="8,6" Clicked="OnProductosClicked" />
-                <Button Text="Stock insumos" FontSize="12" Padding="8,6" Clicked="OnInsumosClicked" />
-                <Button Text="Ingreso stock" FontSize="12" Padding="8,6" Clicked="OnIngresoStockClicked" />
-
                 <Label Text="Ventas" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
                 <Button Text="Proformas" FontSize="12" Padding="8,6" Clicked="OnProformasClicked" />
                 <Button Text="OCI" FontSize="12" Padding="8,6" Clicked="OnOciClicked" />
@@ -31,6 +26,11 @@
 
                 <Label Text="Reportes" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
                 <Button Text="Kardex" FontSize="12" Padding="8,6" Clicked="OnKardexClicked" />
+
+                <Label Text="Almacen" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
+                <Button Text="Stock productos" FontSize="12" Padding="8,6" Clicked="OnProductosClicked" />
+                <Button Text="Stock insumos" FontSize="12" Padding="8,6" Clicked="OnInsumosClicked" />
+                <Button Text="Ingreso stock" FontSize="12" Padding="8,6" Clicked="OnIngresoStockClicked" />
 
                 <BoxView HeightRequest="1" Color="#2E5B73" />
                 <Button Text="Cerrar sesion"

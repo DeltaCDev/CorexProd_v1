@@ -585,7 +585,49 @@ SELECT
         FROM dbo.OrdenTrabajo OT
         WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
           AND OT.Estado IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
-    ) THEN 1 ELSE 0 END AS BIT) AS TieneOtActiva
+    ) THEN 1 ELSE 0 END AS BIT) AS TieneOtActiva,
+    CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenCompraInternaDetalle D
+        OUTER APPLY
+        (
+            SELECT SUM(OD.CantidadAplicada) AS CantidadAplicada
+            FROM dbo.OrdenTrabajoDetalle OD
+            INNER JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
+            WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+              AND UPPER(OT.Estado) <> 'ANULADA'
+              AND UPPER(OD.Estado) <> 'ANULADO'
+        ) PROD
+        OUTER APPLY
+        (
+            SELECT SUM(SPA.StockActual) AS StockActual
+            FROM dbo.StockProductosAlmacen SPA
+            WHERE SPA.IdProducto = D.IdProducto
+        ) SP
+        OUTER APPLY
+        (
+            SELECT SUM(DA.CantidadPendiente) AS StockProceso
+            FROM dbo.OrdenTrabajoDetalle OD
+            INNER JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
+            INNER JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
+            WHERE OD.IdProducto = D.IdProducto
+              AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
+              AND (A.NombreArea LIKE '%CORTE%' OR A.NombreArea LIKE '%CONFECCI%' OR A.NombreArea LIKE '%ACABADO%')
+        ) AP
+        WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+          AND D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
+              > ISNULL(SP.StockActual, 0) + ISNULL(AP.StockProceso, 0)
+    ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
+    CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenCompraInternaDetalle D
+        LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+        WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+          AND D.Cantidad - D.CantidadDespachada > 0
+          AND ISNULL(S.StockActual, 0) > 0
+    ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
 FROM dbo.OrdenesCompraInterna O
 INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 WHERE @Buscar = ''
@@ -615,7 +657,9 @@ ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
             estado = dr["Estado"]?.ToString() ?? string.Empty,
             tieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
             tieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
-            tieneOtActiva = Convert.ToBoolean(dr["TieneOtActiva"])
+            tieneOtActiva = Convert.ToBoolean(dr["TieneOtActiva"]),
+            puedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),
+            puedeGenerarGuiaSalida = Convert.ToBoolean(dr["PuedeGenerarGuiaSalida"])
         });
     }
 
@@ -718,29 +762,6 @@ SELECT TOP (1) Estado
 FROM dbo.OrdenesCompraInterna
 WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
-    const string detalleSql = @"
-SELECT
-    D.IdOrdenCompraInternaDetalle,
-    CAST(D.Cantidad - CASE
-        WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada
-        ELSE ISNULL(PROD.CantidadAplicada, 0)
-    END AS DECIMAL(18,2)) AS CantidadPendiente
-FROM dbo.OrdenCompraInternaDetalle D
-OUTER APPLY
-(
-    SELECT SUM(OD.CantidadAplicada) AS CantidadAplicada
-    FROM dbo.OrdenTrabajoDetalle OD
-    INNER JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = OD.IdOrdenTrabajo
-    WHERE OD.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
-      AND OT.Estado <> 'ANULADA'
-      AND OD.Estado <> 'ANULADO'
-) PROD
-WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
-  AND CAST(D.Cantidad - CASE
-        WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada
-        ELSE ISNULL(PROD.CantidadAplicada, 0)
-    END AS DECIMAL(18,2)) > 0;";
-
     await using SqlConnection conexion = new(connectionString);
     await conexion.OpenAsync();
 
@@ -756,27 +777,19 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
             return Results.BadRequest(new { mensaje = "No se puede generar OT de una OCI anulada." });
     }
 
-    List<OrdenTrabajoPlanificacionApiRequest> detalles = [];
-    await using (SqlCommand detalleCmd = new(detalleSql, conexion))
-    {
-        detalleCmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
-        await using SqlDataReader dr = await detalleCmd.ExecuteReaderAsync();
-        while (await dr.ReadAsync())
-        {
-            detalles.Add(new(
-                Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
-                Convert.ToDecimal(dr["CantidadPendiente"])));
-        }
-    }
-
-    if (detalles.Count == 0)
-        return Results.BadRequest(new { mensaje = "La OCI no tiene cantidades pendientes para producir." });
-
     List<OtValidacionProductoApi> validaciones = await ValidarOtInsumosAsync(conexion, id);
     if (validaciones.Count == 0)
         return Results.BadRequest(new { mensaje = "La OCI no tiene productos faltantes para producir." });
-    if (validaciones.Any(x => !OtValidacionOk(x)))
-        return Results.BadRequest(new { mensaje = "No se puede generar la OT. Revise ficha tecnica y stock de insumos antes de confirmar." });
+
+    List<OrdenTrabajoPlanificacionApiRequest> detalles = validaciones
+        .Select(x => new OrdenTrabajoPlanificacionApiRequest(
+            x.IdOrdenCompraInternaDetalle,
+            x.Deficit > 0 ? x.Deficit : x.CantidadRequerida))
+        .Where(x => x.CantidadPlanificada > 0)
+        .ToList();
+
+    if (detalles.Count == 0)
+        return Results.BadRequest(new { mensaje = "La OCI no tiene cantidades pendientes para producir." });
 
     int idUsuario;
     await using (SqlCommand usuarioCmd = new("SELECT TOP (1) IdUsuario FROM dbo.Usuarios WHERE NombreUsuario = @Usuario", conexion))
@@ -818,10 +831,10 @@ app.MapGet("/api/oci/{id:int}/orden-trabajo/validacion", async (int id) =>
     if (productos.Count == 0)
         return Results.Ok(new { puedeGenerar = false, mensaje = "No hay productos faltantes para producir.", productos });
 
-    bool puedeGenerar = productos.All(OtValidacionOk);
+    bool puedeGenerar = productos.Count > 0;
     string mensaje = puedeGenerar
-        ? "Todos los productos tienen ficha tecnica y stock de insumos suficiente."
-        : "Hay productos sin ficha tecnica o con insumos insuficientes.";
+        ? "Validacion informativa lista. Puede continuar para revisar el detalle y generar la OT."
+        : "No hay productos faltantes para producir.";
 
     return Results.Ok(new { puedeGenerar, mensaje, productos });
 });
@@ -2046,11 +2059,6 @@ static async Task<List<OtValidacionProductoApi>> ValidarOtInsumosAsync(SqlConnec
 
     return productos;
 }
-
-static bool OtValidacionOk(OtValidacionProductoApi producto) =>
-    producto.IdFichaTecnica.HasValue
-    && producto.EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase)
-    && producto.Deficit <= 0;
 
 static string LeerString(SqlDataReader dr, string columna)
 {
