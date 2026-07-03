@@ -41,12 +41,32 @@
             </Setter>
         </Style>
 
+        <DataTemplate x:Key="MetricTemplate">
+            <Border Background="#F8FAFC"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="14,11"
+                    Margin="0,0,10,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding Value}"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"/>
+                    <TextBlock Text="{Binding Label}"
+                               FontSize="11"
+                               Foreground="#64748B"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
         <DataTemplate x:Key="ModuleCardTemplate">
             <Border Background="White"
                     BorderBrush="#E2E8F0"
                     BorderThickness="1"
                     CornerRadius="7"
-                    Padding="20"
+                    Padding="18"
                     Margin="0,0,14,14">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -95,7 +115,7 @@
                 Background="White"
                 BorderBrush="#E2E8F0"
                 BorderThickness="0,0,0,1"
-                Padding="26,20">
+                Padding="26,18">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -104,7 +124,7 @@
 
                 <StackPanel>
                     <TextBlock Text="{Binding CurrentPage.Title}"
-                               FontSize="25"
+                               FontSize="24"
                                FontWeight="Bold"
                                Foreground="#0F172A"/>
                     <TextBlock Text="{Binding CurrentPage.Subtitle}"
@@ -123,7 +143,7 @@
                         Margin="18,0,0,0"
                         VerticalAlignment="Center">
                     <StackPanel>
-                        <TextBlock Text="SISTEMA ERP"
+                        <TextBlock Text="PORTADA OPERATIVA"
                                    FontSize="10"
                                    FontWeight="Bold"
                                    Foreground="#C2410C"/>
@@ -139,23 +159,79 @@
         <Grid Grid.Row="1" Margin="26,20,12,6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Border Background="{Binding CurrentPage.HighlightBackground}"
+            <Border CornerRadius="8"
+                    Padding="22"
+                    Margin="0,0,14,16">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#0F172A" Offset="0"/>
+                        <GradientStop Color="#1D4ED8" Offset="0.55"/>
+                        <GradientStop Color="#F97316" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="210"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CurrentPage.Eyebrow}"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="#BFDBFE"/>
+                        <TextBlock Text="{Binding CurrentPage.Introduction}"
+                                   FontSize="21"
+                                   FontWeight="SemiBold"
+                                   LineHeight="29"
+                                   Foreground="White"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,18,0"/>
+                        <ItemsControl ItemsSource="{Binding CurrentPage.Metrics}"
+                                      ItemTemplate="{StaticResource MetricTemplate}"
+                                      Margin="0,18,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <Border Grid.Column="1"
+                            Width="172"
+                            Height="172"
+                            Background="White"
+                            CornerRadius="8"
+                            Padding="16"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                        <Image Source="/Images/LOGO.png"
+                               Stretch="Uniform"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Background="{Binding CurrentPage.HighlightBackground}"
                     BorderBrush="{Binding CurrentPage.HighlightBorder}"
                     BorderThickness="1"
                     CornerRadius="7"
-                    Padding="18,14"
+                    Padding="14,11"
                     Margin="0,0,14,16">
-                <TextBlock Text="{Binding CurrentPage.Introduction}"
+                <TextBlock Text="{Binding CurrentPage.FocusText}"
                            FontSize="13"
                            LineHeight="19"
                            Foreground="#334155"
                            TextWrapping="Wrap"/>
             </Border>
 
-            <ItemsControl Grid.Row="1"
+            <ItemsControl Grid.Row="2"
                           ItemsSource="{Binding CurrentPage.Modules}"
                           ItemTemplate="{StaticResource ModuleCardTemplate}">
                 <ItemsControl.ItemsPanel>

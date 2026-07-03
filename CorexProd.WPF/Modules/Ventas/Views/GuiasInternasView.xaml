@@ -212,7 +212,7 @@
         <Style x:Key="CeldaGuia" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#0F172A"/>
-            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#D9E2EC"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
@@ -220,6 +220,69 @@
                     <Setter Property="Foreground" Value="#0F172A"/>
                 </Trigger>
             </Style.Triggers>
+        </Style>
+        <Style x:Key="CabeceraListado" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#DDE6F0"/>
+            <Setter Property="Foreground" Value="#1F2937"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="#D9E2EC"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="DataGridListadoSinBordeInterno" TargetType="DataGrid">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGrid}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="DG_ScrollViewer" Focusable="False">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                        <Grid Background="{TemplateBinding Background}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <DataGridColumnHeadersPresenter Grid.Row="0" Grid.Column="0"/>
+                                            <ScrollContentPresenter Grid.Row="1"
+                                                                    Grid.Column="0"
+                                                                    CanContentScroll="{TemplateBinding CanContentScroll}"
+                                                                    Content="{TemplateBinding Content}"
+                                                                    ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                            <ScrollBar x:Name="PART_VerticalScrollBar"
+                                                       Grid.Row="1"
+                                                       Grid.Column="1"
+                                                       Orientation="Vertical"
+                                                       Maximum="{TemplateBinding ScrollableHeight}"
+                                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                                       Value="{Binding VerticalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                                            <ScrollBar x:Name="PART_HorizontalScrollBar"
+                                                       Grid.Row="2"
+                                                       Grid.Column="0"
+                                                       Orientation="Horizontal"
+                                                       Maximum="{TemplateBinding ScrollableWidth}"
+                                                       ViewportSize="{TemplateBinding ViewportWidth}"
+                                                       Value="{Binding HorizontalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                                       Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="FilaGuia" TargetType="DataGridRow">
             <Setter Property="Background" Value="White"/>
@@ -294,10 +357,23 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
-            <DataGrid ItemsSource="{Binding Guias}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                      RowHeight="46" MaxHeight="590" GridLinesVisibility="Horizontal"
-                      CellStyle="{StaticResource CeldaGuia}" RowStyle="{StaticResource FilaGuia}">
+        <DataGrid Grid.Row="1"
+                  Style="{StaticResource DataGridListadoSinBordeInterno}"
+                  ItemsSource="{Binding Guias}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  RowHeight="46"
+                  MaxHeight="590"
+                  Background="White"
+                  BorderBrush="#8EADD0"
+                  BorderThickness="1"
+                  SnapsToDevicePixels="True"
+                  GridLinesVisibility="Horizontal"
+                  HorizontalGridLinesBrush="#D9E2EC"
+                  ColumnHeaderStyle="{StaticResource CabeceraListado}"
+                  CellStyle="{StaticResource CeldaGuia}"
+                  RowStyle="{StaticResource FilaGuia}">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Acciones" Width="125">
                         <DataGridTemplateColumn.CellTemplate>
@@ -338,7 +414,6 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Motivo manual / Observación" Binding="{Binding MotivoEmisionManual}" Width="*" ElementStyle="{StaticResource Celda}"/>
                 </DataGrid.Columns>
-            </DataGrid>
-        </Border>
+        </DataGrid>
     </Grid>
 </UserControl>

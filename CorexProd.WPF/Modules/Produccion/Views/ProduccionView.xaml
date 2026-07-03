@@ -89,25 +89,83 @@
             <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#F1F5F9"/><Setter Property="BorderBrush" Value="#94A3B8"/></Trigger></Style.Triggers>
         </Style>
         <Style x:Key="FilaOt" TargetType="DataGridRow">
-            <Setter Property="Height" Value="46"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#111827"/><Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="48"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#0F172A"/><Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#F8FAFC"/></Trigger>
-                <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#EEF6FF"/></Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#F0FDFA"/></Trigger>
+                <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#DBEAFE"/></Trigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="CeldaOt" TargetType="DataGridCell">
-            <Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="7,0"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#0F172A"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="#D9E2EC"/><Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Padding" Value="0"/>
+            <Style.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#DBEAFE"/><Setter Property="Foreground" Value="#0F172A"/></Trigger></Style.Triggers>
         </Style>
         <Style x:Key="CabeceraOt" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#E7EDF5"/><Setter Property="Foreground" Value="#334155"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="12"/>
-            <Setter Property="BorderBrush" Value="#C7D2E0"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="8,0"/><Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#DDE6F0"/><Setter Property="Foreground" Value="#1F2937"/><Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="#D9E2EC"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="8,0"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="TextoCeldaCentro" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="OtDataGridSinBordeInterno" TargetType="DataGrid">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGrid}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="DG_ScrollViewer" Focusable="False">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                        <Grid Background="{TemplateBinding Background}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <DataGridColumnHeadersPresenter Grid.Row="0" Grid.Column="0"/>
+                                            <ScrollContentPresenter Grid.Row="1"
+                                                                    Grid.Column="0"
+                                                                    CanContentScroll="{TemplateBinding CanContentScroll}"
+                                                                    Content="{TemplateBinding Content}"
+                                                                    ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                            <ScrollBar x:Name="PART_VerticalScrollBar"
+                                                       Grid.Row="1"
+                                                       Grid.Column="1"
+                                                       Orientation="Vertical"
+                                                       Maximum="{TemplateBinding ScrollableHeight}"
+                                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                                       Value="{Binding VerticalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                                            <ScrollBar x:Name="PART_HorizontalScrollBar"
+                                                       Grid.Row="2"
+                                                       Grid.Column="0"
+                                                       Orientation="Horizontal"
+                                                       Maximum="{TemplateBinding ScrollableWidth}"
+                                                       ViewportSize="{TemplateBinding ViewportWidth}"
+                                                       Value="{Binding HorizontalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                                       Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
 
     <Grid Margin="20" MaxWidth="1500" HorizontalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,12">
@@ -139,50 +197,60 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Background="White" BorderBrush="#8EADD0" BorderThickness="1" CornerRadius="0" ClipToBounds="True">
         <DataGrid x:Name="OrdenesGrid"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  HeadersVisibility="Column"
-                  ColumnHeaderHeight="44"
-                  ColumnHeaderStyle="{StaticResource CabeceraOt}"
-                  GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#D5DEE9"
-                  ScrollViewer.HorizontalScrollBarVisibility="Visible"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  ScrollViewer.CanContentScroll="True"
-                  AlternationCount="2"
-                  RowStyle="{StaticResource FilaOt}"
-                  CellStyle="{StaticResource CeldaOt}"
-                  MouseDoubleClick="OrdenesGrid_MouseDoubleClick">
-            <DataGrid.Columns>
-                <DataGridTextColumn Binding="{Binding NumeroOT}" Width="105">
-                    <DataGridTextColumn.Header><TextBlock Text="Numero&#x0a;de OT" TextAlignment="Center" LineHeight="16"/></DataGridTextColumn.Header>
-                </DataGridTextColumn>
-                <DataGridTemplateColumn Header="Acciones" Width="190">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Button Style="{StaticResource BotonAccion}" Foreground="#334155" Click="Abrir_Click" ToolTip="Ver detalle de la OT"><TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
-                                <Button Style="{StaticResource BotonAccion}" Width="78" Foreground="#0F766E" Click="Kardex_Click" ToolTip="Consultar Kardex"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/><TextBlock Text="Kardex" VerticalAlignment="Center"/></StackPanel></Button>
-                                <Button Style="{StaticResource BotonAccion}" Foreground="#7C3AED" Click="Historial_Click" ToolTip="Ver historial de movimientos"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Fecha y hora" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="125"/>
-                <DataGridTextColumn Header="Nro OCI" Binding="{Binding NumeroOci}" Width="105"/>
-                <DataGridTextColumn Header="Tipo OT" Binding="{Binding TipoOTDescripcion}" Width="78"/>
-                <DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="110"/>
-                <DataGridTemplateColumn Width="145">
+                      Grid.Row="1"
+                      Style="{StaticResource OtDataGridSinBordeInterno}"
+                      RowHeight="48"
+                      MaxHeight="560"
+                      VerticalAlignment="Top"
+                      Background="White"
+                      BorderBrush="#8EADD0"
+                      BorderThickness="1"
+                      SnapsToDevicePixels="True"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      ColumnHeaderHeight="38"
+                      ColumnHeaderStyle="{StaticResource CabeceraOt}"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#D9E2EC"
+                      ScrollViewer.HorizontalScrollBarVisibility="Visible"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="True"
+                      AlternationCount="2"
+                      RowStyle="{StaticResource FilaOt}"
+                      CellStyle="{StaticResource CeldaOt}"
+                      MouseDoubleClick="OrdenesGrid_MouseDoubleClick">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Acciones" Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource BotonAccion}" Foreground="#334155" Click="Abrir_Click" ToolTip="Ver detalle de la OT"><TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
+                                    <Button Style="{StaticResource BotonAccion}" Width="78" Foreground="#0F766E" Click="Kardex_Click" ToolTip="Consultar Kardex"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/><TextBlock Text="Kardex" VerticalAlignment="Center"/></StackPanel></Button>
+                                    <Button Style="{StaticResource BotonAccion}" Foreground="#7C3AED" Click="Historial_Click" ToolTip="Ver historial de movimientos"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Binding="{Binding NumeroOT}" Width="85" ElementStyle="{StaticResource TextoCeldaCentro}">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="Numero&#x0a;de OT" TextAlignment="Center" LineHeight="16"/>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Fecha y hora" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="120" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                <DataGridTextColumn Header="Nro OCI" Binding="{Binding NumeroOci}" Width="90" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                <DataGridTextColumn Header="Tipo OT" Binding="{Binding TipoOTDescripcion}" Width="70" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                <DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="100" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                <DataGridTemplateColumn Width="135">
                     <DataGridTemplateColumn.Header><TextBlock Text="Orden Compra&#x0a;Cliente" TextAlignment="Center" LineHeight="16"/></DataGridTemplateColumn.Header>
-                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding OrdenCompraCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding OrdenCompraCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Cliente" Width="190">
-                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding NombreCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                <DataGridTemplateColumn Header="Cliente" Width="250">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding NombreCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Estado" Width="120">
+                <DataGridTemplateColumn Header="Estado" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource EstadoOtBadge}" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -191,16 +259,15 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Usuario" Width="*" MinWidth="120">
+                <DataGridTemplateColumn Header="Usuario" Width="120" MinWidth="120">
                     <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="{Binding UsuarioCreacion}" FontWeight="SemiBold" Foreground="#334155"/>
-                            <TextBlock Text="{Binding UsuarioAutoriza, StringFormat=Autoriza: {0}}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding UsuarioCreacion}" FontWeight="SemiBold" Foreground="#334155" TextAlignment="Center"/>
+                            <TextBlock Text="{Binding UsuarioAutoriza, StringFormat=Autoriza: {0}}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
                         </StackPanel>
                     </DataTemplate></DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-        </Border>
     </Grid>
 </UserControl>
