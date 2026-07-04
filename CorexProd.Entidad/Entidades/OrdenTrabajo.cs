@@ -18,16 +18,40 @@ namespace CorexProd.Entidad.Entidades
         public string NombreCliente { get; set; } = string.Empty;
         public DateTime FechaEmision { get; set; }
         public string Estado { get; set; } = string.Empty;
+        public string EstadoOperativo
+        {
+            get
+            {
+                string estado = Estado.Trim().ToUpperInvariant();
+                if (estado is "ANULADA" or "ANULADO") return "Anulado";
+                if (TotalPendiente <= 0 && TotalProducido > 0) return "Terminado";
+                if (TotalPendiente > 0 && TotalProducido > 0 && estado is not ("EN_PROCESO" or "PROCESO")) return "Terminado Parcial";
+                if (estado is "EN_PROCESO" or "PROCESO" || TotalLanzado > 0) return "En Proceso";
+                return "Pendiente";
+            }
+        }
+        public bool PuedeAnular => EstadoOperativo is "Pendiente" or "En Proceso";
         public int IdUsuarioCreacion { get; set; }
         public string UsuarioCreacion { get; set; } = string.Empty;
         public string UsuarioAutoriza { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
+        public string MotivoAnulacion { get; set; } = string.Empty;
+        public string UsuarioAnulacion { get; set; } = string.Empty;
+        public DateTime? FechaAnulacion { get; set; }
+        public string DetalleAnulacion => EstadoOperativo.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
+            ? $"Motivo: {TextoOmitido(MotivoAnulacion)}\nFecha y Hora: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}\nUsuario: {TextoOmitido(UsuarioAnulacion)}"
+            : string.Empty;
         public int CantidadProductos { get; set; }
         public decimal TotalPlanificado { get; set; }
         public decimal TotalLanzado { get; set; }
+        public decimal TotalProducido { get; set; }
+        public decimal TotalPendiente { get; set; }
+        public bool TieneRegularizacionTerminada { get; set; }
         public List<OrdenTrabajoDetalle> Detalles { get; } = [];
         public List<OrdenTrabajoDetalleArea> Areas { get; } = [];
+
+        private static string TextoOmitido(string valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     }
 
     public class OrdenTrabajoDetalle

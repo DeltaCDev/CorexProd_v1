@@ -319,6 +319,37 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="IconoInfoAnulacion" TargetType="TextBlock">
+            <Setter Property="Text" Value="!"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#BE123C"/>
+            <Setter Property="Margin" Value="7,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="ToolTip">
+                <Setter.Value>
+                    <ToolTip Placement="Mouse" MaxWidth="340">
+                        <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="12">
+                            <TextBlock Text="{Binding PlacementTarget.DataContext.DetalleAnulacion, RelativeSource={RelativeSource AncestorType=ToolTip}}"
+                                       Width="300"
+                                       TextWrapping="Wrap"
+                                       LineHeight="18"
+                                       Foreground="#111827"/>
+                        </Border>
+                    </ToolTip>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="Anulado">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20" MaxWidth="1400" HorizontalAlignment="Center">
@@ -406,9 +437,12 @@
                     <DataGridTemplateColumn Header="Estado" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
-                                </Border>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource EstadoBadge}">
+                                        <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
+                                    </Border>
+                                    <TextBlock Style="{StaticResource IconoInfoAnulacion}"/>
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

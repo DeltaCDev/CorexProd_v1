@@ -16,8 +16,23 @@ namespace CorexProd.Negocio.Negocio
         public List<OrdenTrabajoMovimiento> ListarMovimientos(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarMovimientos(idOrdenTrabajo):[];
         public List<OrdenTrabajoKardexIngreso> ListarIngresosKardex(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarIngresosKardex(idOrdenTrabajo):[];
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)=>_datos.ValidarInsumos(idOci);
+        public List<OrdenTrabajoValidacionProducto> ListarPendientesRegularizacion(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarPendientesRegularizacion(idOrdenTrabajo):[];
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)=>_datos.DetalleInsumos(idDetalleOci);
-        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items)=>_datos.Crear(idOci,idUsuario,observacion,items);
+        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada);
+        public void Anular(int idOrdenTrabajo, bool convertirProcesoAMerma = false, int idUsuarioSesion = 0, string motivoAnulacion = "", string usuarioAnulacion = "")
+        {
+            if (idOrdenTrabajo <= 0) throw new InvalidOperationException("Seleccione una OT valida.");
+            motivoAnulacion = motivoAnulacion.Trim();
+            usuarioAnulacion = string.IsNullOrWhiteSpace(usuarioAnulacion) ? "Sistema" : usuarioAnulacion.Trim();
+            if (string.IsNullOrWhiteSpace(motivoAnulacion)) throw new InvalidOperationException("Ingrese el motivo de anulacion.");
+            OrdenTrabajo? ot = _datos.Obtener(idOrdenTrabajo);
+            if (ot == null) throw new InvalidOperationException("No se encontro la OT seleccionada.");
+            if (!ot.PuedeAnular) throw new InvalidOperationException("Solo se puede anular una OT en estado Pendiente o En Proceso sin productos terminados.");
+            if (ot.EstadoOperativo.Equals("En Proceso", StringComparison.OrdinalIgnoreCase)
+                && ot.Detalles.Any(x => x.Estado.Equals("TERMINADO", StringComparison.OrdinalIgnoreCase) || x.CantidadProducida > 0))
+                throw new InvalidOperationException("La OT tiene productos terminados y no puede anularse.");
+            _datos.Anular(idOrdenTrabajo, convertirProcesoAMerma, idUsuarioSesion, motivoAnulacion, usuarioAnulacion);
+        }
 
         public Usuario Autorizar(string usuario,string clave)
         {
@@ -25,6 +40,19 @@ namespace CorexProd.Negocio.Negocio
             if(u==null || !u.Estado) throw new InvalidOperationException("Usuario autorizador no válido.");
             if(!PasswordService.VerifyPassword(clave,u.Clave)) throw new InvalidOperationException("Clave incorrecta.");
             return u;
+        }
+
+        public Usuario AutorizarPorClave(string clave)
+        {
+            if (string.IsNullOrWhiteSpace(clave))
+                throw new InvalidOperationException("Ingrese la clave del usuario autorizador.");
+
+            Usuario? usuario = _usuarios
+                .Listar()
+                .Where(x => x.Estado)
+                .FirstOrDefault(x => PasswordService.VerifyPassword(clave, x.Clave));
+
+            return usuario ?? throw new InvalidOperationException("Clave incorrecta o usuario inactivo.");
         }
 
         public void Lanzar(int idOt,int idSesion,Usuario autoriza,IEnumerable<OrdenTrabajoLanzamiento> items)

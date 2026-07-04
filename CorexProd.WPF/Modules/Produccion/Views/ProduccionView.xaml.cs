@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace CorexProd.WPF.Modules.Produccion.Views
@@ -49,7 +48,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private void InicializarFiltros()
         {
             _inicializandoFiltros = true;
-            EstadoComboBox.ItemsSource = new[] { "Todos", "Pendiente", "En proceso", "Parcial", "Terminada", "Anulada" };
+            EstadoComboBox.ItemsSource = new[] { "Todos", "Pendiente", "En Proceso", "Terminado", "Terminado Parcial", "Anulado" };
             EstadoComboBox.SelectedIndex = 0;
             FechaDesdePicker.SelectedDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             FechaHastaPicker.SelectedDate = DateTime.Today;
@@ -65,17 +64,19 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 consulta = consulta.Where(x =>
                     x.NumeroOT.Contains(texto, StringComparison.OrdinalIgnoreCase)
                     || x.NumeroOci.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                    || x.TipoOTDescripcion.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                    || x.NumeroOTRelacionada.Contains(texto, StringComparison.OrdinalIgnoreCase)
                     || x.OrdenCompraCliente.Contains(texto, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(texto, StringComparison.OrdinalIgnoreCase));
             }
 
             string estado = EstadoComboBox.SelectedItem?.ToString() ?? "Todos";
             if (!estado.Equals("Todos", StringComparison.OrdinalIgnoreCase))
-                consulta = consulta.Where(x => CoincideEstado(x.Estado, estado));
+                consulta = consulta.Where(x => CoincideEstado(x.EstadoOperativo, estado));
             DateTime? desde = FechaDesdePicker.SelectedDate?.Date;
             DateTime? hasta = FechaHastaPicker.SelectedDate?.Date;
             if (_filtroPredeterminado)
-                consulta = consulta.Where(x => EsOtActiva(x.Estado) || CoincideRango(x.FechaEmision, desde, hasta));
+                consulta = consulta.Where(x => EsOtActiva(x.EstadoOperativo) || CoincideRango(x.FechaEmision, desde, hasta));
             else
             {
                 if (desde.HasValue) consulta = consulta.Where(x => x.FechaEmision.Date >= desde.Value);
@@ -89,7 +90,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             ResumenText.Text = $"{visibles.Count} de {_ordenes.Count} ordenes mostradas";
         }
 
-        private static bool EsOtActiva(string estado) => estado.Trim().ToUpperInvariant() is not ("TERMINADA" or "TERMINADO" or "ANULADA" or "ANULADO");
+        private static bool EsOtActiva(string estado) => estado.Trim().ToUpperInvariant() is "PENDIENTE" or "EN PROCESO" or "EN_PROCESO";
         private static bool CoincideRango(DateTime fecha, DateTime? desde, DateTime? hasta) =>
             (!desde.HasValue || fecha.Date >= desde.Value) && (!hasta.HasValue || fecha.Date <= hasta.Value);
 
@@ -99,10 +100,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             return filtro switch
             {
                 "Pendiente" => estado is "PENDIENTE" or "EMITIDA",
-                "En proceso" => estado is "EN_PROCESO" or "PROCESO",
-                "Parcial" => estado == "PARCIAL",
-                "Terminada" => estado is "TERMINADA" or "TERMINADO" or "FINALIZADA",
-                "Anulada" => estado is "ANULADA" or "ANULADO",
+                "En Proceso" => estado is "EN PROCESO" or "EN_PROCESO" or "PROCESO",
+                "Terminado" => estado is "TERMINADO" or "TERMINADA" or "FINALIZADA",
+                "Terminado Parcial" => estado is "TERMINADO PARCIAL",
+                "Anulado" => estado is "ANULADO" or "ANULADA",
                 _ => true
             };
         }
@@ -129,10 +130,85 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         }
 
         private void Actualizar_Click(object sender, RoutedEventArgs e) => Cargar();
+        private void NuevaOt_Click(object sender, RoutedEventArgs e)
+        {
+            if (!PermissionService.PuedeGenerarOrdenTrabajo)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
+            AbrirVentana(() => new NuevaOrdenTrabajoWindow(_ordenes) { Owner = Application.Current.MainWindow });
+            Cargar();
+        }
+
         private void Abrir_Click(object sender, RoutedEventArgs e) { if ((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot) Abrir(ot); }
-        private void OrdenesGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e) { if (OrdenesGrid.SelectedItem is OrdenTrabajo ot) Abrir(ot); }
         private void Kardex_Click(object sender, RoutedEventArgs e) { if ((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot) AbrirVentana(() => new OrdenTrabajoKardexWindow(ot) { Owner = Application.Current.MainWindow, Title = $"Kardex de {ot.NumeroOT}" }); }
         private void Historial_Click(object sender, RoutedEventArgs e) { if ((sender as FrameworkElement)?.DataContext is OrdenTrabajo ot) AbrirVentana(() => new OrdenTrabajoHistorialWindow(ot) { Owner = Application.Current.MainWindow, Title = $"Historial de {ot.NumeroOT}" }); }
+        private void Anular_Click(object sender, RoutedEventArgs e)
+        {
+            if (!PermissionService.PuedeOperarOrdenTrabajo)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
+            if ((sender as FrameworkElement)?.DataContext is not OrdenTrabajo ot)
+                return;
+
+            if (!ot.PuedeAnular)
+            {
+                NotificationService.Warning("Solo se puede anular una OT en estado Pendiente o En Proceso sin productos terminados.");
+                return;
+            }
+
+            try
+            {
+                OrdenTrabajo detalle = _negocio.Obtener(ot.IdOrdenTrabajo) ?? ot;
+                bool convertirProcesoAMerma = detalle.EstadoOperativo.Equals("En Proceso", StringComparison.OrdinalIgnoreCase);
+
+                if (convertirProcesoAMerma
+                    && detalle.Detalles.Any(x => x.Estado.Equals("TERMINADO", StringComparison.OrdinalIgnoreCase) || x.CantidadProducida > 0))
+                {
+                    NotificationService.Warning("La OT tiene productos terminados y no puede anularse.");
+                    return;
+                }
+
+                string advertencia = convertirProcesoAMerma
+                    ? $"Esta seguro de anular este pedido? Tiene productos en proceso en {ResumenAreasProceso(detalle)}. Al confirmar, esos productos pasaran a estado Merma. Si cancela, el proceso continuara."
+                    : "La OCI quedara disponible para generar una nueva OT si aun tiene pendiente.";
+
+                AnularOrdenTrabajoWindow ventana = new(detalle.NumeroOT, advertencia)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+
+                if (ventana.ShowDialog() != true)
+                    return;
+
+                int idUsuario = SessionManager.UsuarioActual?.IdUsuario ?? 0;
+                string usuario = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
+                _negocio.Anular(detalle.IdOrdenTrabajo, convertirProcesoAMerma, idUsuario, ventana.MotivoAnulacion, usuario);
+                NotificationService.Success($"OT {ot.NumeroOT} anulada correctamente.");
+                Cargar();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error(ex.Message);
+            }
+        }
+
+        private static string ResumenAreasProceso(OrdenTrabajo ot)
+        {
+            List<string> areas = ot.Areas
+                .Where(x => x.CantidadPendiente > 0 && x.Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA"))
+                .GroupBy(x => x.NombreArea)
+                .Select(g => $"{g.Key} ({g.Sum(x => x.CantidadPendiente):N2})")
+                .ToList();
+
+            return areas.Count == 0 ? "las areas de produccion" : string.Join(", ", areas);
+        }
+
         private void Abrir(OrdenTrabajo ot) { AbrirVentana(() => new OrdenTrabajoDetalleWindow(ot.IdOrdenTrabajo) { Owner = Application.Current.MainWindow }); Cargar(); }
         private static void AbrirVentana(Func<Window> crear) { try { crear().ShowDialog(); } catch (Exception ex) { NotificationService.Error($"No se pudo abrir la ventana: {ex.Message}"); } }
     }

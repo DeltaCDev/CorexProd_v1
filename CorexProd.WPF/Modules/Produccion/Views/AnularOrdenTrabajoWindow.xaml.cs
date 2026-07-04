@@ -1,15 +1,21 @@
 using System.Windows;
 
-namespace CorexProd.WPF.Modules.Ventas.Views
+namespace CorexProd.WPF.Modules.Produccion.Views
 {
-    public partial class AnularGuiaInternaWindow : Window
+    public partial class AnularOrdenTrabajoWindow : Window
     {
         public string MotivoAnulacion { get; private set; } = string.Empty;
 
-        public AnularGuiaInternaWindow(string numero)
+        public AnularOrdenTrabajoWindow(string numeroOt, string advertencia = "")
         {
             InitializeComponent();
-            NumeroText.Text = numero;
+            NumeroText.Text = numeroOt;
+
+            if (!string.IsNullOrWhiteSpace(advertencia))
+            {
+                AdvertenciaText.Text = advertencia;
+                AdvertenciaPanel.Visibility = Visibility.Visible;
+            }
         }
 
         private void Confirmar_Click(object sender, RoutedEventArgs e)

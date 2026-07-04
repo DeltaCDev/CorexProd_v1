@@ -9,34 +9,19 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Background" Value="#DBEAFE"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="PENDIENTE">
-                    <Setter Property="Background" Value="#FEF3C7"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Pendiente">
-                    <Setter Property="Background" Value="#FEF3C7"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="PROCESO">
-                    <Setter Property="Background" Value="#E0F2FE"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="En proceso">
-                    <Setter Property="Background" Value="#E0F2FE"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="TERMINADO">
-                    <Setter Property="Background" Value="#DCFCE7"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="FINALIZADA">
-                    <Setter Property="Background" Value="#DCFCE7"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Completada">
-                    <Setter Property="Background" Value="#DCFCE7"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="BLOQUEADA">
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Pendiente">
                     <Setter Property="Background" Value="#F1F5F9"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="ANULADA">
-                    <Setter Property="Background" Value="#FEE2E2"/>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="En Proceso">
+                    <Setter Property="Background" Value="#E0F2FE"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Terminado">
+                    <Setter Property="Background" Value="#DCFCE7"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Terminado Parcial">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Anulado">
                     <Setter Property="Background" Value="#FEE2E2"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -47,35 +32,48 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Estado}" Value="PENDIENTE">
-                    <Setter Property="Foreground" Value="#92400E"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Pendiente">
-                    <Setter Property="Foreground" Value="#92400E"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="PROCESO">
-                    <Setter Property="Foreground" Value="#0369A1"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="En proceso">
-                    <Setter Property="Foreground" Value="#0369A1"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="TERMINADO">
-                    <Setter Property="Foreground" Value="#166534"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="FINALIZADA">
-                    <Setter Property="Foreground" Value="#166534"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Completada">
-                    <Setter Property="Foreground" Value="#166534"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="BLOQUEADA">
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Pendiente">
                     <Setter Property="Foreground" Value="#475569"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="ANULADA">
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="En Proceso">
+                    <Setter Property="Foreground" Value="#0369A1"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Terminado">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Terminado Parcial">
+                    <Setter Property="Foreground" Value="#92400E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Anulado">
                     <Setter Property="Foreground" Value="#B91C1C"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Estado}" Value="Anulada">
-                    <Setter Property="Foreground" Value="#B91C1C"/>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="IconoInfoAnulacion" TargetType="TextBlock">
+            <Setter Property="Text" Value="!"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#BE123C"/>
+            <Setter Property="Margin" Value="7,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="ToolTip">
+                <Setter.Value>
+                    <ToolTip Placement="Mouse" MaxWidth="340">
+                        <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="12">
+                            <TextBlock Text="{Binding PlacementTarget.DataContext.DetalleAnulacion, RelativeSource={RelativeSource AncestorType=ToolTip}}"
+                                       Width="300"
+                                       TextWrapping="Wrap"
+                                       LineHeight="18"
+                                       Foreground="#111827"/>
+                        </Border>
+                    </ToolTip>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding EstadoOperativo}" Value="Anulado">
+                    <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -165,7 +163,7 @@
     <Grid Margin="20" MaxWidth="1500" HorizontalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,12">
@@ -176,6 +174,9 @@
                     <TextBlock Text="Consulta y seguimiento de las Ordenes de Trabajo" FontSize="13" Foreground="#64748B" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock x:Name="UltimaActualizacionText" Visibility="Collapsed"/>
+                        <Button Width="112" Height="36" Margin="0,0,10,0" Background="#0F766E" Foreground="White" BorderBrush="#0F766E" Click="NuevaOt_Click">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Nueva OT"/></StackPanel>
+                        </Button>
                         <Button Width="105" Height="36" Background="White" Foreground="#111827" BorderBrush="#CBD5E1" BorderThickness="1" Click="Actualizar_Click">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Actualizar"/></StackPanel>
                         </Button>
@@ -201,8 +202,8 @@
                       Grid.Row="1"
                       Style="{StaticResource OtDataGridSinBordeInterno}"
                       RowHeight="48"
-                      MaxHeight="560"
-                      VerticalAlignment="Top"
+                      MinHeight="260"
+                      VerticalAlignment="Stretch"
                       Background="White"
                       BorderBrush="#8EADD0"
                       BorderThickness="1"
@@ -216,20 +217,20 @@
                       GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#D9E2EC"
                       ScrollViewer.HorizontalScrollBarVisibility="Visible"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                       ScrollViewer.CanContentScroll="True"
                       AlternationCount="2"
                       RowStyle="{StaticResource FilaOt}"
-                      CellStyle="{StaticResource CeldaOt}"
-                      MouseDoubleClick="OrdenesGrid_MouseDoubleClick">
+                      CellStyle="{StaticResource CeldaOt}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="180">
+                    <DataGridTemplateColumn Header="Acciones" Width="220">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <Button Style="{StaticResource BotonAccion}" Foreground="#334155" Click="Abrir_Click" ToolTip="Ver detalle de la OT"><TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
                                     <Button Style="{StaticResource BotonAccion}" Width="78" Foreground="#0F766E" Click="Kardex_Click" ToolTip="Consultar Kardex"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/><TextBlock Text="Kardex" VerticalAlignment="Center"/></StackPanel></Button>
                                     <Button Style="{StaticResource BotonAccion}" Foreground="#7C3AED" Click="Historial_Click" ToolTip="Ver historial de movimientos"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
+                                    <Button Style="{StaticResource BotonAccion}" Foreground="#DC2626" Click="Anular_Click" ToolTip="Anular OT pendiente"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -240,33 +241,36 @@
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="Fecha y hora" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="120" ElementStyle="{StaticResource TextoCeldaCentro}"/>
-                <DataGridTextColumn Header="Nro OCI" Binding="{Binding NumeroOci}" Width="90" ElementStyle="{StaticResource TextoCeldaCentro}"/>
-                <DataGridTextColumn Header="Tipo OT" Binding="{Binding TipoOTDescripcion}" Width="70" ElementStyle="{StaticResource TextoCeldaCentro}"/>
-                <DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="100" ElementStyle="{StaticResource TextoCeldaCentro}"/>
-                <DataGridTemplateColumn Width="135">
-                    <DataGridTemplateColumn.Header><TextBlock Text="Orden Compra&#x0a;Cliente" TextAlignment="Center" LineHeight="16"/></DataGridTemplateColumn.Header>
-                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding OrdenCompraCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Cliente" Width="250">
-                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding NombreCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Estado" Width="150">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Border Style="{StaticResource EstadoOtBadge}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoOtTexto}"/>
-                            </Border>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Usuario" Width="120" MinWidth="120">
-                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding UsuarioCreacion}" FontWeight="SemiBold" Foreground="#334155" TextAlignment="Center"/>
-                            <TextBlock Text="{Binding UsuarioAutoriza, StringFormat=Autoriza: {0}}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
-                        </StackPanel>
-                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="135">
+                        <DataGridTemplateColumn.Header><TextBlock Text="Orden Compra&#x0a;Cliente" TextAlignment="Center" LineHeight="16"/></DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding OrdenCompraCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Cliente" Width="250">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding NombreCliente}" TextWrapping="Wrap" MaxHeight="34" LineHeight="16" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Estado" Width="150">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource EstadoOtBadge}">
+                                        <TextBlock Text="{Binding EstadoOperativo}" Style="{StaticResource EstadoOtTexto}"/>
+                                    </Border>
+                                    <TextBlock Style="{StaticResource IconoInfoAnulacion}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Nro OCI" Binding="{Binding NumeroOci}" Width="90" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                    <DataGridTextColumn Header="Tipo OT" Binding="{Binding TipoOTDescripcion}" Width="70" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                    <DataGridTextColumn Header="OT relacionada" Binding="{Binding NumeroOTRelacionada}" Width="100" ElementStyle="{StaticResource TextoCeldaCentro}"/>
+                    <DataGridTemplateColumn Header="Usuario" Width="120" MinWidth="120">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding UsuarioCreacion}" FontWeight="SemiBold" Foreground="#334155" TextAlignment="Center"/>
+                                <TextBlock Text="{Binding UsuarioAutoriza, StringFormat=Autoriza: {0}}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

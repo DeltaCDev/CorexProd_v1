@@ -36,9 +36,11 @@ namespace CorexProd.Entidad.Entidades
         public bool EsAnulada => Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase);
         public bool PuedeAnular => !EsAnulada;
         public string DetalleAnulacion => EsAnulada
-            ? $"Motivo: {MotivoAnulacion}\nUsuario: {UsuarioAnulacion}\nFecha: {FechaAnulacion:dd/MM/yyyy HH:mm}"
+            ? $"Motivo: {TextoOmitido(MotivoAnulacion)}\nFecha y Hora: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}\nUsuario: {TextoOmitido(UsuarioAnulacion)}"
             : string.Empty;
         public List<GuiaInternaDetalle> Detalles { get; set; } = [];
+
+        private static string TextoOmitido(string valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     }
 
     public class GuiaInternaDetalle : INotifyPropertyChanged

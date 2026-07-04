@@ -13,19 +13,26 @@ namespace CorexProd.WPF.Modules.Produccion.Views
     {
         private readonly OrdenCompraInterna _oci;
         private readonly List<OrdenTrabajoValidacionProducto> _productos;
+        private readonly OrdenTrabajo? _otRelacionada;
         private readonly OrdenTrabajoNegocio _negocio = new();
         private readonly ParametroNegocio _parametroNegocio = new();
         private bool _guardando;
 
         public OrdenTrabajoCrearWindow(
             OrdenCompraInterna oci,
-            IEnumerable<OrdenTrabajoValidacionProducto> productos)
+            IEnumerable<OrdenTrabajoValidacionProducto> productos,
+            OrdenTrabajo? otRelacionada = null)
         {
             InitializeComponent();
             _oci = oci;
+            _otRelacionada = otRelacionada;
             _productos = productos.ToList();
-            CabeceraText.Text = $"OCI {oci.NumeroOci} | Cliente: {oci.NombreCliente}";
+            CabeceraText.Text = otRelacionada == null
+                ? $"OCI {oci.NumeroOci} | Cliente: {oci.NombreCliente}"
+                : $"Regularizacion de OT {otRelacionada.NumeroOT} | OCI {oci.NumeroOci} | Cliente: {oci.NombreCliente}";
             OrdenCompraText.Text = oci.OrdenCompraCliente;
+            if (otRelacionada != null && string.IsNullOrWhiteSpace(ObservacionText.Text))
+                ObservacionText.Text = $"Regularizacion de OT por faltante de {otRelacionada.NumeroOT}";
             DetallesGrid.ItemsSource = _productos;
         }
 
@@ -132,7 +139,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     _oci.IdOrdenCompraInterna,
                     idUsuario,
                     ObservacionText.Text.Trim(),
-                    items);
+                    items,
+                    _otRelacionada?.IdOrdenTrabajo);
 
                 new DocumentoGeneradoResumenWindow(
                     "OT generada correctamente",

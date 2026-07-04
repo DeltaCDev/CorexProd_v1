@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace CorexProd.Datos.Datos
 {
@@ -10,9 +11,68 @@ namespace CorexProd.Datos.Datos
     {
         public List<OrdenTrabajo> Listar()
         {
+            const string sql = @"
+SELECT
+    O.IdOrdenTrabajo,
+    O.NumeroOT,
+    O.IdOrdenCompraInterna,
+    OCI.NumeroOci,
+    OCI.OrdenCompraCliente,
+    O.IdCliente,
+    O.NombreCliente,
+    O.FechaEmision,
+    CASE
+        WHEN SUM(ISNULL(D.CantidadPendiente, 0)) > 0
+         AND SUM(ISNULL(D.CantidadProducida, 0)) > 0
+         AND UPPER(O.Estado) NOT IN ('EN_PROCESO', 'PROCESO') THEN 'PARCIAL'
+        ELSE O.Estado
+    END AS Estado,
+    O.IdUsuarioCreacion,
+    U.NombreUsuario,
+    O.Observacion,
+    O.FechaRegistro,
+    ISNULL(O.MotivoAnulacion, '') AS MotivoAnulacion,
+    ISNULL(O.UsuarioAnulacion, '') AS UsuarioAnulacion,
+    O.FechaAnulacion,
+    O.TipoOT,
+    O.IdOrdenTrabajoRelacionada,
+    REL.NumeroOT AS NumeroOTRelacionada,
+    ISNULL(UA.NombreUsuario, U.NombreUsuario) AS UsuarioAutoriza,
+    COUNT(D.IdDetalleOT) AS CantidadProductos,
+    SUM(ISNULL(D.CantidadPlanificada, 0)) AS TotalPlanificado,
+    SUM(ISNULL(D.CantidadLanzada, 0)) AS TotalLanzado,
+    SUM(ISNULL(D.CantidadProducida, 0)) AS TotalProducido,
+    SUM(ISNULL(D.CantidadPendiente, 0)) AS TotalPendiente,
+    CAST(CASE WHEN EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenTrabajo R
+        WHERE R.IdOrdenTrabajoRelacionada = O.IdOrdenTrabajo
+          AND UPPER(R.Estado) = 'TERMINADA'
+          AND NOT EXISTS
+          (
+              SELECT 1
+              FROM dbo.OrdenTrabajoDetalle RD
+              WHERE RD.IdOrdenTrabajo = R.IdOrdenTrabajo
+                AND RD.Estado <> 'ANULADO'
+                AND RD.CantidadPendiente > 0
+          )
+    ) THEN 1 ELSE 0 END AS BIT) AS TieneRegularizacionTerminada
+FROM dbo.OrdenTrabajo O
+JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
+LEFT JOIN dbo.Usuarios UA ON UA.IdUsuario = O.IdUsuarioAutorizaCreacion
+LEFT JOIN dbo.OrdenTrabajo REL ON REL.IdOrdenTrabajo = O.IdOrdenTrabajoRelacionada
+LEFT JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = O.IdOrdenTrabajo
+GROUP BY
+    O.IdOrdenTrabajo,O.NumeroOT,O.IdOrdenCompraInterna,OCI.NumeroOci,OCI.OrdenCompraCliente,
+    O.IdCliente,O.NombreCliente,O.FechaEmision,O.Estado,O.IdUsuarioCreacion,U.NombreUsuario,
+    O.Observacion,O.FechaRegistro,O.MotivoAnulacion,O.UsuarioAnulacion,O.FechaAnulacion,O.TipoOT,O.IdOrdenTrabajoRelacionada,REL.NumeroOT,UA.NombreUsuario
+ORDER BY O.IdOrdenTrabajo DESC;";
+
             List<OrdenTrabajo> lista = [];
             using SqlConnection cn = Conexion.ObtenerConexion();
-            using SqlCommand cmd = new("USP_PRO_OT_LISTAR", cn) { CommandType = CommandType.StoredProcedure };
+            using SqlCommand cmd = new(sql, cn);
             cn.Open();
             using SqlDataReader dr = cmd.ExecuteReader();
             while (dr.Read()) lista.Add(new OrdenTrabajo
@@ -26,7 +86,11 @@ namespace CorexProd.Datos.Datos
                 IdUsuarioCreacion = Convert.ToInt32(dr["IdUsuarioCreacion"]), UsuarioCreacion = Texto(dr, "NombreUsuario"),
                 UsuarioAutoriza=Texto(dr,"UsuarioAutoriza"),
                 Observacion = Texto(dr, "Observacion"), FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
-                CantidadProductos = Convert.ToInt32(dr["CantidadProductos"]), TotalPlanificado = Decimal(dr, "TotalPlanificado"), TotalLanzado = Decimal(dr, "TotalLanzado")
+                MotivoAnulacion = Texto(dr, "MotivoAnulacion"), UsuarioAnulacion = Texto(dr, "UsuarioAnulacion"),
+                FechaAnulacion = dr["FechaAnulacion"] is DBNull ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
+                CantidadProductos = Convert.ToInt32(dr["CantidadProductos"]), TotalPlanificado = Decimal(dr, "TotalPlanificado"), TotalLanzado = Decimal(dr, "TotalLanzado"),
+                TotalProducido = Decimal(dr, "TotalProducido"), TotalPendiente = Decimal(dr, "TotalPendiente"),
+                TieneRegularizacionTerminada = Convert.ToBoolean(dr["TieneRegularizacionTerminada"])
             });
             return lista;
         }
@@ -41,17 +105,146 @@ namespace CorexProd.Datos.Datos
             OrdenTrabajo ot = new()
             {
                 IdOrdenTrabajo = id, NumeroOT = Texto(dr,"NumeroOT"), IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
-                NumeroOci = Texto(dr,"NumeroOci"), OrdenCompraCliente=Texto(dr,"OrdenCompraCliente"),TipoOT=Texto(dr,"TipoOT"),IdCliente = Convert.ToInt32(dr["IdCliente"]), NombreCliente = Texto(dr,"NombreCliente"),
+                NumeroOci = Texto(dr,"NumeroOci"), OrdenCompraCliente=Texto(dr,"OrdenCompraCliente"),TipoOT=Texto(dr,"TipoOT"),
+                IdOrdenTrabajoRelacionada=dr["IdOrdenTrabajoRelacionada"] is DBNull?null:Convert.ToInt32(dr["IdOrdenTrabajoRelacionada"]),
+                IdCliente = Convert.ToInt32(dr["IdCliente"]), NombreCliente = Texto(dr,"NombreCliente"),
                 FechaEmision = Convert.ToDateTime(dr["FechaEmision"]), Estado = Texto(dr,"Estado"), IdUsuarioCreacion = Convert.ToInt32(dr["IdUsuarioCreacion"]),
-                UsuarioCreacion = Texto(dr,"NombreUsuario"),UsuarioAutoriza=Texto(dr,"UsuarioAutoriza"), Observacion = Texto(dr,"Observacion"), FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                UsuarioCreacion = Texto(dr,"NombreUsuario"),UsuarioAutoriza=Texto(dr,"UsuarioAutoriza"), Observacion = Texto(dr,"Observacion"), FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
+                MotivoAnulacion = Texto(dr, "MotivoAnulacion"), UsuarioAnulacion = Texto(dr, "UsuarioAnulacion"),
+                FechaAnulacion = dr["FechaAnulacion"] is DBNull ? null : Convert.ToDateTime(dr["FechaAnulacion"])
             };
             if (dr.NextResult()) while (dr.Read()) ot.Detalles.Add(MapearDetalle(dr));
             if (dr.NextResult()) while (dr.Read()) ot.Areas.Add(MapearArea(dr));
+            ot.TotalProducido = ot.Detalles.Sum(x => x.CantidadProducida);
+            ot.TotalPendiente = ot.Detalles.Sum(x => x.CantidadPendiente);
+            ot.TieneRegularizacionTerminada = TieneRegularizacionTerminada(id);
+            if (ot.TotalPendiente > 0
+                && ot.TotalProducido > 0
+                && !ot.Estado.Equals("EN_PROCESO", StringComparison.OrdinalIgnoreCase)
+                && !ot.Estado.Equals("PROCESO", StringComparison.OrdinalIgnoreCase))
+                ot.Estado = "PARCIAL";
             return ot;
         }
 
-        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items)
+        private bool TieneRegularizacionTerminada(int idOrdenTrabajo)
         {
+            const string sql = @"
+SELECT CAST(CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.OrdenTrabajo R
+    WHERE R.IdOrdenTrabajoRelacionada = @IdOrdenTrabajo
+      AND UPPER(R.Estado) = 'TERMINADA'
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.OrdenTrabajoDetalle RD
+          WHERE RD.IdOrdenTrabajo = R.IdOrdenTrabajo
+            AND RD.Estado <> 'ANULADO'
+            AND RD.CantidadPendiente > 0
+      )
+) THEN 1 ELSE 0 END AS BIT);";
+
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(sql, cn);
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo);
+            cn.Open();
+            return Convert.ToBoolean(cmd.ExecuteScalar());
+        }
+
+        public List<OrdenTrabajoValidacionProducto> ListarPendientesRegularizacion(int idOrdenTrabajo)
+        {
+            const string sql = @"
+SELECT
+    D.IdOrdenCompraInternaDetalle,
+    D.IdProducto,
+    D.CodigoProducto,
+    D.NombreProducto,
+    D.ObservacionDiferencia AS Observacion,
+    D.CantidadPendiente AS CantidadRequerida,
+    F.IdFichaTecnica,
+    CONVERT(DECIMAL(18,3), ISNULL(SP.StockActual, 0)) AS StockAlmacen,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockCorte, 0)) AS StockCorte,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockConfeccion, 0)) AS StockConfeccion,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockAcabado, 0)) AS StockAcabado,
+    CONVERT(DECIMAL(18,3), ISNULL(SP.StockActual, 0) + ISNULL(AP.StockCorte, 0) + ISNULL(AP.StockConfeccion, 0) + ISNULL(AP.StockAcabado, 0)) AS StockTotal,
+    D.CantidadPendiente AS Deficit,
+    CASE
+        WHEN F.IdFichaTecnica IS NULL
+             OR NOT EXISTS(SELECT 1 FROM dbo.FichaTecnicaDetalle FD WHERE FD.IdFichaTecnica = F.IdFichaTecnica AND FD.Estado = 1)
+            THEN 'Sin ficha tecnica'
+        WHEN EXISTS
+        (
+            SELECT 1
+            FROM dbo.FichaTecnicaDetalle FD
+            LEFT JOIN dbo.StockInsumos SI ON SI.IdInsumo = FD.IdInsumo
+            WHERE FD.IdFichaTecnica = F.IdFichaTecnica
+              AND FD.Estado = 1
+              AND ISNULL(SI.StockActual, 0) < FD.Cantidad * D.CantidadPendiente
+        ) THEN 'Faltantes'
+        ELSE 'Completo para producir'
+    END AS EstadoInsumos
+FROM dbo.OrdenTrabajoDetalle D
+OUTER APPLY
+(
+    SELECT TOP(1) FT.IdFichaTecnica
+    FROM dbo.FichaTecnica FT
+    WHERE FT.IdProducto = D.IdProducto AND FT.Estado = 1
+    ORDER BY FT.Version DESC, FT.IdFichaTecnica DESC
+) F
+OUTER APPLY (SELECT SUM(S.StockActual) AS StockActual FROM dbo.StockProductosAlmacen S WHERE S.IdProducto = D.IdProducto) SP
+OUTER APPLY
+(
+    SELECT
+        SUM(CASE WHEN A.NombreArea LIKE '%CORTE%' THEN DA.CantidadPendiente ELSE 0 END) AS StockCorte,
+        SUM(CASE WHEN A.NombreArea LIKE '%CONFECCI%' THEN DA.CantidadPendiente ELSE 0 END) AS StockConfeccion,
+        SUM(CASE WHEN A.NombreArea LIKE '%ACABADO%' THEN DA.CantidadPendiente ELSE 0 END) AS StockAcabado
+    FROM dbo.OrdenTrabajoDetalle OD
+    JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
+    JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
+    WHERE OD.IdProducto = D.IdProducto
+      AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
+) AP
+WHERE D.IdOrdenTrabajo = @IdOrdenTrabajo
+  AND D.CantidadPendiente > 0
+  AND D.Estado <> 'ANULADO'
+ORDER BY D.IdDetalleOT;";
+
+            List<OrdenTrabajoValidacionProducto> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(sql, cn);
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo);
+            cn.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new OrdenTrabajoValidacionProducto
+                {
+                    IdOrdenCompraInternaDetalle = Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+                    IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                    CodigoProducto = Texto(dr, "CodigoProducto"),
+                    NombreProducto = Texto(dr, "NombreProducto"),
+                    Observacion = Texto(dr, "Observacion"),
+                    CantidadRequerida = Decimal(dr, "CantidadRequerida"),
+                    IdFichaTecnica = dr["IdFichaTecnica"] is DBNull ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
+                    StockAlmacen = Decimal(dr, "StockAlmacen"),
+                    StockCorte = Decimal(dr, "StockCorte"),
+                    StockConfeccion = Decimal(dr, "StockConfeccion"),
+                    StockAcabado = Decimal(dr, "StockAcabado"),
+                    StockTotal = Decimal(dr, "StockTotal"),
+                    Deficit = Decimal(dr, "Deficit"),
+                    EstadoInsumos = Texto(dr, "EstadoInsumos")
+                });
+            }
+
+            return lista;
+        }
+
+        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items, int? idOrdenTrabajoRelacionada = null)
+        {
+            if (idOrdenTrabajoRelacionada.HasValue)
+                return CrearRegularizacion(idOci, idOrdenTrabajoRelacionada.Value, idUsuario, observacion, items);
+
             using SqlConnection cn = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_PRO_OT_CREAR", cn) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci); cmd.Parameters.AddWithValue("@IdUsuario", idUsuario); cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
@@ -60,6 +253,42 @@ namespace CorexProd.Datos.Datos
             SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar,30) { Direction=ParameterDirection.Output };
             cmd.Parameters.Add(id); cmd.Parameters.Add(numero); cn.Open(); cmd.ExecuteNonQuery();
             return (Convert.ToInt32(id.Value), numero.Value?.ToString() ?? string.Empty);
+        }
+
+        private static (int Id, string Numero) CrearRegularizacion(
+            int idOci,
+            int idOrdenTrabajoOrigen,
+            int idUsuario,
+            string observacion,
+            IEnumerable<OrdenTrabajoPlanificacion> items)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_CREAR_REGULARIZACION", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci);
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajoOrigen", idOrdenTrabajoOrigen);
+            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+            cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
+            cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTPlanificacion", Value = TablaPlanificacion(items) });
+            SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(id);
+            cmd.Parameters.Add(numero);
+            cn.Open();
+            cmd.ExecuteNonQuery();
+            return (Convert.ToInt32(id.Value), numero.Value?.ToString() ?? string.Empty);
+        }
+
+        public void Anular(int idOrdenTrabajo, bool convertirProcesoAMerma, int idUsuarioSesion, string motivoAnulacion, string usuarioAnulacion)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_ANULAR", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo);
+            cmd.Parameters.AddWithValue("@ConvertirProcesoAMerma", convertirProcesoAMerma);
+            cmd.Parameters.AddWithValue("@IdUsuarioSesion", idUsuarioSesion);
+            cmd.Parameters.AddWithValue("@MotivoAnulacion", motivoAnulacion);
+            cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
+            cn.Open();
+            cmd.ExecuteNonQuery();
         }
 
         public void Lanzar(int idOt, int idSesion, int idAutoriza, IEnumerable<OrdenTrabajoLanzamiento> items)

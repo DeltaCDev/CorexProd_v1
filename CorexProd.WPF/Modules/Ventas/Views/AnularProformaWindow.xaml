@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Anular proforma"
         Width="460"
-        Height="290"
+        Height="370"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#F3F4F6">
@@ -54,7 +54,7 @@
                     <Run Text="*" Foreground="#DC2626"/>
                 </TextBlock>
                 <TextBox x:Name="MotivoTextBox"
-                         Height="92"
+                         Height="155"
                          MaxLength="500"
                          TextWrapping="Wrap"
                          AcceptsReturn="True"

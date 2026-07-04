@@ -22,10 +22,41 @@ BEGIN
         UsuarioGenerador VARCHAR(80) NOT NULL,
         FechaRegistro DATETIME NOT NULL CONSTRAINT DF_OCI_FechaRegistro DEFAULT(GETDATE()),
         CONSTRAINT UQ_OCI_Numero UNIQUE (NumeroOci),
-        CONSTRAINT UQ_OCI_Proforma UNIQUE (IdProforma),
         CONSTRAINT FK_OCI_Proforma FOREIGN KEY (IdProforma) REFERENCES dbo.Proformas(IdProforma),
         CONSTRAINT FK_OCI_Cliente FOREIGN KEY (IdCliente) REFERENCES dbo.Clientes(IdCliente)
     );
+END;
+GO
+
+IF EXISTS
+(
+    SELECT 1
+    FROM sys.key_constraints
+    WHERE parent_object_id = OBJECT_ID('dbo.OrdenesCompraInterna')
+      AND name = 'UQ_OCI_Proforma'
+)
+    ALTER TABLE dbo.OrdenesCompraInterna DROP CONSTRAINT UQ_OCI_Proforma;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID('dbo.OrdenesCompraInterna')
+      AND name = 'UX_OCI_Proforma_Activa'
+)
+BEGIN
+    SET ANSI_NULLS ON;
+    SET ANSI_PADDING ON;
+    SET ANSI_WARNINGS ON;
+    SET ARITHABORT ON;
+    SET CONCAT_NULL_YIELDS_NULL ON;
+    SET QUOTED_IDENTIFIER ON;
+    SET NUMERIC_ROUNDABORT OFF;
+
+    CREATE UNIQUE INDEX UX_OCI_Proforma_Activa
+    ON dbo.OrdenesCompraInterna(IdProforma)
+    WHERE Estado <> 'Anulado';
 END;
 GO
 
@@ -713,6 +744,11 @@ WHERE Estado = 'Anulado'
   AND NULLIF(LTRIM(RTRIM(MotivoAnulacion)), '') IS NULL;
 GO
 
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE OR ALTER TRIGGER dbo.TRG_OCI_ESTADO_ORDEN_TRABAJO
 ON dbo.OrdenesCompraInterna
 AFTER UPDATE
@@ -741,11 +777,23 @@ GO
 UPDATE P
 SET Estado = CASE
     WHEN P.Estado = 'Anulado' THEN 'Anulado'
-    WHEN P.TieneOrdenCompraInterna = 1
-         OR EXISTS (SELECT 1 FROM dbo.OrdenesCompraInterna O WHERE O.IdProforma = P.IdProforma)
+    WHEN EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenesCompraInterna O
+        WHERE O.IdProforma = P.IdProforma
+          AND UPPER(O.Estado) <> 'ANULADO'
+    )
         THEN 'Registrado'
     ELSE 'Emitido'
-END
+END,
+    TieneOrdenCompraInterna = CAST(CASE WHEN EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenesCompraInterna O
+        WHERE O.IdProforma = P.IdProforma
+          AND UPPER(O.Estado) <> 'ANULADO'
+    ) THEN 1 ELSE 0 END AS BIT)
 FROM dbo.Proformas P;
 GO
 
@@ -1010,6 +1058,33 @@ BEGIN
 
     IF @@ROWCOUNT = 1
     BEGIN
+        UPDATE P
+        SET TieneOrdenCompraInterna = CAST(CASE WHEN EXISTS
+            (
+                SELECT 1
+                FROM dbo.OrdenesCompraInterna O
+                WHERE O.IdProforma = P.IdProforma
+                  AND UPPER(O.Estado) <> 'ANULADO'
+            ) THEN 1 ELSE 0 END AS BIT),
+            Estado = CASE
+                WHEN P.Estado = 'Anulado' THEN 'Anulado'
+                WHEN EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.OrdenesCompraInterna O
+                    WHERE O.IdProforma = P.IdProforma
+                      AND UPPER(O.Estado) <> 'ANULADO'
+                ) THEN 'Registrado'
+                ELSE 'Emitido'
+            END
+        FROM dbo.Proformas P
+        WHERE P.IdProforma =
+        (
+            SELECT O.IdProforma
+            FROM dbo.OrdenesCompraInterna O
+            WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna
+        );
+
         SET @Mensaje = 'OCI anulada correctamente.';
         RETURN;
     END;
@@ -1070,8 +1145,27 @@ BEGIN
         RETURN;
     END;
 
-    IF EXISTS (SELECT 1 FROM dbo.OrdenesCompraInterna WHERE IdProforma = @IdProforma)
-       OR EXISTS (SELECT 1 FROM dbo.Proformas WHERE IdProforma = @IdProforma AND TieneOrdenCompraInterna = 1)
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenesCompraInterna
+        WHERE IdProforma = @IdProforma
+          AND UPPER(Estado) <> 'ANULADO'
+    )
+       OR EXISTS
+       (
+           SELECT 1
+           FROM dbo.Proformas P
+           WHERE P.IdProforma = @IdProforma
+             AND P.TieneOrdenCompraInterna = 1
+             AND EXISTS
+             (
+                 SELECT 1
+                 FROM dbo.OrdenesCompraInterna O
+                 WHERE O.IdProforma = P.IdProforma
+                   AND UPPER(O.Estado) <> 'ANULADO'
+             )
+       )
     BEGIN
         SET @Mensaje = 'La proforma ya tiene una orden de compra interna.';
         RETURN;

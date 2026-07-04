@@ -1,25 +1,41 @@
-<Window x:Class="CorexProd.WPF.Modules.Ventas.Views.AnularGuiaInternaWindow"
+<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.AnularOrdenTrabajoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Anular Guia Interna"
-        Width="520"
-        Height="390"
+        Title="Anular OT"
+        Width="540"
+        Height="460"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#F8FAFC">
     <Grid Margin="22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel>
-            <TextBlock Text="Anular Guia Interna" FontSize="24" FontWeight="Bold" Foreground="#111827"/>
+            <TextBlock Text="Anular OT" FontSize="24" FontWeight="Bold" Foreground="#111827"/>
             <TextBlock x:Name="NumeroText" Foreground="#64748B" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <Border Grid.Row="1"
+        <Border x:Name="AdvertenciaPanel"
+                Grid.Row="1"
+                Background="#FEF3C7"
+                BorderBrush="#F59E0B"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,16,0,0"
+                Visibility="Collapsed">
+            <TextBlock x:Name="AdvertenciaText"
+                       Foreground="#92400E"
+                       TextWrapping="Wrap"
+                       LineHeight="18"/>
+        </Border>
+
+        <Border Grid.Row="2"
                 Background="White"
                 BorderBrush="#E2E8F0"
                 BorderThickness="1"
@@ -29,7 +45,7 @@
             <StackPanel>
                 <TextBlock Text="Motivo de anulacion *" FontWeight="SemiBold" Foreground="#111827"/>
                 <TextBox x:Name="MotivoText"
-                         Height="160"
+                         Height="175"
                          Margin="0,8,0,0"
                          TextWrapping="Wrap"
                          AcceptsReturn="True"
@@ -39,7 +55,7 @@
             </StackPanel>
         </Border>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Cancelar" Width="105" Height="36" IsCancel="True"/>
             <Button Content="Confirmar"
                     Width="105"

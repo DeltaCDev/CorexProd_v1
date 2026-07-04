@@ -26,7 +26,7 @@ namespace CorexProd.Entidad.Entidades
         public string UsuarioAnulacion { get; set; } = string.Empty;
         public DateTime? FechaAnulacion { get; set; }
         public string DetalleAnulacion =>
-            $"Motivo: {TextoOmitido(MotivoAnulacion)}\nUsuario: {TextoOmitido(UsuarioAnulacion)}\nFecha: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}";
+            $"Motivo: {TextoOmitido(MotivoAnulacion)}\nFecha y Hora: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}\nUsuario: {TextoOmitido(UsuarioAnulacion)}";
         public bool TieneGuiaSalida { get; set; }
         public bool TieneOrdenTrabajo { get; set; }
         public bool PuedeGenerarOt { get; set; }

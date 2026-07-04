@@ -177,7 +177,13 @@ BEGIN
         P.CondicionTributaria,
         P.Total,
         P.Estado,
-        P.TieneOrdenCompraInterna,
+        CAST(CASE WHEN EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenesCompraInterna O
+            WHERE O.IdProforma = P.IdProforma
+              AND UPPER(O.Estado) <> 'ANULADO'
+        ) THEN 1 ELSE 0 END AS BIT) AS TieneOrdenCompraInterna,
         P.UsuarioGenerador,
         P.MotivoAnulacion,
         P.UsuarioAnulacion,
@@ -216,7 +222,13 @@ BEGIN
         P.CondicionTributaria,
         P.Total,
         P.Estado,
-        P.TieneOrdenCompraInterna,
+        CAST(CASE WHEN EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenesCompraInterna O
+            WHERE O.IdProforma = P.IdProforma
+              AND UPPER(O.Estado) <> 'ANULADO'
+        ) THEN 1 ELSE 0 END AS BIT) AS TieneOrdenCompraInterna,
         P.UsuarioGenerador,
         P.MotivoAnulacion,
         P.UsuarioAnulacion,
@@ -353,9 +365,9 @@ BEGIN
             IF EXISTS
             (
                 SELECT 1
-                FROM dbo.Proformas WITH (UPDLOCK, HOLDLOCK)
+                FROM dbo.OrdenesCompraInterna WITH (UPDLOCK, HOLDLOCK)
                 WHERE IdProforma = @IdProforma
-                  AND TieneOrdenCompraInterna = 1
+                  AND UPPER(Estado) <> 'ANULADO'
             )
             BEGIN
                 SET @Mensaje = 'La proforma ya tiene una OCI emitida y solo esta disponible para consulta';
@@ -457,7 +469,13 @@ BEGIN
         RETURN;
     END
 
-    IF EXISTS (SELECT 1 FROM dbo.Proformas WHERE IdProforma = @IdProforma AND TieneOrdenCompraInterna = 1)
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenesCompraInterna
+        WHERE IdProforma = @IdProforma
+          AND UPPER(Estado) <> 'ANULADO'
+    )
     BEGIN
         SET @Mensaje = 'No se puede anular porque ya tiene orden de compra interna';
         RETURN;

@@ -118,7 +118,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             }
             if (string.IsNullOrWhiteSpace(Clave))
             {
-                MessageBox.Show(this, "Ingrese la clave del usuario en sesion.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, "Ingrese la clave del usuario autorizador.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -128,7 +128,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "Contrasena incorrecta", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, "Clave incorrecta", MessageBoxButton.OK, MessageBoxImage.Error);
                 ClavePasswordBox.Clear();
                 ClavePasswordBox.Focus();
                 return;

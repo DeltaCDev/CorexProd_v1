@@ -67,7 +67,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             OciText.Text = $"Número OCI: {_ot.NumeroOci}";
             OrdenCompraText.Text = $"Orden de compra: {_ot.OrdenCompraCliente}";
             ClienteText.Text = $"Cliente: {_ot.NombreCliente}";
-            EstadoText.Text = $"Estado: {_ot.Estado}";
+            EstadoText.Text = $"Estado: {_ot.EstadoOperativo}";
             CargarResumen();
 
             List<OrdenTrabajoDetalleArea> areas = _ot.Areas.GroupBy(x => x.IdAreaProduccion).Select(g => g.First()).OrderBy(x => x.OrdenSecuencia).ToList();
@@ -145,7 +145,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 fila["Estado"] = detalle.Estado;
                 decimal pendienteNuevaOt = Math.Max(0, detalle.CantidadRequerida - detalle.CantidadProducida);
                 fila["Pendientes"] = detalle.Estado == "TERMINADO"
-                    ? pendienteNuevaOt > 0 ? $"{pendienteNuevaOt:0.##} por producir\nNueva OT desde OCI" : "Completo"
+                    ? pendienteNuevaOt > 0 ? $"{pendienteNuevaOt:0.##} por producir\nRegularizacion de OT" : "Completo"
                     : string.Empty;
                 tabla.Rows.Add(fila);
             }
@@ -278,7 +278,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 esTerminacion ? "Productos terminados" : celda.AreaDestino,
                 esTerminacion,
                 permiteAjusteInicial,
-                clave => _negocio.Autorizar(SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty, clave))
+                clave => _negocio.AutorizarPorClave(clave))
             {
                 Owner = this
             };
@@ -340,7 +340,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     Owner = this
                 }.ShowDialog();
 
-                if (estadoAntes != "TERMINADA" && _ot.Estado == "TERMINADA")
+                if (estadoAntes != "TERMINADA" && _ot.Estado == "TERMINADA" && _ot.TotalPendiente <= 0)
                 {
                     new ProduccionResultadoWindow(
                         "Producción finalizada exitosamente",
