@@ -31,7 +31,7 @@ namespace CorexProd.Entidad.Entidades
         public bool TieneOrdenTrabajo { get; set; }
         public bool PuedeGenerarOt { get; set; }
         public bool PuedeGenerarGuiaSalida { get; set; }
-        public bool PuedeAnular => !Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
+        public bool PuedeAnular => Estado.Trim().ToUpperInvariant() is not ("ANULADO" or "ANULADA")
             && !TieneGuiaSalida
             && !TieneOrdenTrabajo;
         public List<OrdenCompraInternaDetalle> Detalles { get; set; } = [];

@@ -284,6 +284,9 @@ SELECT
     P.Total,
     P.Estado,
     P.TieneOrdenCompraInterna,
+    ISNULL(P.MotivoAnulacion, '') AS MotivoAnulacion,
+    ISNULL(P.UsuarioAnulacion, '') AS UsuarioAnulacion,
+    P.FechaAnulacion,
     COALESCE(P.FechaAnulacion, OCI.FechaCierre) AS FechaCierre
 FROM dbo.Proformas P
 INNER JOIN dbo.Clientes C ON C.IdCliente = P.IdCliente
@@ -318,6 +321,9 @@ ORDER BY P.FechaEmision DESC, P.IdProforma DESC;";
             total = Convert.ToDecimal(dr["Total"]),
             estado = dr["Estado"]?.ToString() ?? string.Empty,
             tieneOrdenCompraInterna = Convert.ToBoolean(dr["TieneOrdenCompraInterna"]),
+            motivoAnulacion = dr["MotivoAnulacion"]?.ToString() ?? string.Empty,
+            usuarioAnulacion = dr["UsuarioAnulacion"]?.ToString() ?? string.Empty,
+            fechaAnulacion = dr["FechaAnulacion"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaAnulacion"]),
             fechaCierre = dr["FechaCierre"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaCierre"])
         });
     }
@@ -557,8 +563,13 @@ app.MapPost("/api/proformas/{id:int}/generar-oci", async (int id, DocumentoAccio
 app.MapPost("/api/proformas/{id:int}/anular", async (int id, DocumentoAccionApiRequest request) =>
 {
     string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
-    string motivo = string.IsNullOrWhiteSpace(request.Motivo) ? "Anulado desde Android" : request.Motivo.Trim();
+    string motivo = request.Motivo?.Trim() ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(motivo))
+        return Results.BadRequest(new { mensaje = "Ingrese el motivo de anulacion." });
     await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    if (await DocumentoEstaAnuladoAsync(conexion, "Proformas", "IdProforma", id))
+        return Results.BadRequest(new { mensaje = "La proforma ya se encuentra anulada." });
     await using SqlCommand cmd = new("USP_VEN_PROFORMA_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
     cmd.Parameters.Add("@IdProforma", SqlDbType.Int).Value = id;
     cmd.Parameters.Add("@MotivoAnulacion", SqlDbType.VarChar, 200).Value = motivo;
@@ -567,7 +578,6 @@ app.MapPost("/api/proformas/{id:int}/anular", async (int id, DocumentoAccionApiR
     SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(resultado);
     cmd.Parameters.Add(mensajeParam);
-    await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     string mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
     return resultado.Value is bool ok && !ok ? Results.BadRequest(new { mensaje }) : Results.Ok(new { mensaje });
@@ -579,7 +589,7 @@ app.MapGet("/api/oci", async (string? buscar) =>
 SELECT
     O.IdOrdenCompraInterna,
     O.NumeroOci,
-    P.SerieNumero AS NumeroProforma,
+    ISNULL(P.SerieNumero, '') AS NumeroProforma,
     O.FechaEmision,
     O.OrdenCompraCliente,
     O.NombreCliente,
@@ -587,6 +597,9 @@ SELECT
     O.Estado,
     O.TieneGuiaSalida,
     O.TieneOrdenTrabajo,
+    ISNULL(O.MotivoAnulacion, '') AS MotivoAnulacion,
+    ISNULL(O.UsuarioAnulacion, '') AS UsuarioAnulacion,
+    O.FechaAnulacion,
     COALESCE(O.FechaAnulacion, GUIA.FechaCierre) AS FechaCierre,
     CAST(CASE WHEN EXISTS
     (
@@ -638,7 +651,7 @@ SELECT
           AND ISNULL(S.StockActual, 0) > 0
     ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
 FROM dbo.OrdenesCompraInterna O
-INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
+LEFT JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 OUTER APPLY
 (
     SELECT MAX(G.FechaRegistro) AS FechaCierre
@@ -648,7 +661,7 @@ OUTER APPLY
 ) GUIA
 WHERE @Buscar = ''
    OR O.NumeroOci LIKE '%' + @Buscar + '%'
-   OR P.SerieNumero LIKE '%' + @Buscar + '%'
+   OR ISNULL(P.SerieNumero, '') LIKE '%' + @Buscar + '%'
    OR ISNULL(O.OrdenCompraCliente, '') LIKE '%' + @Buscar + '%'
    OR O.NombreCliente LIKE '%' + @Buscar + '%'
 ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
@@ -673,6 +686,9 @@ ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
             estado = dr["Estado"]?.ToString() ?? string.Empty,
             tieneGuiaSalida = Convert.ToBoolean(dr["TieneGuiaSalida"]),
             tieneOrdenTrabajo = Convert.ToBoolean(dr["TieneOrdenTrabajo"]),
+            motivoAnulacion = dr["MotivoAnulacion"]?.ToString() ?? string.Empty,
+            usuarioAnulacion = dr["UsuarioAnulacion"]?.ToString() ?? string.Empty,
+            fechaAnulacion = dr["FechaAnulacion"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaAnulacion"]),
             fechaCierre = dr["FechaCierre"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaCierre"]),
             tieneOtActiva = Convert.ToBoolean(dr["TieneOtActiva"]),
             puedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),
@@ -689,7 +705,7 @@ app.MapGet("/api/oci/{id:int}", async (int id) =>
 SELECT TOP (1)
     O.IdOrdenCompraInterna,
     O.NumeroOci,
-    P.SerieNumero AS NumeroProforma,
+    ISNULL(P.SerieNumero, '') AS NumeroProforma,
     O.FechaEmision,
     O.OrdenCompraCliente,
     O.NombreCliente,
@@ -699,7 +715,7 @@ SELECT TOP (1)
     O.Total,
     O.Estado
 FROM dbo.OrdenesCompraInterna O
-INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
+LEFT JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
     const string detalleSql = @"
@@ -767,6 +783,71 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
     }
 
     return Results.Ok(new { cabecera, detalles });
+});
+
+app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
+{
+    if (request.IdCliente <= 0)
+        return Results.BadRequest(new { mensaje = "Seleccione un cliente." });
+
+    if (request.Detalles.Count == 0 || request.Detalles.Any(x => x.IdProducto <= 0 || x.Cantidad <= 0))
+        return Results.BadRequest(new { mensaje = "Agregue productos con cantidad mayor a cero." });
+
+    decimal subtotal = request.Detalles.Sum(x => Math.Round((x.Cantidad * x.PrecioUnitario) - x.Descuento, 2));
+    if (subtotal < 0)
+        subtotal = 0;
+
+    decimal igvPorcentaje = request.IgvPorcentaje <= 0 ? 18 : request.IgvPorcentaje;
+    string condicionTributaria = string.IsNullOrWhiteSpace(request.CondicionTributaria)
+        ? "GRAVADO"
+        : request.CondicionTributaria.Trim().ToUpperInvariant();
+    decimal descuento = request.Detalles.Sum(x => x.Descuento);
+    decimal igv = condicionTributaria.Equals("INAFECTO", StringComparison.OrdinalIgnoreCase)
+        || condicionTributaria.Equals("EXONERADO DE IGV", StringComparison.OrdinalIgnoreCase)
+        ? 0
+        : Math.Round(subtotal * (igvPorcentaje / 100), 2);
+    decimal total = subtotal + igv;
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    await ConfigurarOpcionesInsertAsync(conexion);
+
+    await using SqlCommand cmd = new("USP_VEN_ORDEN_COMPRA_GUARDAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = DateTime.Today;
+    cmd.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 100).Value = request.OrdenCompraCliente?.Trim() ?? string.Empty;
+    cmd.Parameters.Add("@IdCliente", SqlDbType.Int).Value = request.IdCliente;
+    cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = subtotal;
+    cmd.Parameters.Add("@Descuento", SqlDbType.Decimal).Value = descuento;
+    cmd.Parameters.Add("@Igv", SqlDbType.Decimal).Value = igv;
+    cmd.Parameters.Add("@IgvPorcentaje", SqlDbType.Decimal).Value = igvPorcentaje;
+    cmd.Parameters.Add("@CondicionTributaria", SqlDbType.VarChar, 50).Value = condicionTributaria;
+    cmd.Parameters.Add("@Total", SqlDbType.Decimal).Value = total;
+    cmd.Parameters.Add("@DetallesXml", SqlDbType.Xml).Value = CrearDetallesProformaXml(request.Detalles);
+    cmd.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+
+    SqlParameter idGenerado = new("@IdGenerado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+    SqlParameter numeroOrden = new("@NumeroOrden", SqlDbType.VarChar, 40) { Direction = ParameterDirection.Output };
+    SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+    SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(idGenerado);
+    cmd.Parameters.Add(numeroOrden);
+    cmd.Parameters.Add(resultado);
+    cmd.Parameters.Add(mensajeParam);
+    await cmd.ExecuteNonQueryAsync();
+
+    string mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+    if (resultado.Value is bool ok && !ok)
+        return Results.BadRequest(new { mensaje });
+
+    return Results.Ok(new
+    {
+        mensaje,
+        idOrdenCompraInterna = idGenerado.Value == DBNull.Value ? 0 : Convert.ToInt32(idGenerado.Value),
+        numeroOrden = numeroOrden.Value?.ToString() ?? string.Empty,
+        subtotal,
+        igv,
+        total
+    });
 });
 
 app.MapPost("/api/oci/{id:int}/generar-ot", async (int id, DocumentoAccionApiRequest request) =>
@@ -883,6 +964,80 @@ app.MapGet("/api/oci/detalles/{idDetalle:int}/orden-trabajo/insumos", async (int
     return Results.Ok(new { total = insumos.Count, items = insumos });
 });
 
+app.MapGet("/api/ordenes-trabajo/{id:int}/regularizacion/validacion", async (int id) =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    OrdenTrabajoRegularizacionContext? contexto = await ObtenerContextoRegularizacionAsync(conexion, id);
+    if (contexto == null)
+        return Results.NotFound(new { mensaje = "Orden de trabajo no encontrada." });
+
+    List<OtValidacionProductoApi> productos = await ListarPendientesRegularizacionAsync(conexion, id);
+    return Results.Ok(new
+    {
+        puedeGenerar = contexto.EsRegularizable && productos.Count > 0,
+        mensaje = contexto.TieneRegularizacion
+            ? "La OT parcial ya fue regularizada."
+            : contexto.EsRegularizable
+            ? productos.Count > 0 ? "OT parcial lista para generar regularizacion." : "La OT no tiene pendientes para regularizar."
+            : "Solo se puede regularizar una OT en estado Terminado Parcial.",
+        productos
+    });
+});
+
+app.MapPost("/api/ordenes-trabajo/{id:int}/regularizacion/generar", async (int id, DocumentoAccionApiRequest request) =>
+{
+    string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+    string observacion = string.IsNullOrWhiteSpace(request.Motivo)
+        ? $"Regularizacion generada desde Android"
+        : request.Motivo.Trim();
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    OrdenTrabajoRegularizacionContext? contexto = await ObtenerContextoRegularizacionAsync(conexion, id);
+    if (contexto == null)
+        return Results.NotFound(new { mensaje = "Orden de trabajo no encontrada." });
+    if (contexto.TieneRegularizacion)
+        return Results.BadRequest(new { mensaje = "La OT parcial ya fue regularizada." });
+    if (!contexto.EsRegularizable)
+        return Results.BadRequest(new { mensaje = "Solo se puede regularizar una OT en estado Terminado Parcial." });
+
+    List<OtValidacionProductoApi> pendientes = await ListarPendientesRegularizacionAsync(conexion, id);
+    List<OrdenTrabajoPlanificacionApiRequest> detalles = pendientes
+        .Where(x => x.Deficit > 0)
+        .Select(x => new OrdenTrabajoPlanificacionApiRequest(x.IdOrdenCompraInternaDetalle, x.Deficit))
+        .ToList();
+
+    if (detalles.Count == 0)
+        return Results.BadRequest(new { mensaje = "La OT no tiene cantidades pendientes para regularizar." });
+
+    int idUsuario = await ObtenerIdUsuarioPorNombreAsync(conexion, usuario);
+    await using SqlCommand cmd = new("USP_PRO_OT_CREAR_REGULARIZACION", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = contexto.IdOrdenCompraInterna;
+    cmd.Parameters.Add("@IdOrdenTrabajoOrigen", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = idUsuario;
+    cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = observacion;
+    cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured)
+    {
+        TypeName = "dbo.TipoOTPlanificacion",
+        Value = CrearTablaPlanificacion(detalles)
+    });
+    SqlParameter idOt = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction = ParameterDirection.Output };
+    SqlParameter numeroOt = new("@NumeroOT", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(idOt);
+    cmd.Parameters.Add(numeroOt);
+    await cmd.ExecuteNonQueryAsync();
+
+    return Results.Ok(new
+    {
+        mensaje = $"OT de regularizacion {numeroOt.Value} generada correctamente.",
+        idOrdenTrabajo = Convert.ToInt32(idOt.Value),
+        numeroOT = numeroOt.Value?.ToString() ?? string.Empty
+    });
+});
+
 app.MapPost("/api/oci/{id:int}/generar-guia-interna", async (int id, DocumentoAccionApiRequest request) =>
 {
     string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
@@ -964,6 +1119,7 @@ app.MapGet("/api/oci/{id:int}/guia-interna/preparar", async (int id, int? idAlma
         idOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
         numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
         numeroProforma = LeerString(dr, "NumeroProforma"),
+        numeroOrdenTrabajo = LeerString(dr, "NumeroOrdenTrabajo"),
         ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
         idAlmacen = Convert.ToInt32(dr["IdAlmacen"]),
         nombreAlmacen = LeerString(dr, "NombreAlmacen"),
@@ -1075,15 +1231,19 @@ app.MapPost("/api/oci/{id:int}/guia-interna/emitir", async (int id, GuiaInternaO
 app.MapPost("/api/oci/{id:int}/anular", async (int id, DocumentoAccionApiRequest request) =>
 {
     string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
-    string motivo = string.IsNullOrWhiteSpace(request.Motivo) ? "Anulado desde Android" : request.Motivo.Trim();
+    string motivo = request.Motivo?.Trim() ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(motivo))
+        return Results.BadRequest(new { mensaje = "Ingrese el motivo de anulacion." });
     await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    if (await DocumentoEstaAnuladoAsync(conexion, "OrdenesCompraInterna", "IdOrdenCompraInterna", id))
+        return Results.BadRequest(new { mensaje = "La OCI ya se encuentra anulada." });
     await using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
     cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
     cmd.Parameters.Add("@MotivoAnulacion", SqlDbType.VarChar, 200).Value = motivo;
     cmd.Parameters.Add("@UsuarioAnulacion", SqlDbType.VarChar, 80).Value = usuario;
     SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(mensajeParam);
-    await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     return Results.Ok(new { mensaje = mensajeParam.Value?.ToString() ?? string.Empty });
 });
@@ -1233,13 +1393,15 @@ app.MapPost("/api/guias-internas/{id:int}/anular", async (int id, DocumentoAccio
         return Results.BadRequest(new { mensaje = "Ingrese el motivo de anulacion." });
 
     await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    if (await DocumentoEstaAnuladoAsync(conexion, "GuiasInternas", "IdGuiaInterna", id))
+        return Results.BadRequest(new { mensaje = "La guia interna ya se encuentra anulada." });
     await using SqlCommand cmd = new("USP_VEN_GUIA_INTERNA_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
     cmd.Parameters.Add("@IdGuiaInterna", SqlDbType.Int).Value = id;
     cmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 100).Value = request.Usuario?.Trim() ?? "Android";
     cmd.Parameters.Add("@Motivo", SqlDbType.VarChar, 500).Value = motivo;
     SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(mensaje);
-    await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     return Results.Ok(new { mensaje = mensaje.Value?.ToString() ?? string.Empty });
 });
@@ -1273,8 +1435,11 @@ app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
         decimal totalLanzado = Convert.ToDecimal(dr["TotalLanzado"]);
         int idOrdenTrabajo = Convert.ToInt32(dr["IdOrdenTrabajo"]);
         decimal totalProducido = await ObtenerTotalProducidoOtAsync(connectionString, idOrdenTrabajo);
+        decimal totalPendiente = Math.Max(0, totalPlanificado - totalProducido);
+        bool tieneRegularizacion = await TieneRegularizacionActivaAsync(connectionString, idOrdenTrabajo);
         DateTime? fechaCierre = await ObtenerFechaCierreOtAsync(connectionString, idOrdenTrabajo);
-        decimal avance = estado.Equals("TERMINADA", StringComparison.OrdinalIgnoreCase)
+        string estadoOperativo = ObtenerEstadoOperativoOt(estado, totalLanzado, totalProducido, totalPendiente);
+        decimal avance = estadoOperativo.Equals("Terminado", StringComparison.OrdinalIgnoreCase)
             ? 1
             : totalPlanificado <= 0 ? 0 : Math.Min(1, totalProducido / totalPlanificado);
 
@@ -1287,11 +1452,21 @@ app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
             tipoOT = dr["TipoOT"]?.ToString() ?? string.Empty,
             nombreCliente = cliente,
             fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
-            estado,
+            estado = estadoOperativo,
+            estadoRaw = estado,
             cantidadProductos = Convert.ToInt32(dr["CantidadProductos"]),
             totalPlanificado,
             totalLanzado,
+            totalProducido,
+            totalPendiente,
             avance,
+            usuarioCreacion = LeerString(dr, "NombreUsuario"),
+            idOrdenTrabajoRelacionada = LeerIntNullable(dr, "IdOrdenTrabajoRelacionada"),
+            numeroOTRelacionada = LeerString(dr, "NumeroOTRelacionada"),
+            tieneRegularizacion,
+            motivoAnulacion = LeerString(dr, "MotivoAnulacion"),
+            usuarioAnulacion = LeerString(dr, "UsuarioAnulacion"),
+            fechaAnulacion = LeerDateTimeNullable(dr, "FechaAnulacion"),
             fechaCierre
         });
     }
@@ -1324,6 +1499,11 @@ app.MapGet("/api/ordenes-trabajo/{id:int}", async (int id) =>
         usuarioCreacion = dr["NombreUsuario"]?.ToString() ?? string.Empty,
         usuarioAutoriza = dr["UsuarioAutoriza"]?.ToString() ?? string.Empty,
         observacion = dr["Observacion"]?.ToString() ?? string.Empty,
+        idOrdenTrabajoRelacionada = LeerIntNullable(dr, "IdOrdenTrabajoRelacionada"),
+        numeroOTRelacionada = LeerString(dr, "NumeroOTRelacionada"),
+        motivoAnulacion = LeerString(dr, "MotivoAnulacion"),
+        usuarioAnulacion = LeerString(dr, "UsuarioAnulacion"),
+        fechaAnulacion = LeerDateTimeNullable(dr, "FechaAnulacion"),
         fechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
     };
 
@@ -1518,18 +1698,10 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/transferir", async (int id, OrdenTrab
         return Results.BadRequest(new { mensaje = "Ingrese la contrasena del usuario." });
 
     await using SqlConnection conexion = new(connectionString);
-    await using (SqlCommand usuarioCmd = new("SELECT TOP (1) Clave, Estado FROM dbo.Usuarios WHERE IdUsuario = @IdUsuario", conexion))
-    {
-        usuarioCmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = request.IdUsuarioSesion;
-        await conexion.OpenAsync();
-        await using SqlDataReader usuario = await usuarioCmd.ExecuteReaderAsync();
-        if (!await usuario.ReadAsync()
-            || !Convert.ToBoolean(usuario["Estado"])
-            || !BCrypt.Net.BCrypt.Verify(request.Clave, usuario["Clave"]?.ToString() ?? string.Empty))
-        {
-            return Results.Json(new { mensaje = "Contrasena incorrecta." }, statusCode: StatusCodes.Status401Unauthorized);
-        }
-    }
+    await conexion.OpenAsync();
+    int idUsuarioAutoriza = await ObtenerIdUsuarioActivoPorClaveAsync(conexion, request.Clave);
+    if (idUsuarioAutoriza <= 0)
+        return Results.Json(new { mensaje = "Contrasena incorrecta o usuario inactivo." }, statusCode: StatusCodes.Status401Unauthorized);
 
     await using SqlCommand cmd = new(request.EsTerminacion ? "USP_PRO_OT_TERMINAR" : "USP_PRO_OT_TRANSFERIR", conexion)
     {
@@ -1538,7 +1710,7 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/transferir", async (int id, OrdenTrab
     cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
     cmd.Parameters.Add(request.EsTerminacion ? "@IdAreaTermino" : "@IdAreaOrigen", SqlDbType.Int).Value = request.IdAreaProduccion;
     cmd.Parameters.Add("@IdUsuarioSesion", SqlDbType.Int).Value = request.IdUsuarioSesion;
-    cmd.Parameters.Add("@IdUsuarioAutoriza", SqlDbType.Int).Value = request.IdUsuarioAutoriza <= 0 ? request.IdUsuarioSesion : request.IdUsuarioAutoriza;
+    cmd.Parameters.Add("@IdUsuarioAutoriza", SqlDbType.Int).Value = idUsuarioAutoriza;
     cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = request.Observacion ?? string.Empty;
     cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured)
     {
@@ -1571,6 +1743,36 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/merma", async (int id, OrdenTrabajoMe
     await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     return Results.Ok(new { mensaje = "Merma registrada correctamente." });
+});
+
+app.MapPost("/api/ordenes-trabajo/{id:int}/anular", async (int id, OrdenTrabajoAnularApiRequest request) =>
+{
+    string motivo = request.MotivoAnulacion?.Trim() ?? string.Empty;
+    string usuario = string.IsNullOrWhiteSpace(request.UsuarioAnulacion) ? "Android" : request.UsuarioAnulacion.Trim();
+    if (string.IsNullOrWhiteSpace(motivo))
+        return Results.BadRequest(new { mensaje = "Ingrese el motivo de anulacion." });
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    OrdenTrabajoAnulacionContext? contexto = await ObtenerContextoAnulacionOtAsync(conexion, id);
+    if (contexto == null)
+        return Results.NotFound(new { mensaje = "Orden de trabajo no encontrada." });
+
+    if (contexto.EstadoOperativo is not ("Pendiente" or "En Proceso"))
+        return Results.BadRequest(new { mensaje = "Solo se puede anular una OT en estado Pendiente o En Proceso." });
+    if (contexto.TotalProducido > 0)
+        return Results.BadRequest(new { mensaje = "La OT tiene productos terminados y no puede anularse." });
+    if (contexto.EstadoOperativo == "En Proceso" && !request.ConvertirProcesoAMerma)
+        return Results.BadRequest(new { mensaje = "Confirme que los productos en proceso pasaran a merma." });
+
+    await using SqlCommand cmd = new("USP_PRO_OT_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@ConvertirProcesoAMerma", SqlDbType.Bit).Value = request.ConvertirProcesoAMerma;
+    cmd.Parameters.Add("@IdUsuarioSesion", SqlDbType.Int).Value = request.IdUsuarioSesion;
+    cmd.Parameters.Add("@MotivoAnulacion", SqlDbType.VarChar, 200).Value = motivo;
+    cmd.Parameters.Add("@UsuarioAnulacion", SqlDbType.VarChar, 80).Value = usuario;
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = $"OT {contexto.NumeroOT} anulada correctamente." });
 });
 
 app.MapGet("/api/stock/manual/ingresos", async (string? buscar) =>
@@ -2030,6 +2232,7 @@ static object MapearGuiaInternaCabecera(SqlDataReader dr) => new
     idCliente = dr["IdCliente"] == DBNull.Value ? (int?)null : Convert.ToInt32(dr["IdCliente"]),
     numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
     numeroProforma = dr["NumeroProforma"]?.ToString() ?? string.Empty,
+    numeroOrdenTrabajo = LeerString(dr, "NumeroOrdenTrabajo"),
     ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
     fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
     idAlmacen = Convert.ToInt32(dr["IdAlmacen"]),
@@ -2065,6 +2268,232 @@ static object MapearGuiaInternaDetalle(SqlDataReader dr) => new
     cantidadDespachar = Convert.ToDecimal(dr["CantidadSugerida"]),
     observacion = dr["Observacion"]?.ToString() ?? string.Empty
 };
+
+static string ObtenerEstadoOperativoOt(string estado, decimal totalLanzado, decimal totalProducido, decimal totalPendiente)
+{
+    string valor = estado.Trim().ToUpperInvariant();
+    if (valor is "ANULADA" or "ANULADO") return "Anulado";
+    if (totalPendiente <= 0 && totalProducido > 0) return "Terminado";
+    if (totalPendiente > 0 && totalProducido > 0 && valor is not ("EN_PROCESO" or "PROCESO")) return "Terminado Parcial";
+    if (valor is "EN_PROCESO" or "PROCESO" || totalLanzado > 0) return "En Proceso";
+    return "Pendiente";
+}
+
+static async Task<bool> DocumentoEstaAnuladoAsync(SqlConnection conexion, string tabla, string columnaId, int id)
+{
+    string origen = (tabla, columnaId) switch
+    {
+        ("Proformas", "IdProforma") => "dbo.Proformas WHERE IdProforma = @Id",
+        ("OrdenesCompraInterna", "IdOrdenCompraInterna") => "dbo.OrdenesCompraInterna WHERE IdOrdenCompraInterna = @Id",
+        ("GuiasInternas", "IdGuiaInterna") => "dbo.GuiasInternas WHERE IdGuiaInterna = @Id",
+        _ => throw new ArgumentOutOfRangeException(nameof(tabla))
+    };
+
+    await using SqlCommand cmd = new($"SELECT TOP (1) Estado FROM {origen}", conexion);
+    cmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+    string estado = (await cmd.ExecuteScalarAsync())?.ToString()?.Trim().ToUpperInvariant() ?? string.Empty;
+    return estado is "ANULADO" or "ANULADA";
+}
+
+static async Task<int> ObtenerIdUsuarioPorNombreAsync(SqlConnection conexion, string usuario)
+{
+    await using SqlCommand usuarioCmd = new("SELECT TOP (1) IdUsuario FROM dbo.Usuarios WHERE NombreUsuario = @Usuario", conexion);
+    usuarioCmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 80).Value = usuario;
+    object? idUsuarioObj = await usuarioCmd.ExecuteScalarAsync();
+    return idUsuarioObj == null || idUsuarioObj == DBNull.Value ? 0 : Convert.ToInt32(idUsuarioObj);
+}
+
+static async Task<int> ObtenerIdUsuarioActivoPorClaveAsync(SqlConnection conexion, string clave)
+{
+    List<UsuarioClaveApi> usuarios = [];
+    await using (SqlCommand cmd = new("SELECT IdUsuario, Clave FROM dbo.Usuarios WHERE Estado = 1", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+            usuarios.Add(new UsuarioClaveApi(Convert.ToInt32(dr["IdUsuario"]), dr["Clave"]?.ToString() ?? string.Empty));
+    }
+
+    foreach (UsuarioClaveApi usuario in usuarios)
+    {
+        if (!string.IsNullOrWhiteSpace(usuario.ClaveHash) && BCrypt.Net.BCrypt.Verify(clave, usuario.ClaveHash))
+            return usuario.IdUsuario;
+    }
+
+    return 0;
+}
+
+static async Task<OrdenTrabajoRegularizacionContext?> ObtenerContextoRegularizacionAsync(SqlConnection conexion, int idOrdenTrabajo)
+{
+    const string sql = @"
+SELECT TOP (1)
+    OT.IdOrdenTrabajo,
+    OT.NumeroOT,
+    OT.IdOrdenCompraInterna,
+    OT.Estado,
+    ISNULL(SUM(D.CantidadPlanificada), 0) AS TotalPlanificado,
+    ISNULL(SUM(D.CantidadLanzada), 0) AS TotalLanzado,
+    ISNULL(SUM(D.CantidadProducida), 0) AS TotalProducido,
+    ISNULL(SUM(D.CantidadPendiente), 0) AS TotalPendiente,
+    CAST(CASE WHEN EXISTS
+    (
+        SELECT 1 FROM dbo.OrdenTrabajo R
+        WHERE R.IdOrdenTrabajoRelacionada = OT.IdOrdenTrabajo
+          AND UPPER(R.Estado) NOT IN ('ANULADA', 'ANULADO')
+    ) THEN 1 ELSE 0 END AS BIT) AS TieneRegularizacion
+FROM dbo.OrdenTrabajo OT
+LEFT JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = OT.IdOrdenTrabajo AND D.Estado <> 'ANULADO'
+WHERE OT.IdOrdenTrabajo = @IdOrdenTrabajo
+GROUP BY OT.IdOrdenTrabajo, OT.NumeroOT, OT.IdOrdenCompraInterna, OT.Estado;";
+
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOrdenTrabajo;
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return null;
+
+    decimal totalLanzado = Convert.ToDecimal(dr["TotalLanzado"]);
+    decimal totalProducido = Convert.ToDecimal(dr["TotalProducido"]);
+    decimal totalPendiente = Convert.ToDecimal(dr["TotalPendiente"]);
+    string estadoOperativo = ObtenerEstadoOperativoOt(LeerString(dr, "Estado"), totalLanzado, totalProducido, totalPendiente);
+    return new OrdenTrabajoRegularizacionContext(
+        Convert.ToInt32(dr["IdOrdenTrabajo"]),
+        LeerString(dr, "NumeroOT"),
+        Convert.ToInt32(dr["IdOrdenCompraInterna"]),
+        estadoOperativo,
+        estadoOperativo.Equals("Terminado Parcial", StringComparison.OrdinalIgnoreCase)
+            && totalPendiente > 0
+            && !Convert.ToBoolean(dr["TieneRegularizacion"]),
+        Convert.ToBoolean(dr["TieneRegularizacion"]));
+}
+
+static async Task<bool> TieneRegularizacionActivaAsync(string connectionString, int idOrdenTrabajo)
+{
+    const string sql = @"
+SELECT CAST(CASE WHEN EXISTS
+(
+    SELECT 1 FROM dbo.OrdenTrabajo
+    WHERE IdOrdenTrabajoRelacionada = @IdOrdenTrabajo
+      AND UPPER(Estado) NOT IN ('ANULADA', 'ANULADO')
+) THEN 1 ELSE 0 END AS BIT);";
+
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOrdenTrabajo;
+    await conexion.OpenAsync();
+    return Convert.ToBoolean(await cmd.ExecuteScalarAsync());
+}
+
+static async Task<OrdenTrabajoAnulacionContext?> ObtenerContextoAnulacionOtAsync(SqlConnection conexion, int idOrdenTrabajo)
+{
+    const string sql = @"
+SELECT TOP (1)
+    OT.NumeroOT,
+    OT.Estado,
+    ISNULL(SUM(D.CantidadPlanificada), 0) AS TotalPlanificado,
+    ISNULL(SUM(D.CantidadLanzada), 0) AS TotalLanzado,
+    ISNULL(SUM(D.CantidadProducida), 0) AS TotalProducido,
+    ISNULL(SUM(D.CantidadPendiente), 0) AS TotalPendiente
+FROM dbo.OrdenTrabajo OT
+LEFT JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = OT.IdOrdenTrabajo AND D.Estado <> 'ANULADO'
+WHERE OT.IdOrdenTrabajo = @IdOrdenTrabajo
+GROUP BY OT.NumeroOT, OT.Estado;";
+
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOrdenTrabajo;
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return null;
+
+    decimal totalLanzado = Convert.ToDecimal(dr["TotalLanzado"]);
+    decimal totalProducido = Convert.ToDecimal(dr["TotalProducido"]);
+    decimal totalPendiente = Convert.ToDecimal(dr["TotalPendiente"]);
+    string estadoOperativo = ObtenerEstadoOperativoOt(LeerString(dr, "Estado"), totalLanzado, totalProducido, totalPendiente);
+    return new OrdenTrabajoAnulacionContext(LeerString(dr, "NumeroOT"), estadoOperativo, totalProducido);
+}
+
+static async Task<List<OtValidacionProductoApi>> ListarPendientesRegularizacionAsync(SqlConnection conexion, int idOrdenTrabajo)
+{
+    const string sql = @"
+SELECT
+    D.IdOrdenCompraInternaDetalle,
+    D.IdProducto,
+    D.CodigoProducto,
+    D.NombreProducto,
+    D.ObservacionDiferencia AS Observacion,
+    D.CantidadPendiente AS CantidadRequerida,
+    F.IdFichaTecnica,
+    CONVERT(DECIMAL(18,3), ISNULL(SP.StockActual, 0)) AS StockAlmacen,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockCorte, 0)) AS StockCorte,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockConfeccion, 0)) AS StockConfeccion,
+    CONVERT(DECIMAL(18,3), ISNULL(AP.StockAcabado, 0)) AS StockAcabado,
+    CONVERT(DECIMAL(18,3), ISNULL(SP.StockActual, 0) + ISNULL(AP.StockCorte, 0) + ISNULL(AP.StockConfeccion, 0) + ISNULL(AP.StockAcabado, 0)) AS StockTotal,
+    D.CantidadPendiente AS Deficit,
+    CASE
+        WHEN F.IdFichaTecnica IS NULL
+             OR NOT EXISTS(SELECT 1 FROM dbo.FichaTecnicaDetalle FD WHERE FD.IdFichaTecnica = F.IdFichaTecnica AND FD.Estado = 1)
+            THEN 'Sin ficha tecnica'
+        WHEN EXISTS
+        (
+            SELECT 1
+            FROM dbo.FichaTecnicaDetalle FD
+            LEFT JOIN dbo.StockInsumos SI ON SI.IdInsumo = FD.IdInsumo
+            WHERE FD.IdFichaTecnica = F.IdFichaTecnica
+              AND FD.Estado = 1
+              AND ISNULL(SI.StockActual, 0) < FD.Cantidad * D.CantidadPendiente
+        ) THEN 'Faltantes'
+        ELSE 'Completo para producir'
+    END AS EstadoInsumos
+FROM dbo.OrdenTrabajoDetalle D
+OUTER APPLY
+(
+    SELECT TOP(1) FT.IdFichaTecnica
+    FROM dbo.FichaTecnica FT
+    WHERE FT.IdProducto = D.IdProducto AND FT.Estado = 1
+    ORDER BY FT.Version DESC, FT.IdFichaTecnica DESC
+) F
+OUTER APPLY (SELECT SUM(S.StockActual) AS StockActual FROM dbo.StockProductosAlmacen S WHERE S.IdProducto = D.IdProducto) SP
+OUTER APPLY
+(
+    SELECT
+        SUM(CASE WHEN A.NombreArea LIKE '%CORTE%' THEN DA.CantidadPendiente ELSE 0 END) AS StockCorte,
+        SUM(CASE WHEN A.NombreArea LIKE '%CONFECCI%' THEN DA.CantidadPendiente ELSE 0 END) AS StockConfeccion,
+        SUM(CASE WHEN A.NombreArea LIKE '%ACABADO%' THEN DA.CantidadPendiente ELSE 0 END) AS StockAcabado
+    FROM dbo.OrdenTrabajoDetalle OD
+    JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
+    JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
+    WHERE OD.IdProducto = D.IdProducto
+      AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
+) AP
+WHERE D.IdOrdenTrabajo = @IdOrdenTrabajo
+  AND D.CantidadPendiente > 0
+  AND D.Estado <> 'ANULADO'
+ORDER BY D.IdDetalleOT;";
+
+    List<OtValidacionProductoApi> productos = [];
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOrdenTrabajo;
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+    {
+        productos.Add(new OtValidacionProductoApi(
+            Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+            Convert.ToInt32(dr["IdProducto"]),
+            LeerString(dr, "CodigoProducto"),
+            LeerString(dr, "NombreProducto"),
+            LeerString(dr, "Observacion"),
+            Convert.ToDecimal(dr["CantidadRequerida"]),
+            dr["IdFichaTecnica"] == DBNull.Value ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
+            Convert.ToDecimal(dr["StockAlmacen"]),
+            Convert.ToDecimal(dr["StockCorte"]),
+            Convert.ToDecimal(dr["StockConfeccion"]),
+            Convert.ToDecimal(dr["StockAcabado"]),
+            Convert.ToDecimal(dr["StockTotal"]),
+            Convert.ToDecimal(dr["Deficit"]),
+            LeerString(dr, "EstadoInsumos")));
+    }
+
+    return productos;
+}
 
 static async Task<List<OtValidacionProductoApi>> ValidarOtInsumosAsync(SqlConnection conexion, int idOrdenCompraInterna)
 {
@@ -2114,6 +2543,26 @@ static decimal LeerDecimal(SqlDataReader dr, string columna, decimal valorPredet
     return valorPredeterminado;
 }
 
+static int? LeerIntNullable(SqlDataReader dr, string columna)
+{
+    for (int i = 0; i < dr.FieldCount; i++)
+    {
+        if (dr.GetName(i).Equals(columna, StringComparison.OrdinalIgnoreCase))
+            return dr.IsDBNull(i) ? null : Convert.ToInt32(dr.GetValue(i));
+    }
+    return null;
+}
+
+static DateTime? LeerDateTimeNullable(SqlDataReader dr, string columna)
+{
+    for (int i = 0; i < dr.FieldCount; i++)
+    {
+        if (dr.GetName(i).Equals(columna, StringComparison.OrdinalIgnoreCase))
+            return dr.IsDBNull(i) ? null : Convert.ToDateTime(dr.GetValue(i));
+    }
+    return null;
+}
+
 static async Task<int> ObtenerIdGuiaInternaPorNumeroAsync(string connectionString, string numeroGuia)
 {
     if (string.IsNullOrWhiteSpace(numeroGuia))
@@ -2155,7 +2604,7 @@ static GuiaInternaPdfCabecera LeerGuiaInternaPdfCabecera(SqlDataReader dr) => ne
     LeerString(dr, "NumeroGuia"),
     LeerString(dr, "Origen"),
     LeerString(dr, "NumeroOci"),
-    LeerString(dr, "NumeroProforma"),
+    LeerString(dr, "NumeroOrdenTrabajo"),
     LeerString(dr, "OrdenCompraCliente"),
     Convert.ToDateTime(dr["FechaEmision"]),
     LeerString(dr, "NombreAlmacen"),
@@ -2234,7 +2683,7 @@ static void DibujarDatosGuia(SimplePdfPage page, double margin, double pageWidth
     FilaDatoGuia(page, margin, y, half, "FECHA Y HORA", fechaHora); FilaDatoGuia(page, margin + half, y, half, "ALMACEN", guia.NombreAlmacen); y -= h;
     FilaDatoGuia(page, margin, y, half, "CLIENTE", string.IsNullOrWhiteSpace(guia.EmpresaDestino) ? "No especificado" : guia.EmpresaDestino); FilaDatoGuia(page, margin + half, y, half, "DOCUMENTO", guia.RucDestino); y -= h;
     FilaDatoGuia(page, margin, y, half, "N. OCI", guia.NumeroOci); FilaDatoGuia(page, margin + half, y, half, "OC CLIENTE", guia.OrdenCompraCliente); y -= h;
-    FilaDatoGuia(page, margin, y, half, "N. PROFORMA", guia.NumeroProforma); FilaDatoGuia(page, margin + half, y, half, "ORIGEN", guia.Origen); y -= h;
+    FilaDatoGuia(page, margin, y, half, "N. OT", guia.NumeroOrdenTrabajo); FilaDatoGuia(page, margin + half, y, half, "ORIGEN", guia.Origen); y -= h;
     FilaDatoGuia(page, margin, y, w, "MOTIVO SALIDA", guia.MotivoEmisionManual); y -= h;
     FilaDatoGuia(page, margin, y, half, "RESPONSABLE", guia.UsuarioEmisor); FilaDatoGuia(page, margin + half, y, half, "AUTORIZADO", guia.UsuarioAutorizador); y -= h + 14;
 }
@@ -2565,7 +3014,7 @@ internal sealed record GuiaInternaPdfCabecera(
     string NumeroGuia,
     string Origen,
     string NumeroOci,
-    string NumeroProforma,
+    string NumeroOrdenTrabajo,
     string OrdenCompraCliente,
     DateTime FechaEmision,
     string NombreAlmacen,
@@ -2758,3 +3207,24 @@ internal sealed record OrdenTrabajoMermaApiRequest(
     string? Observacion,
     int IdUsuarioSesion,
     int IdUsuarioAutoriza);
+
+internal sealed record OrdenTrabajoAnularApiRequest(
+    bool ConvertirProcesoAMerma,
+    int IdUsuarioSesion,
+    string? MotivoAnulacion,
+    string? UsuarioAnulacion);
+
+internal sealed record UsuarioClaveApi(int IdUsuario, string ClaveHash);
+
+internal sealed record OrdenTrabajoRegularizacionContext(
+    int IdOrdenTrabajo,
+    string NumeroOT,
+    int IdOrdenCompraInterna,
+    string EstadoOperativo,
+    bool EsRegularizable,
+    bool TieneRegularizacion);
+
+internal sealed record OrdenTrabajoAnulacionContext(
+    string NumeroOT,
+    string EstadoOperativo,
+    decimal TotalProducido);

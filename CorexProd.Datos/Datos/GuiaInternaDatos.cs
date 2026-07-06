@@ -86,6 +86,8 @@ namespace CorexProd.Datos.Datos
             {
                 IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
                 NumeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
+                NumeroProforma = LeerString(dr, "NumeroProforma"),
+                NumeroOrdenTrabajo = LeerString(dr, "NumeroOrdenTrabajo"),
                 OrdenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
                 FechaEmision = DateTime.Today,
                 IdAlmacen = Convert.ToInt32(dr["IdAlmacen"]),
@@ -222,6 +224,7 @@ namespace CorexProd.Datos.Datos
             Origen=dr["Origen"]?.ToString() ?? string.Empty, IdOrdenCompraInterna=Convert.ToInt32(dr["IdOrdenCompraInterna"]),
             IdCliente=dr["IdCliente"] == DBNull.Value ? null : Convert.ToInt32(dr["IdCliente"]),
             NumeroOci=dr["NumeroOci"]?.ToString() ?? string.Empty, NumeroProforma=dr["NumeroProforma"]?.ToString() ?? string.Empty,
+            NumeroOrdenTrabajo=LeerString(dr, "NumeroOrdenTrabajo"),
             OrdenCompraCliente=dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
             FechaEmision=Convert.ToDateTime(dr["FechaEmision"]), IdAlmacen=Convert.ToInt32(dr["IdAlmacen"]), NombreAlmacen=dr["NombreAlmacen"]?.ToString() ?? string.Empty,
             RucEmisor=dr["RucEmisor"]?.ToString() ?? string.Empty, EmpresaEmisora=dr["EmpresaEmisora"]?.ToString() ?? string.Empty,
@@ -243,5 +246,18 @@ namespace CorexProd.Datos.Datos
             PrecioUnitario=Convert.ToDecimal(dr["PrecioUnitario"]), CantidadDespachar=Convert.ToDecimal(dr["CantidadSugerida"]),
             Observacion=dr["Observacion"]?.ToString() ?? string.Empty
         };
+
+        private static string LeerString(SqlDataReader dr, string columna)
+        {
+            try
+            {
+                int ordinal = dr.GetOrdinal(columna);
+                return dr.IsDBNull(ordinal) ? string.Empty : dr.GetValue(ordinal)?.ToString() ?? string.Empty;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return string.Empty;
+            }
+        }
     }
 }

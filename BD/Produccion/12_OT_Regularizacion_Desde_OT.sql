@@ -40,9 +40,9 @@ BEGIN
             SELECT 1
             FROM dbo.OrdenTrabajo
             WHERE IdOrdenTrabajoRelacionada = @IdOrdenTrabajoOrigen
-              AND Estado IN ('PENDIENTE','EMITIDA','EN_PROCESO','PARCIAL')
+              AND UPPER(Estado) NOT IN ('ANULADA','ANULADO')
         )
-            THROW 51000, 'La OT origen ya tiene una regularizacion pendiente o en proceso.', 1;
+            THROW 51000, 'La OT origen ya fue regularizada.', 1;
 
         IF NOT EXISTS(SELECT 1 FROM dbo.AreaProduccion WHERE Activo = 1 AND EsInicio = 1)
             OR NOT EXISTS(SELECT 1 FROM dbo.AreaProduccion WHERE Activo = 1 AND EsTermino = 1)

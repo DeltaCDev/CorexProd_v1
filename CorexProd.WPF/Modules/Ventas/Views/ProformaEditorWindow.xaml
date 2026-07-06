@@ -86,11 +86,11 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,14">
-                                <TextBlock Text="ID / Serie de Proforma" Style="{StaticResource LabelCampo}"/>
+                                <TextBlock Text="{Binding EtiquetaNumeroDocumento}" Style="{StaticResource LabelCampo}"/>
                                 <TextBox Style="{StaticResource CampoTexto}"
                                          IsReadOnly="True"
                                          Text="{Binding SerieNumero}"
-                                         ToolTip="Se genera automaticamente con los parametros de proforma"/>
+                                         ToolTip="Se genera automaticamente"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,14,14">

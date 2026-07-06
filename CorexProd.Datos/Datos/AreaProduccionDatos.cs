@@ -40,6 +40,7 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.AddWithValue("@OrdenSecuencia", area.OrdenSecuencia);
             cmd.Parameters.AddWithValue("@EsInicio", area.EsInicio);
             cmd.Parameters.AddWithValue("@ManejaMerma", area.ManejaMerma);
+            cmd.Parameters.AddWithValue("@PermiteReservarStockProceso", area.PermiteReservarStockProceso);
             cmd.Parameters.AddWithValue("@EsTermino", area.EsTermino);
             cmd.Parameters.AddWithValue("@ModoEnvio", area.ModoEnvio);
             cmd.Parameters.AddWithValue("@Activo", area.Activo);
@@ -87,6 +88,7 @@ namespace CorexProd.Datos.Datos
                 OrdenSecuencia = Convert.ToInt32(dr["OrdenSecuencia"]),
                 EsInicio = Convert.ToBoolean(dr["EsInicio"]),
                 ManejaMerma = Convert.ToBoolean(dr["ManejaMerma"]),
+                PermiteReservarStockProceso = BooleanoOpcional(dr, "PermiteReservarStockProceso"),
                 EsTermino = Convert.ToBoolean(dr["EsTermino"]),
                 ModoEnvio = dr["ModoEnvio"].ToString() ?? string.Empty,
                 Activo = Convert.ToBoolean(dr["Activo"]),
@@ -95,6 +97,19 @@ namespace CorexProd.Datos.Datos
                 UsuarioModificacion = dr["UsuarioModificacion"] == DBNull.Value ? null : Convert.ToInt32(dr["UsuarioModificacion"]),
                 FechaModificacion = dr["FechaModificacion"] == DBNull.Value ? null : Convert.ToDateTime(dr["FechaModificacion"])
             };
+        }
+
+        private static bool BooleanoOpcional(SqlDataReader dr, string columna)
+        {
+            try
+            {
+                int ordinal = dr.GetOrdinal(columna);
+                return !dr.IsDBNull(ordinal) && Convert.ToBoolean(dr.GetValue(ordinal));
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return false;
+            }
         }
     }
 }

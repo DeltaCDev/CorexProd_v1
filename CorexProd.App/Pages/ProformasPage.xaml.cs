@@ -120,6 +120,14 @@ public partial class ProformasPage : ContentPage
             await AnularAsync(item.Item);
     }
 
+    private async void OnAnulacionInfoClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not ProformaListItem item)
+            return;
+
+        await DisplayAlertAsync("Anulacion", item.DetalleAnulacion, "OK");
+    }
+
     private async Task MostrarDetalleAsync(int idProforma)
     {
         ProformaDetalleResponse detalle = _session.EsDemo
@@ -154,6 +162,12 @@ public partial class ProformasPage : ContentPage
 
     private async Task AnularAsync(ProformaResumen item)
     {
+        if (DocumentoFiltroHelper.Normalizar(item.Estado) is "ANULADO" or "ANULADA")
+        {
+            await DisplayAlertAsync("Proformas", "La proforma ya se encuentra anulada.", "OK");
+            return;
+        }
+
         string? motivo = await DisplayPromptAsync("Anular proforma", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
         if (string.IsNullOrWhiteSpace(motivo))
             return;
@@ -353,8 +367,16 @@ public partial class ProformasPage : ContentPage
     private sealed record ProformaListItem(ProformaResumen Item)
     {
         public string OcClienteTexto => $"OC Cliente: {TextoVacio(Item.OrdenCompraCliente)}";
-        public bool PuedeGenerarOci => !Item.TieneOrdenCompraInterna;
+        public bool EstaAnulada => DocumentoFiltroHelper.Normalizar(Item.Estado) is "ANULADA" or "ANULADO";
+        public bool PuedeGenerarOci => !Item.TieneOrdenCompraInterna && !EstaAnulada;
         public string OciAccionTexto => Item.TieneOrdenCompraInterna ? "OCI generada" : "Generar OCI";
         public Color OciAccionColor => Item.TieneOrdenCompraInterna ? Color.FromArgb("#667085") : Color.FromArgb("#0E9384");
+        public bool MostrarAnulacion => EstaAnulada;
+        public bool PuedeAnular => !EstaAnulada && !Item.TieneOrdenCompraInterna;
+        public string DetalleAnulacion =>
+            $"Motivo: {TextoOmitido(Item.MotivoAnulacion)}\nFecha y hora: {TextoFecha(Item.FechaAnulacion)}\nUsuario: {TextoOmitido(Item.UsuarioAnulacion)}";
     }
+
+    private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
+    private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
 }

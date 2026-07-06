@@ -75,7 +75,7 @@ namespace CorexProd.WPF.Helpers
             FilaDato(c, x, y, half, "FECHA Y HORA", fechaHora); FilaDato(c, x + half, y, half, "ALMACEN", g.NombreAlmacen); y -= h;
             FilaDato(c, x, y, half, "CLIENTE", g.ClienteMostrar); FilaDato(c, x + half, y, half, "DOCUMENTO", Valor(g.RucDestino)); y -= h;
             FilaDato(c, x, y, half, "N. OCI", Valor(g.NumeroOci)); FilaDato(c, x + half, y, half, "OC CLIENTE", Valor(g.OrdenCompraCliente)); y -= h;
-            FilaDato(c, x, y, half, "N. PROFORMA", Valor(g.NumeroProforma)); FilaDato(c, x + half, y, half, "ORIGEN", Valor(g.Origen)); y -= h;
+            FilaDato(c, x, y, half, "N. OT", Valor(g.NumeroOrdenTrabajo)); FilaDato(c, x + half, y, half, "ORIGEN", Valor(g.Origen)); y -= h;
             FilaDato(c, x, y, w, "MOTIVO SALIDA", Valor(g.MotivoEmisionManual)); y -= h;
             FilaDato(c, x, y, half, "RESPONSABLE", g.UsuarioEmisor); FilaDato(c, x + half, y, half, "AUTORIZADO", g.UsuarioAutorizador); y -= h + 14;
         }

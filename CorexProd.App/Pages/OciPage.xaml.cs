@@ -88,6 +88,14 @@ public partial class OciPage : ContentPage
             await AnularAsync(item.Item);
     }
 
+    private async void OnAnulacionInfoClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not OciListItem item)
+            return;
+
+        await DisplayAlertAsync("Anulacion", item.DetalleAnulacion, "OK");
+    }
+
     private async void OnGenerarOtClicked(object? sender, EventArgs e)
     {
         if ((sender as BindableObject)?.BindingContext is not OciListItem item || !item.PuedeGenerarOt)
@@ -408,7 +416,7 @@ public partial class OciPage : ContentPage
         header.Add(new Label { Text = ObtenerOtValidacionTexto(producto), FontFamily = "OpenSansSemibold", TextColor = estadoColor }, 1, 0);
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"Cantidad a producir: {producto.CantidadRequerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+        stack.Add(new Label { Text = $"Cantidad a producir: {producto.Deficit:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
         stack.Add(CrearOtResumenLabel(producto, estadoColor));
 
         if (!string.IsNullOrWhiteSpace(producto.Observacion))
@@ -440,7 +448,7 @@ public partial class OciPage : ContentPage
             ApiListResponse<OtValidacionInsumo> response = await _apiClient.GetDetalleInsumosOtAsync(producto.IdOrdenCompraInternaDetalle);
             VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
             contenido.Add(new Label { Text = producto.CodigoProducto, FontFamily = "OpenSansSemibold", FontSize = 21, TextColor = Color.FromArgb("#101828") });
-            contenido.Add(new Label { Text = $"Cantidad a producir: {producto.CantidadRequerida:N2}", FontSize = 13, TextColor = Color.FromArgb("#667085") });
+            contenido.Add(new Label { Text = $"Cantidad a producir: {producto.Deficit:N2}", FontSize = 13, TextColor = Color.FromArgb("#667085") });
 
             foreach (OtValidacionInsumo insumo in response.Items)
                 contenido.Add(CrearInsumoCard(insumo));
@@ -479,6 +487,12 @@ public partial class OciPage : ContentPage
 
     private async Task AnularAsync(OciResumen item)
     {
+        if (EsOciAnulada(item.Estado))
+        {
+            await DisplayAlertAsync("OCI", "La OCI ya se encuentra anulada.", "OK");
+            return;
+        }
+
         string? motivo = await DisplayPromptAsync("Anular OCI", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
         if (string.IsNullOrWhiteSpace(motivo))
             return;
@@ -1181,5 +1195,12 @@ public partial class OciPage : ContentPage
         public string GuiaTexto => PuedeGenerarGuia ? "Guia" : TienePendiente ? "Sin stock" : "Sin pendiente";
         public Color OtColor => PuedeGenerarOt ? Color.FromArgb("#7A5AF8") : Color.FromArgb("#98A2B3");
         public Color GuiaColor => PuedeGenerarGuia ? Color.FromArgb("#0E9384") : Color.FromArgb("#667085");
+        public bool MostrarAnulacion => EsOciAnulada(Item.Estado);
+        public bool PuedeAnular => !MostrarAnulacion && !Item.TieneGuiaSalida && !Item.TieneOrdenTrabajo;
+        public string DetalleAnulacion =>
+            $"Motivo: {TextoOmitido(Item.MotivoAnulacion)}\nFecha y hora: {TextoFecha(Item.FechaAnulacion)}\nUsuario: {TextoOmitido(Item.UsuarioAnulacion)}";
     }
+
+    private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
+    private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
 }

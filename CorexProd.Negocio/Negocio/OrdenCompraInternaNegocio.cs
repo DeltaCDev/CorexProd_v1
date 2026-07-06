@@ -1,6 +1,7 @@
 using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CorexProd.Negocio.Negocio
 {
@@ -18,6 +19,18 @@ namespace CorexProd.Negocio.Negocio
             if (idProforma <= 0) return "Debe seleccionar una proforma válida.";
             if (string.IsNullOrWhiteSpace(usuarioGenerador)) usuarioGenerador = "Sistema";
             return _datos.Generar(idProforma, usuarioGenerador.Trim());
+        }
+
+        public string ObtenerSiguienteNumero() => _datos.ObtenerSiguienteNumero();
+
+        public string GuardarDirecta(OrdenCompraInterna orden)
+        {
+            if (orden.IdCliente <= 0) return "Debe seleccionar un cliente.";
+            if (orden.Detalles.Count == 0) return "Debe agregar al menos un producto.";
+            if (orden.Detalles.Any(d => d.IdProducto <= 0 || d.Cantidad <= 0))
+                return "Todos los productos deben tener cantidad mayor a cero.";
+            if (string.IsNullOrWhiteSpace(orden.UsuarioGenerador)) orden.UsuarioGenerador = "Sistema";
+            return _datos.GuardarDirecta(orden);
         }
 
         public bool RequiereOrdenTrabajo(int idOrdenCompraInterna)
@@ -55,6 +68,6 @@ namespace CorexProd.Negocio.Negocio
         }
 
         private static bool EsAnulada(OrdenCompraInterna orden) =>
-            orden.Estado.Equals("Anulado", System.StringComparison.OrdinalIgnoreCase);
+            orden.Estado.Trim().ToUpperInvariant() is "ANULADO" or "ANULADA";
     }
 }

@@ -82,7 +82,13 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Stock_Click(object sender, RoutedEventArgs e)
         {
-            NotificationService.Warning("El abastecimiento de stock requiere habilitar OT manual sin OCI en la base de datos.");
+            OrdenTrabajoManualWindow ventana = new()
+            {
+                Owner = this
+            };
+
+            if (ventana.ShowDialog() == true)
+                DialogResult = true;
         }
 
         private void Generar_Click(object sender, RoutedEventArgs e)
@@ -124,6 +130,6 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private bool TieneRegularizacionActiva(int idOrdenTrabajo) =>
             _ordenes.Any(x =>
                 x.IdOrdenTrabajoRelacionada == idOrdenTrabajo
-                && x.EstadoOperativo.Trim().ToUpperInvariant() is "PENDIENTE" or "EMITIDA" or "EN PROCESO" or "EN_PROCESO");
+                && x.EstadoOperativo.Trim().ToUpperInvariant() is not ("ANULADO" or "ANULADA"));
     }
 }

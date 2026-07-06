@@ -12,5 +12,10 @@ namespace CorexProd.Negocio.Negocio
         {
             return _stockProductoDatos.Listar();
         }
+
+        public List<StockProcesoReservaReporte> ListarReservasProceso()
+        {
+            return _stockProductoDatos.ListarReservasProceso();
+        }
     }
 }

@@ -31,8 +31,7 @@
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
             <CollectionView x:Name="OrdenesView"
                             Margin="12"
-                            SelectionMode="Single"
-                            SelectionChanged="OnOrdenSelectionChanged">
+                            SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No hay órdenes de trabajo para mostrar."
                            Padding="24"
@@ -45,35 +44,64 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Text="{Binding NumeroOT}"
-                                       FontFamily="OpenSansSemibold"
-                                       FontSize="15"
-                                       TextColor="#10324A" />
-                                <Label Grid.Column="1"
-                                       Text="{Binding Estado}"
-                                       FontSize="12"
-                                       TextColor="#B54708" />
-                                <Label Grid.Row="1"
-                                       Grid.ColumnSpan="2"
-                                       Text="{Binding NombreCliente}"
-                                       LineBreakMode="WordWrap"
-                                       TextColor="#344054" />
-                                <Label Grid.Row="2"
-                                       Text="{Binding NumeroOci, StringFormat='OCI: {0}'}"
-                                       FontSize="12"
-                                       TextColor="#667085" />
-                                <Label Grid.Row="2"
-                                       Grid.Column="1"
-                                       Text="{Binding Avance, StringFormat='{0:P0}'}"
-                                       FontFamily="OpenSansSemibold"
-                                       TextColor="#067647" />
-                                <Label Grid.Row="3"
-                                       Grid.ColumnSpan="2"
-                                       Text="{Binding OrdenCompraCliente, StringFormat='OC Cliente: {0}'}"
-                                       FontSize="12"
-                                       TextColor="#475467" />
-                            </Grid>
+                            <VerticalStackLayout Spacing="10">
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
+                                    <Button Text="Ver"
+                                            Padding="10,6"
+                                            BackgroundColor="#0E9384"
+                                            Clicked="OnVerClicked" />
+                                    <Button Grid.Column="1"
+                                            Text="X"
+                                            Padding="10,6"
+                                            BackgroundColor="#B42318"
+                                            IsVisible="{Binding PuedeAnular}"
+                                            Clicked="OnAnularClicked" />
+                                    <Button Grid.Column="2"
+                                            Text="!"
+                                            IsVisible="{Binding MostrarAnulacion}"
+                                            Padding="10,6"
+                                            BackgroundColor="#F04438"
+                                            Clicked="OnAnulacionInfoClicked" />
+                                    <Button Grid.Column="3"
+                                            Text="Regularizar"
+                                            IsVisible="{Binding PuedeRegularizar}"
+                                            Padding="10,6"
+                                            BackgroundColor="#7A5AF8"
+                                            Clicked="OnRegularizarClicked" />
+                                </Grid>
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="128,*" RowSpacing="5" ColumnSpacing="8">
+                                    <Label Text="Numero de OT" FontSize="12" TextColor="#667085" />
+                                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Label Text="{Binding NumeroOT}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" VerticalOptions="Center" />
+                                        <Border Grid.Column="1"
+                                                Padding="9,3"
+                                                BackgroundColor="{Binding EstadoBackgroundColor}"
+                                                Stroke="{Binding EstadoStrokeColor}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="12" />
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding Estado}"
+                                                   FontSize="11"
+                                                   FontFamily="OpenSansSemibold"
+                                                   TextColor="{Binding EstadoTextColor}" />
+                                        </Border>
+                                    </Grid>
+                                    <Label Grid.Row="1" Text="Fecha y Hora" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding FechaHoraTexto}" TextColor="#344054" />
+                                    <Label Grid.Row="2" Text="OC Cliente" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding OrdenCompraClienteTexto}" TextColor="#344054" LineBreakMode="WordWrap" />
+                                    <Label Grid.Row="3" Text="Cliente" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding Cliente}" TextColor="#344054" LineBreakMode="WordWrap" />
+                                    <Label Grid.Row="4" Text="Nro OCI" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding NumeroOciTexto}" TextColor="#344054" />
+                                    <Label Grid.Row="5" Text="Tipo OT" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="5" Grid.Column="1" Text="{Binding TipoOT}" TextColor="#344054" />
+                                    <Label Grid.Row="6" Text="OT relacionada" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="6" Grid.Column="1" Text="{Binding OtRelacionadaTexto}" TextColor="#344054" />
+                                    <Label Grid.Row="7" Text="Usuario" FontSize="12" TextColor="#667085" />
+                                    <Label Grid.Row="7" Grid.Column="1" Text="{Binding Usuario}" TextColor="#344054" />
+                                </Grid>
+                            </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

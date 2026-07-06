@@ -33,6 +33,7 @@
                         <CheckBox Grid.Row="1" Content="Es área de inicio" IsChecked="{Binding EsInicio}" Margin="0,6,12,12"/>
                         <CheckBox Grid.Row="1" Grid.Column="1" Content="Es área de término" IsChecked="{Binding EsTermino}" Margin="0,6,0,12"/>
                         <CheckBox Grid.Row="2" Content="Maneja merma" IsChecked="{Binding ManejaMerma}" Margin="0,6,12,0"/>
+                        <CheckBox Grid.Row="2" Grid.Column="1" Content="Permitir reservar stock en proceso" IsChecked="{Binding PermiteReservarStockProceso}" Margin="0,6,0,0"/>
                     </Grid>
                 </Border>
             </StackPanel>

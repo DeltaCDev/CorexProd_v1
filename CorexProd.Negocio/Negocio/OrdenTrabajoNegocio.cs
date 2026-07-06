@@ -16,9 +16,18 @@ namespace CorexProd.Negocio.Negocio
         public List<OrdenTrabajoMovimiento> ListarMovimientos(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarMovimientos(idOrdenTrabajo):[];
         public List<OrdenTrabajoKardexIngreso> ListarIngresosKardex(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarIngresosKardex(idOrdenTrabajo):[];
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)=>_datos.ValidarInsumos(idOci);
+        public List<OrdenTrabajoValidacionProducto> ValidarInsumosManual(IEnumerable<OrdenTrabajoManualPlanificacion> items)=>_datos.ValidarInsumosManual(items);
         public List<OrdenTrabajoValidacionProducto> ListarPendientesRegularizacion(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarPendientesRegularizacion(idOrdenTrabajo):[];
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)=>_datos.DetalleInsumos(idDetalleOci);
         public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada);
+        public (int Id,string Numero) CrearManual(int idUsuario,string observacion,IEnumerable<OrdenTrabajoManualPlanificacion> items)
+        {
+            List<OrdenTrabajoManualPlanificacion> lista = items.ToList();
+            if (idUsuario <= 0) throw new InvalidOperationException("No se pudo identificar al usuario de sesion.");
+            if (lista.Count == 0) throw new InvalidOperationException("Seleccione al menos un producto.");
+            if (lista.Any(x => x.IdProducto <= 0 || x.CantidadPlanificada <= 0)) throw new InvalidOperationException("Todas las cantidades deben ser mayores que cero.");
+            return _datos.CrearManual(idUsuario, observacion, lista);
+        }
         public void Anular(int idOrdenTrabajo, bool convertirProcesoAMerma = false, int idUsuarioSesion = 0, string motivoAnulacion = "", string usuarioAnulacion = "")
         {
             if (idOrdenTrabajo <= 0) throw new InvalidOperationException("Seleccione una OT valida.");
@@ -83,6 +92,12 @@ namespace CorexProd.Negocio.Negocio
             return _datos.TerminarConMerma(idOt,idArea,idDetalleArea,idSesion,autoriza.IdUsuario,cantidadMerma,motivo,observacion,lista);
         }
         public void RegistrarMerma(long idArea,decimal cantidad,string motivo,string observacion,int idSesion,Usuario autoriza)=>_datos.RegistrarMerma(idArea,cantidad,motivo,observacion,idSesion,autoriza.IdUsuario);
+        public void ReservarStockProceso(long idDetalleArea,decimal cantidad,string observacion,int idSesion,Usuario autoriza)
+        {
+            if (idDetalleArea <= 0) throw new InvalidOperationException("Seleccione el area de produccion.");
+            if (cantidad <= 0) throw new InvalidOperationException("La cantidad a reservar debe ser mayor que cero.");
+            _datos.ReservarStockProceso(idDetalleArea,cantidad,observacion,idSesion,autoriza.IdUsuario);
+        }
         public void ConfirmarConsumo(int idDetalleOt,int idUsuario)=>_datos.ConfirmarConsumo(idDetalleOt,idUsuario);
     }
 }

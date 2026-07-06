@@ -60,6 +60,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public decimal TotalVisible => Ordenes.Sum(orden => orden.Total);
 
         public ICommand VerCommand { get; }
+        public ICommand NuevoCommand { get; }
         public ICommand GenerarOtCommand { get; }
         public ICommand GenerarGuiaSalidaCommand { get; }
         public ICommand AnularCommand { get; }
@@ -69,6 +70,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         public OrdenesCompraInternaViewModel()
         {
+            NuevoCommand = new RelayCommand(_ => Nuevo());
             VerCommand = new RelayCommand(Ver);
             GenerarOtCommand = new RelayCommand(GenerarOt, PuedeGenerarOt);
             GenerarGuiaSalidaCommand = new RelayCommand(GenerarGuiaSalida, PuedeGenerarGuiaSalida);
@@ -81,6 +83,22 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             {
                 Cargar();
             }
+        }
+
+        private void Nuevo()
+        {
+            ProformaEditorViewModel viewModel = new(null, false, crearOrdenCompraDirecta: true);
+            ProformaEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+                Cargar();
         }
 
         private void Cargar()
@@ -113,7 +131,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             if (!string.IsNullOrWhiteSpace(texto))
             {
                 resultado = resultado.Where(o =>
-                    Contiene(o.NumeroOci, texto) || Contiene(o.NumeroProforma, texto) ||
+                    Contiene(o.NumeroOci, texto) ||
                     Contiene(o.OrdenCompraCliente, texto) || Contiene(o.NombreCliente, texto));
             }
 
@@ -276,18 +294,18 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             SaveFileDialog dialog = new()
             {
                 Title = "Exportar órdenes de compra interna",
-                FileName = $"OCI_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+                FileName = $"OrdenesCompra_{DateTime.Now:yyyyMMdd_HHmm}.csv",
                 Filter = "Archivo CSV para Excel (*.csv)|*.csv",
                 DefaultExt = ".csv"
             };
             if (dialog.ShowDialog() != true) return;
 
             StringBuilder csv = new();
-            csv.AppendLine("OCI;Orden compra cliente;Proforma;Estado;Cliente;Fecha emisión;Subtotal;Descuento;IGV;Total");
+            csv.AppendLine("Orden;Orden compra cliente;Estado;Cliente;Fecha emisión;Subtotal;Descuento;IGV;Total");
             foreach (OrdenCompraInterna orden in Ordenes)
             {
                 csv.AppendLine(string.Join(";", Escapar(orden.NumeroOci), Escapar(orden.OrdenCompraCliente),
-                    Escapar(orden.NumeroProforma), Escapar(orden.Estado), Escapar(orden.NombreCliente),
+                    Escapar(orden.Estado), Escapar(orden.NombreCliente),
                     orden.FechaEmision.ToString("dd/MM/yyyy"), orden.Subtotal.ToString("0.00"),
                     orden.Descuento.ToString("0.00"), orden.Igv.ToString("0.00"), orden.Total.ToString("0.00")));
             }

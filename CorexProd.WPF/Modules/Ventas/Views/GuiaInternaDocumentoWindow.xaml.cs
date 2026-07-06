@@ -68,7 +68,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             AgregarFila(info, "Fecha y hora", FechaHora(), "Almacén", _guia.NombreAlmacen);
             AgregarFila(info, "Cliente / destinatario", _guia.ClienteMostrar, "RUC / documento", Valor(_guia.RucDestino));
             AgregarFila(info, "Número de OCI", Valor(_guia.NumeroOci), "Orden compra cliente", Valor(_guia.OrdenCompraCliente));
-            AgregarFila(info, "Número de proforma", Valor(_guia.NumeroProforma), "Origen", Valor(_guia.Origen));
+            AgregarFila(info, "Numero de OT", Valor(_guia.NumeroOrdenTrabajo), "Origen", Valor(_guia.Origen));
             AgregarFila(info, "Motivo de salida", Valor(_guia.MotivoEmisionManual), "Destino", _guia.ClienteMostrar);
             AgregarFila(info, "Usuario responsable", _guia.UsuarioEmisor, "Autorizado por", _guia.UsuarioAutorizador);
             doc.Blocks.Add(info);

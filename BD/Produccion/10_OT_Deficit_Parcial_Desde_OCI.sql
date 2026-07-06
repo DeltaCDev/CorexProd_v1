@@ -64,13 +64,11 @@ BEGIN
             ) SP
             OUTER APPLY
             (
-                SELECT SUM(DA.CantidadPendiente) AS StockProceso
-                FROM dbo.OrdenTrabajoDetalle OD
-                JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
-                JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
-                WHERE OD.IdProducto = D.IdProducto
-                  AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
-                  AND (A.NombreArea LIKE '%CORTE%' OR A.NombreArea LIKE '%CONFECCI%' OR A.NombreArea LIKE '%ACABADO%')
+                SELECT SUM(R.Cantidad - R.CantidadAplicada) AS StockProceso
+                FROM dbo.StockProcesoReserva R
+                WHERE R.IdProducto = D.IdProducto
+                  AND R.Estado IN ('DISPONIBLE','RESERVADO')
+                  AND R.Cantidad - R.CantidadAplicada > 0
             ) AP
             WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
               AND D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
@@ -149,13 +147,11 @@ BEGIN
                 OUTER APPLY (SELECT SUM(SPA.StockActual) AS StockActual FROM dbo.StockProductosAlmacen SPA WHERE SPA.IdProducto = D.IdProducto) SP
                 OUTER APPLY
                 (
-                    SELECT SUM(DA.CantidadPendiente) AS StockProceso
-                    FROM dbo.OrdenTrabajoDetalle OD
-                    JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
-                    JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
-                    WHERE OD.IdProducto = D.IdProducto
-                      AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
-                      AND (A.NombreArea LIKE '%CORTE%' OR A.NombreArea LIKE '%CONFECCI%' OR A.NombreArea LIKE '%ACABADO%')
+                    SELECT SUM(R.Cantidad - R.CantidadAplicada) AS StockProceso
+                    FROM dbo.StockProcesoReserva R
+                    WHERE R.IdProducto = D.IdProducto
+                      AND R.Estado IN ('DISPONIBLE','RESERVADO')
+                      AND R.Cantidad - R.CantidadAplicada > 0
                 ) AP
                 WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
                   AND D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
@@ -183,6 +179,8 @@ BEGIN
         D.NombreProducto,
         D.Cantidad,
         CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockActual,
+        CAST(ISNULL(AP.StockProcesoReservado, 0) AS DECIMAL(18,2)) AS StockProcesoReservado,
+        ISNULL(AP.StockProcesoReservadoDetalle, '') AS StockProcesoReservadoDetalle,
         D.CantidadDespachada,
         D.PrecioUnitario,
         D.Descuento,
@@ -190,6 +188,36 @@ BEGIN
         D.Observacion
     FROM dbo.OrdenCompraInternaDetalle D
     LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+    OUTER APPLY
+    (
+        SELECT
+            SUM(X.Cantidad) AS StockProcesoReservado,
+            STUFF((
+                SELECT '; ' + Y.NombreArea + ': ' + CONVERT(VARCHAR(30), CONVERT(DECIMAL(18,2), Y.Cantidad))
+                FROM
+                (
+                    SELECT A.NombreArea, SUM(R.Cantidad - R.CantidadAplicada) AS Cantidad
+                    FROM dbo.StockProcesoReserva R
+                    JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = R.IdAreaProduccion
+                    WHERE R.IdProducto = D.IdProducto
+                      AND R.Estado IN ('DISPONIBLE','RESERVADO')
+                      AND R.Cantidad - R.CantidadAplicada > 0
+                    GROUP BY A.NombreArea
+                ) Y
+                ORDER BY Y.NombreArea
+                FOR XML PATH(''), TYPE
+            ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS StockProcesoReservadoDetalle
+        FROM
+        (
+            SELECT A.NombreArea, SUM(R.Cantidad - R.CantidadAplicada) AS Cantidad
+            FROM dbo.StockProcesoReserva R
+            JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = R.IdAreaProduccion
+            WHERE R.IdProducto = D.IdProducto
+              AND R.Estado IN ('DISPONIBLE','RESERVADO')
+              AND R.Cantidad - R.CantidadAplicada > 0
+            GROUP BY A.NombreArea
+        ) X
+    ) AP
     WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
     ORDER BY D.IdOrdenCompraInternaDetalle;
 END;
@@ -422,13 +450,11 @@ BEGIN
         OUTER APPLY (SELECT SUM(S.StockActual) AS StockActual FROM dbo.StockProductosAlmacen S WHERE S.IdProducto = D.IdProducto) SP
         OUTER APPLY
         (
-            SELECT SUM(DA.CantidadPendiente) AS StockProceso
-            FROM dbo.OrdenTrabajoDetalle OD
-            JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
-            JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
-            WHERE OD.IdProducto = D.IdProducto
-              AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
-              AND (A.NombreArea LIKE '%CORTE%' OR A.NombreArea LIKE '%CONFECCI%' OR A.NombreArea LIKE '%ACABADO%')
+            SELECT SUM(R.Cantidad - R.CantidadAplicada) AS StockProceso
+            FROM dbo.StockProcesoReserva R
+            WHERE R.IdProducto = D.IdProducto
+              AND R.Estado IN ('DISPONIBLE','RESERVADO')
+              AND R.Cantidad - R.CantidadAplicada > 0
         ) AP
         CROSS APPLY
         (
@@ -482,8 +508,8 @@ BEGIN
         JOIN dbo.OrdenCompraInternaDetalle D ON D.IdOrdenCompraInternaDetalle = X.IdOrdenCompraInternaDetalle
         JOIN @Pendientes P ON P.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle;
 
-        INSERT dbo.OrdenTrabajoDetalleArea(IdOrdenTrabajo, IdDetalleOT, IdAreaProduccion, CodigoArea, NombreArea, OrdenSecuencia, EsInicio, EsTermino, ManejaMerma, ModoEnvio)
-        SELECT @IdOrdenTrabajo, D.IdDetalleOT, A.IdAreaProduccion, A.CodigoArea, A.NombreArea, A.OrdenSecuencia, A.EsInicio, A.EsTermino, A.ManejaMerma, A.ModoEnvio
+        INSERT dbo.OrdenTrabajoDetalleArea(IdOrdenTrabajo, IdDetalleOT, IdAreaProduccion, CodigoArea, NombreArea, OrdenSecuencia, EsInicio, EsTermino, ManejaMerma, PermiteReservarStockProceso, ModoEnvio)
+        SELECT @IdOrdenTrabajo, D.IdDetalleOT, A.IdAreaProduccion, A.CodigoArea, A.NombreArea, A.OrdenSecuencia, A.EsInicio, A.EsTermino, A.ManejaMerma, A.PermiteReservarStockProceso, A.ModoEnvio
         FROM dbo.OrdenTrabajoDetalle D
         CROSS JOIN dbo.AreaProduccion A
         WHERE D.IdOrdenTrabajo = @IdOrdenTrabajo

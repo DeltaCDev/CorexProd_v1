@@ -14,6 +14,7 @@ namespace CorexProd.Entidad.Entidades
         public int? IdCliente { get; set; }
         public string NumeroOci { get; set; } = string.Empty;
         public string NumeroProforma { get; set; } = string.Empty;
+        public string NumeroOrdenTrabajo { get; set; } = string.Empty;
         public string OrdenCompraCliente { get; set; } = string.Empty;
         public DateTime FechaEmision { get; set; } = DateTime.Today;
         public int IdAlmacen { get; set; }
@@ -33,7 +34,7 @@ namespace CorexProd.Entidad.Entidades
         public string MotivoAnulacion { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
         public bool EsManual => Origen.Equals("Manual", StringComparison.OrdinalIgnoreCase);
-        public bool EsAnulada => Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase);
+        public bool EsAnulada => Estado.Trim().ToUpperInvariant() is "ANULADA" or "ANULADO";
         public bool PuedeAnular => !EsAnulada;
         public string DetalleAnulacion => EsAnulada
             ? $"Motivo: {TextoOmitido(MotivoAnulacion)}\nFecha y Hora: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}\nUsuario: {TextoOmitido(UsuarioAnulacion)}"

@@ -187,6 +187,14 @@ public partial class GuiaInternaPage : ContentPage
         }
     }
 
+    private async void OnAnulacionInfoClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not GuiaInternaListItem item)
+            return;
+
+        await DisplayAlertAsync("Anulacion", item.DetalleAnulacion, "OK");
+    }
+
     private void OnProductoSearchPressed(object? sender, EventArgs e)
     {
         if (_preparacion == null)
@@ -393,7 +401,15 @@ public partial class GuiaInternaPage : ContentPage
         public Color EmisionColor => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
             ? Color.FromArgb("#B42318")
             : EsParcial ? Color.FromArgb("#B54708") : Color.FromArgb("#067647");
+        public bool MostrarAnulacion => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
+            || Guia.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase);
+        public bool PuedeAnular => !MostrarAnulacion;
+        public string DetalleAnulacion =>
+            $"Motivo: {TextoOmitido(Guia.MotivoAnulacion)}\nFecha y hora: {TextoFecha(Guia.FechaAnulacion)}\nUsuario: {TextoOmitido(Guia.UsuarioAnulacion)}";
     }
+
+    private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
+    private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
 
     private sealed class GuiaManualDetalleItem
     {

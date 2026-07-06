@@ -231,20 +231,13 @@ namespace CorexProd.WPF.ViewModels
                 EsPadre = true
             };
 
-            if (menusPermitidos.Contains("Proformas"))
+            if (menusPermitidos.Contains("Orden de Compra") ||
+                menusPermitidos.Contains("OCI") ||
+                menusPermitidos.Contains("Proformas"))
             {
                 ventas.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Proformas",
-                    Vista = "Proformas"
-                });
-            }
-
-            if (menusPermitidos.Contains("OCI"))
-            {
-                ventas.Hijos.Add(new MenuItemSistema
-                {
-                    Titulo = "OCI",
+                    Titulo = "Orden de Compra",
                     Vista = "OCI"
                 });
             }
@@ -497,6 +490,12 @@ namespace CorexProd.WPF.ViewModels
                     Titulo = "Stock Productos",
                     Vista = "StockProductos"
                 });
+
+                reportes.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Stock Reservas",
+                    Vista = "StockProcesoReservas"
+                });
             }
 
             if (menusPermitidos.Contains("Stock Insumos"))
@@ -704,9 +703,13 @@ namespace CorexProd.WPF.ViewModels
 
         private static string NormalizarMenu(string texto)
         {
-            return texto
+            string normalizado = texto
                 .Replace("Menú", "Menu")
                 .Trim();
+
+            return normalizado.Equals("OCI", StringComparison.OrdinalIgnoreCase)
+                ? "Orden de Compra"
+                : normalizado;
         }
 
         private void IrInicio()
@@ -782,7 +785,7 @@ namespace CorexProd.WPF.ViewModels
                     break;
 
                 case "OCI":
-                    Titulo = "Órdenes de Compra Interna";
+                    Titulo = "Ordenes de Compra";
                     VistaActual = new OrdenesCompraInternaView();
                     break;
 
@@ -904,6 +907,11 @@ namespace CorexProd.WPF.ViewModels
                 case "StockProductos":
                     Titulo = "Stock Productos Terminados";
                     VistaActual = new StockProductosView();
+                    break;
+
+                case "StockProcesoReservas":
+                    Titulo = "Stock Reservas en Proceso";
+                    VistaActual = new StockProcesoReservasView();
                     break;
 
                 case "StockInsumos":

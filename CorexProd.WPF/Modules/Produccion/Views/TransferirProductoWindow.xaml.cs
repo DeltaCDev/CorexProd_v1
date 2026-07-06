@@ -16,6 +16,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         public decimal Cantidad { get; private set; }
         public bool RegistrarMerma { get; private set; }
+        public bool ReservarStockProceso { get; private set; }
         public decimal CantidadMerma { get; private set; }
         public string MotivoMerma => "MERMA EN OPERACION";
         public string ObservacionMerma => ObservacionMermaTextBox.Text.Trim();
@@ -43,8 +44,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             ProductoText.Text = $"{origen.CodigoProducto} - {origen.NombreProducto}";
             CantidadTextBox.Text = _disponible.ToString("0.##", CultureInfo.CurrentCulture);
             RegistrarMermaCheckBox.Visibility = origen.ManejaMerma ? Visibility.Visible : Visibility.Collapsed;
+            ReservarStockProcesoCheckBox.Visibility = !esTerminacion && origen.PermiteReservarStockProceso ? Visibility.Visible : Visibility.Collapsed;
             CantidadTextBox.TextChanged += (_, _) => ActualizarPendienteResultante();
             CantidadMermaTextBox.TextChanged += CantidadMerma_Changed;
+            CantidadReservaTextBox.TextChanged += (_, _) => ActualizarPendienteResultante();
             ActualizarPendienteResultante();
             CantidadTextBox.SelectAll();
             CantidadTextBox.Focus();
@@ -53,11 +56,30 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private void RegistrarMerma_Changed(object sender, RoutedEventArgs e)
         {
             bool activa = RegistrarMermaCheckBox.IsChecked == true;
+            if (activa && ReservarStockProcesoCheckBox.IsChecked == true)
+                ReservarStockProcesoCheckBox.IsChecked = false;
             MermaPanel.Visibility = activa ? Visibility.Visible : Visibility.Collapsed;
             if (!activa)
                 CantidadTextBox.Text = _disponible.ToString("0.##", CultureInfo.CurrentCulture);
             ActualizarPendienteResultante();
             if (activa) CantidadMermaTextBox.Focus();
+        }
+
+        private void ReservarStockProceso_Changed(object sender, RoutedEventArgs e)
+        {
+            bool activa = ReservarStockProcesoCheckBox.IsChecked == true;
+            if (activa && RegistrarMermaCheckBox.IsChecked == true)
+                RegistrarMermaCheckBox.IsChecked = false;
+            ReservaPanel.Visibility = activa ? Visibility.Visible : Visibility.Collapsed;
+            CantidadOperacionPanel.IsEnabled = !activa;
+            if (activa)
+            {
+                CantidadReservaTextBox.Text = CantidadTextBox.Text;
+                CantidadReservaTextBox.SelectAll();
+                CantidadReservaTextBox.Focus();
+            }
+            CantidadLabel.Text = _destino == "Productos terminados" ? "Cantidad terminada:" : "Cantidad a transferir:";
+            ActualizarPendienteResultante();
         }
 
         private void CantidadMerma_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -70,13 +92,23 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void ActualizarPendienteResultante()
         {
-            decimal.TryParse(CantidadTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal transferencia);
+            decimal.TryParse(
+                ReservarStockProcesoCheckBox.IsChecked == true ? CantidadReservaTextBox.Text : CantidadTextBox.Text,
+                NumberStyles.Number,
+                CultureInfo.CurrentCulture,
+                out decimal transferencia);
             decimal merma = 0;
             if (RegistrarMermaCheckBox.IsChecked == true)
                 decimal.TryParse(CantidadMermaTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out merma);
 
             decimal totalOperacion = transferencia + merma;
             decimal resultante = Math.Max(0, _disponible - totalOperacion);
+            if (ReservarStockProcesoCheckBox.IsChecked == true)
+            {
+                StockText.Text = $"Pendiente en {_nombreArea}: {_disponible:N2}\nSe reservaran {transferencia:N2} unidades como stock en proceso.";
+                return;
+            }
+
             StockText.Text = _permiteAjusteInicial && totalOperacion > _disponible
                 ? $"Pendiente en {_nombreArea}: {_disponible:N2}\nSe ajustara el inicio de produccion a {totalOperacion:N2}."
                 : $"Pendiente en {_nombreArea}: {_disponible:N2}\nPendiente despues de la operacion: {resultante:N2}";
@@ -84,12 +116,14 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Confirmar_Click(object sender, RoutedEventArgs e)
         {
-            if (!decimal.TryParse(CantidadTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad) || cantidad <= 0)
+            bool reservar = ReservarStockProcesoCheckBox.IsChecked == true;
+            string textoCantidad = reservar ? CantidadReservaTextBox.Text : CantidadTextBox.Text;
+            if (!decimal.TryParse(textoCantidad, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad) || cantidad <= 0)
             {
                 MessageBox.Show(this, "Ingrese una cantidad valida mayor que cero.", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (!_permiteAjusteInicial && cantidad > _disponible)
+            if ((!_permiteAjusteInicial || reservar) && cantidad > _disponible)
             {
                 MessageBox.Show(this, $"La cantidad no puede superar el pendiente disponible ({_disponible:N2}).", "Cantidad invalida", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -116,6 +150,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 CantidadMerma = merma;
                 RegistrarMerma = true;
             }
+            ReservarStockProceso = ReservarStockProcesoCheckBox.IsChecked == true;
             if (string.IsNullOrWhiteSpace(Clave))
             {
                 MessageBox.Show(this, "Ingrese la clave del usuario autorizador.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -134,10 +169,12 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 return;
             }
 
+            string accion = ReservarStockProceso ? "reservar" : (_destino == "Productos terminados" ? "terminar" : "transferir");
+            string destino = ReservarStockProceso ? $"como stock en proceso en {_nombreArea}" : $"desde {_nombreArea} hacia {_destino}";
             MessageBoxResult confirmacion = MessageBox.Show(
                 this,
-                $"Desea transferir {Cantidad:N2} unidades desde {_nombreArea} hacia {_destino}?",
-                "Confirmar transferencia",
+                $"Desea {accion} {Cantidad:N2} unidades {destino}?",
+                ReservarStockProceso ? "Confirmar reserva" : "Confirmar transferencia",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (confirmacion != MessageBoxResult.Yes)

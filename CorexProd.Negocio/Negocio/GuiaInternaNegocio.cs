@@ -75,6 +75,9 @@ namespace CorexProd.Negocio.Negocio
         {
             if (idGuiaInterna <= 0) return "Debe seleccionar una guía interna.";
             if (string.IsNullOrWhiteSpace(motivo)) return "Debe ingresar el motivo de anulación.";
+            GuiaInterna? guia = _datos.Obtener(idGuiaInterna);
+            if (guia == null) return "No se encontró la guía interna.";
+            if (guia.EsAnulada) return "La guía interna ya se encuentra anulada.";
             return _datos.Anular(idGuiaInterna, string.IsNullOrWhiteSpace(usuario) ? "Sistema" : usuario.Trim(), motivo.Trim());
         }
     }

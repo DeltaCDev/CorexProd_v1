@@ -3,6 +3,7 @@ using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -45,10 +46,17 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         {
             Menus.Clear();
 
-            foreach (MenuSistema menu in _menuNegocio.Listar())
+            foreach (MenuSistema menu in _menuNegocio.Listar().Where(EsMenuAdministrable))
             {
                 Menus.Add(menu);
             }
+
+            ReordenarVisualmente();
+        }
+
+        private static bool EsMenuAdministrable(MenuSistema menu)
+        {
+            return !menu.NombreMenu.Equals("Proformas", StringComparison.OrdinalIgnoreCase);
         }
 
         private void Mover(int direccion)

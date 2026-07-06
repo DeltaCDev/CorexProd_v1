@@ -3,6 +3,9 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
+using System.Security;
+using System.Text;
 
 namespace CorexProd.Datos.Datos
 {
@@ -52,6 +55,8 @@ namespace CorexProd.Datos.Datos
                         NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
                         Cantidad = Convert.ToDecimal(dr["Cantidad"]),
                         StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        StockProcesoReservado = DecimalOpcional(dr, "StockProcesoReservado"),
+                        StockProcesoReservadoDetalle = TextoOpcional(dr, "StockProcesoReservadoDetalle"),
                         CantidadDespachada = Convert.ToDecimal(dr["CantidadDespachada"]),
                         PrecioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
                         Descuento = Convert.ToDecimal(dr["Descuento"]),
@@ -80,6 +85,43 @@ namespace CorexProd.Datos.Datos
             return mensaje.Value?.ToString() ?? string.Empty;
         }
 
+        public string ObtenerSiguienteNumero()
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                "SELECT ISNULL(MAX(TRY_CONVERT(INT, RIGHT(NumeroOci, 6))), 0) + 1 FROM dbo.OrdenesCompraInterna",
+                conexion);
+            conexion.Open();
+            int correlativo = Convert.ToInt32(cmd.ExecuteScalar());
+            return $"OC-{correlativo.ToString().PadLeft(6, '0')}";
+        }
+
+        public string GuardarDirecta(OrdenCompraInterna orden)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_VEN_ORDEN_COMPRA_GUARDAR", conexion) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@FechaEmision", orden.FechaEmision.Date);
+            cmd.Parameters.AddWithValue("@OrdenCompraCliente", orden.OrdenCompraCliente);
+            cmd.Parameters.AddWithValue("@IdCliente", orden.IdCliente);
+            cmd.Parameters.AddWithValue("@Subtotal", orden.Subtotal);
+            cmd.Parameters.AddWithValue("@Descuento", orden.Descuento);
+            cmd.Parameters.AddWithValue("@Igv", orden.Igv);
+            cmd.Parameters.AddWithValue("@IgvPorcentaje", orden.IgvPorcentaje);
+            cmd.Parameters.AddWithValue("@CondicionTributaria", orden.CondicionTributaria);
+            cmd.Parameters.AddWithValue("@Total", orden.Total);
+            cmd.Parameters.AddWithValue("@DetallesXml", CrearDetallesXml(orden.Detalles));
+            cmd.Parameters.AddWithValue("@UsuarioGenerador", orden.UsuarioGenerador);
+            cmd.Parameters.Add(new SqlParameter("@IdGenerado", SqlDbType.Int) { Direction = ParameterDirection.Output });
+            cmd.Parameters.Add(new SqlParameter("@NumeroOrden", SqlDbType.VarChar, 40) { Direction = ParameterDirection.Output });
+            cmd.Parameters.Add(new SqlParameter("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output });
+            SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(mensaje);
+            conexion.Open();
+            ConfigurarOpcionesInsert(conexion);
+            cmd.ExecuteNonQuery();
+            return mensaje.Value?.ToString() ?? string.Empty;
+        }
+
         public string Anular(int idOrdenCompraInterna, string motivoAnulacion, string usuarioAnulacion)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
@@ -100,7 +142,7 @@ namespace CorexProd.Datos.Datos
             {
                 IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
                 NumeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
-                IdProforma = Convert.ToInt32(dr["IdProforma"]),
+                IdProforma = dr["IdProforma"] == DBNull.Value ? 0 : Convert.ToInt32(dr["IdProforma"]),
                 NumeroProforma = dr["NumeroProforma"]?.ToString() ?? string.Empty,
                 FechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
                 OrdenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
@@ -123,6 +165,69 @@ namespace CorexProd.Datos.Datos
                 PuedeGenerarOt = Convert.ToBoolean(dr["PuedeGenerarOt"]),
                 PuedeGenerarGuiaSalida = Convert.ToBoolean(dr["PuedeGenerarGuiaSalida"])
             };
+        }
+
+        private static string CrearDetallesXml(List<OrdenCompraInternaDetalle> detalles)
+        {
+            StringBuilder xml = new("<Detalles>");
+            foreach (OrdenCompraInternaDetalle detalle in detalles)
+            {
+                xml.Append("<Detalle ");
+                xml.Append(CrearAtributo("IdProducto", detalle.IdProducto.ToString(CultureInfo.InvariantCulture)));
+                xml.Append(CrearAtributo("Cantidad", detalle.Cantidad.ToString(CultureInfo.InvariantCulture)));
+                xml.Append(CrearAtributo("PrecioUnitario", detalle.PrecioUnitario.ToString(CultureInfo.InvariantCulture)));
+                xml.Append(CrearAtributo("Descuento", detalle.Descuento.ToString(CultureInfo.InvariantCulture)));
+                xml.Append(CrearAtributo("Importe", detalle.Importe.ToString(CultureInfo.InvariantCulture)));
+                xml.Append(CrearAtributo("Observacion", detalle.Observacion));
+                xml.Append("/>");
+            }
+            xml.Append("</Detalles>");
+            return xml.ToString();
+        }
+
+        private static string CrearAtributo(string nombre, string valor) =>
+            $"{nombre}=\"{SecurityElement.Escape(valor) ?? string.Empty}\" ";
+
+        private static decimal DecimalOpcional(SqlDataReader dr, string columna)
+        {
+            try
+            {
+                int ordinal = dr.GetOrdinal(columna);
+                return dr.IsDBNull(ordinal) ? 0 : Convert.ToDecimal(dr.GetValue(ordinal));
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return 0;
+            }
+        }
+
+        private static string TextoOpcional(SqlDataReader dr, string columna)
+        {
+            try
+            {
+                int ordinal = dr.GetOrdinal(columna);
+                return dr.IsDBNull(ordinal) ? string.Empty : dr.GetString(ordinal);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return string.Empty;
+            }
+        }
+
+        private static void ConfigurarOpcionesInsert(SqlConnection conexion)
+        {
+            using SqlCommand cmd = new(
+                """
+                SET ANSI_NULLS ON;
+                SET ANSI_PADDING ON;
+                SET ANSI_WARNINGS ON;
+                SET ARITHABORT ON;
+                SET CONCAT_NULL_YIELDS_NULL ON;
+                SET QUOTED_IDENTIFIER ON;
+                SET NUMERIC_ROUNDABORT OFF;
+                """,
+                conexion);
+            cmd.ExecuteNonQuery();
         }
     }
 }

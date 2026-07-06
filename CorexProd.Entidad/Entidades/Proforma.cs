@@ -20,6 +20,8 @@ namespace CorexProd.Entidad.Entidades
         public string CondicionTributaria { get; set; } = string.Empty;
         public decimal Total { get; set; }
         public string Estado { get; set; } = "Emitido";
+        public bool PuedeAnular => Estado.Trim().ToUpperInvariant() is not ("ANULADO" or "ANULADA")
+            && !TieneOrdenCompraInterna;
         public bool TieneOrdenCompraInterna { get; set; }
         public string UsuarioGenerador { get; set; } = string.Empty;
         public string MotivoAnulacion { get; set; } = string.Empty;

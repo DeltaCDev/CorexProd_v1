@@ -88,6 +88,7 @@ namespace CorexProd.Entidad.Entidades
         public bool EsInicio { get; set; }
         public bool EsTermino { get; set; }
         public bool ManejaMerma { get; set; }
+        public bool PermiteReservarStockProceso { get; set; }
         public string ModoEnvio { get; set; } = string.Empty;
         public decimal CantidadRecibida { get; set; }
         public decimal CantidadEnviada { get; set; }
@@ -104,6 +105,12 @@ namespace CorexProd.Entidad.Entidades
     public class OrdenTrabajoPlanificacion
     {
         public int IdOrdenCompraInternaDetalle { get; set; }
+        public decimal CantidadPlanificada { get; set; }
+    }
+
+    public class OrdenTrabajoManualPlanificacion
+    {
+        public int IdProducto { get; set; }
         public decimal CantidadPlanificada { get; set; }
     }
 

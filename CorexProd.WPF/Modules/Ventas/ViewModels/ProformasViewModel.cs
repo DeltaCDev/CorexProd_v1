@@ -196,7 +196,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private static bool EsAnulada(Proforma? proforma)
         {
-            return proforma?.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase) == true;
+            return proforma?.Estado.Trim().ToUpperInvariant() is "ANULADO" or "ANULADA";
         }
 
         private static bool PuedeModificar(object? parametro)

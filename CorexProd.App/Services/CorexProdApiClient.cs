@@ -154,6 +154,21 @@ public sealed class CorexProdApiClient
         return await GetAsync<ApiListResponse<OtValidacionInsumo>>($"api/oci/detalles/{idOrdenCompraInternaDetalle}/orden-trabajo/insumos", cancellationToken);
     }
 
+    public async Task<OtValidacionResponse> ValidarRegularizacionOrdenTrabajoAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<OtValidacionResponse>($"api/ordenes-trabajo/{idOrdenTrabajo}/regularizacion/validacion", cancellationToken);
+    }
+
+    public async Task<GenerarOtResponse> GenerarRegularizacionOrdenTrabajoAsync(int idOrdenTrabajo, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/regularizacion/generar"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<GenerarOtResponse>(response, cancellationToken);
+    }
+
     public async Task<GenerarGuiaInternaResponse> GenerarGuiaInternaDesdeOciAsync(int idOrdenCompraInterna, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
@@ -318,6 +333,16 @@ public sealed class CorexProdApiClient
 
         await EnsureSuccessAsync(response, cancellationToken);
         return await ReadJsonAsync<OperacionOrdenTrabajoResponse>(response, cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> AnularOrdenTrabajoAsync(int idOrdenTrabajo, OrdenTrabajoAnularRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/anular"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
     }
 
     public async Task<FichaTecnicaInfo> GetFichaTecnicaInfoAsync(string codigoProducto, CancellationToken cancellationToken = default)

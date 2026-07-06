@@ -259,9 +259,12 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Gestiona las OCI generadas desde proformas" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
+                    <TextBlock Text="Gestiona las ordenes de compra" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource Boton}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Nuevo"/></StackPanel>
+                    </Button>
                     <Button Style="{StaticResource Boton}" Command="{Binding ActualizarCommand}">
                         <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/><TextBlock Text="Actualizar"/></StackPanel>
                     </Button>
@@ -321,9 +324,8 @@
                             </Button>
                         </StackPanel>
                     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
-                    <DataGridTextColumn Header="OCI" Binding="{Binding NumeroOci}" Width="80" ElementStyle="{StaticResource Celda}"/>
+                    <DataGridTextColumn Header="Orden" Binding="{Binding NumeroOci}" Width="80" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTextColumn Header="Orden de compra" Binding="{Binding OrdenCompraCliente}" Width="120" ElementStyle="{StaticResource Celda}"/>
-                    <DataGridTextColumn Header="Proforma" Binding="{Binding NumeroProforma}" Width="80" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTemplateColumn Header="Estado" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">

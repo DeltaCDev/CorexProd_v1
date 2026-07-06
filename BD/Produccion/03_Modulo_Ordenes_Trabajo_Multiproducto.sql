@@ -89,6 +89,7 @@ BEGIN
         EsInicio BIT NOT NULL,
         EsTermino BIT NOT NULL,
         ManejaMerma BIT NOT NULL,
+        PermiteReservarStockProceso BIT NOT NULL CONSTRAINT DF_OTArea_PermiteReservarStockProceso DEFAULT(0),
         ModoEnvio VARCHAR(10) NOT NULL,
         CantidadRecibida DECIMAL(18,2) NOT NULL CONSTRAINT DF_OTArea_Recibida DEFAULT(0),
         CantidadEnviada DECIMAL(18,2) NOT NULL CONSTRAINT DF_OTArea_Enviada DEFAULT(0),
@@ -106,6 +107,44 @@ BEGIN
         CONSTRAINT CK_OTArea_Estado CHECK(Estado IN ('PENDIENTE','EN_PROCESO','PARCIAL','FINALIZADA','BLOQUEADA','ANULADA'))
     );
     CREATE INDEX IX_OTArea_Consulta ON dbo.OrdenTrabajoDetalleArea(IdOrdenTrabajo, IdAreaProduccion, Estado) INCLUDE(IdDetalleOT,CantidadRecibida,CantidadEnviada,CantidadMerma);
+END;
+GO
+
+IF COL_LENGTH('dbo.OrdenTrabajoDetalleArea', 'PermiteReservarStockProceso') IS NULL
+    ALTER TABLE dbo.OrdenTrabajoDetalleArea
+    ADD PermiteReservarStockProceso BIT NOT NULL CONSTRAINT DF_OTArea_PermiteReservarStockProceso DEFAULT(0);
+GO
+
+IF OBJECT_ID(N'dbo.StockProcesoReserva', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.StockProcesoReserva
+    (
+        IdStockProcesoReserva BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_StockProcesoReserva PRIMARY KEY,
+        IdDetalleArea BIGINT NOT NULL,
+        IdOrdenTrabajo INT NOT NULL,
+        IdDetalleOT INT NOT NULL,
+        IdProducto INT NOT NULL,
+        IdAreaProduccion INT NOT NULL,
+        CodigoProducto VARCHAR(50) NOT NULL,
+        NombreProducto NVARCHAR(250) NOT NULL,
+        Cantidad DECIMAL(18,2) NOT NULL,
+        CantidadAplicada DECIMAL(18,2) NOT NULL CONSTRAINT DF_StockProcesoReserva_Aplicada DEFAULT(0),
+        Estado VARCHAR(20) NOT NULL CONSTRAINT DF_StockProcesoReserva_Estado DEFAULT('DISPONIBLE'),
+        Observacion NVARCHAR(500) NOT NULL CONSTRAINT DF_StockProcesoReserva_Obs DEFAULT(N''),
+        IdUsuarioSesion INT NOT NULL,
+        IdUsuarioAutoriza INT NOT NULL,
+        FechaRegistro DATETIME2(0) NOT NULL CONSTRAINT DF_StockProcesoReserva_Fecha DEFAULT(SYSDATETIME()),
+        CONSTRAINT FK_StockProcesoReserva_AreaDetalle FOREIGN KEY(IdDetalleArea) REFERENCES dbo.OrdenTrabajoDetalleArea(IdDetalleArea),
+        CONSTRAINT FK_StockProcesoReserva_OT FOREIGN KEY(IdOrdenTrabajo) REFERENCES dbo.OrdenTrabajo(IdOrdenTrabajo),
+        CONSTRAINT FK_StockProcesoReserva_Detalle FOREIGN KEY(IdDetalleOT) REFERENCES dbo.OrdenTrabajoDetalle(IdDetalleOT),
+        CONSTRAINT FK_StockProcesoReserva_Producto FOREIGN KEY(IdProducto) REFERENCES dbo.Productos(IdProducto),
+        CONSTRAINT FK_StockProcesoReserva_Area FOREIGN KEY(IdAreaProduccion) REFERENCES dbo.AreaProduccion(IdAreaProduccion),
+        CONSTRAINT FK_StockProcesoReserva_Sesion FOREIGN KEY(IdUsuarioSesion) REFERENCES dbo.Usuarios(IdUsuario),
+        CONSTRAINT FK_StockProcesoReserva_Autoriza FOREIGN KEY(IdUsuarioAutoriza) REFERENCES dbo.Usuarios(IdUsuario),
+        CONSTRAINT CK_StockProcesoReserva_Cantidad CHECK(Cantidad > 0 AND CantidadAplicada >= 0 AND CantidadAplicada <= Cantidad),
+        CONSTRAINT CK_StockProcesoReserva_Estado CHECK(Estado IN ('DISPONIBLE','RESERVADO','APLICADO','ANULADO'))
+    );
+    CREATE INDEX IX_StockProcesoReserva_Disponible ON dbo.StockProcesoReserva(IdProducto, IdAreaProduccion, Estado) INCLUDE(Cantidad, CantidadAplicada, IdDetalleArea);
 END;
 GO
 
@@ -218,8 +257,8 @@ BEGIN
                CASE WHEN d.Cantidad-d.CantidadDespachada<0 THEN 0 ELSE d.Cantidad-d.CantidadDespachada END,x.CantidadPlanificada,x.CantidadPlanificada
         FROM @Detalles x JOIN dbo.OrdenCompraInternaDetalle d ON d.IdOrdenCompraInternaDetalle=x.IdOrdenCompraInternaDetalle;
 
-        INSERT dbo.OrdenTrabajoDetalleArea(IdOrdenTrabajo,IdDetalleOT,IdAreaProduccion,CodigoArea,NombreArea,OrdenSecuencia,EsInicio,EsTermino,ManejaMerma,ModoEnvio)
-        SELECT @IdOrdenTrabajo,d.IdDetalleOT,a.IdAreaProduccion,a.CodigoArea,a.NombreArea,a.OrdenSecuencia,a.EsInicio,a.EsTermino,a.ManejaMerma,a.ModoEnvio
+        INSERT dbo.OrdenTrabajoDetalleArea(IdOrdenTrabajo,IdDetalleOT,IdAreaProduccion,CodigoArea,NombreArea,OrdenSecuencia,EsInicio,EsTermino,ManejaMerma,PermiteReservarStockProceso,ModoEnvio)
+        SELECT @IdOrdenTrabajo,d.IdDetalleOT,a.IdAreaProduccion,a.CodigoArea,a.NombreArea,a.OrdenSecuencia,a.EsInicio,a.EsTermino,a.ManejaMerma,a.PermiteReservarStockProceso,a.ModoEnvio
         FROM dbo.OrdenTrabajoDetalle d CROSS JOIN dbo.AreaProduccion a WHERE d.IdOrdenTrabajo=@IdOrdenTrabajo AND a.Activo=1;
         UPDATE a SET CantidadRecibida=d.CantidadPlanificada,Estado='PENDIENTE'
         FROM dbo.OrdenTrabajoDetalleArea a JOIN dbo.OrdenTrabajoDetalle d ON d.IdDetalleOT=a.IdDetalleOT
@@ -292,7 +331,7 @@ BEGIN
         INSERT dbo.OrdenTrabajoTransferencia(IdOrdenTrabajo,IdAreaOrigen,IdAreaDestino,IdUsuarioSesion,IdUsuarioAutoriza,Observacion) VALUES(@IdOrdenTrabajo,@IdAreaOrigen,@IdAreaDestino,@IdUsuarioSesion,@IdUsuarioAutoriza,ISNULL(@Observacion,N'')); SET @IdOperacion=SCOPE_IDENTITY();
         INSERT dbo.OrdenTrabajoTransferenciaDetalle(IdOperacionTransferencia,IdDetalleOT,IdDetalleAreaOrigen,IdDetalleAreaDestino,CantidadEnviada,IdUsuarioSesion,IdUsuarioAutoriza)
         SELECT @IdOperacion,x.IdDetalleOT,o.IdDetalleArea,d.IdDetalleArea,x.Cantidad,@IdUsuarioSesion,@IdUsuarioAutoriza FROM @Detalles x JOIN dbo.OrdenTrabajoDetalleArea o ON o.IdDetalleOT=x.IdDetalleOT AND o.IdAreaProduccion=@IdAreaOrigen JOIN dbo.OrdenTrabajoDetalleArea d ON d.IdDetalleOT=x.IdDetalleOT AND d.IdAreaProduccion=@IdAreaDestino;
-        UPDATE a SET CantidadEnviada=CantidadEnviada+x.Cantidad,Estado=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma=0 THEN 'FINALIZADA' ELSE 'PARCIAL' END,FechaFin=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma=0 THEN SYSDATETIME() ELSE NULL END FROM dbo.OrdenTrabajoDetalleArea a JOIN @Detalles x ON x.IdDetalleOT=a.IdDetalleOT WHERE a.IdAreaProduccion=@IdAreaOrigen;
+        UPDATE a SET CantidadEnviada=CantidadEnviada+x.Cantidad,Estado=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma<=0 THEN 'FINALIZADA' ELSE 'PARCIAL' END,FechaFin=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma<=0 THEN SYSDATETIME() ELSE NULL END FROM dbo.OrdenTrabajoDetalleArea a JOIN @Detalles x ON x.IdDetalleOT=a.IdDetalleOT WHERE a.IdAreaProduccion=@IdAreaOrigen;
         UPDATE a SET CantidadRecibida=CantidadRecibida+x.Cantidad,Estado='EN_PROCESO',FechaInicio=COALESCE(FechaInicio,SYSDATETIME()) FROM dbo.OrdenTrabajoDetalleArea a JOIN @Detalles x ON x.IdDetalleOT=a.IdDetalleOT WHERE a.IdAreaProduccion=@IdAreaDestino;
         IF @DestinoEsTermino=1
         BEGIN
@@ -307,6 +346,80 @@ BEGIN
         END;
         UPDATE o SET Estado=CASE WHEN NOT EXISTS(SELECT 1 FROM dbo.OrdenTrabajoDetalle WHERE IdOrdenTrabajo=o.IdOrdenTrabajo AND Estado<>'TERMINADO') THEN 'TERMINADA' WHEN EXISTS(SELECT 1 FROM dbo.OrdenTrabajoDetalle WHERE IdOrdenTrabajo=o.IdOrdenTrabajo AND Estado='TERMINADO') THEN 'PARCIAL' ELSE 'EN_PROCESO' END FROM dbo.OrdenTrabajo o WHERE o.IdOrdenTrabajo=@IdOrdenTrabajo;
         COMMIT; END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_PRO_OT_RESERVAR_STOCK_PROCESO
+    @IdDetalleArea BIGINT,
+    @Cantidad DECIMAL(18,2),
+    @Observacion NVARCHAR(500),
+    @IdUsuarioSesion INT,
+    @IdUsuarioAutoriza INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        IF NOT EXISTS(SELECT 1 FROM dbo.Usuarios WHERE IdUsuario=@IdUsuarioSesion AND Estado=1)
+            OR NOT EXISTS(SELECT 1 FROM dbo.Usuarios WHERE IdUsuario=@IdUsuarioAutoriza AND Estado=1)
+            THROW 51000,'El usuario de sesion o autorizador no es valido.',1;
+
+        DECLARE
+            @IdOrdenTrabajo INT,
+            @IdDetalleOT INT,
+            @IdProducto INT,
+            @IdAreaProduccion INT,
+            @CodigoProducto VARCHAR(50),
+            @NombreProducto NVARCHAR(250),
+            @Pendiente DECIMAL(18,2),
+            @YaReservado DECIMAL(18,2),
+            @PermiteReservar BIT,
+            @EstadoArea VARCHAR(20),
+            @EstadoDetalle VARCHAR(20);
+
+        SELECT
+            @IdOrdenTrabajo=A.IdOrdenTrabajo,
+            @IdDetalleOT=A.IdDetalleOT,
+            @IdProducto=D.IdProducto,
+            @IdAreaProduccion=A.IdAreaProduccion,
+            @CodigoProducto=D.CodigoProducto,
+            @NombreProducto=D.NombreProducto,
+            @Pendiente=A.CantidadPendiente,
+            @PermiteReservar=A.PermiteReservarStockProceso,
+            @EstadoArea=A.Estado,
+            @EstadoDetalle=D.Estado
+        FROM dbo.OrdenTrabajoDetalleArea A WITH(UPDLOCK,HOLDLOCK)
+        JOIN dbo.OrdenTrabajoDetalle D ON D.IdDetalleOT=A.IdDetalleOT
+        WHERE A.IdDetalleArea=@IdDetalleArea;
+
+        IF @IdDetalleArea IS NULL OR @IdOrdenTrabajo IS NULL THROW 51000,'El area de la OT no existe.',1;
+        IF @PermiteReservar<>1 THROW 51000,'El area no permite reservar stock en proceso.',1;
+        IF @EstadoArea IN('FINALIZADA','BLOQUEADA','ANULADA') OR @EstadoDetalle IN('TERMINADO','ANULADO')
+            THROW 51000,'El producto o area esta finalizado, bloqueado o anulado.',1;
+        IF @Cantidad<=0 THROW 51000,'La cantidad a reservar debe ser mayor que cero.',1;
+
+        SELECT @YaReservado=ISNULL(SUM(Cantidad-CantidadAplicada),0)
+        FROM dbo.StockProcesoReserva WITH(UPDLOCK,HOLDLOCK)
+        WHERE IdDetalleArea=@IdDetalleArea
+          AND Estado IN('DISPONIBLE','RESERVADO');
+
+        IF @Cantidad > @Pendiente - ISNULL(@YaReservado,0)
+            THROW 51000,'La cantidad a reservar supera el pendiente disponible no reservado.',1;
+
+        INSERT dbo.StockProcesoReserva
+            (IdDetalleArea,IdOrdenTrabajo,IdDetalleOT,IdProducto,IdAreaProduccion,CodigoProducto,NombreProducto,Cantidad,Observacion,IdUsuarioSesion,IdUsuarioAutoriza)
+        VALUES
+            (@IdDetalleArea,@IdOrdenTrabajo,@IdDetalleOT,@IdProducto,@IdAreaProduccion,@CodigoProducto,@NombreProducto,@Cantidad,ISNULL(@Observacion,N''),@IdUsuarioSesion,@IdUsuarioAutoriza);
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK;
+        THROW;
+    END CATCH
 END;
 GO
 

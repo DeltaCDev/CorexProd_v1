@@ -1,3 +1,5 @@
+using System;
+
 namespace CorexProd.Entidad.Entidades
 {
     public class StockProducto
@@ -15,5 +17,20 @@ namespace CorexProd.Entidad.Entidades
         public int IdCategoriaProducto { get; set; }
         public string NombreCategoria { get; set; } = string.Empty;
         public decimal Cantidad { get; set; }
+    }
+
+    public class StockProcesoReservaReporte
+    {
+        public int IdProducto { get; set; }
+        public string CodigoProducto { get; set; } = string.Empty;
+        public string NombreProducto { get; set; } = string.Empty;
+        public int IdAreaProduccion { get; set; }
+        public string NombreArea { get; set; } = string.Empty;
+        public decimal CantidadReservada { get; set; }
+        public decimal CantidadAplicada { get; set; }
+        public decimal CantidadDisponible => Math.Max(0, CantidadReservada - CantidadAplicada);
+        public string Estado { get; set; } = string.Empty;
+        public string NumeroOT { get; set; } = string.Empty;
+        public DateTime FechaRegistro { get; set; }
     }
 }

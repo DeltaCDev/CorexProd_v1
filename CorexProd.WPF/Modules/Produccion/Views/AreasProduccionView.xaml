@@ -63,6 +63,7 @@
                         <DataGridTextColumn Header="Orden" Binding="{Binding OrdenSecuencia}" Width="55" ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Inicio" Binding="{Binding InicioDescripcion}" Width="55" ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Merma" Binding="{Binding MermaDescripcion}" Width="65" ElementStyle="{StaticResource CeldaTexto}"/>
+                        <DataGridCheckBoxColumn Header="Reserva proceso" Binding="{Binding PermiteReservarStockProceso}" Width="115"/>
                         <DataGridTextColumn Header="Término" Binding="{Binding TerminoDescripcion}" Width="65" ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Modo envío" Binding="{Binding ModoEnvio}" Width="85" ElementStyle="{StaticResource CeldaTexto}"/>
                         <DataGridTextColumn Header="Estado" Binding="{Binding EstadoDescripcion}" Width="80" ElementStyle="{StaticResource CeldaTexto}"/>

@@ -63,6 +63,9 @@ public sealed record ProformaResumen(
     decimal Total,
     string Estado,
     bool TieneOrdenCompraInterna,
+    string MotivoAnulacion = "",
+    string UsuarioAnulacion = "",
+    DateTime? FechaAnulacion = null,
     DateTime? FechaCierre = null);
 
 public sealed record ProformaDetalleResponse(
@@ -97,6 +100,9 @@ public sealed record OciResumen(
     bool TieneOtActiva = false,
     bool PuedeGenerarOt = false,
     bool PuedeGenerarGuiaSalida = false,
+    string MotivoAnulacion = "",
+    string UsuarioAnulacion = "",
+    DateTime? FechaAnulacion = null,
     DateTime? FechaCierre = null);
 
 public sealed record OciDetalleResponse(
@@ -430,6 +436,15 @@ public sealed record OrdenTrabajoResumen(
     decimal TotalPlanificado,
     decimal TotalLanzado,
     decimal Avance,
+    decimal TotalProducido = 0,
+    decimal TotalPendiente = 0,
+    string UsuarioCreacion = "",
+    int? IdOrdenTrabajoRelacionada = null,
+    string NumeroOTRelacionada = "",
+    bool TieneRegularizacion = false,
+    string MotivoAnulacion = "",
+    string UsuarioAnulacion = "",
+    DateTime? FechaAnulacion = null,
     DateTime? FechaCierre = null);
 
 public sealed record OrdenTrabajoDetalleResponse(
@@ -451,7 +466,12 @@ public sealed record OrdenTrabajoCabecera(
     string UsuarioCreacion,
     string UsuarioAutoriza,
     string Observacion,
-    DateTime FechaRegistro);
+    DateTime FechaRegistro,
+    int? IdOrdenTrabajoRelacionada = null,
+    string NumeroOTRelacionada = "",
+    string MotivoAnulacion = "",
+    string UsuarioAnulacion = "",
+    DateTime? FechaAnulacion = null);
 
 public sealed record OrdenTrabajoProducto(
     int IdDetalleOT,
@@ -527,6 +547,12 @@ public sealed record OrdenTrabajoMermaRequest(
     string Observacion,
     int IdUsuarioSesion,
     int IdUsuarioAutoriza);
+
+public sealed record OrdenTrabajoAnularRequest(
+    bool ConvertirProcesoAMerma,
+    int IdUsuarioSesion,
+    string MotivoAnulacion,
+    string UsuarioAnulacion);
 
 public sealed record OperacionOrdenTrabajoResponse(
     string Mensaje,

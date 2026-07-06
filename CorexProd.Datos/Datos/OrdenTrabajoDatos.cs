@@ -59,7 +59,7 @@ SELECT
           )
     ) THEN 1 ELSE 0 END AS BIT) AS TieneRegularizacionTerminada
 FROM dbo.OrdenTrabajo O
-JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+LEFT JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
 JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
 LEFT JOIN dbo.Usuarios UA ON UA.IdUsuario = O.IdUsuarioAutorizaCreacion
 LEFT JOIN dbo.OrdenTrabajo REL ON REL.IdOrdenTrabajo = O.IdOrdenTrabajoRelacionada
@@ -78,7 +78,7 @@ ORDER BY O.IdOrdenTrabajo DESC;";
             while (dr.Read()) lista.Add(new OrdenTrabajo
             {
                 IdOrdenTrabajo = Convert.ToInt32(dr["IdOrdenTrabajo"]), NumeroOT = Texto(dr, "NumeroOT"),
-                IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]), NumeroOci = Texto(dr, "NumeroOci"),
+                IdOrdenCompraInterna = dr["IdOrdenCompraInterna"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInterna"]), NumeroOci = Texto(dr, "NumeroOci"),
                 OrdenCompraCliente = Texto(dr,"OrdenCompraCliente"), TipoOT=Texto(dr,"TipoOT"),
                 IdOrdenTrabajoRelacionada=dr["IdOrdenTrabajoRelacionada"] is DBNull?null:Convert.ToInt32(dr["IdOrdenTrabajoRelacionada"]),NumeroOTRelacionada=Texto(dr,"NumeroOTRelacionada"),
                 IdCliente = Convert.ToInt32(dr["IdCliente"]), NombreCliente = Texto(dr, "NombreCliente"),
@@ -104,7 +104,7 @@ ORDER BY O.IdOrdenTrabajo DESC;";
             if (!dr.Read()) return null;
             OrdenTrabajo ot = new()
             {
-                IdOrdenTrabajo = id, NumeroOT = Texto(dr,"NumeroOT"), IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
+                IdOrdenTrabajo = id, NumeroOT = Texto(dr,"NumeroOT"), IdOrdenCompraInterna = dr["IdOrdenCompraInterna"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInterna"]),
                 NumeroOci = Texto(dr,"NumeroOci"), OrdenCompraCliente=Texto(dr,"OrdenCompraCliente"),TipoOT=Texto(dr,"TipoOT"),
                 IdOrdenTrabajoRelacionada=dr["IdOrdenTrabajoRelacionada"] is DBNull?null:Convert.ToInt32(dr["IdOrdenTrabajoRelacionada"]),
                 IdCliente = Convert.ToInt32(dr["IdCliente"]), NombreCliente = Texto(dr,"NombreCliente"),
@@ -274,6 +274,66 @@ ORDER BY D.IdDetalleOT;";
             cmd.Parameters.Add(id);
             cmd.Parameters.Add(numero);
             cn.Open();
+
+            using (SqlCommand validar = new(@"
+SELECT COUNT(1)
+FROM dbo.OrdenTrabajo
+WHERE IdOrdenTrabajoRelacionada = @IdOrdenTrabajoOrigen
+  AND UPPER(Estado) NOT IN ('ANULADA', 'ANULADO');", cn))
+            {
+                validar.Parameters.Add("@IdOrdenTrabajoOrigen", SqlDbType.Int).Value = idOrdenTrabajoOrigen;
+                if (Convert.ToInt32(validar.ExecuteScalar()) > 0)
+                    throw new InvalidOperationException("La OT origen ya fue regularizada.");
+            }
+
+            cmd.ExecuteNonQuery();
+            return (Convert.ToInt32(id.Value), numero.Value?.ToString() ?? string.Empty);
+        }
+
+        public List<OrdenTrabajoValidacionProducto> ValidarInsumosManual(IEnumerable<OrdenTrabajoManualPlanificacion> items)
+        {
+            List<OrdenTrabajoValidacionProducto> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_MANUAL_VALIDAR_INSUMOS", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTManualPlanificacion", Value = TablaPlanificacionManual(items) });
+            cn.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new OrdenTrabajoValidacionProducto
+                {
+                    IdOrdenCompraInternaDetalle = 0,
+                    IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                    CodigoProducto = Texto(dr, "CodigoProducto"),
+                    NombreProducto = Texto(dr, "NombreProducto"),
+                    Observacion = Texto(dr, "Observacion"),
+                    CantidadRequerida = Decimal(dr, "CantidadRequerida"),
+                    IdFichaTecnica = dr["IdFichaTecnica"] is DBNull ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
+                    StockAlmacen = Decimal(dr, "StockAlmacen"),
+                    StockCorte = Decimal(dr, "StockCorte"),
+                    StockConfeccion = Decimal(dr, "StockConfeccion"),
+                    StockAcabado = Decimal(dr, "StockAcabado"),
+                    StockTotal = Decimal(dr, "StockTotal"),
+                    Deficit = Decimal(dr, "Deficit"),
+                    EstadoInsumos = Texto(dr, "EstadoInsumos")
+                });
+            }
+
+            return lista;
+        }
+
+        public (int Id, string Numero) CrearManual(int idUsuario, string observacion, IEnumerable<OrdenTrabajoManualPlanificacion> items)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_MANUAL_CREAR", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+            cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
+            cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTManualPlanificacion", Value = TablaPlanificacionManual(items) });
+            SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(id);
+            cmd.Parameters.Add(numero);
+            cn.Open();
             cmd.ExecuteNonQuery();
             return (Convert.ToInt32(id.Value), numero.Value?.ToString() ?? string.Empty);
         }
@@ -345,6 +405,19 @@ ORDER BY D.IdDetalleOT;";
         {
             using SqlConnection cn=Conexion.ObtenerConexion(); using SqlCommand cmd=new("USP_PRO_OT_MERMA_REGISTRAR",cn){CommandType=CommandType.StoredProcedure};
             cmd.Parameters.AddWithValue("@IdDetalleArea",idArea); cmd.Parameters.AddWithValue("@Cantidad",cantidad); cmd.Parameters.AddWithValue("@Motivo",motivo); cmd.Parameters.AddWithValue("@Observacion",observacion??string.Empty); cmd.Parameters.AddWithValue("@IdUsuarioSesion",idSesion); cmd.Parameters.AddWithValue("@IdUsuarioAutoriza",idAutoriza); cn.Open(); cmd.ExecuteNonQuery();
+        }
+
+        public void ReservarStockProceso(long idDetalleArea, decimal cantidad, string observacion, int idSesion, int idAutoriza)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_RESERVAR_STOCK_PROCESO", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdDetalleArea", idDetalleArea);
+            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+            cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
+            cmd.Parameters.AddWithValue("@IdUsuarioSesion", idSesion);
+            cmd.Parameters.AddWithValue("@IdUsuarioAutoriza", idAutoriza);
+            cn.Open();
+            cmd.ExecuteNonQuery();
         }
 
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)
@@ -470,11 +543,13 @@ ORDER BY k.FechaMovimiento DESC;";
         public void ConfirmarConsumo(int idDetalleOt,int idUsuario){using SqlConnection cn=Conexion.ObtenerConexion();using SqlCommand cmd=new("USP_PRO_OT_CONSUMO_CONFIRMAR",cn){CommandType=CommandType.StoredProcedure};cmd.Parameters.AddWithValue("@IdDetalleOT",idDetalleOt);cmd.Parameters.AddWithValue("@IdUsuario",idUsuario);cn.Open();cmd.ExecuteNonQuery();}
 
         private static DataTable TablaPlanificacion(IEnumerable<OrdenTrabajoPlanificacion> items) { DataTable t=new(); t.Columns.Add("IdOrdenCompraInternaDetalle",typeof(int)); t.Columns.Add("CantidadPlanificada",typeof(decimal)); foreach(var x in items)t.Rows.Add(x.IdOrdenCompraInternaDetalle,x.CantidadPlanificada); return t; }
+        private static DataTable TablaPlanificacionManual(IEnumerable<OrdenTrabajoManualPlanificacion> items) { DataTable t=new(); t.Columns.Add("IdProducto",typeof(int)); t.Columns.Add("CantidadPlanificada",typeof(decimal)); foreach(var x in items)t.Rows.Add(x.IdProducto,x.CantidadPlanificada); return t; }
         private static DataTable TablaLanzamiento(IEnumerable<OrdenTrabajoLanzamiento> items) { DataTable t=new(); t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("CantidadLanzada",typeof(decimal));t.Columns.Add("Motivo",typeof(string));t.Columns.Add("Observacion",typeof(string));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.CantidadLanzada,x.Motivo,x.Observacion);return t; }
         private static DataTable TablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaItem> items) { DataTable t=new();t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("Cantidad",typeof(decimal));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.Cantidad);return t; }
-        private static OrdenTrabajoDetalle MapearDetalle(SqlDataReader dr)=>new(){IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdOrdenCompraInternaDetalle=Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),CantidadPlanificada=Decimal(dr,"CantidadPlanificada"),CantidadLanzada=Decimal(dr,"CantidadLanzada"),CantidadProducida=Decimal(dr,"CantidadProducida"),CantidadAplicada=Decimal(dr,"CantidadAplicada"),CantidadExcedente=Decimal(dr,"CantidadExcedente"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),MotivoDiferencia=Texto(dr,"MotivoDiferencia"),ObservacionDiferencia=Texto(dr,"ObservacionDiferencia")};
-        private static OrdenTrabajoDetalleArea MapearArea(SqlDataReader dr)=>new(){IdDetalleArea=Convert.ToInt64(dr["IdDetalleArea"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdAreaProduccion=Convert.ToInt32(dr["IdAreaProduccion"]),CodigoArea=Texto(dr,"CodigoArea"),NombreArea=Texto(dr,"NombreArea"),OrdenSecuencia=Convert.ToInt32(dr["OrdenSecuencia"]),EsInicio=Convert.ToBoolean(dr["EsInicio"]),EsTermino=Convert.ToBoolean(dr["EsTermino"]),ManejaMerma=Convert.ToBoolean(dr["ManejaMerma"]),ModoEnvio=Texto(dr,"ModoEnvio"),CantidadRecibida=Decimal(dr,"CantidadRecibida"),CantidadEnviada=Decimal(dr,"CantidadEnviada"),CantidadMerma=Decimal(dr,"CantidadMerma"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto")};
+        private static OrdenTrabajoDetalle MapearDetalle(SqlDataReader dr)=>new(){IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdOrdenCompraInternaDetalle=dr["IdOrdenCompraInternaDetalle"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),CantidadPlanificada=Decimal(dr,"CantidadPlanificada"),CantidadLanzada=Decimal(dr,"CantidadLanzada"),CantidadProducida=Decimal(dr,"CantidadProducida"),CantidadAplicada=Decimal(dr,"CantidadAplicada"),CantidadExcedente=Decimal(dr,"CantidadExcedente"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),MotivoDiferencia=Texto(dr,"MotivoDiferencia"),ObservacionDiferencia=Texto(dr,"ObservacionDiferencia")};
+        private static OrdenTrabajoDetalleArea MapearArea(SqlDataReader dr)=>new(){IdDetalleArea=Convert.ToInt64(dr["IdDetalleArea"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdAreaProduccion=Convert.ToInt32(dr["IdAreaProduccion"]),CodigoArea=Texto(dr,"CodigoArea"),NombreArea=Texto(dr,"NombreArea"),OrdenSecuencia=Convert.ToInt32(dr["OrdenSecuencia"]),EsInicio=Convert.ToBoolean(dr["EsInicio"]),EsTermino=Convert.ToBoolean(dr["EsTermino"]),ManejaMerma=Convert.ToBoolean(dr["ManejaMerma"]),PermiteReservarStockProceso=BooleanoOpcional(dr,"PermiteReservarStockProceso"),ModoEnvio=Texto(dr,"ModoEnvio"),CantidadRecibida=Decimal(dr,"CantidadRecibida"),CantidadEnviada=Decimal(dr,"CantidadEnviada"),CantidadMerma=Decimal(dr,"CantidadMerma"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto")};
         private static string Texto(SqlDataReader dr,string c)=>dr[c] is DBNull?string.Empty:dr[c]?.ToString()??string.Empty;
         private static decimal Decimal(SqlDataReader dr,string c)=>dr[c] is DBNull?0:Convert.ToDecimal(dr[c]);
+        private static bool BooleanoOpcional(SqlDataReader dr,string c){try{int o=dr.GetOrdinal(c);return !dr.IsDBNull(o)&&Convert.ToBoolean(dr.GetValue(o));}catch(IndexOutOfRangeException){return false;}}
     }
 }

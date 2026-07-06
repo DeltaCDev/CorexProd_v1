@@ -158,7 +158,7 @@ namespace CorexProd.Negocio.Negocio
             if (proforma == null)
                 return "No se encontro la proforma";
 
-            if (proforma.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase))
+            if (proforma.Estado.Trim().ToUpperInvariant() is "ANULADO" or "ANULADA")
                 return "La proforma ya se encuentra anulada";
 
             return _proformaDatos.Anular(idProforma, motivoAnulacion, usuarioAnulacion);

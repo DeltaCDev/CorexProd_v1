@@ -17,6 +17,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         private int _ordenSecuencia = 1;
         private bool _esInicio;
         private bool _manejaMerma;
+        private bool _permiteReservarStockProceso;
         private bool _esTermino;
         private string _modoEnvio = "UNICO";
         private bool _activo = true;
@@ -28,6 +29,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
         public int OrdenSecuencia { get => _ordenSecuencia; set { _ordenSecuencia = value; OnPropertyChanged(); } }
         public bool EsInicio { get => _esInicio; set { _esInicio = value; OnPropertyChanged(); } }
         public bool ManejaMerma { get => _manejaMerma; set { _manejaMerma = value; OnPropertyChanged(); } }
+        public bool PermiteReservarStockProceso { get => _permiteReservarStockProceso; set { _permiteReservarStockProceso = value; OnPropertyChanged(); } }
         public bool EsTermino { get => _esTermino; set { _esTermino = value; OnPropertyChanged(); } }
         public string ModoEnvio { get => _modoEnvio; set { _modoEnvio = value; OnPropertyChanged(); } }
         public bool Activo { get => _activo; set { _activo = value; OnPropertyChanged(); } }
@@ -56,6 +58,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                 OrdenSecuencia = area.OrdenSecuencia;
                 EsInicio = area.EsInicio;
                 ManejaMerma = area.ManejaMerma;
+                PermiteReservarStockProceso = area.PermiteReservarStockProceso;
                 EsTermino = area.EsTermino;
                 ModoEnvio = area.ModoEnvio;
                 Activo = area.Activo;
@@ -79,6 +82,7 @@ namespace CorexProd.WPF.Modules.Produccion.ViewModels
                     OrdenSecuencia = OrdenSecuencia,
                     EsInicio = EsInicio,
                     ManejaMerma = ManejaMerma,
+                    PermiteReservarStockProceso = PermiteReservarStockProceso,
                     EsTermino = EsTermino,
                     ModoEnvio = ModoEnvio,
                     Activo = Activo,

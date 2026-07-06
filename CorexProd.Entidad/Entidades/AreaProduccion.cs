@@ -9,6 +9,7 @@ namespace CorexProd.Entidad.Entidades
         public int OrdenSecuencia { get; set; }
         public bool EsInicio { get; set; }
         public bool ManejaMerma { get; set; }
+        public bool PermiteReservarStockProceso { get; set; }
         public bool EsTermino { get; set; }
         public string ModoEnvio { get; set; } = "UNICO";
         public bool Activo { get; set; } = true;

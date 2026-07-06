@@ -16,6 +16,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="TituloText" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
@@ -57,18 +59,32 @@
                   Checked="RegistrarMerma_Changed"
                   Unchecked="RegistrarMerma_Changed"/>
 
-        <StackPanel x:Name="MermaPanel" Grid.Row="5" Visibility="Collapsed">
+        <CheckBox x:Name="ReservarStockProcesoCheckBox"
+                  Grid.Row="5"
+                  Content="Reservar como stock en proceso"
+                  FontWeight="SemiBold"
+                  Margin="0,2,0,9"
+                  Visibility="Collapsed"
+                  Checked="ReservarStockProceso_Changed"
+                  Unchecked="ReservarStockProceso_Changed"/>
+
+        <StackPanel x:Name="ReservaPanel" Grid.Row="6" Visibility="Collapsed">
+            <TextBlock Text="Cantidad a reservar:" FontWeight="SemiBold"/>
+            <TextBox x:Name="CantidadReservaTextBox" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel x:Name="MermaPanel" Grid.Row="7" Visibility="Collapsed">
             <TextBlock Text="Cantidad de merma:" FontWeight="SemiBold"/>
             <TextBox x:Name="CantidadMermaTextBox" Height="34" Margin="0,4,0,9" Padding="7" VerticalContentAlignment="Center"/>
             <TextBlock Text="Observacion de merma:" FontWeight="SemiBold"/>
             <TextBox x:Name="ObservacionMermaTextBox" Height="52" Margin="0,4,0,10" Padding="7" TextWrapping="Wrap" AcceptsReturn="True" MaxLength="500"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="6">
+        <StackPanel Grid.Row="8">
             <TextBlock Text="Clave de usuario autorizador:" FontWeight="SemiBold"/>
             <PasswordBox x:Name="ClavePasswordBox" Height="34" Margin="0,4,0,0" Padding="7"/>
         </StackPanel>
-        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,4">
+        <StackPanel Grid.Row="9" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,4">
             <Button x:Name="ConfirmarButton" Content="Confirmar" Width="140" Height="40" Margin="0,0,12,0" IsDefault="True" Click="Confirmar_Click"/>
             <Button Content="Cancelar" Width="120" Height="40" IsCancel="True"/>
         </StackPanel>

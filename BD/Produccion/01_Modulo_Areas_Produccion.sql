@@ -20,6 +20,7 @@ BEGIN
         OrdenSecuencia INT NOT NULL,
         EsInicio BIT NOT NULL CONSTRAINT DF_AreaProduccion_EsInicio DEFAULT(0),
         ManejaMerma BIT NOT NULL CONSTRAINT DF_AreaProduccion_ManejaMerma DEFAULT(0),
+        PermiteReservarStockProceso BIT NOT NULL CONSTRAINT DF_AreaProduccion_PermiteReservarStockProceso DEFAULT(0),
         EsTermino BIT NOT NULL CONSTRAINT DF_AreaProduccion_EsTermino DEFAULT(0),
         ModoEnvio VARCHAR(10) NOT NULL,
         Activo BIT NOT NULL CONSTRAINT DF_AreaProduccion_Activo DEFAULT(1),
@@ -34,6 +35,11 @@ BEGIN
         CONSTRAINT FK_AreaProduccion_UsuarioModificacion FOREIGN KEY (UsuarioModificacion) REFERENCES dbo.Usuarios(IdUsuario)
     );
 END;
+GO
+
+IF COL_LENGTH('dbo.AreaProduccion', 'PermiteReservarStockProceso') IS NULL
+    ALTER TABLE dbo.AreaProduccion
+    ADD PermiteReservarStockProceso BIT NOT NULL CONSTRAINT DF_AreaProduccion_PermiteReservarStockProceso DEFAULT(0);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.AreaProduccion') AND name = N'UX_AreaProduccion_Codigo')
@@ -54,7 +60,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT IdAreaProduccion, CodigoArea, NombreArea, Descripcion, OrdenSecuencia,
-           EsInicio, ManejaMerma, EsTermino, ModoEnvio, Activo,
+           EsInicio, ManejaMerma, PermiteReservarStockProceso, EsTermino, ModoEnvio, Activo,
            UsuarioRegistro, FechaRegistro, UsuarioModificacion, FechaModificacion
     FROM dbo.AreaProduccion
     ORDER BY Activo DESC, OrdenSecuencia, NombreArea;
@@ -69,6 +75,7 @@ CREATE OR ALTER PROCEDURE dbo.USP_PRO_AREA_PRODUCCION_GUARDAR
     @OrdenSecuencia INT,
     @EsInicio BIT,
     @ManejaMerma BIT,
+    @PermiteReservarStockProceso BIT,
     @EsTermino BIT,
     @ModoEnvio VARCHAR(10),
     @Activo BIT,
@@ -110,22 +117,26 @@ BEGIN
         IF @IdAreaProduccion = 0
         BEGIN
             INSERT dbo.AreaProduccion
-                (CodigoArea, NombreArea, Descripcion, OrdenSecuencia, EsInicio, ManejaMerma, EsTermino, ModoEnvio, Activo, UsuarioRegistro)
+                (CodigoArea, NombreArea, Descripcion, OrdenSecuencia, EsInicio, ManejaMerma, PermiteReservarStockProceso, EsTermino, ModoEnvio, Activo, UsuarioRegistro)
             VALUES
-                (@CodigoArea, @NombreArea, @Descripcion, @OrdenSecuencia, @EsInicio, @ManejaMerma, @EsTermino, @ModoEnvio, @Activo, @IdUsuario);
+                (@CodigoArea, @NombreArea, @Descripcion, @OrdenSecuencia, @EsInicio, @ManejaMerma, @PermiteReservarStockProceso, @EsTermino, @ModoEnvio, @Activo, @IdUsuario);
             SET @IdAreaProduccion = CONVERT(INT, SCOPE_IDENTITY());
             SET @Accion = N'CREAR';
         END
         ELSE
         BEGIN
             SELECT @Antes = CONCAT(N'Antes: orden=', OrdenSecuencia, N', inicio=', EsInicio, N', término=', EsTermino,
-                                   N', merma=', ManejaMerma, N', modo=', ModoEnvio, N', activo=', Activo, N'. ')
+                                   N', merma=', ManejaMerma, N', reservaProceso=', PermiteReservarStockProceso, N', modo=', ModoEnvio, N', activo=', Activo, N'. ')
             FROM dbo.AreaProduccion WHERE IdAreaProduccion = @IdAreaProduccion;
             UPDATE dbo.AreaProduccion
                SET CodigoArea = @CodigoArea, NombreArea = @NombreArea, Descripcion = @Descripcion,
                    OrdenSecuencia = @OrdenSecuencia, EsInicio = @EsInicio, ManejaMerma = @ManejaMerma,
-                   EsTermino = @EsTermino, ModoEnvio = @ModoEnvio, Activo = @Activo,
+                   PermiteReservarStockProceso = @PermiteReservarStockProceso, EsTermino = @EsTermino, ModoEnvio = @ModoEnvio, Activo = @Activo,
                    UsuarioModificacion = @IdUsuario, FechaModificacion = SYSDATETIME()
+             WHERE IdAreaProduccion = @IdAreaProduccion;
+
+            UPDATE dbo.OrdenTrabajoDetalleArea
+               SET PermiteReservarStockProceso = @PermiteReservarStockProceso
              WHERE IdAreaProduccion = @IdAreaProduccion;
             SET @Accion = N'EDITAR';
         END;

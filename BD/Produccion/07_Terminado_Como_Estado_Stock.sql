@@ -111,8 +111,8 @@ BEGIN
         JOIN dbo.OrdenTrabajoDetalleArea a ON a.IdDetalleOT=x.IdDetalleOT AND a.IdAreaProduccion=@IdAreaTermino;
 
         UPDATE a SET CantidadEnviada=CantidadEnviada+x.Cantidad,
-            Estado=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma=0 THEN 'FINALIZADA' ELSE 'PARCIAL' END,
-            FechaFin=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma=0 THEN SYSDATETIME() ELSE NULL END
+            Estado=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma<=0 THEN 'FINALIZADA' ELSE 'PARCIAL' END,
+            FechaFin=CASE WHEN CantidadRecibida-(CantidadEnviada+x.Cantidad)-CantidadMerma<=0 THEN SYSDATETIME() ELSE NULL END
         FROM dbo.OrdenTrabajoDetalleArea a JOIN @Detalles x ON x.IdDetalleOT=a.IdDetalleOT WHERE a.IdAreaProduccion=@IdAreaTermino;
 
         DECLARE @Ingresos TABLE(IdProducto INT PRIMARY KEY,Cantidad DECIMAL(18,2));

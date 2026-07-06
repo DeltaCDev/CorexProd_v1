@@ -272,6 +272,12 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
             bool esTerminacion = celda.Area.EsTermino;
             OrdenTrabajoDetalle? detalle = _ot.Detalles.FirstOrDefault(x => x.IdDetalleOT == celda.Area.IdDetalleOT);
+            if (detalle?.Estado.Equals("TERMINADO", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                MessageBox.Show(this, $"El producto {detalle.CodigoProducto} ya esta terminado.", "Producto terminado", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             bool permiteAjusteInicial = celda.EsPrimerProceso && detalle?.Estado == "PENDIENTE";
             TransferirProductoWindow ventana = new(
                 celda.Area,
@@ -289,8 +295,16 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 string estadoAntes = _ot.Estado;
                 Usuario autoriza = ventana.UsuarioAutoriza
                     ?? throw new InvalidOperationException("No se pudo validar al usuario autorizador.");
-                OrdenTrabajoTransferenciaItem item = new() { IdDetalleOT = celda.Area.IdDetalleOT, Cantidad = ventana.Cantidad };
                 int idSesion = SessionManager.UsuarioActual?.IdUsuario ?? 0;
+                if (ventana.ReservarStockProceso)
+                {
+                    _negocio.ReservarStockProceso(celda.Area.IdDetalleArea, ventana.Cantidad, string.Empty, idSesion, autoriza);
+                    Cargar();
+                    MessageBox.Show(this, $"Se reservaron {ventana.Cantidad:N2} unidades de {celda.Area.NombreArea} como stock en proceso.", "Reserva registrada", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                OrdenTrabajoTransferenciaItem item = new() { IdDetalleOT = celda.Area.IdDetalleOT, Cantidad = ventana.Cantidad };
                 if (permiteAjusteInicial)
                 {
                     decimal cantidadLanzada = ventana.Cantidad + (ventana.RegistrarMerma ? ventana.CantidadMerma : 0);

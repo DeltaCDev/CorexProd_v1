@@ -34,11 +34,19 @@
                         <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
                             <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                             <VerticalStackLayout Spacing="10">
-                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                     <Label Text="{Binding Item.SerieNumero}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
                                     <Label Grid.Column="1" Text="{Binding Item.Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
-                                    <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Item.NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" />
-                                    <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding OcClienteTexto}" FontSize="12" TextColor="#475467" />
+                                    <Button Grid.Column="2"
+                                            Text="!"
+                                            IsVisible="{Binding MostrarAnulacion}"
+                                            BackgroundColor="#F04438"
+                                            TextColor="White"
+                                            Padding="8,2"
+                                            FontSize="12"
+                                            Clicked="OnAnulacionInfoClicked" />
+                                    <Label Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Item.NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" />
+                                    <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding OcClienteTexto}" FontSize="12" TextColor="#475467" />
                                     <Label Grid.Row="3" Text="{Binding Item.Estado}" FontSize="12" TextColor="#667085" />
                                     <Label Grid.Row="3" Grid.Column="1" Text="{Binding Item.FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
                                 </Grid>
@@ -57,6 +65,7 @@
                                             FontSize="12"
                                             Padding="8,6"
                                             BackgroundColor="#B42318"
+                                            IsVisible="{Binding PuedeAnular}"
                                             Clicked="OnAnularClicked" />
                                 </Grid>
                             </VerticalStackLayout>

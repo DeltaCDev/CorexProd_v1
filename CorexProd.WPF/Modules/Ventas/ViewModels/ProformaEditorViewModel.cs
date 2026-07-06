@@ -28,9 +28,11 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         };
 
         private readonly ProformaNegocio _proformaNegocio = new();
+        private readonly OrdenCompraInternaNegocio _ordenCompraNegocio = new();
         private readonly ClienteNegocio _clienteNegocio = new();
         private readonly ProductoNegocio _productoNegocio = new();
         private readonly List<Cliente> _todosLosClientes = [];
+        private readonly bool _crearOrdenCompraDirecta;
 
         private int _idProforma;
         private string _serieNumero = string.Empty;
@@ -72,7 +74,11 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
         }
 
-        public string Titulo => IdProforma > 0 ? "Editar Proforma" : "Nueva Proforma";
+        public string Titulo => _crearOrdenCompraDirecta
+            ? "Nueva Orden de Compra"
+            : IdProforma > 0 ? "Editar Proforma" : "Nueva Proforma";
+
+        public string EtiquetaNumeroDocumento => _crearOrdenCompraDirecta ? "Numero de Orden" : "ID / Serie de Proforma";
 
         public string SerieNumero
         {
@@ -273,8 +279,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         public ICommand GuardarClienteRapidoCommand { get; }
         public ICommand CancelarClienteRapidoCommand { get; }
 
-        public ProformaEditorViewModel(Proforma? proforma = null, bool copiar = false)
+        public ProformaEditorViewModel(Proforma? proforma = null, bool copiar = false, bool crearOrdenCompraDirecta = false)
         {
+            _crearOrdenCompraDirecta = crearOrdenCompraDirecta;
             AgregarProductoCommand = new RelayCommand(_ => AgregarFila());
             CargaMasivaCommand = new RelayCommand(_ => AbrirCargaMasiva());
             QuitarProductoCommand = new RelayCommand(parametro => QuitarFila(parametro));
@@ -301,7 +308,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
             else
             {
-                SerieNumero = _proformaNegocio.ObtenerSiguienteSerieNumero();
+                SerieNumero = _crearOrdenCompraDirecta
+                    ? _ordenCompraNegocio.ObtenerSiguienteNumero()
+                    : _proformaNegocio.ObtenerSiguienteSerieNumero();
                 AgregarFila();
             }
         }
@@ -714,6 +723,12 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         private void Guardar()
         {
+            if (_crearOrdenCompraDirecta)
+            {
+                GuardarOrdenCompraDirecta();
+                return;
+            }
+
             Proforma proforma = new()
             {
                 IdProforma = IdProforma,
@@ -731,6 +746,46 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             string mensaje = _proformaNegocio.Guardar(proforma);
 
             if (mensaje.Contains("correctamente"))
+            {
+                Guardado = true;
+                NotificationService.Success(mensaje);
+                CerrarVentana?.Invoke();
+            }
+            else
+            {
+                NotificationService.Warning(mensaje);
+            }
+        }
+
+        private void GuardarOrdenCompraDirecta()
+        {
+            OrdenCompraInterna orden = new()
+            {
+                FechaEmision = FechaEmision,
+                OrdenCompraCliente = OrdenCompraCliente,
+                IdCliente = ClienteSeleccionado?.IdCliente ?? 0,
+                NombreCliente = ClienteSeleccionado?.NombreRazonSocial ?? string.Empty,
+                Subtotal = Subtotal,
+                Descuento = Descuento,
+                Igv = Igv,
+                IgvPorcentaje = _igvPorcentaje,
+                CondicionTributaria = _condicionTributaria,
+                Total = Total,
+                UsuarioGenerador = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema",
+                Detalles = Detalles.Select(d => new OrdenCompraInternaDetalle
+                {
+                    IdProducto = d.IdProducto,
+                    Cantidad = d.Cantidad,
+                    PrecioUnitario = d.PrecioUnitario,
+                    Descuento = d.Descuento,
+                    Importe = d.Importe,
+                    Observacion = d.Observacion
+                }).ToList()
+            };
+
+            string mensaje = _ordenCompraNegocio.GuardarDirecta(orden);
+
+            if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
             {
                 Guardado = true;
                 NotificationService.Success(mensaje);

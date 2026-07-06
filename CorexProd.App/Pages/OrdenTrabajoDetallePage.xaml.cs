@@ -743,7 +743,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         Button aceptar = new() { Text = "Continuar" };
         Button cancelar = new() { Text = "Cancelar" };
         VerticalStackLayout contenido = new() { Padding = 24, Spacing = 16 };
-        contenido.Add(new Label { Text = "Ingrese la contraseña del usuario en sesión.", FontSize = 16 });
+        contenido.Add(new Label { Text = "Ingrese la contraseña de cualquier usuario activo autorizador.", FontSize = 16 });
         contenido.Add(claveEntry);
         contenido.Add(aceptar);
         contenido.Add(cancelar);
