@@ -142,8 +142,6 @@ namespace CorexProd.Datos.Datos
             {
                 IdOrdenCompraInterna = Convert.ToInt32(dr["IdOrdenCompraInterna"]),
                 NumeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
-                IdProforma = dr["IdProforma"] == DBNull.Value ? 0 : Convert.ToInt32(dr["IdProforma"]),
-                NumeroProforma = dr["NumeroProforma"]?.ToString() ?? string.Empty,
                 FechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
                 OrdenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
                 IdCliente = Convert.ToInt32(dr["IdCliente"]),
