@@ -33,8 +33,10 @@ public partial class ProformaEditorPage : ContentPage
     {
         try
         {
-            ProformaPrepararResponse response = await _apiClient.GetProformaPrepararAsync();
-            NumeroLabel.Text = $"Proforma {response.SiguienteNumero}";
+            ProformaPrepararResponse response = await _apiClient.GetOciPrepararAsync();
+            NumeroLabel.Text = string.IsNullOrWhiteSpace(response.SiguienteNumero)
+                ? "Nueva OC"
+                : $"Nueva OC {response.SiguienteNumero}";
             ClientePicker.ItemsSource = response.Clientes.ToList();
             _productos = response.Productos
                 .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.NombreProducto).Cliente)
@@ -50,7 +52,7 @@ public partial class ProformaEditorPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("Proformas", ex.Message, "OK");
+            await DisplayAlertAsync("OC", ex.Message, "OK");
         }
     }
 
@@ -75,13 +77,13 @@ public partial class ProformaEditorPage : ContentPage
     {
         if (ProductoPicker.SelectedItem is not ProductoProformaApi producto)
         {
-            await DisplayAlertAsync("Proformas", "Seleccione un producto.", "OK");
+            await DisplayAlertAsync("OC", "Seleccione un producto.", "OK");
             return;
         }
 
         if (!LeerDecimal(CantidadEntry.Text, out decimal cantidad) || cantidad <= 0)
         {
-            await DisplayAlertAsync("Proformas", "Ingrese una cantidad mayor a cero.", "OK");
+            await DisplayAlertAsync("OC", "Ingrese una cantidad mayor a cero.", "OK");
             return;
         }
 
@@ -122,13 +124,13 @@ public partial class ProformaEditorPage : ContentPage
 
         if (ClientePicker.SelectedItem is not ClienteApi cliente)
         {
-            await DisplayAlertAsync("Proformas", "Seleccione un cliente.", "OK");
+            await DisplayAlertAsync("OC", "Seleccione un cliente.", "OK");
             return;
         }
 
         if (_detalles.Count == 0)
         {
-            await DisplayAlertAsync("Proformas", "Agregue al menos un producto.", "OK");
+            await DisplayAlertAsync("OC", "Agregue al menos un producto.", "OK");
             return;
         }
 
@@ -145,13 +147,13 @@ public partial class ProformaEditorPage : ContentPage
                 _session.Usuario?.NombreUsuario ?? "Android",
                 _detalles.Select(x => new ProformaGuardarDetalleRequest(x.IdProducto, x.Cantidad, x.PrecioUnitario, x.Descuento, x.Observacion)).ToList());
 
-            ProformaGuardarResponse response = await _apiClient.GuardarProformaAsync(request);
-            await DisplayAlertAsync("Proforma guardada", $"{response.Mensaje}\n{response.SerieNumero}\nTotal: S/ {response.Total:N2}", "OK");
+            OciGuardarResponse response = await _apiClient.GuardarOciAsync(request);
+            await DisplayAlertAsync("OC guardada", $"{response.Mensaje}\n{response.NumeroOrden}\nTotal: S/ {response.Total:N2}", "OK");
             await Shell.Current.GoToAsync("..");
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("Proformas", ex.Message, "OK");
+            await DisplayAlertAsync("OC", ex.Message, "OK");
         }
         finally
         {

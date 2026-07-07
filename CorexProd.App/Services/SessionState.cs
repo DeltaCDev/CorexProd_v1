@@ -22,10 +22,10 @@ public sealed class SessionState
         Menus =
         [
             "Ventas",
-            "OCI",
+            "OC",
             "Guia Interna",
             "Produccion",
-            "OT Produccion",
+            "OT",
             "Reportes",
             "Kardex",
             "Almacen",

@@ -196,6 +196,14 @@ public sealed record ProformaGuardarResponse(
     decimal Igv,
     decimal Total);
 
+public sealed record OciGuardarResponse(
+    string Mensaje,
+    int IdOrdenCompraInterna,
+    string NumeroOrden,
+    decimal Subtotal,
+    decimal Igv,
+    decimal Total);
+
 public sealed record DocumentoAccionResponse(string Mensaje);
 
 public sealed record GenerarOtResponse(

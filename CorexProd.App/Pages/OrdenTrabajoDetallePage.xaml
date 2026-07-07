@@ -12,7 +12,7 @@
             <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="90,*" ColumnSpacing="8" RowSpacing="4">
                 <Label Text="Cliente" FontSize="12" TextColor="#667085" />
                 <Label x:Name="ClienteDetalleLabel" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#344054" LineBreakMode="WordWrap" />
-                <Label Grid.Row="1" Text="OCI" FontSize="12" TextColor="#667085" />
+                <Label Grid.Row="1" Text="OC" FontSize="12" TextColor="#667085" />
                 <Label x:Name="OciDetalleLabel" Grid.Row="1" Grid.Column="1" TextColor="#344054" />
                 <Label Grid.Row="2" Text="OC Cliente" FontSize="12" TextColor="#667085" />
                 <Label x:Name="OcClienteDetalleLabel" Grid.Row="2" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#344054" LineBreakMode="WordWrap" />

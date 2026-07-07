@@ -74,9 +74,9 @@
                                Placeholder="http://192.168.1.50:5000"
                                ReturnType="Next" />
 
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                             <Label x:Name="ServerStatusLabel"
-                                   Text="Use la IP de la PC servidor cuando esté en planta."
+                                   Text="Ingrese manualmente la URL de la API de la PC servidor."
                                    TextColor="#637083"
                                    LineBreakMode="WordWrap"
                                    VerticalOptions="Center" />

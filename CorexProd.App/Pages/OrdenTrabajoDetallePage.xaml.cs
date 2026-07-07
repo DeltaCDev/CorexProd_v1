@@ -632,7 +632,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             ColumnSpacing = 10
         };
 
-        grid.Add(CrearResumenEtiqueta("OCI"), 0, 0);
+        grid.Add(CrearResumenEtiqueta("OC"), 0, 0);
         grid.Add(CrearResumenValor(detalle.Cabecera.NumeroOci), 1, 0);
         grid.Add(CrearResumenEtiqueta("OC Cliente"), 0, 1);
         grid.Add(CrearResumenValor(TextoVacio(detalle.Cabecera.OrdenCompraCliente)), 1, 1);

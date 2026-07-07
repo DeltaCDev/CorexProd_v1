@@ -40,10 +40,10 @@ public partial class HomePage : ContentPage
         string[] orden =
         [
             "Ventas",
-            "OCI",
+            "OC",
             "Guia Interna",
             "Produccion",
-            "OT Produccion",
+            "OT",
             "Reportes",
             "Kardex",
             "Almacen",
@@ -57,10 +57,19 @@ public partial class HomePage : ContentPage
             .ToDictionary(x => x.menu, x => x.index, StringComparer.OrdinalIgnoreCase);
 
         return menus
+            .Select(NormalizarMenuVisible)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => posiciones.TryGetValue(x, out int posicion) ? posicion : int.MaxValue)
             .ThenBy(x => x)
             .ToList();
     }
+
+    private static string NormalizarMenuVisible(string menu) => menu.Trim() switch
+    {
+        "OCI" => "OC",
+        "OT Produccion" => "OT",
+        _ => menu
+    };
 
     private async Task CargarEmpresaAsync()
     {

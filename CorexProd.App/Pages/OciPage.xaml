@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.OciPage"
-             Title="OCI">
+             Title="OC">
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
@@ -14,19 +14,20 @@
                 <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged"/>
             </Grid>
             <SearchBar x:Name="Search"
-                       Placeholder="Numero, proforma, cliente u OC"
+                       Placeholder="Numero, cliente u OC"
                        SearchButtonPressed="OnSearchPressed"
                        TextChanged="OnSearchTextChanged" />
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <Label x:Name="CountLabel" Text="Sin datos" TextColor="#637083" VerticalOptions="Center" />
-                <Button Grid.Column="1" Text="Buscar" Clicked="OnBuscarClicked" />
+                <Button Grid.Column="1" Text="Nueva OC" BackgroundColor="#0E9384" Clicked="OnNuevaOcClicked" />
+                <Button Grid.Column="2" Text="Buscar" Clicked="OnBuscarClicked" />
             </Grid>
         </VerticalStackLayout>
 
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
             <CollectionView x:Name="ItemsView" Margin="12" SelectionMode="None">
                 <CollectionView.EmptyView>
-                    <Label Text="No hay OCI para mostrar." Padding="24" HorizontalTextAlignment="Center" TextColor="#637083" />
+                    <Label Text="No hay OC para mostrar." Padding="24" HorizontalTextAlignment="Center" TextColor="#637083" />
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>

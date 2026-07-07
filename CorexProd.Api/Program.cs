@@ -477,6 +477,62 @@ ORDER BY Predeterminada DESC, IdSerieCorrelativo;", conexion))
     return Results.Ok(new { siguienteNumero, clientes, productos });
 });
 
+app.MapGet("/api/oci/preparar", async () =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    List<object> clientes = [];
+    await using (SqlCommand cmd = new(@"
+SELECT IdCliente, NumeroDocumento, NombreRazonSocial
+FROM dbo.Clientes
+WHERE Estado = 1
+ORDER BY NombreRazonSocial;", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            clientes.Add(new
+            {
+                idCliente = Convert.ToInt32(dr["IdCliente"]),
+                numeroDocumento = dr["NumeroDocumento"]?.ToString() ?? string.Empty,
+                nombreRazonSocial = dr["NombreRazonSocial"]?.ToString() ?? string.Empty
+            });
+        }
+    }
+
+    List<object> productos = [];
+    await using (SqlCommand cmd = new(@"
+SELECT IdProducto, Codigo, NombreProducto, ISNULL(EtiquetaCliente, '') AS EtiquetaCliente, IdUnidadMedida, '' AS NombreUnidad
+FROM dbo.Productos
+WHERE Estado = 1
+ORDER BY Codigo, NombreProducto;", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            productos.Add(new
+            {
+                idProducto = Convert.ToInt32(dr["IdProducto"]),
+                codigo = dr["Codigo"]?.ToString() ?? string.Empty,
+                nombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                etiquetaCliente = dr["EtiquetaCliente"]?.ToString() ?? string.Empty,
+                idUnidadMedida = Convert.ToInt32(dr["IdUnidadMedida"]),
+                nombreUnidad = dr["NombreUnidad"]?.ToString() ?? string.Empty
+            });
+        }
+    }
+
+    int siguienteId;
+    await using (SqlCommand cmd = new("SELECT ISNULL(MAX(IdOrdenCompraInterna), 0) + 1 FROM dbo.OrdenesCompraInterna;", conexion))
+    {
+        siguienteId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    string siguienteNumero = $"OC-{siguienteId.ToString().PadLeft(6, '0')}";
+    return Results.Ok(new { siguienteNumero, clientes, productos });
+});
+
 app.MapPost("/api/proformas", async (ProformaGuardarApiRequest request) =>
 {
     if (request.IdCliente <= 0)
@@ -589,7 +645,7 @@ app.MapGet("/api/oci", async (string? buscar) =>
 SELECT
     O.IdOrdenCompraInterna,
     O.NumeroOci,
-    ISNULL(P.SerieNumero, '') AS NumeroProforma,
+    '' AS NumeroProforma,
     O.FechaEmision,
     O.OrdenCompraCliente,
     O.NombreCliente,
@@ -667,7 +723,6 @@ SELECT
           AND ISNULL(S.StockActual, 0) > 0
     ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarGuiaSalida
 FROM dbo.OrdenesCompraInterna O
-LEFT JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 OUTER APPLY
 (
     SELECT MAX(G.FechaRegistro) AS FechaCierre
@@ -677,7 +732,6 @@ OUTER APPLY
 ) GUIA
 WHERE @Buscar = ''
    OR O.NumeroOci LIKE '%' + @Buscar + '%'
-   OR ISNULL(P.SerieNumero, '') LIKE '%' + @Buscar + '%'
    OR ISNULL(O.OrdenCompraCliente, '') LIKE '%' + @Buscar + '%'
    OR O.NombreCliente LIKE '%' + @Buscar + '%'
 ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
@@ -721,7 +775,7 @@ app.MapGet("/api/oci/{id:int}", async (int id) =>
 SELECT TOP (1)
     O.IdOrdenCompraInterna,
     O.NumeroOci,
-    ISNULL(P.SerieNumero, '') AS NumeroProforma,
+    '' AS NumeroProforma,
     O.FechaEmision,
     O.OrdenCompraCliente,
     O.NombreCliente,
@@ -731,7 +785,6 @@ SELECT TOP (1)
     O.Total,
     O.Estado
 FROM dbo.OrdenesCompraInterna O
-LEFT JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
     const string detalleSql = @"

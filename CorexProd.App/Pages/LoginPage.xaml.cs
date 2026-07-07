@@ -15,6 +15,7 @@ public partial class LoginPage : ContentPage
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         ServerEntry.Text = _apiClient.BaseUrl;
+        ApiPanel.IsVisible = string.IsNullOrWhiteSpace(ServerEntry.Text);
     }
 
     private async void OnTestConnectionClicked(object? sender, EventArgs e)
@@ -104,7 +105,8 @@ public partial class LoginPage : ContentPage
 
     private void SaveServerUrl()
     {
-        _apiClient.BaseUrl = ServerEntry.Text ?? string.Empty;
+        string nuevaUrl = ServerEntry.Text?.Trim().TrimEnd('/') ?? string.Empty;
+        _apiClient.BaseUrl = nuevaUrl;
         ServerEntry.Text = _apiClient.BaseUrl;
     }
 
@@ -115,20 +117,22 @@ public partial class LoginPage : ContentPage
         LoginButton.IsEnabled = !isBusy;
     }
 
-    private async void OnSaveApiClicked(object sender, EventArgs e)
+    private async void OnSaveApiClicked(object? sender, EventArgs e)
     {
-        string nuevaUrl = ServerEntry.Text?.Trim().TrimEnd('/') ?? "";
+        string nuevaUrl = ServerEntry.Text?.Trim().TrimEnd('/') ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(nuevaUrl))
         {
-            await DisplayAlert("Aviso", "Ingrese la URL de la API.", "Aceptar");
+            await DisplayAlertAsync("Aviso", "Ingrese la URL de la API.", "Aceptar");
             return;
         }
 
-        Preferences.Default.Set("ApiBaseUrl", nuevaUrl);
+        _apiClient.BaseUrl = nuevaUrl;
+        ServerEntry.Text = _apiClient.BaseUrl;
+        ServerStatusLabel.Text = $"API guardada: {_apiClient.BaseUrl}";
+        ServerStatusLabel.TextColor = Color.FromArgb("#067647");
+        MessageLabel.Text = string.Empty;
 
-        ServerStatusLabel.Text = $"API guardada: {nuevaUrl}";
-
-        await DisplayAlert("Correcto", "La URL de la API fue guardada.", "Aceptar");
+        await DisplayAlertAsync("Correcto", "La URL de la API fue guardada.", "Aceptar");
     }
 }

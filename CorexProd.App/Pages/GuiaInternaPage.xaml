@@ -8,7 +8,7 @@
             <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <SearchBar x:Name="BuscarSearch"
-                               Placeholder="Numero, OCI, cliente u OC"
+                               Placeholder="Numero, OC, cliente"
                                SearchButtonPressed="OnBuscarPressed" />
                     <Button Grid.Column="1"
                             Text="Nueva"

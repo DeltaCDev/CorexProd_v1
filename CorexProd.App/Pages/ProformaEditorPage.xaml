@@ -2,14 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.ProformaEditorPage"
-             Title="Nueva Proforma">
+             Title="Nueva OC">
     <Grid RowDefinitions="*,Auto" BackgroundColor="#F4F6F8">
         <ScrollView>
             <VerticalStackLayout Padding="14" Spacing="12">
                 <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
                     <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                     <VerticalStackLayout Spacing="10">
-                        <Label x:Name="NumeroLabel" Text="Proforma" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
+                        <Label x:Name="NumeroLabel" Text="Nueva OC" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
                         <Picker x:Name="ClientePicker" Title="Cliente" ItemDisplayBinding="{Binding Display}" />
                         <Entry x:Name="OrdenCompraEntry" Placeholder="OC de cliente" />
                         <DatePicker x:Name="VencimientoPicker" />
@@ -35,7 +35,7 @@
 
                 <CollectionView x:Name="DetallesView" SelectionMode="None">
                     <CollectionView.EmptyView>
-                        <Label Text="Agregue productos a la proforma." Padding="18" HorizontalTextAlignment="Center" TextColor="#637083" />
+                        <Label Text="Agregue productos a la OC." Padding="18" HorizontalTextAlignment="Center" TextColor="#637083" />
                     </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>

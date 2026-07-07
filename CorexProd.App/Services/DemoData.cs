@@ -35,20 +35,20 @@ public static class DemoData
 
     public static IReadOnlyList<OciResumen> Ocis { get; } =
     [
-        new(1, "OCI-DEMO-001", "PF-DEMO-001", DateTime.Today.AddDays(-1), "OC-CLI-1001", "SGS DEL PERU S.A.C.", 2450, "PROCESO", false, false),
-        new(2, "OCI-DEMO-002", "PF-DEMO-002", DateTime.Today, "OC-CLI-1002", "MARCOBRE S.A.C.", 3780, "Emitida", true, true)
+        new(1, "OC-DEMO-001", string.Empty, DateTime.Today.AddDays(-1), "OC-CLI-1001", "SGS DEL PERU S.A.C.", 2450, "PROCESO", false, false),
+        new(2, "OC-DEMO-002", string.Empty, DateTime.Today, "OC-CLI-1002", "MARCOBRE S.A.C.", 3780, "Emitida", true, true)
     ];
 
     public static IReadOnlyList<GuiaInternaResumen> GuiasInternas { get; } =
     [
-        new(1, "GI-DEMO-001", "OCI", 1, 1, "OCI-DEMO-001", "OT-DEMO-001", "OC-CLI-1001", DateTime.Today, 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, "20601234567", "SGS DEL PERU S.A.C.", "Demo", "Demo", "Salida demo desde OCI", string.Empty, "Emitida", string.Empty, null, string.Empty, DateTime.Now),
+        new(1, "GI-DEMO-001", "OC", 1, 1, "OC-DEMO-001", "OT-DEMO-001", "OC-CLI-1001", DateTime.Today, 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, "20601234567", "SGS DEL PERU S.A.C.", "Demo", "Demo", "Salida demo desde OC", string.Empty, "Emitida", string.Empty, null, string.Empty, DateTime.Now),
         new(2, "GI-DEMO-002", "Manual", 0, null, string.Empty, string.Empty, string.Empty, DateTime.Today.AddDays(-1), 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, string.Empty, "Consumo interno", "Demo", "Demo", "Salida manual demo", "Consumo interno", "Emitida", string.Empty, null, string.Empty, DateTime.Now.AddDays(-1))
     ];
 
     public static IReadOnlyList<OrdenTrabajoResumen> OrdenesTrabajo { get; } =
     [
-        new(1, "OT-DEMO-001", "OCI-DEMO-001", "OC-CLI-1001", "Produccion", "SGS DEL PERU S.A.C.", DateTime.Today, "PENDIENTE", 2, 50, 15, 0.3m),
-        new(2, "OT-DEMO-002", "OCI-DEMO-002", "OC-CLI-1002", "Produccion", "MARCOBRE S.A.C.", DateTime.Today.AddDays(-1), "PROCESO", 1, 35, 28, 0.8m)
+        new(1, "OT-DEMO-001", "OC-DEMO-001", "OC-CLI-1001", "Produccion", "SGS DEL PERU S.A.C.", DateTime.Today, "PENDIENTE", 2, 50, 15, 0.3m),
+        new(2, "OT-DEMO-002", "OC-DEMO-002", "OC-CLI-1002", "Produccion", "MARCOBRE S.A.C.", DateTime.Today.AddDays(-1), "PROCESO", 1, 35, 28, 0.8m)
     ];
 
     public static ProformaDetalleResponse ProformaDetalle(int id)

@@ -8,14 +8,6 @@ namespace CorexProd.App.Services;
 public sealed class CorexProdApiClient
 {
     private const string ApiBaseUrlKey = "ApiBaseUrl";
-    private const string DefaultApiBaseUrl = "http://192.168.68.112:5055";
-    private const string LegacyApiBaseUrl = "http://192.168.68.112:5000";
-
-    private string GetApiBaseUrl()
-    {
-        return Preferences.Default.Get("ApiBaseUrl", DefaultApiBaseUrl);
-    }
-
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -29,8 +21,15 @@ public sealed class CorexProdApiClient
 
     public string BaseUrl
     {
-        get => NormalizeBaseUrl(Preferences.Get(ApiBaseUrlKey, DefaultApiBaseUrl));
-        set => Preferences.Set(ApiBaseUrlKey, NormalizeBaseUrl(value));
+        get => NormalizeStoredBaseUrl(Preferences.Get(ApiBaseUrlKey, string.Empty));
+        set
+        {
+            string url = NormalizeManualBaseUrl(value);
+            if (string.IsNullOrWhiteSpace(url))
+                Preferences.Remove(ApiBaseUrlKey);
+            else
+                Preferences.Set(ApiBaseUrlKey, url);
+        }
     }
 
     public async Task<HealthResponse> GetHealthAsync(CancellationToken cancellationToken = default)
@@ -98,6 +97,11 @@ public sealed class CorexProdApiClient
         return await GetAsync<ProformaPrepararResponse>("api/proformas/preparar", cancellationToken);
     }
 
+    public async Task<ProformaPrepararResponse> GetOciPrepararAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ProformaPrepararResponse>("api/oci/preparar", cancellationToken);
+    }
+
     public async Task<ProformaGuardarResponse> GuardarProformaAsync(ProformaGuardarRequest request, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
@@ -106,6 +110,16 @@ public sealed class CorexProdApiClient
 
         await EnsureSuccessAsync(response, cancellationToken);
         return await ReadJsonAsync<ProformaGuardarResponse>(response, cancellationToken);
+    }
+
+    public async Task<OciGuardarResponse> GuardarOciAsync(ProformaGuardarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl("api/oci"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<OciGuardarResponse>(response, cancellationToken);
     }
 
     public async Task<DocumentoAccionResponse> GenerarOciDesdeProformaAsync(int idProforma, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
@@ -422,18 +436,33 @@ public sealed class CorexProdApiClient
         return value ?? throw new InvalidOperationException("La API devolvió una respuesta vacía.");
     }
 
-    private static string NormalizeBaseUrl(string? value)
+    private static string NormalizeStoredBaseUrl(string? value)
     {
         string url = (value ?? string.Empty).Trim().TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(url))
-            return DefaultApiBaseUrl;
-        if (url.Equals(LegacyApiBaseUrl, StringComparison.OrdinalIgnoreCase))
-            return DefaultApiBaseUrl;
+        return url;
+    }
+
+    private static string NormalizeManualBaseUrl(string? value)
+    {
+        string url = (value ?? string.Empty).Trim().TrimEnd('/');
+        if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            url = "http://" + url["https://".Length..];
+        if (!string.IsNullOrWhiteSpace(url)
+            && !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            url = "http://" + url;
+        }
+
         return url;
     }
 
     private string BuildUrl(string route)
     {
-        return $"{NormalizeBaseUrl(BaseUrl)}/{route.TrimStart('/')}";
+        string baseUrl = BaseUrl;
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("Ingrese manualmente la URL de la API antes de continuar.");
+
+        return $"{baseUrl}/{route.TrimStart('/')}";
     }
 }

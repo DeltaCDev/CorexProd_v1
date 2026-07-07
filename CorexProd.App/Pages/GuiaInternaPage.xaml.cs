@@ -393,7 +393,7 @@ public partial class GuiaInternaPage : ContentPage
         public string EmpresaDestino => TextoVacio(Guia.EmpresaDestino);
         public DateTime FechaEmision => Guia.FechaEmision;
         public string Estado => Guia.Estado;
-        public string NumeroOciTexto => string.IsNullOrWhiteSpace(Guia.NumeroOci) ? "OCI: Manual" : $"OCI: {Guia.NumeroOci}";
+        public string NumeroOciTexto => string.IsNullOrWhiteSpace(Guia.NumeroOci) ? "OC: Manual" : $"OC: {FormatearNumeroOc(Guia.NumeroOci)}";
         public string NumeroOtTexto => string.IsNullOrWhiteSpace(Guia.NumeroOrdenTrabajo) ? "OT: No aplica" : $"OT: {Guia.NumeroOrdenTrabajo}";
         public string OrdenCompraClienteTexto => string.IsNullOrWhiteSpace(Guia.OrdenCompraCliente) ? "OC Cliente: No especificado" : $"OC Cliente: {Guia.OrdenCompraCliente}";
         public string EmisionTexto => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
@@ -411,6 +411,11 @@ public partial class GuiaInternaPage : ContentPage
 
     private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
+
+    private static string FormatearNumeroOc(string numero) =>
+        numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
+            ? "OC-" + numero[4..]
+            : numero;
 
     private sealed class GuiaManualDetalleItem
     {

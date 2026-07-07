@@ -164,7 +164,7 @@ public partial class OrdenesTrabajoPage : ContentPage
         {
             if (!PuedeAnular(ot.Estado))
             {
-                await DisplayAlertAsync("OT Produccion", "Solo se puede anular una OT en estado Pendiente o En Proceso.", "OK");
+                await DisplayAlertAsync("OT", "Solo se puede anular una OT en estado Pendiente o En Proceso.", "OK");
                 return;
             }
 
@@ -176,7 +176,7 @@ public partial class OrdenesTrabajoPage : ContentPage
             bool tieneTerminados = detalle.Detalles.Any(x => x.CantidadProducida > 0 || EsTerminado(x.Estado));
             if (enProceso && tieneTerminados)
             {
-                await DisplayAlertAsync("OT Produccion", "La OT tiene productos terminados y no puede anularse.", "OK");
+                await DisplayAlertAsync("OT", "La OT tiene productos terminados y no puede anularse.", "OK");
                 return;
             }
 
@@ -209,12 +209,12 @@ public partial class OrdenesTrabajoPage : ContentPage
                     _session.Usuario?.IdUsuario ?? 0,
                     motivo,
                     _session.Usuario?.NombreUsuario ?? "Android"));
-            await DisplayAlertAsync("OT Produccion", response.Mensaje, "OK");
+            await DisplayAlertAsync("OT", response.Mensaje, "OK");
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("OT Produccion", ex.Message, "OK");
+            await DisplayAlertAsync("OT", ex.Message, "OK");
         }
     }
 
@@ -296,8 +296,8 @@ public partial class OrdenesTrabajoPage : ContentPage
         public Color EstadoBackgroundColor => ObtenerEstadoBackgroundColor(Item.Estado);
         public Color EstadoStrokeColor => ObtenerEstadoStrokeColor(Item.Estado);
         public Color EstadoTextColor => ObtenerEstadoTextColor(Item.Estado);
-        public string NumeroOciTexto => string.IsNullOrWhiteSpace(Item.NumeroOci) ? "Sin OCI" : Item.NumeroOci;
-        public string TipoOT => string.IsNullOrWhiteSpace(Item.TipoOT) ? "OCI" : Item.TipoOT;
+        public string NumeroOciTexto => string.IsNullOrWhiteSpace(Item.NumeroOci) ? "Sin OC" : FormatearNumeroOc(Item.NumeroOci);
+        public string TipoOT => string.IsNullOrWhiteSpace(Item.TipoOT) || Item.TipoOT.Equals("OCI", StringComparison.OrdinalIgnoreCase) ? "OC" : Item.TipoOT;
         public string OtRelacionadaTexto => string.IsNullOrWhiteSpace(Item.NumeroOTRelacionada) ? "Sin relacion" : Item.NumeroOTRelacionada;
         public string Usuario => string.IsNullOrWhiteSpace(Item.UsuarioCreacion) ? "No registrado" : Item.UsuarioCreacion;
         public bool MostrarAnulacion => DocumentoFiltroHelper.Normalizar(Item.Estado) is "ANULADO" or "ANULADA";
@@ -309,6 +309,11 @@ public partial class OrdenesTrabajoPage : ContentPage
         public string DetalleAnulacion =>
             $"Motivo: {TextoOmitido(Item.MotivoAnulacion)}\nFecha y hora: {TextoFecha(Item.FechaAnulacion)}\nUsuario: {TextoOmitido(Item.UsuarioAnulacion)}";
     }
+
+    private static string FormatearNumeroOc(string numero) =>
+        numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
+            ? "OC-" + numero[4..]
+            : numero;
 
     private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";

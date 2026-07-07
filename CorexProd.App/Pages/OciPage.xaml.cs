@@ -52,6 +52,7 @@ public partial class OciPage : ContentPage
     }
 
     private async void OnBuscarClicked(object? sender, EventArgs e) => await LoadAsync();
+    private async void OnNuevaOcClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProformaEditorPage));
     private async void OnSearchPressed(object? sender, EventArgs e) => await LoadAsync();
     private async void OnRefreshing(object? sender, EventArgs e) => await LoadAsync();
 
@@ -78,7 +79,7 @@ public partial class OciPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("OCI", ex.Message, "OK");
+            await DisplayAlertAsync("OC", ex.Message, "OK");
         }
     }
 
@@ -222,7 +223,7 @@ public partial class OciPage : ContentPage
                 .ToList();
 
             GuiaInternaPrepararCabecera cabecera = new(
-                "OCI",
+                "OC",
                 detalle.Cabecera.IdOrdenCompraInterna,
                 detalle.Cabecera.NumeroOci,
                 string.Empty,
@@ -477,7 +478,6 @@ public partial class OciPage : ContentPage
             : await _apiClient.GetOciDetalleAsync(idOrdenCompraInterna);
         await Navigation.PushModalAsync(CrearDetalleDocumentoPage(
             detalle.Cabecera.NumeroOci,
-            string.Empty,
             detalle.Cabecera.NombreCliente,
             detalle.Cabecera.OrdenCompraCliente,
             detalle.Cabecera.Estado,
@@ -489,22 +489,22 @@ public partial class OciPage : ContentPage
     {
         if (EsOciAnulada(item.Estado))
         {
-            await DisplayAlertAsync("OCI", "La OCI ya se encuentra anulada.", "OK");
+            await DisplayAlertAsync("OC", "La OC ya se encuentra anulada.", "OK");
             return;
         }
 
-        string? motivo = await DisplayPromptAsync("Anular OCI", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
+        string? motivo = await DisplayPromptAsync("Anular OC", "Motivo de anulacion", "Anular", "Cancelar", "Motivo", maxLength: 200);
         if (string.IsNullOrWhiteSpace(motivo))
             return;
 
         if (_session.EsDemo)
         {
-            await DisplayAlertAsync("OCI demo", $"Se anularia {item.NumeroOci} con motivo: {motivo}", "OK");
+            await DisplayAlertAsync("OC demo", $"Se anularia {item.NumeroOci} con motivo: {motivo}", "OK");
             return;
         }
 
         DocumentoAccionResponse response = await _apiClient.AnularOciAsync(item.IdOrdenCompraInterna, new(_session.Usuario?.NombreUsuario ?? "Android", motivo));
-        await DisplayAlertAsync("OCI", response.Mensaje, "OK");
+        await DisplayAlertAsync("OC", response.Mensaje, "OK");
         await LoadAsync();
     }
 
@@ -547,14 +547,14 @@ public partial class OciPage : ContentPage
             foreach (OciListItem item in nuevosItems)
                 _items.Add(item);
 
-            CountLabel.Text = $"{_items.Count} OCI";
+            CountLabel.Text = $"{_items.Count} OC";
         }
         catch (Exception ex)
         {
             if (loadVersion != Volatile.Read(ref _loadVersion))
                 return;
 
-            await DisplayAlertAsync("OCI", ex.Message, "OK");
+            await DisplayAlertAsync("OC", ex.Message, "OK");
         }
         finally
         {
@@ -632,7 +632,6 @@ public partial class OciPage : ContentPage
 
     private static ContentPage CrearDetalleDocumentoPage(
         string numero,
-        string proforma,
         string cliente,
         string ordenCompraCliente,
         string estado,
@@ -641,7 +640,6 @@ public partial class OciPage : ContentPage
     {
         VerticalStackLayout contenido = new() { Padding = new Thickness(14), Spacing = 12 };
         contenido.Add(new Label { Text = numero, FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
-        contenido.Add(new Label { Text = $"Proforma: {proforma}", FontSize = 13, TextColor = Color.FromArgb("#667085") });
         contenido.Add(CrearResumenDocumento(cliente, ordenCompraCliente, estado, total));
         contenido.Add(new Label { Text = "Productos", FontFamily = "OpenSansSemibold", FontSize = 16, TextColor = Color.FromArgb("#101828") });
 
@@ -1177,7 +1175,7 @@ public partial class OciPage : ContentPage
 
     private sealed record OciListItem(OciResumen Item, bool TieneStockDisponible, bool TienePendiente, bool NecesitaOt)
     {
-        public string NumeroOci => Item.NumeroOci;
+        public string NumeroOci => FormatearNumeroOc(Item.NumeroOci);
         public string NumeroProforma => Item.NumeroProforma;
         public DateTime FechaEmision => Item.FechaEmision;
         public string OrdenCompraCliente => string.IsNullOrWhiteSpace(Item.OrdenCompraCliente) ? "Sin OC cliente" : Item.OrdenCompraCliente;
@@ -1199,6 +1197,11 @@ public partial class OciPage : ContentPage
         public string DetalleAnulacion =>
             $"Motivo: {TextoOmitido(Item.MotivoAnulacion)}\nFecha y hora: {TextoFecha(Item.FechaAnulacion)}\nUsuario: {TextoOmitido(Item.UsuarioAnulacion)}";
     }
+
+    private static string FormatearNumeroOc(string numero) =>
+        numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
+            ? "OC-" + numero[4..]
+            : numero;
 
     private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
