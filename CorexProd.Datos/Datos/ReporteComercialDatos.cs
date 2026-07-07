@@ -66,7 +66,7 @@ OtResumen AS
 SELECT O.IdOrdenCompraInterna,
        O.NombreCliente AS Cliente,
        O.NumeroOci AS OCI,
-       P.SerieNumero AS Proforma,
+       '' AS Proforma,
        ISNULL(OT.NumeroOT, '') AS OT,
        O.Estado,
        O.FechaRegistro AS [Fecha creacion OCI],
@@ -78,7 +78,6 @@ SELECT O.IdOrdenCompraInterna,
        GR.TotalDespachado AS [Total despachado]
 FROM GuiaResumen GR
 INNER JOIN dbo.OrdenesCompraInterna O ON O.IdOrdenCompraInterna = GR.IdOrdenCompraInterna
-INNER JOIN dbo.Proformas P ON P.IdProforma = O.IdProforma
 LEFT JOIN OtResumen OT ON OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
 ORDER BY GR.FechaGeneracionGuia DESC, O.NumeroOci;", desde, hasta);
 
