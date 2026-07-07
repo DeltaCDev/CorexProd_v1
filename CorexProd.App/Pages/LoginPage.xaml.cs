@@ -114,4 +114,21 @@ public partial class LoginPage : ContentPage
         BusyIndicator.IsRunning = isBusy;
         LoginButton.IsEnabled = !isBusy;
     }
+
+    private async void OnSaveApiClicked(object sender, EventArgs e)
+    {
+        string nuevaUrl = ServerEntry.Text?.Trim().TrimEnd('/') ?? "";
+
+        if (string.IsNullOrWhiteSpace(nuevaUrl))
+        {
+            await DisplayAlert("Aviso", "Ingrese la URL de la API.", "Aceptar");
+            return;
+        }
+
+        Preferences.Default.Set("ApiBaseUrl", nuevaUrl);
+
+        ServerStatusLabel.Text = $"API guardada: {nuevaUrl}";
+
+        await DisplayAlert("Correcto", "La URL de la API fue guardada.", "Aceptar");
+    }
 }

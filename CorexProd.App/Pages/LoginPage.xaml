@@ -83,6 +83,9 @@
                             <Button Grid.Column="1"
                                     Text="Probar"
                                     Clicked="OnTestConnectionClicked" />
+                            <Button Grid.Column="2"
+                                    Text="Guardar"
+                                    Clicked="OnSaveApiClicked" />
                         </Grid>
                     </VerticalStackLayout>
                 </Border>

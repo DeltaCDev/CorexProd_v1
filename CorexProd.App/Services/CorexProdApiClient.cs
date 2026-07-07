@@ -11,6 +11,11 @@ public sealed class CorexProdApiClient
     private const string DefaultApiBaseUrl = "http://192.168.68.112:5055";
     private const string LegacyApiBaseUrl = "http://192.168.68.112:5000";
 
+    private string GetApiBaseUrl()
+    {
+        return Preferences.Default.Get("ApiBaseUrl", DefaultApiBaseUrl);
+    }
+
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
