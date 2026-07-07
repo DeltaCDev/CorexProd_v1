@@ -104,7 +104,7 @@
                         <TextBlock Text="Cantidad&#x0a;Requerida" TextAlignment="Center"/>
                     </DataGridTextColumn.Header>
                 </DataGridTextColumn>
-                <DataGridTextColumn Binding="{Binding StockTotal, StringFormat=N3}" Width="75">
+                <DataGridTextColumn Binding="{Binding StockAlmacen, StringFormat=N3}" Width="75">
                     <DataGridTextColumn.Header>
                         <TextBlock Text="Stock&#x0a;Actual" TextAlignment="Center"/>
                     </DataGridTextColumn.Header>
