@@ -148,28 +148,28 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="CODIGO"
                                         Binding="{Binding CodigoProducto}"
-                                        Width="120"/>
+                                        Width="80"/>
                     <DataGridTextColumn Header="PRODUCTO"
                                         Binding="{Binding NombreProducto}"
-                                        Width="*"/>
+                                        Width="400"/>
                     <DataGridTextColumn Header="AREA"
                                         Binding="{Binding NombreArea}"
-                                        Width="150"/>
+                                        Width="120"/>
                     <DataGridTextColumn Header="OT ORIGEN"
                                         Binding="{Binding NumeroOT}"
-                                        Width="120"/>
+                                        Width="100"/>
                     <DataGridTextColumn Header="CANT. RESERVADA"
                                         Binding="{Binding CantidadReservada, StringFormat=N2}"
                                         Width="130"/>
                     <DataGridTextColumn Header="CANT. DISPONIBLE"
                                         Binding="{Binding CantidadDisponible, StringFormat=N2}"
-                                        Width="135"/>
+                                        Width="125"/>
                     <DataGridTextColumn Header="ESTADO"
                                         Binding="{Binding Estado}"
-                                        Width="120"/>
+                                        Width="90"/>
                     <DataGridTextColumn Header="FECHA"
                                         Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}"
-                                        Width="140"/>
+                                        Width="130"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

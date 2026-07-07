@@ -157,13 +157,13 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaMovimiento, StringFormat=dd/MM/yyyy HH:mm}" Width="125"/>
                                 <DataGridTextColumn Header="Movimiento" Binding="{Binding TipoMovimientoTexto}" Width="140"/>
-                                <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="2.4*"/>
-                                <DataGridTextColumn Header="Almacén" Binding="{Binding Almacen}" Width="1.1*"/>
-                                <DataGridTextColumn Header="UM" Binding="{Binding UnidadMedida}" Width="70"/>
-                                <DataGridTextColumn Header="Entrada" Binding="{Binding Entrada, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumeroVerde}"/>
-                                <DataGridTextColumn Header="Salida" Binding="{Binding Salida, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumeroRojo}"/>
-                                <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumero}"/>
-                                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="110"/>
+                                <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="400"/>
+                                <DataGridTextColumn Header="Almacén" Binding="{Binding Almacen}" Width="128"/>
+                                <DataGridTextColumn Header="UM" Binding="{Binding UnidadMedida}" Width="50"/>
+                                <DataGridTextColumn Header="Entrada" Binding="{Binding Entrada, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumeroVerde}"/>
+                                <DataGridTextColumn Header="Salida" Binding="{Binding Salida, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumeroRojo}"/>
+                                <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumero}"/>
+                                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="75"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>
@@ -321,13 +321,13 @@
                                   GridLinesVisibility="Horizontal">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaMovimiento, StringFormat=dd/MM/yyyy HH:mm}" Width="125"/>
-                                <DataGridTextColumn Header="Motivo" Binding="{Binding TipoMovimientoTexto}" Width="150"/>
-                                <DataGridTextColumn Header="Almacén" Binding="{Binding Almacen}" Width="1.2*"/>
-                                <DataGridTextColumn Header="UM" Binding="{Binding UnidadMedida}" Width="70"/>
-                                <DataGridTextColumn Header="Entrada" Binding="{Binding Entrada, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumeroVerde}"/>
-                                <DataGridTextColumn Header="Salida" Binding="{Binding Salida, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumeroRojo}"/>
-                                <DataGridTextColumn Header="Devolución" Binding="{Binding Devolucion, StringFormat=N2}" Width="100" ElementStyle="{StaticResource CeldaNumero}"/>
-                                <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat=N2}" Width="90" ElementStyle="{StaticResource CeldaNumero}"/>
+                                <DataGridTextColumn Header="Motivo" Binding="{Binding TipoMovimientoTexto}" Width="140"/>
+                                <DataGridTextColumn Header="Almacén" Binding="{Binding Almacen}" Width="130"/>
+                                <DataGridTextColumn Header="UM" Binding="{Binding UnidadMedida}" Width="50"/>
+                                <DataGridTextColumn Header="Entrada" Binding="{Binding Entrada, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumeroVerde}"/>
+                                <DataGridTextColumn Header="Salida" Binding="{Binding Salida, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumeroRojo}"/>
+                                <DataGridTextColumn Header="Devolución" Binding="{Binding Devolucion, StringFormat=N2}" Width="85" ElementStyle="{StaticResource CeldaNumero}"/>
+                                <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat=N2}" Width="75" ElementStyle="{StaticResource CeldaNumero}"/>
                                 <DataGridTextColumn Header="Observación" Binding="{Binding Observacion}" Width="2*"/>
                             </DataGrid.Columns>
                         </DataGrid>
