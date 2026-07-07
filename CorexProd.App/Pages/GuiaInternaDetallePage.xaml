@@ -6,17 +6,19 @@
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="16" Spacing="10" BackgroundColor="White">
             <Label x:Name="NumeroLabel" FontFamily="OpenSansSemibold" FontSize="20" TextColor="#10324A" />
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="92,*" RowSpacing="5" ColumnSpacing="8">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="92,*" RowSpacing="5" ColumnSpacing="8">
                 <Label Text="Origen" TextColor="#667085" FontSize="12" />
                 <Label x:Name="OrigenLabel" Grid.Column="1" TextColor="#344054" />
-                <Label Grid.Row="1" Text="OC Cliente" TextColor="#667085" FontSize="12" />
-                <Label x:Name="OcClienteLabel" Grid.Row="1" Grid.Column="1" TextColor="#344054" LineBreakMode="WordWrap" />
-                <Label Grid.Row="2" Text="Destino" TextColor="#667085" FontSize="12" />
-                <Label x:Name="DestinoLabel" Grid.Row="2" Grid.Column="1" TextColor="#344054" LineBreakMode="WordWrap" />
-                <Label Grid.Row="3" Text="Almacen" TextColor="#667085" FontSize="12" />
-                <Label x:Name="AlmacenLabel" Grid.Row="3" Grid.Column="1" TextColor="#344054" />
-                <Label Grid.Row="4" Text="Estado" TextColor="#667085" FontSize="12" />
-                <Label x:Name="EstadoLabel" Grid.Row="4" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                <Label Grid.Row="1" Text="OT" TextColor="#667085" FontSize="12" />
+                <Label x:Name="OtLabel" Grid.Row="1" Grid.Column="1" TextColor="#344054" />
+                <Label Grid.Row="2" Text="OC Cliente" TextColor="#667085" FontSize="12" />
+                <Label x:Name="OcClienteLabel" Grid.Row="2" Grid.Column="1" TextColor="#344054" LineBreakMode="WordWrap" />
+                <Label Grid.Row="3" Text="Destino" TextColor="#667085" FontSize="12" />
+                <Label x:Name="DestinoLabel" Grid.Row="3" Grid.Column="1" TextColor="#344054" LineBreakMode="WordWrap" />
+                <Label Grid.Row="4" Text="Almacen" TextColor="#667085" FontSize="12" />
+                <Label x:Name="AlmacenLabel" Grid.Row="4" Grid.Column="1" TextColor="#344054" />
+                <Label Grid.Row="5" Text="Estado" TextColor="#667085" FontSize="12" />
+                <Label x:Name="EstadoLabel" Grid.Row="5" Grid.Column="1" FontFamily="OpenSansSemibold" TextColor="#067647" />
             </Grid>
         </VerticalStackLayout>
 

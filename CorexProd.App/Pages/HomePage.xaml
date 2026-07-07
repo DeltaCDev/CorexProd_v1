@@ -17,7 +17,6 @@
                 <BoxView HeightRequest="1" Color="#2E5B73" />
 
                 <Label Text="Ventas" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
-                <Button Text="Proformas" FontSize="12" Padding="8,6" Clicked="OnProformasClicked" />
                 <Button Text="OCI" FontSize="12" Padding="8,6" Clicked="OnOciClicked" />
                 <Button Text="Guia Interna" FontSize="12" Padding="8,6" Clicked="OnGuiaInternaClicked" />
 

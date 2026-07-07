@@ -41,7 +41,7 @@ public static class DemoData
 
     public static IReadOnlyList<GuiaInternaResumen> GuiasInternas { get; } =
     [
-        new(1, "GI-DEMO-001", "OCI", 1, 1, "OCI-DEMO-001", "PF-DEMO-001", "OC-CLI-1001", DateTime.Today, 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, "20601234567", "SGS DEL PERU S.A.C.", "Demo", "Demo", "Salida demo desde OCI", string.Empty, "Emitida", string.Empty, null, string.Empty, DateTime.Now),
+        new(1, "GI-DEMO-001", "OCI", 1, 1, "OCI-DEMO-001", "OT-DEMO-001", "OC-CLI-1001", DateTime.Today, 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, "20601234567", "SGS DEL PERU S.A.C.", "Demo", "Demo", "Salida demo desde OCI", string.Empty, "Emitida", string.Empty, null, string.Empty, DateTime.Now),
         new(2, "GI-DEMO-002", "Manual", 0, null, string.Empty, string.Empty, string.Empty, DateTime.Today.AddDays(-1), 1, "Almacen Principal", Empresa.Ruc, Empresa.Nombre, string.Empty, "Consumo interno", "Demo", "Demo", "Salida manual demo", "Consumo interno", "Emitida", string.Empty, null, string.Empty, DateTime.Now.AddDays(-1))
     ];
 
@@ -115,9 +115,9 @@ public static class DemoData
 
         List<OrdenTrabajoArea> areas =
         [
-            new(1, ot.IdOrdenTrabajo, 1, 1, "COR", "Corte", 1, true, false, false, "Manual", 0, 0, 0, 25, "PENDIENTE", "MT009M", "CONJUNTO MARCOBRE TALLA M"),
-            new(2, ot.IdOrdenTrabajo, 2, 1, "COR", "Corte", 1, true, false, false, "Manual", 0, 0, 0, 25, "PENDIENTE", "MT009L", "CONJUNTO MARCOBRE TALLA L"),
-            new(3, ot.IdOrdenTrabajo, 1, 2, "COS", "Costura", 2, false, false, true, "Manual", 10, 0, 0, 10, "PROCESO", "MT009M", "CONJUNTO MARCOBRE TALLA M")
+            new(1, ot.IdOrdenTrabajo, 1, 1, "COR", "Corte", 1, true, false, false, "Manual", 0, 0, 0, 0, 25, "PENDIENTE", "MT009M", "CONJUNTO MARCOBRE TALLA M"),
+            new(2, ot.IdOrdenTrabajo, 2, 1, "COR", "Corte", 1, true, false, false, "Manual", 0, 0, 0, 0, 25, "PENDIENTE", "MT009L", "CONJUNTO MARCOBRE TALLA L"),
+            new(3, ot.IdOrdenTrabajo, 1, 2, "COS", "Costura", 2, false, false, true, "Manual", 10, 0, 0, 0, 10, "PROCESO", "MT009M", "CONJUNTO MARCOBRE TALLA M")
         ];
 
         return new(new(

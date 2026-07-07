@@ -82,9 +82,77 @@
             <Setter Property="Margin" Value="0,4,12,0"/><Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style x:Key="BotonAccion" TargetType="Button">
-            <Setter Property="Width" Value="34"/><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,6,0"/>
-            <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Cursor" Value="Hand"/>
-            <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#F1F5F9"/><Setter Property="BorderBrush" Value="#94A3B8"/></Trigger></Style.Triggers>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="48"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Margin" Value="0,0,7,0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#1D4ED8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.9"/>
+                                <Setter TargetName="Chrome" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#334155" BlurRadius="8" ShadowDepth="1" Opacity="0.18"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Chrome" Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#E5E7EB"/>
+                                <Setter Property="BorderBrush" Value="#CBD5E1"/>
+                                <Setter Property="Foreground" Value="#94A3B8"/>
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.65"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BotonAccionVer" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#1D4ED8"/>
+            <Setter Property="MinWidth" Value="76"/>
+        </Style>
+        <Style x:Key="BotonAccionKardex" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
+            <Setter Property="Background" Value="#047857"/>
+            <Setter Property="BorderBrush" Value="#065F46"/>
+            <Setter Property="MinWidth" Value="88"/>
+        </Style>
+        <Style x:Key="BotonAccionHistorial" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
+            <Setter Property="Background" Value="#4F46E5"/>
+            <Setter Property="BorderBrush" Value="#4338CA"/>
+            <Setter Property="MinWidth" Value="96"/>
+        </Style>
+        <Style x:Key="BotonAccionAnular" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="Foreground" Value="#B91C1C"/>
+            <Setter Property="MinWidth" Value="80"/>
         </Style>
         <Style x:Key="FilaOt" TargetType="DataGridRow">
             <Setter Property="Height" Value="48"/><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#0F172A"/><Setter Property="BorderThickness" Value="0"/>
@@ -223,14 +291,34 @@
                       RowStyle="{StaticResource FilaOt}"
                       CellStyle="{StaticResource CeldaOt}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="220">
+                    <DataGridTemplateColumn Header="Acciones" Width="390">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <Button Style="{StaticResource BotonAccion}" Foreground="#334155" Click="Abrir_Click" ToolTip="Ver detalle de la OT"><TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
-                                    <Button Style="{StaticResource BotonAccion}" Width="78" Foreground="#0F766E" Click="Kardex_Click" ToolTip="Consultar Kardex"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/><TextBlock Text="Kardex" VerticalAlignment="Center"/></StackPanel></Button>
-                                    <Button Style="{StaticResource BotonAccion}" Foreground="#7C3AED" Click="Historial_Click" ToolTip="Ver historial de movimientos"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
-                                    <Button Style="{StaticResource BotonAccion}" Foreground="#DC2626" IsEnabled="{Binding PuedeAnular}" Click="Anular_Click" ToolTip="Anular OT pendiente"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="15"/></Button>
+                                    <Button Style="{StaticResource BotonAccionVer}" Click="Abrir_Click" ToolTip="Ver detalle de la OT">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Ver" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAccionKardex}" Click="Kardex_Click" ToolTip="Consultar Kardex">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Kardex" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAccionHistorial}" Click="Historial_Click" ToolTip="Ver historial de movimientos">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Historial" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource BotonAccionAnular}" IsEnabled="{Binding PuedeAnular}" Click="Anular_Click" ToolTip="Anular OT pendiente">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="15" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Anular" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

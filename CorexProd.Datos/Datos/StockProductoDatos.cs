@@ -55,8 +55,8 @@ SELECT
 FROM dbo.StockProcesoReserva R
 JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = R.IdAreaProduccion
 JOIN dbo.OrdenTrabajo OT ON OT.IdOrdenTrabajo = R.IdOrdenTrabajo
-WHERE R.Estado IN ('DISPONIBLE','RESERVADO')
-  AND R.Cantidad - R.CantidadAplicada > 0
+WHERE R.Estado IN ('DISPONIBLE','RESERVADO','APLICADO')
+  AND (R.Cantidad - R.CantidadAplicada > 0 OR R.Estado = 'APLICADO')
 GROUP BY
     R.IdProducto,
     R.CodigoProducto,

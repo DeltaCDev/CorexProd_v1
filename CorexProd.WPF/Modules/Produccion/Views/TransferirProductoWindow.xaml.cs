@@ -31,7 +31,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             Func<string, Usuario>? autorizar = null)
         {
             InitializeComponent();
-            _disponible = origen.CantidadPendiente;
+            _disponible = origen.CantidadPendienteDisponible;
             _permiteAjusteInicial = permiteAjusteInicial;
             _nombreArea = origen.NombreArea;
             _destino = esTerminacion ? "Productos terminados" : destino;

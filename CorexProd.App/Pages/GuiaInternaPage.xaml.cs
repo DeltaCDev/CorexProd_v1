@@ -394,6 +394,7 @@ public partial class GuiaInternaPage : ContentPage
         public DateTime FechaEmision => Guia.FechaEmision;
         public string Estado => Guia.Estado;
         public string NumeroOciTexto => string.IsNullOrWhiteSpace(Guia.NumeroOci) ? "OCI: Manual" : $"OCI: {Guia.NumeroOci}";
+        public string NumeroOtTexto => string.IsNullOrWhiteSpace(Guia.NumeroOrdenTrabajo) ? "OT: No aplica" : $"OT: {Guia.NumeroOrdenTrabajo}";
         public string OrdenCompraClienteTexto => string.IsNullOrWhiteSpace(Guia.OrdenCompraCliente) ? "OC Cliente: No especificado" : $"OC Cliente: {Guia.OrdenCompraCliente}";
         public string EmisionTexto => Guia.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase)
             ? "Anulada"

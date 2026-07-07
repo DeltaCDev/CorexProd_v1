@@ -225,7 +225,7 @@ public partial class OciPage : ContentPage
                 "OCI",
                 detalle.Cabecera.IdOrdenCompraInterna,
                 detalle.Cabecera.NumeroOci,
-                detalle.Cabecera.NumeroProforma,
+                string.Empty,
                 detalle.Cabecera.OrdenCompraCliente,
                 1,
                 "Almacen Principal",
@@ -378,7 +378,7 @@ public partial class OciPage : ContentPage
         contenido.Add(new Label { Text = "Revise la ficha tecnica e insumos antes de generar.", FontSize = 13, TextColor = Color.FromArgb("#667085") });
         contenido.Add(CrearResumenDocumento(oci.NombreCliente, oci.OrdenCompraCliente, oci.Estado, oci.Total));
 
-        foreach (OtValidacionProducto producto in validacion.Productos.Where(x => x.Deficit > 0))
+        foreach (OtValidacionProducto producto in validacion.Productos.Where(x => x.CantidadRequerida > 0))
             contenido.Add(CrearOtProductoCard(producto, false));
 
         Grid acciones = new()
@@ -416,7 +416,7 @@ public partial class OciPage : ContentPage
         header.Add(new Label { Text = ObtenerOtValidacionTexto(producto), FontFamily = "OpenSansSemibold", TextColor = estadoColor }, 1, 0);
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"Cantidad a producir: {producto.Deficit:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+        stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N2} | Desde corte: {producto.Deficit:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
         stack.Add(CrearOtResumenLabel(producto, estadoColor));
 
         if (!string.IsNullOrWhiteSpace(producto.Observacion))
@@ -477,7 +477,7 @@ public partial class OciPage : ContentPage
             : await _apiClient.GetOciDetalleAsync(idOrdenCompraInterna);
         await Navigation.PushModalAsync(CrearDetalleDocumentoPage(
             detalle.Cabecera.NumeroOci,
-            detalle.Cabecera.NumeroProforma,
+            string.Empty,
             detalle.Cabecera.NombreCliente,
             detalle.Cabecera.OrdenCompraCliente,
             detalle.Cabecera.Estado,
@@ -522,7 +522,6 @@ public partial class OciPage : ContentPage
             string filtro = busqueda.Trim();
             if (!string.IsNullOrWhiteSpace(filtro))
                 items = items.Where(x => x.NumeroOci.Contains(filtro, StringComparison.OrdinalIgnoreCase)
-                    || x.NumeroProforma.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.NombreCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)
                     || x.OrdenCompraCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
             string estadoFiltro = DocumentoFiltroHelper.Normalizar(EstadoPicker.SelectedItem?.ToString());
@@ -1034,7 +1033,7 @@ public partial class OciPage : ContentPage
 
     private static string ObtenerOtValidacionTexto(OtValidacionProducto producto)
     {
-        return producto.Deficit > 0 ? "Deficit" : "Completo";
+        return producto.Deficit > 0 ? "Deficit" : "En proceso";
     }
 
     private static Color ObtenerOtValidacionColor(OtValidacionProducto producto)
@@ -1055,7 +1054,7 @@ public partial class OciPage : ContentPage
         });
         texto.Spans.Add(new Span
         {
-            Text = producto.Deficit > 0 ? $"Deficit: {producto.Deficit:N2}" : "Completo",
+            Text = producto.Deficit > 0 ? $"Deficit: {producto.Deficit:N2}" : "Continuar proceso",
             TextColor = estadoColor,
             FontFamily = "OpenSansSemibold"
         });

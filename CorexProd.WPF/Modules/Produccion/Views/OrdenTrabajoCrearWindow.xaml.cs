@@ -131,7 +131,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     new OrdenTrabajoPlanificacion
                     {
                         IdOrdenCompraInternaDetalle = producto.IdOrdenCompraInternaDetalle,
-                        CantidadPlanificada = producto.CantidadRequerida
+                        CantidadPlanificada = producto.Deficit
                     }).ToList();
 
                 int idUsuario = SessionManager.UsuarioActual?.IdUsuario ?? 0;

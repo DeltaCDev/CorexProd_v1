@@ -41,7 +41,7 @@
                     </Grid.RowDefinitions>
                     <StackPanel>
                         <TextBlock Text="Productos y Detalles de Produccion" FontSize="17" FontWeight="Bold"/>
-                        <TextBlock Text="P: Pendiente | E: Enviado | M: Merma" Foreground="#64748B" Margin="0,4,0,10"/>
+                        <TextBlock Text="P: Pendiente | E: Enviado | R: Reservado | M: Merma" Foreground="#64748B" Margin="0,4,0,10"/>
                     </StackPanel>
                     <DataGrid x:Name="ResumenGrid"
                               Grid.Row="1"
@@ -74,8 +74,9 @@
                             <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" IsReadOnly="True" Width="100"/>
                             <DataGridTextColumn Header="Recibido" Binding="{Binding CantidadRecibida,StringFormat=N2}" IsReadOnly="True" Width="85"/>
                             <DataGridTextColumn Header="Enviado" Binding="{Binding CantidadEnviada,StringFormat=N2}" IsReadOnly="True" Width="85"/>
+                            <DataGridTextColumn Header="Reservado" Binding="{Binding CantidadReservada,StringFormat=N2}" IsReadOnly="True" Width="85"/>
                             <DataGridTextColumn Header="Merma" Binding="{Binding CantidadMerma,StringFormat=N2}" IsReadOnly="True" Width="75"/>
-                            <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente,StringFormat=N2}" IsReadOnly="True" Width="85"/>
+                            <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendienteDisponible,StringFormat=N2}" IsReadOnly="True" Width="85"/>
                             <DataGridTextColumn Header="Cantidad" Binding="{Binding CantidadOperacion,UpdateSourceTrigger=PropertyChanged}" Width="85"/>
                             <DataGridTextColumn Header="Modo" Binding="{Binding ModoEnvio}" IsReadOnly="True" Width="75"/>
                             <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" IsReadOnly="True" Width="100"/>

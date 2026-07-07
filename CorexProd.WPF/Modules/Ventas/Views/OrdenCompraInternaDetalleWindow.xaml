@@ -15,7 +15,7 @@
             <DataGrid ItemsSource="{Binding Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowHeight="48">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="100"/>
-                    <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="300">
+                    <DataGridTemplateColumn Header="Producto" Width="360" MinWidth="300">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding NombreProducto}"
@@ -29,7 +29,7 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Requerida" Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
                     <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="90"/>
-                    <DataGridTemplateColumn Header="Stock proceso reservado" Width="150">
+                    <DataGridTemplateColumn Header="Stock proceso reservado" Width="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

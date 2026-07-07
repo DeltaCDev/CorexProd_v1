@@ -93,13 +93,15 @@ namespace CorexProd.Entidad.Entidades
         public decimal CantidadRecibida { get; set; }
         public decimal CantidadEnviada { get; set; }
         public decimal CantidadMerma { get; set; }
+        public decimal CantidadReservada { get; set; }
         public decimal CantidadPendiente { get; set; }
+        public decimal CantidadPendienteDisponible => Math.Max(0, CantidadPendiente - CantidadReservada);
         public string Estado { get; set; } = string.Empty;
         public string CodigoProducto { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
         public bool Seleccionado { get; set; }
         public decimal CantidadOperacion { get; set; }
-        public bool Disponible => CantidadPendiente > 0 && Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA");
+        public bool Disponible => CantidadPendienteDisponible > 0 && Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA");
     }
 
     public class OrdenTrabajoPlanificacion

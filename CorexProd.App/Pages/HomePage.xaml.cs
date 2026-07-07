@@ -40,7 +40,6 @@ public partial class HomePage : ContentPage
         string[] orden =
         [
             "Ventas",
-            "Proformas",
             "OCI",
             "Guia Interna",
             "Produccion",
@@ -86,8 +85,6 @@ public partial class HomePage : ContentPage
     private async void OnProductosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockProductosPage));
 
     private async void OnInsumosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockInsumosPage));
-
-    private async void OnProformasClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProformasPage));
 
     private async void OnOciClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OciPage));
 

@@ -216,7 +216,7 @@ public sealed record GuiaInternaPrepararCabecera(
     string Origen,
     int IdOrdenCompraInterna,
     string NumeroOci,
-    string NumeroProforma,
+    string NumeroOrdenTrabajo,
     string OrdenCompraCliente,
     int IdAlmacen,
     string NombreAlmacen,
@@ -224,7 +224,10 @@ public sealed record GuiaInternaPrepararCabecera(
     string EmpresaEmisora,
     string RucDestino,
     string EmpresaDestino,
-    DateTime FechaEmision);
+    DateTime FechaEmision)
+{
+    public string NumeroProforma => NumeroOrdenTrabajo;
+}
 
 public sealed record GuiaInternaOciRequest(
     int IdAlmacen,
@@ -246,7 +249,7 @@ public sealed record GuiaInternaResumen(
     int IdOrdenCompraInterna,
     int? IdCliente,
     string NumeroOci,
-    string NumeroProforma,
+    string NumeroOrdenTrabajo,
     string OrdenCompraCliente,
     DateTime FechaEmision,
     int IdAlmacen,
@@ -263,7 +266,10 @@ public sealed record GuiaInternaResumen(
     string UsuarioAnulacion,
     DateTime? FechaAnulacion,
     string MotivoAnulacion,
-    DateTime FechaRegistro);
+    DateTime FechaRegistro)
+{
+    public string NumeroProforma => NumeroOrdenTrabajo;
+}
 
 public sealed record GuiaInternaDetalleResponse(
     GuiaInternaResumen Cabecera,
@@ -501,18 +507,20 @@ public sealed record OrdenTrabajoArea(
     decimal CantidadRecibida,
     decimal CantidadEnviada,
     decimal CantidadMerma,
+    decimal CantidadReservada,
     decimal CantidadPendiente,
     string Estado,
     string CodigoProducto,
     string NombreProducto)
 {
-    public bool Disponible => CantidadPendiente > 0
+    public decimal CantidadPendienteDisponible => Math.Max(0, CantidadPendiente - CantidadReservada);
+    public bool Disponible => CantidadPendienteDisponible > 0
         && !Estado.Equals("FINALIZADA", StringComparison.OrdinalIgnoreCase)
         && !Estado.Equals("BLOQUEADA", StringComparison.OrdinalIgnoreCase)
         && !Estado.Equals("ANULADA", StringComparison.OrdinalIgnoreCase);
 
     public string Producto => $"{CodigoProducto} - {NombreProducto}";
-    public string Cantidades => $"Recibido {CantidadRecibida:N2} | Enviado {CantidadEnviada:N2} | Merma {CantidadMerma:N2} | Pend. {CantidadPendiente:N2}";
+    public string Cantidades => $"Recibido {CantidadRecibida:N2} | Enviado {CantidadEnviada:N2} | Reservado {CantidadReservada:N2} | Merma {CantidadMerma:N2} | Pend. {CantidadPendienteDisponible:N2}";
     public string AccionPrincipal => EsTermino ? "Terminar" : "Transferir";
 }
 

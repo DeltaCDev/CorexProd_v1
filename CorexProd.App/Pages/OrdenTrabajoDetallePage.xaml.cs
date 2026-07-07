@@ -313,7 +313,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             return;
         }
 
-        decimal cantidad = await PedirCantidadAsync("Iniciar producción", area.CantidadPendiente, permitirMayor: true);
+        decimal cantidad = await PedirCantidadAsync("Iniciar producción", area.CantidadPendienteDisponible, permitirMayor: true);
         if (cantidad <= 0)
             return;
 
@@ -372,7 +372,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             return;
         }
 
-        decimal cantidad = await PedirCantidadAsync(area.EsTermino ? "Terminar producto" : "Transferir producto", area.CantidadPendiente);
+        decimal cantidad = await PedirCantidadAsync(area.EsTermino ? "Terminar producto" : "Transferir producto", area.CantidadPendienteDisponible);
         if (cantidad <= 0)
             return;
 
@@ -417,7 +417,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             return;
         }
 
-        decimal cantidad = await PedirCantidadAsync("Registrar merma", area.CantidadPendiente);
+        decimal cantidad = await PedirCantidadAsync("Registrar merma", area.CantidadPendienteDisponible);
         if (cantidad <= 0)
             return;
 
@@ -958,7 +958,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         public bool MostrarIniciar => EsPrimeraArea && ProductoPendiente;
         public bool MostrarTransferir => !EsPrimeraArea || (EsPrimeraArea && !ProductoPendiente && Area.Disponible);
         public bool MostrarMerma => !EsPrimeraArea && Area.ManejaMerma;
-        public bool PuedeIniciar => MostrarIniciar && Area.CantidadPendiente > 0;
+        public bool PuedeIniciar => MostrarIniciar && Area.CantidadPendienteDisponible > 0;
         public bool PuedeTransferir => MostrarTransferir && Area.Disponible;
         public bool PuedeMerma => MostrarMerma && Area.Disponible;
         public double OpacidadIniciar => PuedeIniciar ? 1 : 0.42;

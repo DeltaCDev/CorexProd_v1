@@ -629,17 +629,33 @@ SELECT
         ) SP
         OUTER APPLY
         (
-            SELECT SUM(DA.CantidadPendiente) AS StockProceso
+            SELECT SUM(CASE WHEN DA.CantidadPendiente - ISNULL(RS.CantidadReservada, 0) > 0 THEN DA.CantidadPendiente - ISNULL(RS.CantidadReservada, 0) ELSE 0 END) AS StockProceso
             FROM dbo.OrdenTrabajoDetalle OD
             INNER JOIN dbo.OrdenTrabajoDetalleArea DA ON DA.IdDetalleOT = OD.IdDetalleOT
             INNER JOIN dbo.AreaProduccion A ON A.IdAreaProduccion = DA.IdAreaProduccion
+            OUTER APPLY
+            (
+                SELECT SUM(R.Cantidad - R.CantidadAplicada) AS CantidadReservada
+                FROM dbo.StockProcesoReserva R
+                WHERE R.IdDetalleArea = DA.IdDetalleArea
+                  AND R.Estado IN ('DISPONIBLE','RESERVADO')
+                  AND R.Cantidad - R.CantidadAplicada > 0
+            ) RS
             WHERE OD.IdProducto = D.IdProducto
               AND OD.Estado NOT IN ('TERMINADO', 'ANULADO')
               AND (A.NombreArea LIKE '%CORTE%' OR A.NombreArea LIKE '%CONFECCI%' OR A.NombreArea LIKE '%ACABADO%')
         ) AP
+        OUTER APPLY
+        (
+            SELECT SUM(R.Cantidad - R.CantidadAplicada) AS StockProceso
+            FROM dbo.StockProcesoReserva R
+            WHERE R.IdProducto = D.IdProducto
+              AND R.Estado IN ('DISPONIBLE','RESERVADO')
+              AND R.Cantidad - R.CantidadAplicada > 0
+        ) RES
         WHERE D.IdOrdenCompraInterna = O.IdOrdenCompraInterna
           AND D.Cantidad - CASE WHEN D.CantidadDespachada > ISNULL(PROD.CantidadAplicada, 0) THEN D.CantidadDespachada ELSE ISNULL(PROD.CantidadAplicada, 0) END
-              > ISNULL(SP.StockActual, 0) + ISNULL(AP.StockProceso, 0)
+              > ISNULL(SP.StockActual, 0) + ISNULL(RES.StockProceso, 0) + ISNULL(AP.StockProceso, 0)
     ) THEN 1 ELSE 0 END AS BIT) AS PuedeGenerarOt,
     CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
     (
@@ -880,7 +896,7 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
         return Results.BadRequest(new { mensaje = "La OCI no tiene productos faltantes para producir." });
 
     List<OrdenTrabajoPlanificacionApiRequest> detalles = validaciones
-        .Where(x => x.Deficit > 0)
+        .Where(x => x.CantidadRequerida > 0)
         .Select(x => new OrdenTrabajoPlanificacionApiRequest(
             x.IdOrdenCompraInternaDetalle,
             x.Deficit))
@@ -1550,6 +1566,7 @@ app.MapGet("/api/ordenes-trabajo/{id:int}", async (int id) =>
                 cantidadRecibida = Convert.ToDecimal(dr["CantidadRecibida"]),
                 cantidadEnviada = Convert.ToDecimal(dr["CantidadEnviada"]),
                 cantidadMerma = Convert.ToDecimal(dr["CantidadMerma"]),
+                cantidadReservada = LeerDecimal(dr, "CantidadReservada"),
                 cantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
                 estado = dr["Estado"]?.ToString() ?? string.Empty,
                 codigoProducto = dr["CodigoProducto"]?.ToString() ?? string.Empty,

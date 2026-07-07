@@ -41,6 +41,7 @@ public partial class GuiaInternaDetallePage : ContentPage
 
             NumeroLabel.Text = detalle.Cabecera.NumeroGuia;
             OrigenLabel.Text = detalle.Cabecera.Origen;
+            OtLabel.Text = string.IsNullOrWhiteSpace(detalle.Cabecera.NumeroOrdenTrabajo) ? "No aplica" : detalle.Cabecera.NumeroOrdenTrabajo;
             OcClienteLabel.Text = TextoVacio(detalle.Cabecera.OrdenCompraCliente);
             DestinoLabel.Text = TextoVacio(detalle.Cabecera.EmpresaDestino);
             AlmacenLabel.Text = detalle.Cabecera.NombreAlmacen;

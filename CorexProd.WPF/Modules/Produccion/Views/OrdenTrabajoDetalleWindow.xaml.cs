@@ -235,20 +235,28 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             primeraFila.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
             FrameworkElementFactory pendiente = new(typeof(TextBlock));
             pendiente.SetValue(TextBlock.FontSizeProperty, 11.0);
-            pendiente.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadPendiente") { StringFormat = "P: {0:N2}" });
+            pendiente.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadPendienteDisponible") { StringFormat = "P: {0:N2}" });
             FrameworkElementFactory enviado = new(typeof(TextBlock));
             enviado.SetValue(TextBlock.FontSizeProperty, 11.0);
             enviado.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
             enviado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadEnviada") { StringFormat = "E: {0:N2}" });
             primeraFila.AppendChild(pendiente);
             primeraFila.AppendChild(enviado);
+            FrameworkElementFactory segundaFila = new(typeof(StackPanel));
+            segundaFila.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+            segundaFila.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            segundaFila.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 3, 0, 0));
+            FrameworkElementFactory reservado = new(typeof(TextBlock));
+            reservado.SetValue(TextBlock.FontSizeProperty, 11.0);
+            reservado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadReservada") { StringFormat = "R: {0:N2}" });
             FrameworkElementFactory merma = new(typeof(TextBlock));
             merma.SetValue(TextBlock.FontSizeProperty, 11.0);
-            merma.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-            merma.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 3, 0, 0));
+            merma.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
             merma.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadMerma") { StringFormat = "M: {0:N2}" });
+            segundaFila.AppendChild(reservado);
+            segundaFila.AppendChild(merma);
             contenido.AppendChild(primeraFila);
-            contenido.AppendChild(merma);
+            contenido.AppendChild(segundaFila);
             boton.SetValue(ContentControl.ContentTemplateProperty, new DataTemplate { VisualTree = contenido });
             boton.AddHandler(Button.ClickEvent, new RoutedEventHandler(AreaResumen_Click));
             return new DataGridTemplateColumn { Header = area.NombreArea, Width = 125, CellTemplate = new DataTemplate { VisualTree = boton } };
@@ -264,7 +272,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 MessageBox.Show(this, $"{celda.Area.NombreArea} es el área de término y no tiene un destino siguiente.", "Área final", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (celda.Area.CantidadPendiente <= 0)
+            if (celda.Area.CantidadPendienteDisponible <= 0)
             {
                 MessageBox.Show(this, $"No hay stock en {celda.Area.NombreArea} disponible para transferir.", "Sin stock", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -318,8 +326,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                                 IdDetalleOT = celda.Area.IdDetalleOT,
                                 CantidadLanzada = cantidadLanzada,
                                 Motivo = detalle != null && cantidadLanzada != detalle.CantidadPlanificada ? "AJUSTE POR APROVECHAMIENTO" : string.Empty,
-                                Observacion = cantidadLanzada > celda.Area.CantidadPendiente
-                                    ? $"Cantidad ajustada en area de inicio de {celda.Area.CantidadPendiente:N2} a {cantidadLanzada:N2}."
+                                Observacion = cantidadLanzada > celda.Area.CantidadPendienteDisponible
+                                    ? $"Cantidad ajustada en area de inicio de {celda.Area.CantidadPendienteDisponible:N2} a {cantidadLanzada:N2}."
                                     : string.Empty
                             }
                         ]);
@@ -334,7 +342,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Cargar();
                 int totalProductos = _ot.Detalles.Count;
                 int completadosDespues = _ot.Detalles.Count(x => x.Estado == "TERMINADO");
-                decimal saldoOrigen = Math.Max(0, celda.Area.CantidadPendiente - ventana.Cantidad - (ventana.RegistrarMerma ? ventana.CantidadMerma : 0));
+                decimal saldoOrigen = Math.Max(0, celda.Area.CantidadPendienteDisponible - ventana.Cantidad - (ventana.RegistrarMerma ? ventana.CantidadMerma : 0));
                 string titulo = esTerminacion ? "Producto Terminado Correctamente" : "Transferencia Realizada Correctamente";
                 string mensaje = esTerminacion
                     ? $"✅ Producto {completadosDespues} de {totalProductos} completado correctamente."
@@ -388,7 +396,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             foreach (OrdenTrabajoDetalleArea x in _visibles)
             {
                 x.Seleccionado = x.Disponible;
-                x.CantidadOperacion = x.Disponible ? x.CantidadPendiente : 0;
+                x.CantidadOperacion = x.Disponible ? x.CantidadPendienteDisponible : 0;
             }
 
             ItemsGrid.Items.Refresh();
@@ -481,7 +489,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Area = area;
                 AreaDestino = destino;
                 EsPrimerProceso = indice == 0;
-                bool pendiente = area.CantidadPendiente > 0;
+                bool pendiente = area.CantidadPendienteDisponible > 0;
                 Color fuerte = indice % 3 == 0 ? Color.FromRgb(255, 87, 34) : indice % 3 == 1 ? Color.FromRgb(33, 150, 243) : Color.FromRgb(255, 193, 7);
                 Color suave = indice % 3 == 0 ? Color.FromRgb(255, 204, 188) : indice % 3 == 1 ? Color.FromRgb(187, 222, 251) : Color.FromRgb(255, 236, 179);
                 Fondo = new SolidColorBrush(pendiente ? fuerte : suave);

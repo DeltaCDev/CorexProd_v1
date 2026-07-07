@@ -22,7 +22,6 @@ public sealed class SessionState
         Menus =
         [
             "Ventas",
-            "Proformas",
             "OCI",
             "Guia Interna",
             "Produccion",
