@@ -161,6 +161,28 @@ BEGIN
 END;
 GO
 
+DECLARE @IdClienteDelta INT;
+DECLARE @NombreClienteDelta NVARCHAR(250);
+
+SELECT TOP (1)
+    @IdClienteDelta = IdCliente,
+    @NombreClienteDelta = NombreRazonSocial
+FROM dbo.Clientes
+WHERE NumeroDocumento = '20373078078'
+  AND Estado = 1
+ORDER BY IdCliente;
+
+IF @IdClienteDelta IS NOT NULL
+BEGIN
+    UPDATE dbo.OrdenTrabajo
+    SET IdCliente = @IdClienteDelta,
+        NombreCliente = @NombreClienteDelta
+    WHERE TipoOT = 'MANUAL'
+      AND IdCliente = 0
+      AND NombreCliente = 'ABASTECIMIENTO DE STOCK';
+END
+GO
+
 CREATE OR ALTER PROCEDURE dbo.USP_PRO_OT_MANUAL_CREAR
     @IdUsuario INT,
     @Observacion NVARCHAR(500),
@@ -189,6 +211,20 @@ BEGIN
             OR NOT EXISTS(SELECT 1 FROM dbo.AreaProduccion WHERE Activo = 1 AND EsTermino = 1)
             THROW 51000, 'Configure las areas activas de inicio y termino.', 1;
 
+        DECLARE @IdClienteAbastecimiento INT;
+        DECLARE @NombreClienteAbastecimiento NVARCHAR(250);
+
+        SELECT TOP (1)
+            @IdClienteAbastecimiento = IdCliente,
+            @NombreClienteAbastecimiento = NombreRazonSocial
+        FROM dbo.Clientes
+        WHERE NumeroDocumento = '20373078078'
+          AND Estado = 1
+        ORDER BY IdCliente;
+
+        IF @IdClienteAbastecimiento IS NULL
+            THROW 51000, 'No se encontro el cliente interno DELTA CONFECCIONES SRLTDA para generar la OT manual de abastecimiento.', 1;
+
         DECLARE @Correlativo INT = ISNULL((SELECT MAX(TRY_CONVERT(INT, RIGHT(NumeroOT, 6))) FROM dbo.OrdenTrabajo WITH(UPDLOCK, HOLDLOCK)), 0) + 1;
         SET @NumeroOT = CONCAT('OT-', RIGHT(CONCAT('000000', @Correlativo), 6));
 
@@ -199,7 +235,7 @@ BEGIN
         )
         VALUES
         (
-            @NumeroOT, NULL, 0, 'ABASTECIMIENTO DE STOCK', @IdUsuario,
+            @NumeroOT, NULL, @IdClienteAbastecimiento, @NombreClienteAbastecimiento, @IdUsuario,
             ISNULL(@Observacion, N''), 'PENDIENTE', 'MANUAL', NULL
         );
 
@@ -263,10 +299,6 @@ BEGIN
     WHERE O.IdOrdenTrabajo = @IdOrdenTrabajo;
 
     SELECT * FROM dbo.OrdenTrabajoDetalle WHERE IdOrdenTrabajo = @IdOrdenTrabajo ORDER BY IdDetalleOT;
-    SELECT DA.*, D.CodigoProducto, D.NombreProducto
-    FROM dbo.OrdenTrabajoDetalleArea DA
-    JOIN dbo.OrdenTrabajoDetalle D ON D.IdDetalleOT = DA.IdDetalleOT
-    WHERE DA.IdOrdenTrabajo = @IdOrdenTrabajo
-    ORDER BY DA.OrdenSecuencia, DA.IdDetalleArea;
+    SELECT * FROM dbo.OrdenTrabajoDetalleArea WHERE IdOrdenTrabajo = @IdOrdenTrabajo ORDER BY IdDetalleArea;
 END;
 GO
