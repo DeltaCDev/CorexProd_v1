@@ -240,7 +240,7 @@ ORDER BY D.IdDetalleOT;";
             return lista;
         }
 
-        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items, int? idOrdenTrabajoRelacionada = null)
+        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items, int? idOrdenTrabajoRelacionada = null, bool procesarTodaReserva = false)
         {
             if (idOrdenTrabajoRelacionada.HasValue)
                 return CrearRegularizacion(idOci, idOrdenTrabajoRelacionada.Value, idUsuario, observacion, items);
@@ -249,6 +249,7 @@ ORDER BY D.IdDetalleOT;";
             using SqlCommand cmd = new("USP_PRO_OT_CREAR", cn) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci); cmd.Parameters.AddWithValue("@IdUsuario", idUsuario); cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
             cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName="dbo.TipoOTPlanificacion", Value=TablaPlanificacion(items) });
+            cmd.Parameters.Add("@ProcesarTodaReserva", SqlDbType.Bit).Value = procesarTodaReserva;
             SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction=ParameterDirection.Output };
             SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar,30) { Direction=ParameterDirection.Output };
             cmd.Parameters.Add(id); cmd.Parameters.Add(numero); cn.Open(); cmd.ExecuteNonQuery();

@@ -87,30 +87,46 @@
                                 <Label Text="{Binding Area.Estado}"
                                        FontSize="12"
                                        TextColor="#B54708" />
-                                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                                <FlexLayout Direction="Row"
+                                            Wrap="Wrap"
+                                            JustifyContent="Start"
+                                            AlignItems="Stretch">
                                     <Button Text="Iniciar"
+                                            Margin="0,0,8,8"
+                                            WidthRequest="104"
                                             IsVisible="{Binding MostrarIniciar}"
                                             IsEnabled="{Binding PuedeIniciar}"
                                             Opacity="{Binding OpacidadIniciar}"
                                             Clicked="OnIniciarClicked" />
-                                    <Button Grid.Column="1"
-                                            Text="{Binding Area.AccionPrincipal}"
+                                    <Button Text="{Binding Area.AccionPrincipal}"
+                                            Margin="0,0,8,8"
+                                            WidthRequest="104"
                                             IsVisible="{Binding MostrarTransferir}"
                                             IsEnabled="{Binding PuedeTransferir}"
                                             Opacity="{Binding OpacidadTransferir}"
                                             Clicked="OnTransferirClicked" />
-                                    <Button Grid.Column="2"
-                                            Text="Merma"
+                                    <Button Text="Merma"
+                                            Margin="0,0,8,8"
+                                            WidthRequest="104"
                                             IsVisible="{Binding MostrarMerma}"
                                             IsEnabled="{Binding PuedeMerma}"
                                             Opacity="{Binding OpacidadMerma}"
                                             BackgroundColor="#B42318"
                                             Clicked="OnMermaClicked" />
-                                    <Button Grid.Column="3"
-                                            Text="Ficha"
+                                    <Button Text="Reservar"
+                                            Margin="0,0,8,8"
+                                            WidthRequest="104"
+                                            IsVisible="{Binding MostrarReservar}"
+                                            IsEnabled="{Binding PuedeReservar}"
+                                            Opacity="{Binding OpacidadReservar}"
                                             BackgroundColor="#0E9384"
+                                            Clicked="OnReservarClicked" />
+                                    <Button Text="Ficha"
+                                            Margin="0,0,8,8"
+                                            WidthRequest="104"
+                                            BackgroundColor="#2563EB"
                                             Clicked="OnFichaTecnicaClicked" />
-                                </Grid>
+                                </FlexLayout>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>

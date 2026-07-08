@@ -19,7 +19,7 @@ namespace CorexProd.Negocio.Negocio
         public List<OrdenTrabajoValidacionProducto> ValidarInsumosManual(IEnumerable<OrdenTrabajoManualPlanificacion> items)=>_datos.ValidarInsumosManual(items);
         public List<OrdenTrabajoValidacionProducto> ListarPendientesRegularizacion(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarPendientesRegularizacion(idOrdenTrabajo):[];
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)=>_datos.DetalleInsumos(idDetalleOci);
-        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada);
+        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null,bool procesarTodaReserva=false)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada,procesarTodaReserva);
         public (int Id,string Numero) CrearManual(int idUsuario,string observacion,IEnumerable<OrdenTrabajoManualPlanificacion> items)
         {
             List<OrdenTrabajoManualPlanificacion> lista = items.ToList();

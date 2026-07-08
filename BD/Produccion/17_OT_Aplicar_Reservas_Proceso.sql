@@ -162,7 +162,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_PRO_OT_CREAR
     @Observacion NVARCHAR(500),
     @Detalles dbo.TipoOTPlanificacion READONLY,
     @IdOrdenTrabajo INT OUTPUT,
-    @NumeroOT VARCHAR(30) OUTPUT
+    @NumeroOT VARCHAR(30) OUTPUT,
+    @ProcesarTodaReserva BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -183,14 +184,21 @@ BEGIN
         (
             IdOrdenCompraInternaDetalle INT PRIMARY KEY,
             CantidadObjetivo DECIMAL(18,2) NOT NULL,
-            CantidadDeficit DECIMAL(18,2) NOT NULL
+            CantidadDeficit DECIMAL(18,2) NOT NULL,
+            CantidadReservaAplicar DECIMAL(18,2) NOT NULL
         );
 
-        INSERT @Pendientes(IdOrdenCompraInternaDetalle, CantidadObjetivo, CantidadDeficit)
+        INSERT @Pendientes(IdOrdenCompraInternaDetalle, CantidadObjetivo, CantidadDeficit, CantidadReservaAplicar)
         SELECT
             D.IdOrdenCompraInternaDetalle,
             CONVERT(DECIMAL(18,2), OBJ.CantidadObjetivo),
-            CONVERT(DECIMAL(18,2), DEF.Deficit)
+            CONVERT(DECIMAL(18,2), DEF.Deficit),
+            CONVERT(DECIMAL(18,2),
+                CASE
+                    WHEN @ProcesarTodaReserva = 1 THEN ISNULL(RES.StockProceso, 0)
+                    WHEN ISNULL(RES.StockProceso, 0) >= OBJ.CantidadObjetivo THEN OBJ.CantidadObjetivo
+                    ELSE ISNULL(RES.StockProceso, 0)
+                END)
         FROM dbo.OrdenCompraInternaDetalle D
         OUTER APPLY
         (
@@ -312,7 +320,7 @@ BEGIN
             SELECT
                 D.IdDetalleOT,
                 D.IdProducto,
-                CASE WHEN P.CantidadObjetivo - X.CantidadPlanificada > 0 THEN P.CantidadObjetivo - X.CantidadPlanificada ELSE 0 END
+                P.CantidadReservaAplicar
             FROM @Detalles X
             JOIN @Pendientes P ON P.IdOrdenCompraInternaDetalle = X.IdOrdenCompraInternaDetalle
             JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenCompraInternaDetalle = X.IdOrdenCompraInternaDetalle
@@ -385,17 +393,18 @@ BEGIN
         ) R ON R.IdDetalleOTNuevo = A.IdDetalleOT AND R.IdAreaProduccion = A.IdAreaProduccion;
 
         UPDATE D
-        SET CantidadLanzada = D.CantidadRequerida,
+        SET CantidadLanzada = D.CantidadPlanificada + R.CantidadAplicada,
             Estado = 'EN_PROCESO',
             FechaInicio = COALESCE(D.FechaInicio, SYSDATETIME())
         FROM dbo.OrdenTrabajoDetalle D
+        JOIN
+        (
+            SELECT IdDetalleOTNuevo, SUM(CantidadAplicar) AS CantidadAplicada
+            FROM @ReservasAplicadas
+            GROUP BY IdDetalleOTNuevo
+        ) R ON R.IdDetalleOTNuevo = D.IdDetalleOT
         WHERE D.IdOrdenTrabajo = @IdOrdenTrabajo
-          AND EXISTS
-          (
-              SELECT 1
-              FROM @ReservasAplicadas R
-              WHERE R.IdDetalleOTNuevo = D.IdDetalleOT
-          );
+          AND D.CantidadPlanificada + R.CantidadAplicada > 0;
 
         UPDATE A
         SET Estado = 'EN_PROCESO',

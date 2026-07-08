@@ -386,7 +386,11 @@ ORDER BY D.IdProformaDetalle;";
         descuento = Convert.ToDecimal(dr["Descuento"]),
         igv = Convert.ToDecimal(dr["Igv"]),
         total = Convert.ToDecimal(dr["Total"]),
-        estado = dr["Estado"]?.ToString() ?? string.Empty
+        estado = dr["Estado"]?.ToString() ?? string.Empty,
+        tieneGuiaSalida = LeerBoolean(dr, "TieneGuiaSalida"),
+        tieneOrdenTrabajo = LeerBoolean(dr, "TieneOrdenTrabajo"),
+        motivoAnulacion = LeerString(dr, "MotivoAnulacion"),
+        fechaAnulacion = LeerDateTimeNullable(dr, "FechaAnulacion")
     };
     await dr.CloseAsync();
 
@@ -854,6 +858,52 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
     return Results.Ok(new { cabecera, detalles });
 });
 
+app.MapGet("/api/oci/{id:int}/pdf", async (int id) =>
+{
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new("USP_VEN_OCI_OBTENER", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    if (!await dr.ReadAsync())
+        return Results.NotFound(new { mensaje = "OC no encontrada." });
+
+    OciPdfCabecera cabecera = new(
+        Convert.ToInt32(dr["IdOrdenCompraInterna"]),
+        LeerString(dr, "NumeroOci"),
+        Convert.ToDateTime(dr["FechaEmision"]),
+        LeerString(dr, "OrdenCompraCliente"),
+        LeerString(dr, "NombreCliente"),
+        LeerDecimal(dr, "Subtotal"),
+        LeerDecimal(dr, "Descuento"),
+        LeerDecimal(dr, "Igv"),
+        LeerDecimal(dr, "IgvPorcentaje"),
+        LeerString(dr, "CondicionTributaria"),
+        LeerDecimal(dr, "Total"),
+        LeerString(dr, "Estado"),
+        LeerString(dr, "UsuarioGenerador"));
+
+    List<OciPdfDetalle> detalles = [];
+    if (await dr.NextResultAsync())
+    {
+        while (await dr.ReadAsync())
+        {
+            detalles.Add(new OciPdfDetalle(
+                LeerString(dr, "CodigoProducto"),
+                LeerString(dr, "NombreProducto"),
+                LeerDecimal(dr, "Cantidad"),
+                LeerDecimal(dr, "PrecioUnitario"),
+                LeerDecimal(dr, "Descuento"),
+                LeerDecimal(dr, "Importe"),
+                LeerString(dr, "Observacion")));
+        }
+    }
+
+    EmpresaPdfInfo empresa = await ObtenerEmpresaPdfAsync(connectionString);
+    byte[] pdf = CrearOciPdf(empresa, cabecera, detalles);
+    return Results.File(pdf, "application/pdf", $"{cabecera.NumeroOci}.pdf");
+});
+
 app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
 {
     if (request.IdCliente <= 0)
@@ -919,10 +969,174 @@ app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
     });
 });
 
-app.MapPost("/api/oci/{id:int}/generar-ot", async (int id, DocumentoAccionApiRequest request) =>
+app.MapPut("/api/oci/{id:int}", async (int id, ProformaGuardarApiRequest request) =>
+{
+    if (id <= 0)
+        return Results.BadRequest(new { mensaje = "Seleccione una OC valida." });
+
+    if (request.IdCliente <= 0)
+        return Results.BadRequest(new { mensaje = "Seleccione un cliente." });
+
+    if (request.Detalles.Count == 0 || request.Detalles.Any(x => x.IdProducto <= 0 || x.Cantidad <= 0))
+        return Results.BadRequest(new { mensaje = "Agregue productos con cantidad mayor a cero." });
+
+    decimal subtotal = request.Detalles.Sum(x => Math.Round((x.Cantidad * x.PrecioUnitario) - x.Descuento, 2));
+    if (subtotal < 0)
+        subtotal = 0;
+
+    decimal igvPorcentaje = request.IgvPorcentaje <= 0 ? 18 : request.IgvPorcentaje;
+    string condicionTributaria = string.IsNullOrWhiteSpace(request.CondicionTributaria)
+        ? "GRAVADO"
+        : request.CondicionTributaria.Trim().ToUpperInvariant();
+    decimal descuento = request.Detalles.Sum(x => x.Descuento);
+    decimal igv = condicionTributaria.Equals("INAFECTO", StringComparison.OrdinalIgnoreCase)
+        || condicionTributaria.Equals("EXONERADO DE IGV", StringComparison.OrdinalIgnoreCase)
+        ? 0
+        : Math.Round(subtotal * (igvPorcentaje / 100), 2);
+    decimal total = subtotal + igv;
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    await ConfigurarOpcionesInsertAsync(conexion);
+    await using SqlTransaction tx = (SqlTransaction)await conexion.BeginTransactionAsync();
+
+    try
+    {
+        const string validarSql = @"
+SELECT TOP (1)
+    Estado,
+    ISNULL(TieneGuiaSalida, 0) AS TieneGuiaSalida,
+    ISNULL(TieneOrdenTrabajo, 0) AS TieneOrdenTrabajo,
+    ISNULL(MotivoAnulacion, '') AS MotivoAnulacion,
+    FechaAnulacion,
+    NumeroOci
+FROM dbo.OrdenesCompraInterna WITH (UPDLOCK, HOLDLOCK)
+WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
+
+        string numeroOci;
+        await using (SqlCommand validar = new(validarSql, conexion, tx))
+        {
+            validar.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+            await using SqlDataReader dr = await validar.ExecuteReaderAsync();
+            if (!await dr.ReadAsync())
+                return Results.NotFound(new { mensaje = "OC no encontrada." });
+
+            numeroOci = LeerString(dr, "NumeroOci");
+            string estado = LeerString(dr, "Estado").Trim().ToUpperInvariant();
+            bool bloqueada = Convert.ToBoolean(dr["TieneGuiaSalida"])
+                || Convert.ToBoolean(dr["TieneOrdenTrabajo"])
+                || !string.IsNullOrWhiteSpace(LeerString(dr, "MotivoAnulacion"))
+                || dr["FechaAnulacion"] != DBNull.Value;
+
+            if (estado is not ("PENDIENTE" or "EMITIDA" or "EMITIDO") || bloqueada)
+                return Results.BadRequest(new { mensaje = "Solo se puede editar una OC pendiente sin acciones realizadas." });
+        }
+
+        const string validarDetalleSql = @"
+SELECT CAST(CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.OrdenCompraInternaDetalle
+    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+      AND ISNULL(CantidadDespachada, 0) > 0
+) THEN 1 ELSE 0 END AS BIT);";
+        await using (SqlCommand validarDetalle = new(validarDetalleSql, conexion, tx))
+        {
+            validarDetalle.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+            if (Convert.ToBoolean(await validarDetalle.ExecuteScalarAsync()))
+                return Results.BadRequest(new { mensaje = "No se puede editar una OC con despachos registrados." });
+        }
+
+        const string actualizarSql = @"
+UPDATE O
+SET FechaEmision = @FechaEmision,
+    OrdenCompraCliente = @OrdenCompraCliente,
+    IdCliente = C.IdCliente,
+    NombreCliente = C.NombreRazonSocial,
+    Subtotal = @Subtotal,
+    Descuento = @Descuento,
+    Igv = @Igv,
+    IgvPorcentaje = @IgvPorcentaje,
+    CondicionTributaria = @CondicionTributaria,
+    Total = @Total,
+    UsuarioGenerador = @UsuarioGenerador
+FROM dbo.OrdenesCompraInterna O
+INNER JOIN dbo.Clientes C ON C.IdCliente = @IdCliente AND C.Estado = 1
+WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+DELETE FROM dbo.OrdenCompraInternaDetalle
+WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+INSERT INTO dbo.OrdenCompraInternaDetalle
+(
+    IdOrdenCompraInterna, IdProducto, CodigoProducto, NombreProducto,
+    Cantidad, PrecioUnitario, Descuento, Importe, Observacion
+)
+SELECT
+    @IdOrdenCompraInterna,
+    P.IdProducto,
+    P.Codigo,
+    P.NombreProducto,
+    X.Cantidad,
+    X.PrecioUnitario,
+    X.Descuento,
+    X.Importe,
+    X.Observacion
+FROM
+(
+    SELECT
+        D.X.value('@IdProducto', 'INT') AS IdProducto,
+        D.X.value('@Cantidad', 'DECIMAL(18,2)') AS Cantidad,
+        D.X.value('@PrecioUnitario', 'DECIMAL(18,2)') AS PrecioUnitario,
+        D.X.value('@Descuento', 'DECIMAL(18,2)') AS Descuento,
+        D.X.value('@Importe', 'DECIMAL(18,2)') AS Importe,
+        D.X.value('@Observacion', 'VARCHAR(500)') AS Observacion
+    FROM @DetallesXml.nodes('/Detalles/Detalle') D(X)
+) X
+INNER JOIN dbo.Productos P ON P.IdProducto = X.IdProducto
+WHERE X.Cantidad > 0;";
+
+        await using (SqlCommand cmd = new(actualizarSql, conexion, tx))
+        {
+            cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
+            cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = DateTime.Today;
+            cmd.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 100).Value = request.OrdenCompraCliente?.Trim() ?? string.Empty;
+            cmd.Parameters.Add("@IdCliente", SqlDbType.Int).Value = request.IdCliente;
+            cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = subtotal;
+            cmd.Parameters.Add("@Descuento", SqlDbType.Decimal).Value = descuento;
+            cmd.Parameters.Add("@Igv", SqlDbType.Decimal).Value = igv;
+            cmd.Parameters.Add("@IgvPorcentaje", SqlDbType.Decimal).Value = igvPorcentaje;
+            cmd.Parameters.Add("@CondicionTributaria", SqlDbType.VarChar, 50).Value = condicionTributaria;
+            cmd.Parameters.Add("@Total", SqlDbType.Decimal).Value = total;
+            cmd.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
+            cmd.Parameters.Add("@DetallesXml", SqlDbType.Xml).Value = CrearDetallesProformaXml(request.Detalles);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        await tx.CommitAsync();
+        return Results.Ok(new
+        {
+            mensaje = $"Orden de compra {numeroOci} actualizada correctamente.",
+            idOrdenCompraInterna = id,
+            numeroOrden = numeroOci,
+            subtotal,
+            igv,
+            total
+        });
+    }
+    catch (Exception ex)
+    {
+        await tx.RollbackAsync();
+        return Results.BadRequest(new { mensaje = ex.Message });
+    }
+});
+
+app.MapPost("/api/oci/{id:int}/generar-ot", async (int id, GenerarOtConReservaApiRequest request) =>
 {
     string usuario = string.IsNullOrWhiteSpace(request.Usuario) ? "Android" : request.Usuario.Trim();
     string observacion = string.IsNullOrWhiteSpace(request.Motivo) ? "OT generada desde Android" : request.Motivo.Trim();
+    bool procesarTodaReserva = request.ProcesarTodaReserva
+        || (request.DetallesReserva?.Any(x => x.ModoUsoReserva.Equals("RESERVA_COMPLETA", StringComparison.OrdinalIgnoreCase)) ?? false);
 
     const string validarSql = @"
 SELECT TOP (1) Estado
@@ -975,6 +1189,7 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
         TypeName = "dbo.TipoOTPlanificacion",
         Value = CrearTablaPlanificacion(detalles)
     });
+    cmd.Parameters.Add("@ProcesarTodaReserva", SqlDbType.Bit).Value = procesarTodaReserva;
     SqlParameter idOt = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction = ParameterDirection.Output };
     SqlParameter numeroOt = new("@NumeroOT", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(idOt);
@@ -1615,6 +1830,7 @@ app.MapGet("/api/ordenes-trabajo/{id:int}", async (int id) =>
                 esInicio = Convert.ToBoolean(dr["EsInicio"]),
                 esTermino = Convert.ToBoolean(dr["EsTermino"]),
                 manejaMerma = Convert.ToBoolean(dr["ManejaMerma"]),
+                permiteReservarStockProceso = LeerBoolean(dr, "PermiteReservarStockProceso"),
                 modoEnvio = dr["ModoEnvio"]?.ToString() ?? string.Empty,
                 cantidadRecibida = Convert.ToDecimal(dr["CantidadRecibida"]),
                 cantidadEnviada = Convert.ToDecimal(dr["CantidadEnviada"]),
@@ -1813,6 +2029,50 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/merma", async (int id, OrdenTrabajoMe
     await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
     return Results.Ok(new { mensaje = "Merma registrada correctamente." });
+});
+
+app.MapPost("/api/ordenes-trabajo/{id:int}/reservar", async (int id, OrdenTrabajoReservarApiRequest request) =>
+{
+    if (request.Cantidad <= 0)
+        return Results.BadRequest(new { mensaje = "Ingrese una cantidad a reservar mayor a cero." });
+
+    if (string.IsNullOrWhiteSpace(request.Clave))
+        return Results.BadRequest(new { mensaje = "Ingrese la contrasena del usuario." });
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+
+    int idUsuarioAutoriza = await ObtenerIdUsuarioActivoPorClaveAsync(conexion, request.Clave);
+    if (idUsuarioAutoriza <= 0)
+        return Results.Json(new { mensaje = "Contrasena incorrecta o usuario inactivo." }, statusCode: StatusCodes.Status401Unauthorized);
+
+    const string validarSql = @"
+SELECT TOP (1) DA.PermiteReservarStockProceso, DA.EsTermino
+FROM dbo.OrdenTrabajoDetalleArea DA
+WHERE DA.IdDetalleArea = @IdDetalleArea
+  AND DA.IdOrdenTrabajo = @IdOrdenTrabajo;";
+
+    await using (SqlCommand validarCmd = new(validarSql, conexion))
+    {
+        validarCmd.Parameters.Add("@IdDetalleArea", SqlDbType.BigInt).Value = request.IdDetalleArea;
+        validarCmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+        await using SqlDataReader dr = await validarCmd.ExecuteReaderAsync();
+        if (!await dr.ReadAsync())
+            return Results.NotFound(new { mensaje = "Area de OT no encontrada." });
+
+        if (!Convert.ToBoolean(dr["PermiteReservarStockProceso"]) || Convert.ToBoolean(dr["EsTermino"]))
+            return Results.BadRequest(new { mensaje = "Esta area no permite reservar stock en proceso." });
+    }
+
+    await using SqlCommand cmd = new("USP_PRO_OT_RESERVAR_STOCK_PROCESO", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdDetalleArea", SqlDbType.BigInt).Value = request.IdDetalleArea;
+    cmd.Parameters.Add("@Cantidad", SqlDbType.Decimal).Value = request.Cantidad;
+    cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = request.Observacion ?? string.Empty;
+    cmd.Parameters.Add("@IdUsuarioSesion", SqlDbType.Int).Value = request.IdUsuarioSesion;
+    cmd.Parameters.Add("@IdUsuarioAutoriza", SqlDbType.Int).Value = idUsuarioAutoriza;
+    await cmd.ExecuteNonQueryAsync();
+
+    return Results.Ok(new { mensaje = "Stock en proceso reservado correctamente." });
 });
 
 app.MapPost("/api/ordenes-trabajo/{id:int}/anular", async (int id, OrdenTrabajoAnularApiRequest request) =>
@@ -2545,21 +2805,39 @@ ORDER BY D.IdDetalleOT;";
     await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
     while (await dr.ReadAsync())
     {
+        decimal stockAlmacen = Convert.ToDecimal(dr["StockAlmacen"]);
+        decimal stockTotal = Convert.ToDecimal(dr["StockTotal"]);
+        decimal cantidadRequerida = Convert.ToDecimal(dr["CantidadRequerida"]);
+        decimal stockReservadoTotal = LeerDecimal(dr, "StockReservadoTotal", Math.Max(0, stockTotal - stockAlmacen));
+        decimal faltanteDespuesStock = LeerDecimal(dr, "CantidadFaltanteDespuesStock", Math.Max(0, cantidadRequerida - stockAlmacen));
+        decimal reservaSugerida = LeerDecimal(dr, "CantidadReservaSugerida", Math.Min(faltanteDespuesStock, stockReservadoTotal));
+        decimal produccionNueva = LeerDecimal(dr, "CantidadProduccionNueva", Math.Max(0, faltanteDespuesStock - stockReservadoTotal));
+        decimal excedenteReserva = LeerDecimal(dr, "CantidadExcedenteReserva", Math.Max(0, stockReservadoTotal - reservaSugerida));
+
         productos.Add(new OtValidacionProductoApi(
             Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
             Convert.ToInt32(dr["IdProducto"]),
             LeerString(dr, "CodigoProducto"),
             LeerString(dr, "NombreProducto"),
             LeerString(dr, "Observacion"),
-            Convert.ToDecimal(dr["CantidadRequerida"]),
+            cantidadRequerida,
             dr["IdFichaTecnica"] == DBNull.Value ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
-            Convert.ToDecimal(dr["StockAlmacen"]),
+            stockAlmacen,
             Convert.ToDecimal(dr["StockCorte"]),
             Convert.ToDecimal(dr["StockConfeccion"]),
             Convert.ToDecimal(dr["StockAcabado"]),
-            Convert.ToDecimal(dr["StockTotal"]),
+            stockTotal,
             Convert.ToDecimal(dr["Deficit"]),
-            LeerString(dr, "EstadoInsumos")));
+            LeerString(dr, "EstadoInsumos"),
+            stockReservadoTotal,
+            faltanteDespuesStock,
+            reservaSugerida,
+            produccionNueva,
+            excedenteReserva,
+            LeerIntNullable(dr, "IdAreaReserva"),
+            LeerString(dr, "NombreAreaReserva"),
+            LeerBoolean(dr, "PermiteUsarReserva", stockReservadoTotal > 0),
+            LeerBoolean(dr, "PermiteProcesarReservaCompleta", stockReservadoTotal > 0)));
     }
 
     return productos;
@@ -2621,6 +2899,16 @@ static int? LeerIntNullable(SqlDataReader dr, string columna)
             return dr.IsDBNull(i) ? null : Convert.ToInt32(dr.GetValue(i));
     }
     return null;
+}
+
+static bool LeerBoolean(SqlDataReader dr, string columna, bool valorPredeterminado = false)
+{
+    for (int i = 0; i < dr.FieldCount; i++)
+    {
+        if (dr.GetName(i).Equals(columna, StringComparison.OrdinalIgnoreCase))
+            return !dr.IsDBNull(i) && Convert.ToBoolean(dr.GetValue(i));
+    }
+    return valorPredeterminado;
 }
 
 static DateTime? LeerDateTimeNullable(SqlDataReader dr, string columna)
@@ -2803,6 +3091,102 @@ static void DibujarCierreGuia(SimplePdfPage page, double margin, double pageWidt
     page.CenterText("ENTREGADO POR", margin + ancho / 2, y - 14, 8, true);
     page.CenterText("RECIBIDO POR", margin + ancho * 1.5, y - 14, 8, true);
     page.CenterText("AUTORIZADO POR", margin + ancho * 2.5, y - 14, 8, true);
+}
+
+static byte[] CrearOciPdf(EmpresaPdfInfo empresa, OciPdfCabecera oci, IReadOnlyList<OciPdfDetalle> detalles)
+{
+    const double pageWidth = 595;
+    const double pageHeight = 842;
+    const double margin = 36;
+    SimplePdf document = new();
+    SimplePdfPage page = document.AddPage(pageWidth, pageHeight);
+    double y = pageHeight - margin;
+
+    page.Text(LimpiarPdf(empresa.Nombre).ToUpperInvariant(), margin, y, 13, true); y -= 14;
+    page.Text($"RUC: {LimpiarPdf(empresa.Ruc)}", margin, y, 8); y -= 11;
+    page.Text(LimpiarPdf(empresa.Direccion), margin, y, 8); y -= 11;
+    page.Text(LimpiarPdf(string.Join("  ", new[] { empresa.Telefono, empresa.Correo }.Where(x => !string.IsNullOrWhiteSpace(x)))), margin, y, 8);
+
+    double boxX = pageWidth - margin - 150;
+    page.Rectangle(boxX, pageHeight - margin - 58, 150, 58);
+    page.CenterText("ORDEN DE COMPRA", boxX + 75, pageHeight - margin - 23, 12, true);
+    page.CenterText(oci.NumeroOci, boxX + 75, pageHeight - margin - 42, 11, true);
+    if (oci.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
+        || oci.Estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
+        page.CenterText("ANULADA", boxX + 75, pageHeight - margin - 53, 8, true);
+
+    y -= 32;
+    page.Line(margin, y, pageWidth - margin, y); y -= 18;
+
+    page.Rectangle(margin, y - 72, pageWidth - margin * 2, 72);
+    page.Text("CLIENTE", margin + 7, y - 14, 8, true);
+    page.Text(TruncarPdf(LimpiarPdf(oci.NombreCliente), 70), margin + 72, y - 14, 8);
+    page.Text("FECHA", margin + 7, y - 31, 8, true);
+    page.Text(oci.FechaEmision.ToString("dd/MM/yyyy"), margin + 72, y - 31, 8);
+    page.Text("OC CLIENTE", margin + 210, y - 31, 8, true);
+    page.Text(TruncarPdf(LimpiarPdf(oci.OrdenCompraCliente), 42), margin + 278, y - 31, 8);
+    page.Text("USUARIO", margin + 7, y - 48, 8, true);
+    page.Text(TruncarPdf(LimpiarPdf(oci.UsuarioGenerador), 35), margin + 72, y - 48, 8);
+    page.Text("ESTADO", margin + 310, y - 48, 8, true);
+    page.Text(LimpiarPdf(oci.Estado), margin + 365, y - 48, 8);
+    y -= 92;
+
+    double colCodigo = 70;
+    double colProducto = 230;
+    double colCantidad = 55;
+    double colPrecio = 60;
+    double colDescuento = 55;
+    double tableW = pageWidth - margin * 2;
+    page.Rectangle(margin, y - 22, tableW, 22);
+    page.Text("Codigo", margin + 6, y - 14, 8, true);
+    page.Text("Producto", margin + colCodigo + 6, y - 14, 8, true);
+    page.RightText("Cant.", margin + colCodigo + colProducto + colCantidad - 8, y - 14, 8, true);
+    page.RightText("P. Unit.", margin + colCodigo + colProducto + colCantidad + colPrecio - 8, y - 14, 8, true);
+    page.RightText("Dscto.", margin + colCodigo + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8, true);
+    page.RightText("Importe", pageWidth - margin - 8, y - 14, 8, true);
+    y -= 22;
+
+    foreach (OciPdfDetalle detalle in detalles)
+    {
+        if (y < 135)
+        {
+            page = document.AddPage(pageWidth, pageHeight);
+            y = pageHeight - margin;
+        }
+
+        string producto = string.IsNullOrWhiteSpace(detalle.Observacion)
+            ? detalle.NombreProducto
+            : $"{detalle.NombreProducto} ({detalle.Observacion})";
+        List<string> lineas = DividirLineasPdf(producto, 52).Take(3).ToList();
+        double h = Math.Max(22, 10 + lineas.Count * 10);
+        page.Rectangle(margin, y - h, tableW, h);
+        page.Text(TruncarPdf(LimpiarPdf(detalle.CodigoProducto), 13), margin + 6, y - 14, 8);
+        for (int i = 0; i < lineas.Count; i++)
+            page.Text(lineas[i], margin + colCodigo + 6, y - 14 - i * 10, 7.5);
+        page.RightText(detalle.Cantidad.ToString("N2"), margin + colCodigo + colProducto + colCantidad - 8, y - 14, 8);
+        page.RightText($"S/ {detalle.PrecioUnitario:N2}", margin + colCodigo + colProducto + colCantidad + colPrecio - 8, y - 14, 8);
+        page.RightText($"S/ {detalle.Descuento:N2}", margin + colCodigo + colProducto + colCantidad + colPrecio + colDescuento - 8, y - 14, 8);
+        page.RightText($"S/ {detalle.Importe:N2}", pageWidth - margin - 8, y - 14, 8);
+        y -= h;
+    }
+
+    y -= 16;
+    double totalX = pageWidth - margin - 170;
+    DibujarTotalOci(page, "Subtotal", oci.Subtotal, totalX, pageWidth - margin - 8, ref y);
+    DibujarTotalOci(page, "Descuento", oci.Descuento, totalX, pageWidth - margin - 8, ref y);
+    DibujarTotalOci(page, $"IGV ({oci.IgvPorcentaje:N2}%)", oci.Igv, totalX, pageWidth - margin - 8, ref y);
+    DibujarTotalOci(page, "Total", oci.Total, totalX, pageWidth - margin - 8, ref y, true);
+    page.RightText(LimpiarPdf(oci.CondicionTributaria), pageWidth - margin - 8, y - 9, 7);
+
+    return document.Save();
+}
+
+static void DibujarTotalOci(SimplePdfPage page, string label, decimal value, double x, double rightX, ref double y, bool bold = false)
+{
+    page.Rectangle(x, y - 18, rightX - x + 8, 18);
+    page.Text(label, x + 7, y - 12, 8, bold);
+    page.RightText($"S/ {value:N2}", rightX, y - 12, 8, bold);
+    y -= 18;
 }
 
 static string ProductoConObservacionPdf(GuiaInternaPdfDetalle detalle) => string.IsNullOrWhiteSpace(detalle.Observacion)
@@ -3106,6 +3490,30 @@ internal sealed record GuiaInternaPdfDetalle(
     decimal CantidadDespachar,
     string Observacion);
 
+internal sealed record OciPdfCabecera(
+    int IdOrdenCompraInterna,
+    string NumeroOci,
+    DateTime FechaEmision,
+    string OrdenCompraCliente,
+    string NombreCliente,
+    decimal Subtotal,
+    decimal Descuento,
+    decimal Igv,
+    decimal IgvPorcentaje,
+    string CondicionTributaria,
+    decimal Total,
+    string Estado,
+    string UsuarioGenerador);
+
+internal sealed record OciPdfDetalle(
+    string CodigoProducto,
+    string NombreProducto,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal Descuento,
+    decimal Importe,
+    string Observacion);
+
 internal sealed record FichaDocumentoApi(
     string CodigoModelo,
     string NombreArchivo,
@@ -3161,6 +3569,20 @@ internal sealed record DocumentoAccionApiRequest(
     string? Usuario,
     string? Motivo);
 
+internal sealed record GenerarOtConReservaApiRequest(
+    string? Usuario,
+    string? Motivo,
+    List<GenerarOtReservaDetalleApiRequest>? DetallesReserva,
+    bool ProcesarTodaReserva = false);
+
+internal sealed record GenerarOtReservaDetalleApiRequest(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string ModoUsoReserva,
+    decimal CantidadUsarReserva,
+    decimal CantidadProcesarReserva,
+    decimal CantidadProduccionNueva);
+
 internal sealed record OrdenTrabajoLanzarApiRequest(
     int IdUsuarioSesion,
     int IdUsuarioAutoriza,
@@ -3203,7 +3625,16 @@ internal sealed record OtValidacionProductoApi(
     decimal StockAcabado,
     decimal StockTotal,
     decimal Deficit,
-    string EstadoInsumos);
+    string EstadoInsumos,
+    decimal StockReservadoTotal = 0,
+    decimal CantidadFaltanteDespuesStock = 0,
+    decimal CantidadReservaSugerida = 0,
+    decimal CantidadProduccionNueva = 0,
+    decimal CantidadExcedenteReserva = 0,
+    int? IdAreaReserva = null,
+    string NombreAreaReserva = "",
+    bool PermiteUsarReserva = false,
+    bool PermiteProcesarReservaCompleta = false);
 
 internal sealed record OtValidacionInsumoApi(
     int IdInsumo,
@@ -3277,6 +3708,13 @@ internal sealed record OrdenTrabajoMermaApiRequest(
     string? Observacion,
     int IdUsuarioSesion,
     int IdUsuarioAutoriza);
+
+internal sealed record OrdenTrabajoReservarApiRequest(
+    long IdDetalleArea,
+    decimal Cantidad,
+    string? Observacion,
+    int IdUsuarioSesion,
+    string? Clave);
 
 internal sealed record OrdenTrabajoAnularApiRequest(
     bool ConvertirProcesoAMerma,

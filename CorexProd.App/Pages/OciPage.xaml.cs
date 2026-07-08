@@ -115,13 +115,20 @@ public partial class OciPage : ContentPage
             if (!continuar || validacion.Productos.Count == 0)
                 return;
 
-            bool confirmar = await MostrarConfirmacionOtAsync(item.Item, validacion);
+            IReadOnlyList<GenerarOtReservaDetalleRequest>? detallesReserva = await MostrarUsoReservaOtAsync(validacion);
+            if (detallesReserva == null)
+                return;
+
+            bool confirmar = await MostrarConfirmacionOtAsync(item.Item, validacion, detallesReserva);
             if (!confirmar)
                 return;
 
             GenerarOtResponse response = await _apiClient.GenerarOtDesdeOciAsync(
                 item.Item.IdOrdenCompraInterna,
-                new(_session.Usuario?.NombreUsuario ?? "Android", "OT generada desde Android"));
+                new GenerarOtConReservaRequest(
+                    _session.Usuario?.NombreUsuario ?? "Android",
+                    "OT generada desde Android",
+                    detallesReserva));
             await DisplayAlertAsync("OT", response.Mensaje, "OK");
             await LoadAsync();
         }
@@ -260,7 +267,16 @@ public partial class OciPage : ContentPage
             0,
             stock,
             deficit,
-            "Pendiente por validar");
+            "Pendiente por validar",
+            0,
+            deficit,
+            0,
+            deficit,
+            0,
+            null,
+            string.Empty,
+            false,
+            false);
     }
 
     private static GuiaInternaDetalleApi CrearGuiaDetalleDesdeDocumento(DocumentoDetalle detalle)
@@ -312,10 +328,29 @@ public partial class OciPage : ContentPage
         return await tcs.Task;
     }
 
-    private async Task<bool> MostrarConfirmacionOtAsync(OciResumen oci, OtValidacionResponse validacion)
+    private async Task<IReadOnlyList<GenerarOtReservaDetalleRequest>?> MostrarUsoReservaOtAsync(OtValidacionResponse validacion)
+    {
+        List<OtReservaDecisionItem> items = validacion.Productos
+            .Where(x => x.TieneReservaDisponible)
+            .Select(OtReservaDecisionItem.FromProducto)
+            .ToList();
+
+        if (items.Count == 0)
+            return [];
+
+        TaskCompletionSource<IReadOnlyList<GenerarOtReservaDetalleRequest>?> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        ContentPage page = CrearUsoReservaOtPage(items, tcs);
+        await Navigation.PushModalAsync(page);
+        return await tcs.Task;
+    }
+
+    private async Task<bool> MostrarConfirmacionOtAsync(
+        OciResumen oci,
+        OtValidacionResponse validacion,
+        IReadOnlyList<GenerarOtReservaDetalleRequest> detallesReserva)
     {
         TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        ContentPage page = CrearConfirmacionOtPage(oci, validacion, tcs);
+        ContentPage page = CrearConfirmacionOtPage(oci, validacion, detallesReserva, tcs);
         await Navigation.PushModalAsync(page);
         return await tcs.Task;
     }
@@ -372,6 +407,7 @@ public partial class OciPage : ContentPage
     private ContentPage CrearConfirmacionOtPage(
         OciResumen oci,
         OtValidacionResponse validacion,
+        IReadOnlyList<GenerarOtReservaDetalleRequest> detallesReserva,
         TaskCompletionSource<bool> tcs)
     {
         VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
@@ -381,6 +417,9 @@ public partial class OciPage : ContentPage
 
         foreach (OtValidacionProducto producto in validacion.Productos.Where(x => x.CantidadRequerida > 0))
             contenido.Add(CrearOtProductoCard(producto, false));
+
+        if (detallesReserva.Count > 0)
+            contenido.Add(CrearResumenReservaSeleccionada(validacion.Productos, detallesReserva));
 
         Grid acciones = new()
         {
@@ -404,6 +443,112 @@ public partial class OciPage : ContentPage
         return page;
     }
 
+    private static ContentPage CrearUsoReservaOtPage(
+        IReadOnlyList<OtReservaDecisionItem> items,
+        TaskCompletionSource<IReadOnlyList<GenerarOtReservaDetalleRequest>?> tcs)
+    {
+        VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
+        contenido.Add(new Label { Text = "Uso de reserva", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
+        contenido.Add(new Label { Text = "Seleccione como completar cada producto con stock reservado.", FontSize = 13, TextColor = Color.FromArgb("#667085") });
+
+        foreach (OtReservaDecisionItem item in items)
+            contenido.Add(CrearReservaDecisionCard(item));
+
+        Grid acciones = new()
+        {
+            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) },
+            ColumnSpacing = 10
+        };
+        Button cancelar = new() { Text = "Cancelar", BackgroundColor = Color.FromArgb("#667085"), TextColor = Colors.White };
+        Button continuar = new() { Text = "Continuar", BackgroundColor = Color.FromArgb("#0E9384"), TextColor = Colors.White };
+        acciones.Add(cancelar, 0, 0);
+        acciones.Add(continuar, 1, 0);
+        contenido.Add(acciones);
+
+        ContentPage page = new()
+        {
+            Title = "Reserva OT",
+            BackgroundColor = Color.FromArgb("#F4F6F8"),
+            Content = new ScrollView { Content = contenido }
+        };
+        cancelar.Clicked += async (_, _) => await CerrarModalConResultadoAsync(page, tcs, null, cancelar, continuar);
+        continuar.Clicked += async (_, _) =>
+        {
+            IReadOnlyList<GenerarOtReservaDetalleRequest> detalles = items.Select(x => x.ToRequest()).ToList();
+            await CerrarModalConResultadoAsync(page, tcs, detalles, cancelar, continuar);
+        };
+        return page;
+    }
+
+    private static Border CrearReservaDecisionCard(OtReservaDecisionItem item)
+    {
+        VerticalStackLayout stack = new() { Spacing = 8 };
+        stack.Add(new Label { Text = item.CodigoProducto, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") });
+        stack.Add(new Label { Text = item.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
+        stack.Add(new Label
+        {
+            Text = $"Requerimiento: {item.CantidadRequerida:N2} | Stock terminado: {item.StockTerminado:N2} | Reserva: {item.StockReservado:N2} | A completar: {item.CantidadFaltanteDespuesStock:N2}",
+            FontSize = 12,
+            TextColor = Color.FromArgb("#667085"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+
+        if (!string.IsNullOrWhiteSpace(item.NombreAreaReserva))
+            stack.Add(new Label { Text = $"Area reserva: {item.NombreAreaReserva}", FontSize = 12, TextColor = Color.FromArgb("#667085") });
+
+        Label resultado = new()
+        {
+            Text = item.TextoResultado,
+            FontSize = 12,
+            TextColor = Color.FromArgb("#475467"),
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        RadioButton soloNecesario = new()
+        {
+            Content = $"Usar solo {item.CantidadReservaSugerida:N2} necesarias de la reserva.",
+            GroupName = $"reserva-{item.IdOrdenCompraInternaDetalle}",
+            IsChecked = item.ModoUsoReserva == OtReservaDecisionItem.ModoSoloNecesario
+        };
+        soloNecesario.CheckedChanged += (_, e) =>
+        {
+            if (e.Value)
+            {
+                item.ModoUsoReserva = OtReservaDecisionItem.ModoSoloNecesario;
+                resultado.Text = item.TextoResultado;
+            }
+        };
+
+        RadioButton reservaCompleta = new()
+        {
+            Content = $"Procesar las {item.StockReservado:N2} reservadas.",
+            GroupName = $"reserva-{item.IdOrdenCompraInternaDetalle}",
+            IsChecked = item.ModoUsoReserva == OtReservaDecisionItem.ModoReservaCompleta,
+            IsEnabled = item.PermiteProcesarReservaCompleta
+        };
+        reservaCompleta.CheckedChanged += (_, e) =>
+        {
+            if (e.Value)
+            {
+                item.ModoUsoReserva = OtReservaDecisionItem.ModoReservaCompleta;
+                resultado.Text = item.TextoResultado;
+            }
+        };
+
+        stack.Add(soloNecesario);
+        stack.Add(reservaCompleta);
+        stack.Add(resultado);
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = Colors.White,
+            Stroke = Color.FromArgb("#0E9384"),
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Content = stack
+        };
+    }
+
     private Border CrearOtProductoCard(OtValidacionProducto producto, bool mostrarResumen)
     {
         Color estadoColor = ObtenerOtValidacionColor(producto);
@@ -417,8 +562,19 @@ public partial class OciPage : ContentPage
         header.Add(new Label { Text = ObtenerOtValidacionTexto(producto), FontFamily = "OpenSansSemibold", TextColor = estadoColor }, 1, 0);
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N2} | Desde corte: {producto.Deficit:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+        stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N2} | Produccion nueva: {producto.ProduccionNuevaSugerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
         stack.Add(CrearOtResumenLabel(producto, estadoColor));
+
+        if (producto.TieneReservaDisponible)
+        {
+            stack.Add(new Label
+            {
+                Text = $"Reserva: {producto.ReservaDisponible:N2} | Usar sugerido: {producto.ReservaSugerida:N2} | Excedente: {producto.ExcedenteReservaDisponible:N2}",
+                FontSize = 12,
+                TextColor = Color.FromArgb("#0E9384"),
+                LineBreakMode = LineBreakMode.WordWrap
+            });
+        }
 
         if (!string.IsNullOrWhiteSpace(producto.Observacion))
             stack.Add(new Label { Text = $"Obs.: {producto.Observacion}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
@@ -1047,7 +1203,7 @@ public partial class OciPage : ContentPage
         FormattedString texto = new();
         texto.Spans.Add(new Span
         {
-            Text = $"Stock actual.: {producto.StockTotal:N2} | ",
+            Text = $"Stock total: {producto.StockTotal:N2} | ",
             TextColor = textoBase
         });
         texto.Spans.Add(new Span
@@ -1067,6 +1223,41 @@ public partial class OciPage : ContentPage
             FormattedText = texto,
             FontSize = 12,
             LineBreakMode = LineBreakMode.WordWrap
+        };
+    }
+
+    private static Border CrearResumenReservaSeleccionada(
+        IReadOnlyList<OtValidacionProducto> productos,
+        IReadOnlyList<GenerarOtReservaDetalleRequest> detallesReserva)
+    {
+        Dictionary<int, OtValidacionProducto> porDetalle = productos.ToDictionary(x => x.IdOrdenCompraInternaDetalle);
+        VerticalStackLayout stack = new() { Spacing = 8 };
+        stack.Add(new Label { Text = "Reserva seleccionada", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+
+        foreach (GenerarOtReservaDetalleRequest detalle in detallesReserva)
+        {
+            string codigo = porDetalle.TryGetValue(detalle.IdOrdenCompraInternaDetalle, out OtValidacionProducto? producto)
+                ? producto.CodigoProducto
+                : detalle.IdProducto.ToString(CultureInfo.InvariantCulture);
+            string modo = detalle.ModoUsoReserva == OtReservaDecisionItem.ModoReservaCompleta
+                ? "Reserva completa"
+                : "Solo necesario";
+            stack.Add(new Label
+            {
+                Text = $"{codigo}: {modo} | reserva {detalle.CantidadProcesarReserva:N2} | produccion nueva {detalle.CantidadProduccionNueva:N2}",
+                FontSize = 12,
+                TextColor = Color.FromArgb("#475467"),
+                LineBreakMode = LineBreakMode.WordWrap
+            });
+        }
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = Colors.White,
+            Stroke = Color.FromArgb("#0E9384"),
+            StrokeShape = new RoundRectangle { CornerRadius = 8 },
+            Content = stack
         };
     }
 
@@ -1100,6 +1291,70 @@ public partial class OciPage : ContentPage
     private sealed record GuiaInternaConfirmacionResultado(
         string Observacion,
         IReadOnlyList<GuiaInternaOciDetalleRequest> Detalles);
+
+    private sealed class OtReservaDecisionItem
+    {
+        public const string ModoSoloNecesario = "SOLO_NECESARIO";
+        public const string ModoReservaCompleta = "RESERVA_COMPLETA";
+
+        public int IdOrdenCompraInternaDetalle { get; init; }
+        public int IdProducto { get; init; }
+        public string CodigoProducto { get; init; } = string.Empty;
+        public string NombreProducto { get; init; } = string.Empty;
+        public decimal CantidadRequerida { get; init; }
+        public decimal StockTerminado { get; init; }
+        public decimal StockReservado { get; init; }
+        public decimal CantidadFaltanteDespuesStock { get; init; }
+        public decimal CantidadReservaSugerida { get; init; }
+        public decimal CantidadProduccionNueva { get; init; }
+        public decimal CantidadExcedenteReserva { get; init; }
+        public string NombreAreaReserva { get; init; } = string.Empty;
+        public bool PermiteProcesarReservaCompleta { get; init; }
+        public string ModoUsoReserva { get; set; } = ModoSoloNecesario;
+
+        public string TextoResultado
+        {
+            get
+            {
+                decimal reservaProcesar = ModoUsoReserva == ModoReservaCompleta ? StockReservado : CantidadReservaSugerida;
+                decimal excedente = ModoUsoReserva == ModoReservaCompleta ? Math.Max(0, StockReservado - CantidadReservaSugerida) : 0;
+                string texto = $"Se tomaran {reservaProcesar:N2} de reserva y {CantidadProduccionNueva:N2} de produccion nueva.";
+                return excedente > 0
+                    ? $"{texto} Excedente a stock terminado: {excedente:N2}."
+                    : texto;
+            }
+        }
+
+        public static OtReservaDecisionItem FromProducto(OtValidacionProducto producto) => new()
+        {
+            IdOrdenCompraInternaDetalle = producto.IdOrdenCompraInternaDetalle,
+            IdProducto = producto.IdProducto,
+            CodigoProducto = producto.CodigoProducto,
+            NombreProducto = producto.NombreProducto,
+            CantidadRequerida = producto.CantidadRequerida,
+            StockTerminado = producto.StockAlmacen,
+            StockReservado = producto.ReservaDisponible,
+            CantidadFaltanteDespuesStock = producto.FaltanteDespuesStock,
+            CantidadReservaSugerida = producto.ReservaSugerida,
+            CantidadProduccionNueva = producto.ProduccionNuevaSugerida,
+            CantidadExcedenteReserva = producto.ExcedenteReservaDisponible,
+            NombreAreaReserva = producto.NombreAreaReserva,
+            PermiteProcesarReservaCompleta = producto.PermiteProcesarReservaCompleta || producto.ReservaDisponible > 0
+        };
+
+        public GenerarOtReservaDetalleRequest ToRequest()
+        {
+            bool reservaCompleta = ModoUsoReserva == ModoReservaCompleta;
+            decimal cantidadReserva = reservaCompleta ? StockReservado : CantidadReservaSugerida;
+            return new GenerarOtReservaDetalleRequest(
+                IdOrdenCompraInternaDetalle,
+                IdProducto,
+                ModoUsoReserva,
+                CantidadReservaSugerida,
+                cantidadReserva,
+                CantidadProduccionNueva);
+        }
+    }
 
     private enum GuiaInternaEstadoStock
     {

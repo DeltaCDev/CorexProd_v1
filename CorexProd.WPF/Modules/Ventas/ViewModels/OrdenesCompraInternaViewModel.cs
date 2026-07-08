@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
     {
         private readonly OrdenCompraInternaNegocio _negocio = new();
         private readonly GuiaInternaNegocio _guiaInternaNegocio = new();
+        private readonly EmpresaNegocio _empresaNegocio = new();
         private readonly List<OrdenCompraInterna> _todas = [];
         private string _textoBusqueda = string.Empty;
         private string _estadoFiltro = "Todos";
@@ -61,6 +63,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
         public ICommand VerCommand { get; }
         public ICommand NuevoCommand { get; }
+        public ICommand ImprimirCommand { get; }
+        public ICommand CopiarCommand { get; }
+        public ICommand EditarCommand { get; }
         public ICommand GenerarOtCommand { get; }
         public ICommand GenerarGuiaSalidaCommand { get; }
         public ICommand AnularCommand { get; }
@@ -72,6 +77,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             NuevoCommand = new RelayCommand(_ => Nuevo());
             VerCommand = new RelayCommand(Ver);
+            ImprimirCommand = new RelayCommand(Imprimir);
+            CopiarCommand = new RelayCommand(Copiar);
+            EditarCommand = new RelayCommand(Editar, PuedeEditar);
             GenerarOtCommand = new RelayCommand(GenerarOt, PuedeGenerarOt);
             GenerarGuiaSalidaCommand = new RelayCommand(GenerarGuiaSalida, PuedeGenerarGuiaSalida);
             AnularCommand = new RelayCommand(Anular, PuedeAnular);
@@ -169,6 +177,67 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
 
             new OrdenCompraInternaDetalleWindow(orden) { Owner = Application.Current.MainWindow }.ShowDialog();
+        }
+
+        private void Imprimir(object? parametro)
+        {
+            OrdenCompraInterna? orden = ObtenerOrdenCompleta(parametro);
+            if (orden == null) return;
+
+            Empresa? empresa = _empresaNegocio.ObtenerPredeterminada();
+            if (empresa == null)
+            {
+                NotificationService.Warning("Debe registrar una empresa predeterminada antes de imprimir.");
+                return;
+            }
+
+            SaveFileDialog dialog = new()
+            {
+                Title = "Guardar orden de compra",
+                FileName = $"OrdenCompra_{orden.NumeroOci}.pdf",
+                Filter = "PDF|*.pdf"
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            try
+            {
+                ProformaPdfExporter.Exportar(dialog.FileName, empresa, CrearDocumentoPdf(orden));
+                NotificationService.Success("Orden de compra generada correctamente.");
+                Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error($"No se pudo generar la orden de compra: {ex.Message}");
+            }
+        }
+
+        private void Copiar(object? parametro)
+        {
+            OrdenCompraInterna? orden = ObtenerOrdenCompleta(parametro);
+            if (orden == null) return;
+            AbrirEditorOrden(orden, copiar: true);
+        }
+
+        private static bool PuedeEditar(object? parametro) =>
+            parametro is OrdenCompraInterna orden
+            && orden.Estado.Trim().ToUpperInvariant() is "PENDIENTE" or "EMITIDA" or "EMITIDO"
+            && !orden.TieneOrdenTrabajo
+            && !orden.TieneGuiaSalida
+            && string.IsNullOrWhiteSpace(orden.MotivoAnulacion)
+            && !orden.FechaAnulacion.HasValue;
+
+        private void Editar(object? parametro)
+        {
+            OrdenCompraInterna? orden = ObtenerOrdenCompleta(parametro);
+            if (orden == null) return;
+
+            if (!orden.PuedeEditar)
+            {
+                NotificationService.Warning("Solo se puede editar una OC pendiente sin OT, guias, anulacion ni acciones realizadas.");
+                return;
+            }
+
+            AbrirEditorOrden(orden, copiar: false);
         }
 
         private static bool PuedeGenerarOt(object? parametro) =>
@@ -317,5 +386,64 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             valor.Contains(texto, StringComparison.OrdinalIgnoreCase);
 
         private static string Escapar(string valor) => $"\"{valor.Replace("\"", "\"\"")}\"";
+
+        private OrdenCompraInterna? ObtenerOrdenCompleta(object? parametro)
+        {
+            if (parametro is not OrdenCompraInterna fila)
+            {
+                NotificationService.Warning("Debe seleccionar una orden de compra.");
+                return null;
+            }
+
+            OrdenCompraInterna? orden = _negocio.Obtener(fila.IdOrdenCompraInterna);
+            if (orden == null)
+                NotificationService.Warning("No se encontro la orden de compra.");
+            return orden;
+        }
+
+        private void AbrirEditorOrden(OrdenCompraInterna orden, bool copiar)
+        {
+            ProformaEditorViewModel viewModel = new(orden, copiar);
+            ProformaEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (viewModel.Guardado)
+                Cargar();
+        }
+
+        private static Proforma CrearDocumentoPdf(OrdenCompraInterna orden) => new()
+        {
+            SerieNumero = orden.NumeroOci,
+            FechaEmision = orden.FechaEmision,
+            FechaVencimiento = orden.FechaEmision,
+            OrdenCompraCliente = orden.OrdenCompraCliente,
+            NombreCliente = orden.NombreCliente,
+            UsuarioGenerador = orden.UsuarioGenerador,
+            Subtotal = orden.Subtotal,
+            Descuento = orden.Descuento,
+            Igv = orden.Igv,
+            IgvPorcentaje = orden.IgvPorcentaje,
+            CondicionTributaria = orden.CondicionTributaria,
+            Total = orden.Total,
+            Estado = orden.Estado,
+            Observacion = string.Empty,
+            Detalles = orden.Detalles.Select(d => new ProformaDetalle
+            {
+                IdProducto = d.IdProducto,
+                CodigoProducto = d.CodigoProducto,
+                NombreProducto = d.NombreProducto,
+                Cantidad = d.Cantidad,
+                PrecioUnitario = d.PrecioUnitario,
+                Descuento = d.Descuento,
+                Importe = d.Importe,
+                Observacion = d.Observacion
+            }).ToList()
+        };
     }
 }

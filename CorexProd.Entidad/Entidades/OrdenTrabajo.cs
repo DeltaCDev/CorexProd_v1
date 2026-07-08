@@ -146,6 +146,10 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockAcabado { get; set; }
         public decimal StockTotal { get; set; }
         public decimal Deficit { get; set; }
+        public decimal StockProcesoDisponible => Math.Max(0, StockTotal - StockAlmacen);
+        public decimal CantidadReservaNecesaria => Math.Min(CantidadRequerida, StockProcesoDisponible);
+        public decimal CantidadReservaExcedente => Math.Max(0, StockProcesoDisponible - CantidadReservaNecesaria);
+        public bool TieneStockProcesoReservado => StockProcesoDisponible > 0;
         public string EstadoInsumos { get; set; } = string.Empty;
         public bool TieneFichaTecnica =>
             !EstadoInsumos.Equals("Sin ficha tecnica", StringComparison.OrdinalIgnoreCase);

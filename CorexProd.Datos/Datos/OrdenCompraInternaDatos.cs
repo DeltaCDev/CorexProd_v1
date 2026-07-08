@@ -122,6 +122,143 @@ namespace CorexProd.Datos.Datos
             return mensaje.Value?.ToString() ?? string.Empty;
         }
 
+        public string ActualizarDirecta(OrdenCompraInterna orden)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            conexion.Open();
+            ConfigurarOpcionesInsert(conexion);
+            using SqlTransaction transaction = conexion.BeginTransaction();
+
+            try
+            {
+                using (SqlCommand validar = new(
+                    """
+                    SELECT TOP (1)
+                        Estado,
+                        ISNULL(TieneGuiaSalida, 0) AS TieneGuiaSalida,
+                        ISNULL(TieneOrdenTrabajo, 0) AS TieneOrdenTrabajo,
+                        ISNULL(MotivoAnulacion, '') AS MotivoAnulacion,
+                        FechaAnulacion
+                    FROM dbo.OrdenesCompraInterna WITH (UPDLOCK, HOLDLOCK)
+                    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+                    """,
+                    conexion,
+                    transaction))
+                {
+                    validar.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = orden.IdOrdenCompraInterna;
+                    using SqlDataReader dr = validar.ExecuteReader();
+                    if (!dr.Read())
+                        return "No se encontro la orden de compra.";
+
+                    string estado = dr["Estado"]?.ToString()?.Trim().ToUpperInvariant() ?? string.Empty;
+                    bool tieneAccion = Convert.ToBoolean(dr["TieneGuiaSalida"])
+                        || Convert.ToBoolean(dr["TieneOrdenTrabajo"])
+                        || !string.IsNullOrWhiteSpace(dr["MotivoAnulacion"]?.ToString())
+                        || dr["FechaAnulacion"] != DBNull.Value;
+
+                    if (estado is not ("PENDIENTE" or "EMITIDA" or "EMITIDO") || tieneAccion)
+                        return "Solo se puede editar una OC pendiente sin acciones realizadas.";
+                }
+
+                using (SqlCommand validarDetalle = new(
+                    """
+                    IF EXISTS
+                    (
+                        SELECT 1
+                        FROM dbo.OrdenCompraInternaDetalle
+                        WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+                          AND ISNULL(CantidadDespachada, 0) > 0
+                    )
+                        SELECT CAST(1 AS BIT);
+                    ELSE
+                        SELECT CAST(0 AS BIT);
+                    """,
+                    conexion,
+                    transaction))
+                {
+                    validarDetalle.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = orden.IdOrdenCompraInterna;
+                    if (Convert.ToBoolean(validarDetalle.ExecuteScalar()))
+                        return "No se puede editar una OC con despachos registrados.";
+                }
+
+                using (SqlCommand actualizar = new(
+                    """
+                    UPDATE O
+                    SET FechaEmision = @FechaEmision,
+                        OrdenCompraCliente = @OrdenCompraCliente,
+                        IdCliente = C.IdCliente,
+                        NombreCliente = C.NombreRazonSocial,
+                        Subtotal = @Subtotal,
+                        Descuento = @Descuento,
+                        Igv = @Igv,
+                        IgvPorcentaje = @IgvPorcentaje,
+                        CondicionTributaria = @CondicionTributaria,
+                        Total = @Total,
+                        UsuarioGenerador = @UsuarioGenerador
+                    FROM dbo.OrdenesCompraInterna O
+                    INNER JOIN dbo.Clientes C ON C.IdCliente = @IdCliente AND C.Estado = 1
+                    WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+                    DELETE FROM dbo.OrdenCompraInternaDetalle
+                    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+
+                    INSERT INTO dbo.OrdenCompraInternaDetalle
+                    (
+                        IdOrdenCompraInterna, IdProducto, CodigoProducto, NombreProducto,
+                        Cantidad, PrecioUnitario, Descuento, Importe, Observacion
+                    )
+                    SELECT
+                        @IdOrdenCompraInterna,
+                        P.IdProducto,
+                        P.Codigo,
+                        P.NombreProducto,
+                        X.Cantidad,
+                        X.PrecioUnitario,
+                        X.Descuento,
+                        X.Importe,
+                        X.Observacion
+                    FROM
+                    (
+                        SELECT
+                            D.X.value('@IdProducto', 'INT') AS IdProducto,
+                            D.X.value('@Cantidad', 'DECIMAL(18,2)') AS Cantidad,
+                            D.X.value('@PrecioUnitario', 'DECIMAL(18,2)') AS PrecioUnitario,
+                            D.X.value('@Descuento', 'DECIMAL(18,2)') AS Descuento,
+                            D.X.value('@Importe', 'DECIMAL(18,2)') AS Importe,
+                            D.X.value('@Observacion', 'VARCHAR(500)') AS Observacion
+                        FROM @DetallesXml.nodes('/Detalles/Detalle') D(X)
+                    ) X
+                    INNER JOIN dbo.Productos P ON P.IdProducto = X.IdProducto
+                    WHERE X.Cantidad > 0;
+                    """,
+                    conexion,
+                    transaction))
+                {
+                    actualizar.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = orden.IdOrdenCompraInterna;
+                    actualizar.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = orden.FechaEmision.Date;
+                    actualizar.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 100).Value = orden.OrdenCompraCliente ?? string.Empty;
+                    actualizar.Parameters.Add("@IdCliente", SqlDbType.Int).Value = orden.IdCliente;
+                    actualizar.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = orden.Subtotal;
+                    actualizar.Parameters.Add("@Descuento", SqlDbType.Decimal).Value = orden.Descuento;
+                    actualizar.Parameters.Add("@Igv", SqlDbType.Decimal).Value = orden.Igv;
+                    actualizar.Parameters.Add("@IgvPorcentaje", SqlDbType.Decimal).Value = orden.IgvPorcentaje;
+                    actualizar.Parameters.Add("@CondicionTributaria", SqlDbType.VarChar, 50).Value = orden.CondicionTributaria ?? string.Empty;
+                    actualizar.Parameters.Add("@Total", SqlDbType.Decimal).Value = orden.Total;
+                    actualizar.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = orden.UsuarioGenerador ?? "Sistema";
+                    actualizar.Parameters.Add("@DetallesXml", SqlDbType.Xml).Value = CrearDetallesXml(orden.Detalles);
+                    actualizar.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+                return $"Orden de compra {orden.NumeroOci} actualizada correctamente.";
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return ex.Message;
+            }
+        }
+
         public string Anular(int idOrdenCompraInterna, string motivoAnulacion, string usuarioAnulacion)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();

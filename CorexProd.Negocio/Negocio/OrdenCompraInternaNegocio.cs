@@ -33,6 +33,23 @@ namespace CorexProd.Negocio.Negocio
             return _datos.GuardarDirecta(orden);
         }
 
+        public string ActualizarDirecta(OrdenCompraInterna orden)
+        {
+            if (orden.IdOrdenCompraInterna <= 0) return "Debe seleccionar una OC valida.";
+            if (orden.IdCliente <= 0) return "Debe seleccionar un cliente.";
+            if (orden.Detalles.Count == 0) return "Debe agregar al menos un producto.";
+            if (orden.Detalles.Any(d => d.IdProducto <= 0 || d.Cantidad <= 0))
+                return "Todos los productos deben tener cantidad mayor a cero.";
+
+            OrdenCompraInterna? actual = Obtener(orden.IdOrdenCompraInterna);
+            if (actual == null) return "No se encontro la OC seleccionada.";
+            if (!actual.PuedeEditar) return "Solo se puede editar una OC pendiente sin acciones realizadas.";
+
+            if (string.IsNullOrWhiteSpace(orden.UsuarioGenerador)) orden.UsuarioGenerador = "Sistema";
+            if (string.IsNullOrWhiteSpace(orden.NumeroOci)) orden.NumeroOci = actual.NumeroOci;
+            return _datos.ActualizarDirecta(orden);
+        }
+
         public bool RequiereOrdenTrabajo(int idOrdenCompraInterna)
         {
             OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);

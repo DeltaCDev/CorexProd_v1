@@ -11,6 +11,13 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 {
     public partial class OrdenTrabajoCrearWindow : Window
     {
+        private enum UsoReservaDecision
+        {
+            UsarSoloNecesario,
+            UsarTodaReserva,
+            Cancelar
+        }
+
         private readonly OrdenCompraInterna _oci;
         private readonly List<OrdenTrabajoValidacionProducto> _productos;
         private readonly OrdenTrabajo? _otRelacionada;
@@ -127,6 +134,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 _guardando = true;
                 GuardarButton.IsEnabled = false;
 
+                UsoReservaDecision usoReserva = ConfirmarUsoReserva();
+                if (usoReserva == UsoReservaDecision.Cancelar)
+                    return;
+
                 List<OrdenTrabajoPlanificacion> items = _productos.Select(producto =>
                     new OrdenTrabajoPlanificacion
                     {
@@ -140,7 +151,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     idUsuario,
                     ObservacionText.Text.Trim(),
                     items,
-                    _otRelacionada?.IdOrdenTrabajo);
+                    _otRelacionada?.IdOrdenTrabajo,
+                    usoReserva == UsoReservaDecision.UsarTodaReserva);
 
                 new DocumentoGeneradoResumenWindow(
                     "OT generada correctamente",
@@ -161,12 +173,56 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             catch (Exception ex)
             {
                 NotificationService.Error(ex.Message);
+                MessageBox.Show(
+                    this,
+                    $"No se pudo generar la OT:\n\n{ex.Message}",
+                    "Error al generar OT",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
             finally
             {
                 _guardando = false;
                 GuardarButton.IsEnabled = true;
             }
+        }
+
+        private UsoReservaDecision ConfirmarUsoReserva()
+        {
+            List<OrdenTrabajoValidacionProducto> conReserva = _productos
+                .Where(producto => producto.TieneStockProcesoReservado)
+                .ToList();
+
+            if (conReserva.Count == 0)
+                return UsoReservaDecision.UsarSoloNecesario;
+
+            decimal reservaDisponible = conReserva.Sum(producto => producto.StockProcesoDisponible);
+            decimal reservaNecesaria = conReserva.Sum(producto => producto.CantidadReservaNecesaria);
+            decimal reservaExcedente = conReserva.Sum(producto => producto.CantidadReservaExcedente);
+
+            string mensaje =
+                "Existen unidades reservadas para uno o mas productos.\n\n" +
+                $"Reserva disponible: {reservaDisponible:N2}\n" +
+                $"Reserva necesaria para cubrir el requerimiento: {reservaNecesaria:N2}\n" +
+                $"Excedente si procesas toda la reserva: {reservaExcedente:N2}\n\n" +
+                "Si eliges Si, se usara solo la cantidad necesaria.\n" +
+                "Si eliges No, se procesara toda la reserva disponible y el excedente quedara como stock terminado.\n" +
+                "Cancelar detiene la generacion de la OT.";
+
+            MessageBoxResult respuesta = MessageBox.Show(
+                this,
+                mensaje,
+                "Uso de stock reservado",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question,
+                MessageBoxResult.Yes);
+
+            return respuesta switch
+            {
+                MessageBoxResult.Yes => UsoReservaDecision.UsarSoloNecesario,
+                MessageBoxResult.No => UsoReservaDecision.UsarTodaReserva,
+                _ => UsoReservaDecision.Cancelar
+            };
         }
     }
 }

@@ -298,11 +298,23 @@
                   CellStyle="{StaticResource CeldaOci}"
                   RowStyle="{StaticResource FilaOci}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Acciones" Width="260"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                    <DataGridTemplateColumn Header="Acciones" Width="380"><DataGridTemplateColumn.CellTemplate><DataTemplate>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Ver detalle"
                                     Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
                                 <TextBlock Text="&#xE890;" Style="{StaticResource IconoAccion}" Foreground="#111827"/>
+                            </Button>
+                            <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Imprimir"
+                                    Command="{Binding DataContext.ImprimirCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <TextBlock Text="&#xE749;" Style="{StaticResource IconoAccion}" Foreground="#0369A1"/>
+                            </Button>
+                            <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Copiar"
+                                    Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <TextBlock Text="&#xE8C8;" Style="{StaticResource IconoAccion}" Foreground="#475569"/>
+                            </Button>
+                            <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" ToolTip="Editar"
+                                    Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                <TextBlock Text="&#xE70F;" Style="{StaticResource IconoAccion}" Foreground="#0F766E"/>
                             </Button>
                             <Button Style="{StaticResource BotonAccion}" ToolTip="Orden de trabajo"
                                      Command="{Binding DataContext.GenerarOtCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">

@@ -122,6 +122,16 @@ public sealed class CorexProdApiClient
         return await ReadJsonAsync<OciGuardarResponse>(response, cancellationToken);
     }
 
+    public async Task<OciGuardarResponse> ActualizarOciAsync(int idOrdenCompraInterna, ProformaGuardarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PutAsJsonAsync(BuildUrl($"api/oci/{idOrdenCompraInterna}"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<OciGuardarResponse>(response, cancellationToken);
+    }
+
     public async Task<DocumentoAccionResponse> GenerarOciDesdeProformaAsync(int idProforma, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
@@ -153,7 +163,25 @@ public sealed class CorexProdApiClient
         return await GetAsync<OciDetalleResponse>($"api/oci/{idOrdenCompraInterna}", cancellationToken);
     }
 
+    public async Task<byte[]> GetOciPdfAsync(int idOrdenCompraInterna, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.GetAsync(BuildUrl($"api/oci/{idOrdenCompraInterna}/pdf"), cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     public async Task<GenerarOtResponse> GenerarOtDesdeOciAsync(int idOrdenCompraInterna, DocumentoAccionRequest request, CancellationToken cancellationToken = default)
+    {
+        return await GenerarOtDesdeOciAsync(
+            idOrdenCompraInterna,
+            new GenerarOtConReservaRequest(request.Usuario, request.Motivo, []),
+            cancellationToken);
+    }
+
+    public async Task<GenerarOtResponse> GenerarOtDesdeOciAsync(int idOrdenCompraInterna, GenerarOtConReservaRequest request, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
             client => client.PostAsJsonAsync(BuildUrl($"api/oci/{idOrdenCompraInterna}/generar-ot"), request, _jsonOptions, cancellationToken),
@@ -348,6 +376,16 @@ public sealed class CorexProdApiClient
     {
         using HttpResponseMessage response = await SendAsync(
             client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/merma"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<OperacionOrdenTrabajoResponse>(response, cancellationToken);
+    }
+
+    public async Task<OperacionOrdenTrabajoResponse> ReservarStockProcesoOrdenTrabajoAsync(int idOrdenTrabajo, OrdenTrabajoReservarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/reservar"), request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await EnsureSuccessAsync(response, cancellationToken);

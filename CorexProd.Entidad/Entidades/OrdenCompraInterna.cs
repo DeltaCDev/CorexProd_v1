@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CorexProd.Entidad.Entidades
 {
@@ -29,6 +30,12 @@ namespace CorexProd.Entidad.Entidades
         public bool TieneOrdenTrabajo { get; set; }
         public bool PuedeGenerarOt { get; set; }
         public bool PuedeGenerarGuiaSalida { get; set; }
+        public bool PuedeEditar => Estado.Trim().ToUpperInvariant() is "PENDIENTE" or "EMITIDA" or "EMITIDO"
+            && !TieneGuiaSalida
+            && !TieneOrdenTrabajo
+            && string.IsNullOrWhiteSpace(MotivoAnulacion)
+            && !FechaAnulacion.HasValue
+            && Detalles.All(d => d.CantidadDespachada <= 0);
         public bool PuedeAnular => Estado.Trim().ToUpperInvariant() is not ("ANULADO" or "ANULADA")
             && !TieneGuiaSalida
             && !TieneOrdenTrabajo;

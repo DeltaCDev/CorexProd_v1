@@ -383,7 +383,11 @@ public partial class OrdenTrabajoDetallePage : ContentPage
             return;
 
         string destino = area.EsTermino ? "productos terminados" : ObtenerDestino(area);
-        bool confirmar = await DisplayAlertAsync("Confirmar transferencia", $"¿Desea transferir {cantidad:N2} unidades desde {area.NombreArea} hacia {destino}?", "Transferir", "Cancelar");
+        bool confirmar = await DisplayAlertAsync(
+            "Confirmar transferencia",
+            $"Desea transferir {cantidad:N2} unidades desde {area.NombreArea} hacia {destino}?",
+            "Transferir",
+            "Cancelar");
         if (!confirmar)
             return;
 
@@ -432,6 +436,66 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
             OrdenTrabajoMermaRequest request = new(area.IdDetalleArea, cantidad, "MERMA EN OPERACION", observacion, idUsuario, idUsuario);
             return await _apiClient.RegistrarMermaOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
+        });
+    }
+
+    private async void OnReservarClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not OrdenTrabajoAreaItem item || _detalleActual == null)
+            return;
+
+        OrdenTrabajoArea area = item.Area;
+        if (!area.PermiteReservarStockProceso || area.EsTermino)
+        {
+            await DisplayAlertAsync("OT Produccion", "Esta area no permite reservar stock en proceso.", "OK");
+            return;
+        }
+
+        if (!area.Disponible)
+        {
+            await DisplayAlertAsync("OT Produccion", "No hay cantidad pendiente para reservar en esta area.", "OK");
+            return;
+        }
+
+        decimal cantidad = await PedirCantidadAsync("Reservar stock en proceso", area.CantidadPendienteDisponible);
+        if (cantidad <= 0)
+            return;
+
+        string? clave = await PedirClaveAsync();
+        if (string.IsNullOrWhiteSpace(clave))
+            return;
+        if (!await ValidarClaveDemoAsync(clave))
+            return;
+
+        string observacion = await DisplayPromptAsync(
+            "Reserva de stock",
+            "Ingrese una observacion opcional",
+            "Continuar",
+            "Cancelar",
+            "Observacion",
+            maxLength: 200) ?? string.Empty;
+
+        bool confirmar = await DisplayAlertAsync(
+            "Confirmar reserva",
+            $"Se reservaran {cantidad:N2} unidades de {area.NombreArea} como stock en proceso.",
+            "Reservar",
+            "Cancelar");
+        if (!confirmar)
+            return;
+
+        await EjecutarOperacionAsync(async idUsuario =>
+        {
+            if (_session.EsDemo)
+                return new OperacionOrdenTrabajoResponse("Reserva registrada en modo demo.", null);
+
+            OrdenTrabajoReservarRequest request = new(
+                area.IdDetalleArea,
+                cantidad,
+                observacion,
+                idUsuario,
+                clave);
+
+            return await _apiClient.ReservarStockProcesoOrdenTrabajoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, request);
         });
     }
 
@@ -958,11 +1022,14 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         public bool MostrarIniciar => EsPrimeraArea && ProductoPendiente;
         public bool MostrarTransferir => !EsPrimeraArea || (EsPrimeraArea && !ProductoPendiente && Area.Disponible);
         public bool MostrarMerma => !EsPrimeraArea && Area.ManejaMerma;
+        public bool MostrarReservar => !EsPrimeraArea && !Area.EsTermino && Area.PermiteReservarStockProceso;
         public bool PuedeIniciar => MostrarIniciar && Area.CantidadPendienteDisponible > 0;
         public bool PuedeTransferir => MostrarTransferir && Area.Disponible;
         public bool PuedeMerma => MostrarMerma && Area.Disponible;
+        public bool PuedeReservar => MostrarReservar && Area.Disponible;
         public double OpacidadIniciar => PuedeIniciar ? 1 : 0.42;
         public double OpacidadTransferir => PuedeTransferir ? 1 : 0.42;
         public double OpacidadMerma => PuedeMerma ? 1 : 0.42;
+        public double OpacidadReservar => PuedeReservar ? 1 : 0.42;
     }
 }

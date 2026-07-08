@@ -5,13 +5,16 @@ using CorexProd.App.Services;
 
 namespace CorexProd.App.Pages;
 
-public partial class ProformaEditorPage : ContentPage
+public partial class ProformaEditorPage : ContentPage, IQueryAttributable
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
     private readonly ObservableCollection<ProformaLineaItem> _detalles = [];
     private List<ProductoProformaApi> _productos = [];
     private bool _guardando;
+    private int _idOrdenCompraInterna;
+    private string _modo = "nuevo";
+    private OciDetalleResponse? _detallePendiente;
 
     public ProformaEditorPage()
     {
@@ -20,6 +23,16 @@ public partial class ProformaEditorPage : ContentPage
         _session = ServiceHelper.GetRequiredService<SessionState>();
         DetallesView.ItemsSource = _detalles;
         VencimientoPicker.Date = DateTime.Today.AddDays(7);
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("id", out object? idValue)
+            && int.TryParse(Uri.UnescapeDataString(idValue?.ToString() ?? string.Empty), out int id))
+            _idOrdenCompraInterna = id;
+
+        if (query.TryGetValue("modo", out object? modoValue))
+            _modo = Uri.UnescapeDataString(modoValue?.ToString() ?? "nuevo").Trim().ToLowerInvariant();
     }
 
     protected override async void OnAppearing()
@@ -49,11 +62,57 @@ public partial class ProformaEditorPage : ContentPage
                 .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.NombreProducto).NombreProducto)
                 .ToList();
             FiltrarProductos();
+
+            if (_idOrdenCompraInterna > 0)
+                await CargarOrdenExistenteAsync(response.Clientes, response.SiguienteNumero);
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("OC", ex.Message, "OK");
         }
+    }
+
+    private async Task CargarOrdenExistenteAsync(IReadOnlyList<ClienteApi> clientes, string siguienteNumero)
+    {
+        OciDetalleResponse detalle = _detallePendiente ?? await _apiClient.GetOciDetalleAsync(_idOrdenCompraInterna);
+        _detallePendiente = detalle;
+        bool copiar = _modo == "copiar";
+
+        if (!copiar && !PuedeEditar(detalle))
+        {
+            await DisplayAlertAsync("OC", "Solo se puede editar una OC pendiente sin OT, guias, anulacion ni acciones realizadas.", "OK");
+            await Shell.Current.GoToAsync("..");
+            return;
+        }
+
+        Title = copiar ? "Copiar OC" : "Editar OC";
+        NumeroLabel.Text = copiar
+            ? $"Copiar como {siguienteNumero}"
+            : $"Editar {detalle.Cabecera.NumeroOci}";
+        OrdenCompraEntry.Text = detalle.Cabecera.OrdenCompraCliente;
+        VencimientoPicker.Date = detalle.Cabecera.FechaEmision;
+
+        ClienteApi? cliente = clientes.FirstOrDefault(x => x.NombreRazonSocial.Equals(detalle.Cabecera.NombreCliente, StringComparison.OrdinalIgnoreCase));
+        if (cliente != null)
+            ClientePicker.SelectedItem = cliente;
+
+        _detalles.Clear();
+        foreach (DocumentoDetalle item in detalle.Detalles)
+        {
+            _detalles.Add(new ProformaLineaItem(
+                item.IdProducto,
+                item.CodigoProducto,
+                item.NombreProducto,
+                item.Cantidad,
+                item.PrecioUnitario,
+                item.Descuento,
+                item.Importe,
+                item.Observacion));
+        }
+        ActualizarTotales();
+
+        if (copiar)
+            _idOrdenCompraInterna = 0;
     }
 
     private void OnProductoSearchChanged(object? sender, TextChangedEventArgs e) => FiltrarProductos();
@@ -147,7 +206,9 @@ public partial class ProformaEditorPage : ContentPage
                 _session.Usuario?.NombreUsuario ?? "Android",
                 _detalles.Select(x => new ProformaGuardarDetalleRequest(x.IdProducto, x.Cantidad, x.PrecioUnitario, x.Descuento, x.Observacion)).ToList());
 
-            OciGuardarResponse response = await _apiClient.GuardarOciAsync(request);
+            OciGuardarResponse response = _idOrdenCompraInterna > 0
+                ? await _apiClient.ActualizarOciAsync(_idOrdenCompraInterna, request)
+                : await _apiClient.GuardarOciAsync(request);
             await DisplayAlertAsync("OC guardada", $"{response.Mensaje}\n{response.NumeroOrden}\nTotal: S/ {response.Total:N2}", "OK");
             await Shell.Current.GoToAsync("..");
         }
@@ -174,6 +235,17 @@ public partial class ProformaEditorPage : ContentPage
     {
         texto = (texto ?? string.Empty).Trim().Replace(',', '.');
         return decimal.TryParse(texto, NumberStyles.Number, CultureInfo.InvariantCulture, out valor);
+    }
+
+    private static bool PuedeEditar(OciDetalleResponse detalle)
+    {
+        string estado = DocumentoFiltroHelper.Normalizar(detalle.Cabecera.Estado);
+        return estado is "PENDIENTE" or "EMITIDA" or "EMITIDO"
+            && !detalle.Cabecera.TieneGuiaSalida
+            && !detalle.Cabecera.TieneOrdenTrabajo
+            && string.IsNullOrWhiteSpace(detalle.Cabecera.MotivoAnulacion)
+            && !detalle.Cabecera.FechaAnulacion.HasValue
+            && detalle.Detalles.All(x => (x.CantidadDespachada ?? 0) <= 0);
     }
 
     private sealed record ProformaLineaItem(

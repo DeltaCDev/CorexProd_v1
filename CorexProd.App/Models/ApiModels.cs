@@ -120,7 +120,11 @@ public sealed record OciCabecera(
     decimal Descuento,
     decimal Igv,
     decimal Total,
-    string Estado);
+    string Estado,
+    bool TieneGuiaSalida = false,
+    bool TieneOrdenTrabajo = false,
+    string MotivoAnulacion = "",
+    DateTime? FechaAnulacion = null);
 
 public sealed record DocumentoDetalle(
     int IdOrdenCompraInternaDetalle,
@@ -187,6 +191,19 @@ public sealed record ProformaGuardarDetalleRequest(
 public sealed record DocumentoAccionRequest(
     string Usuario,
     string Motivo);
+
+public sealed record GenerarOtConReservaRequest(
+    string Usuario,
+    string Motivo,
+    IReadOnlyList<GenerarOtReservaDetalleRequest> DetallesReserva);
+
+public sealed record GenerarOtReservaDetalleRequest(
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string ModoUsoReserva,
+    decimal CantidadUsarReserva,
+    decimal CantidadProcesarReserva,
+    decimal CantidadProduccionNueva);
 
 public sealed record ProformaGuardarResponse(
     string Mensaje,
@@ -519,7 +536,8 @@ public sealed record OrdenTrabajoArea(
     decimal CantidadPendiente,
     string Estado,
     string CodigoProducto,
-    string NombreProducto)
+    string NombreProducto,
+    bool PermiteReservarStockProceso = false)
 {
     public decimal CantidadPendienteDisponible => Math.Max(0, CantidadPendiente - CantidadReservada);
     public bool Disponible => CantidadPendienteDisponible > 0
@@ -563,6 +581,13 @@ public sealed record OrdenTrabajoMermaRequest(
     string Observacion,
     int IdUsuarioSesion,
     int IdUsuarioAutoriza);
+
+public sealed record OrdenTrabajoReservarRequest(
+    long IdDetalleArea,
+    decimal Cantidad,
+    string Observacion,
+    int IdUsuarioSesion,
+    string Clave);
 
 public sealed record OrdenTrabajoAnularRequest(
     bool ConvertirProcesoAMerma,
@@ -612,7 +637,41 @@ public sealed record OtValidacionProducto(
     decimal StockAcabado,
     decimal StockTotal,
     decimal Deficit,
-    string EstadoInsumos);
+    string EstadoInsumos,
+    decimal StockReservadoTotal = 0,
+    decimal CantidadFaltanteDespuesStock = 0,
+    decimal CantidadReservaSugerida = 0,
+    decimal CantidadProduccionNueva = 0,
+    decimal CantidadExcedenteReserva = 0,
+    int? IdAreaReserva = null,
+    string NombreAreaReserva = "",
+    bool PermiteUsarReserva = false,
+    bool PermiteProcesarReservaCompleta = false)
+{
+    public decimal ReservaDisponible => StockReservadoTotal > 0
+        ? StockReservadoTotal
+        : Math.Max(0, StockTotal - StockAlmacen);
+
+    public decimal FaltanteDespuesStock => CantidadFaltanteDespuesStock > 0
+        ? CantidadFaltanteDespuesStock
+        : Deficit > 0
+            ? Deficit
+            : Math.Max(0, CantidadRequerida - StockAlmacen);
+
+    public decimal ReservaSugerida => CantidadReservaSugerida > 0
+        ? CantidadReservaSugerida
+        : Math.Min(FaltanteDespuesStock, ReservaDisponible);
+
+    public decimal ProduccionNuevaSugerida => CantidadProduccionNueva > 0
+        ? CantidadProduccionNueva
+        : Math.Max(0, FaltanteDespuesStock - ReservaSugerida);
+
+    public decimal ExcedenteReservaDisponible => CantidadExcedenteReserva > 0
+        ? CantidadExcedenteReserva
+        : Math.Max(0, ReservaDisponible - ReservaSugerida);
+
+    public bool TieneReservaDisponible => PermiteUsarReserva || ReservaDisponible > 0;
+}
 
 public sealed record OtValidacionInsumo(
     int IdInsumo,

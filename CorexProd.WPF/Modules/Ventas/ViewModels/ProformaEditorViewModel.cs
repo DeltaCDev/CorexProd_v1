@@ -35,6 +35,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private readonly bool _crearOrdenCompraDirecta;
 
         private int _idProforma;
+        private int _idOrdenCompraInterna;
         private string _serieNumero = string.Empty;
         private DateTime _fechaEmision = DateTime.Today;
         private DateTime _fechaVencimiento = DateTime.Today;
@@ -75,10 +76,21 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         }
 
         public string Titulo => _crearOrdenCompraDirecta
-            ? "Nueva Orden de Compra"
+            ? IdOrdenCompraInterna > 0 ? "Editar Orden de Compra" : "Nueva Orden de Compra"
             : IdProforma > 0 ? "Editar Proforma" : "Nueva Proforma";
 
         public string EtiquetaNumeroDocumento => _crearOrdenCompraDirecta ? "Numero de Orden" : "ID / Serie de Proforma";
+
+        public int IdOrdenCompraInterna
+        {
+            get => _idOrdenCompraInterna;
+            set
+            {
+                _idOrdenCompraInterna = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Titulo));
+            }
+        }
 
         public string SerieNumero
         {
@@ -315,6 +327,12 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             }
         }
 
+        public ProformaEditorViewModel(OrdenCompraInterna orden, bool copiar)
+            : this(null, false, true)
+        {
+            CargarOrdenCompra(orden, copiar);
+        }
+
         private void CargarClientes()
         {
             _todosLosClientes.Clear();
@@ -431,6 +449,41 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             {
                 AgregarFila();
             }
+
+            NotificarTotales();
+        }
+
+        private void CargarOrdenCompra(OrdenCompraInterna orden, bool copiar)
+        {
+            IdOrdenCompraInterna = copiar ? 0 : orden.IdOrdenCompraInterna;
+            SerieNumero = copiar ? _ordenCompraNegocio.ObtenerSiguienteNumero() : orden.NumeroOci;
+            FechaEmision = DateTime.Today;
+            FechaVencimiento = DateTime.Today;
+            OrdenCompraCliente = orden.OrdenCompraCliente;
+            ClienteSeleccionado = _todosLosClientes.FirstOrDefault(c => c.IdCliente == orden.IdCliente);
+            TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;
+            Observacion = string.Empty;
+            _igvPorcentaje = orden.IgvPorcentaje;
+            _igvActivo = !orden.CondicionTributaria.Equals("Exonerado de IGV", StringComparison.OrdinalIgnoreCase)
+                && !orden.CondicionTributaria.Equals("INAFECTO", StringComparison.OrdinalIgnoreCase);
+            _condicionTributaria = orden.CondicionTributaria;
+            OnPropertyChanged(nameof(EtiquetaIgv));
+            OnPropertyChanged(nameof(CondicionTributaria));
+
+            Detalles.Clear();
+            foreach (OrdenCompraInternaDetalle detalle in orden.Detalles)
+            {
+                ProformaDetalleItemViewModel item = CrearFilaDetalle();
+                item.CargarProducto(detalle.IdProducto);
+                item.Cantidad = detalle.Cantidad;
+                item.PrecioUnitario = detalle.PrecioUnitario;
+                item.Descuento = detalle.Descuento;
+                item.Observacion = detalle.Observacion;
+                Detalles.Add(item);
+            }
+
+            if (Detalles.Count == 0)
+                AgregarFila();
 
             NotificarTotales();
         }
@@ -761,6 +814,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             OrdenCompraInterna orden = new()
             {
+                IdOrdenCompraInterna = IdOrdenCompraInterna,
+                NumeroOci = SerieNumero,
                 FechaEmision = FechaEmision,
                 OrdenCompraCliente = OrdenCompraCliente,
                 IdCliente = ClienteSeleccionado?.IdCliente ?? 0,
@@ -783,7 +838,9 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 }).ToList()
             };
 
-            string mensaje = _ordenCompraNegocio.GuardarDirecta(orden);
+            string mensaje = orden.IdOrdenCompraInterna > 0
+                ? _ordenCompraNegocio.ActualizarDirecta(orden)
+                : _ordenCompraNegocio.GuardarDirecta(orden);
 
             if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
             {
