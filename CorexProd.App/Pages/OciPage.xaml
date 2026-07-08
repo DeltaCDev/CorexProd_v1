@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:CorexProd.App.Pages"
              x:Class="CorexProd.App.Pages.OciPage"
              Title="OC">
+    <ContentPage.Resources>
+        <pages:OciEditarVisibleConverter x:Key="OciEditarVisibleConverter" />
+    </ContentPage.Resources>
+
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
@@ -50,30 +55,16 @@
                                     <Label Grid.Row="3" Text="{Binding Estado}" FontSize="12" TextColor="#667085" />
                                     <Label Grid.Row="3" Grid.Column="1" Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
                                 </Grid>
-                                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                                    <Button Text="👁 Ver detalle" FontSize="12" Padding="8,6" Clicked="OnVerDetalleClicked" />
-                                    <Button Grid.Column="1"
-                                            Text="{Binding OtTexto}"
-                                            FontSize="12"
-                                            Padding="8,6"
-                                            BackgroundColor="{Binding OtColor}"
-                                            IsEnabled="{Binding PuedeGenerarOt}"
-                                            Clicked="OnGenerarOtClicked" />
-                                    <Button Grid.Column="2"
-                                            Text="{Binding GuiaTexto}"
-                                            FontSize="12"
-                                            Padding="8,6"
-                                            BackgroundColor="{Binding GuiaColor}"
-                                            IsEnabled="{Binding PuedeGenerarGuia}"
-                                            Clicked="OnGenerarGuiaClicked" />
-                                    <Button Grid.Column="3"
-                                            Text="🗑 Anular"
-                                            FontSize="12"
-                                            Padding="8,6"
-                                            BackgroundColor="#B42318"
-                                            IsVisible="{Binding PuedeAnular}"
-                                            Clicked="OnAnularClicked" />
-                                </Grid>
+
+                                <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                                    <Button Text="Ver detalle" FontSize="12" Padding="8,6" Margin="0,0,6,6" Clicked="OnVerDetalleClicked" />
+                                    <Button Text="Imprimir" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#155EEF" TextColor="White" Clicked="OnImprimirClicked" />
+                                    <Button Text="Copiar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#0E9384" TextColor="White" Clicked="OnCopiarClicked" />
+                                    <Button Text="Editar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#F79009" TextColor="White" IsVisible="{Binding ., Converter={StaticResource OciEditarVisibleConverter}}" Clicked="OnEditarClicked" />
+                                    <Button Text="{Binding OtTexto}" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="{Binding OtColor}" IsEnabled="{Binding PuedeGenerarOt}" Clicked="OnGenerarOtClicked" />
+                                    <Button Text="{Binding GuiaTexto}" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="{Binding GuiaColor}" IsEnabled="{Binding PuedeGenerarGuia}" Clicked="OnGenerarGuiaClicked" />
+                                    <Button Text="Anular" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#B42318" IsVisible="{Binding PuedeAnular}" Clicked="OnAnularClicked" />
+                                </FlexLayout>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
