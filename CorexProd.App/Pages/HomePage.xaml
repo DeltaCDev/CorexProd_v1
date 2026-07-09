@@ -22,6 +22,7 @@
 
                 <Label Text="Produccion" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
                 <Button Text="OT" FontSize="12" Padding="8,6" Clicked="OnOrdenesTrabajoClicked" />
+                <Button Text="OT Manual" FontSize="12" Padding="8,6" Clicked="OnOtManualClicked" />
 
                 <Label Text="Reportes" FontFamily="OpenSansSemibold" FontSize="12" TextColor="#A9D3E8" />
                 <Button Text="Kardex" FontSize="12" Padding="8,6" Clicked="OnKardexClicked" />

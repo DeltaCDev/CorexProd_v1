@@ -44,6 +44,7 @@ public partial class HomePage : ContentPage
             "Guia Interna",
             "Produccion",
             "OT",
+            "OT Manual",
             "Reportes",
             "Kardex",
             "Almacen",
@@ -100,6 +101,8 @@ public partial class HomePage : ContentPage
     private async void OnIngresoStockClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(IngresoManualStockPage));
 
     private async void OnOrdenesTrabajoClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OrdenesTrabajoPage));
+
+    private async void OnOtManualClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OrdenTrabajoManualPage));
 
     private async void OnKardexClicked(object? sender, EventArgs e) => await AbrirModuloAsync("Kardex");
 
