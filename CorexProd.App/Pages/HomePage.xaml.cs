@@ -1,5 +1,6 @@
 using CorexProd.App.Models;
 using CorexProd.App.Services;
+using System.Globalization;
 
 namespace CorexProd.App.Pages;
 
@@ -32,6 +33,7 @@ public partial class HomePage : ContentPage
 
         UserLabel.Text = _session.Usuario?.NombreCompleto;
         RoleLabel.Text = $"{_session.Usuario?.NombreUsuario} - {_session.Usuario?.NombreRol}";
+        PeriodoLabel.Text = DateTime.Today.ToString("MMMM yyyy", new CultureInfo("es-PE"));
         MenusView.ItemsSource = OrdenarMenus(_session.Menus);
         await CargarInicioAsync();
     }
@@ -86,7 +88,7 @@ public partial class HomePage : ContentPage
             Refresh.IsRefreshing = true;
             await CargarEmpresaAsync();
 
-            HealthResponse? health = null;
+            HealthResponse? health;
             IReadOnlyList<OciResumen> ocis;
             IReadOnlyList<OrdenTrabajoResumen> ots;
             IReadOnlyList<GuiaInternaResumen> guias;
@@ -113,6 +115,8 @@ public partial class HomePage : ContentPage
             }
 
             ActualizarResumen(ocis, ots, guias, productos, insumos);
+            ActualizarRankings(ocis, ots, productos);
+            ActualizarGraficos(ocis, ots, guias);
             ActualizarActividad(ocis, ots, guias);
             ApiStatusLabel.Text = $"API {health.Estado} | BD {health.BaseDatos}";
             ApiStatusLabel.TextColor = Color.FromArgb("#0E9384");
@@ -157,24 +161,127 @@ public partial class HomePage : ContentPage
         IReadOnlyList<ProductoStock> productos,
         IReadOnlyList<InsumoStock> insumos)
     {
-        int ociActivas = ocis.Count(x => !EsCerradoOAnulado(x.Estado));
-        int ociPendientes = ocis.Count(x => DocumentoFiltroHelper.Normalizar(x.Estado) is "PENDIENTE" or "EMITIDA" or "EMITIDO");
-        int otActivas = ots.Count(x => !EsCerradoOAnulado(x.Estado));
-        int otParciales = ots.Count(x => DocumentoFiltroHelper.Normalizar(x.Estado) is "TERMINADO_PARCIAL" or "PARCIAL");
         DateTime inicioMes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-        int guiasMes = guias.Count(x => x.FechaEmision >= inicioMes && !EsAnulado(x.Estado));
-        int guiasAnuladas = guias.Count(x => EsAnulado(x.Estado));
+        IReadOnlyList<OciResumen> ocisMes = ocis.Where(x => x.FechaEmision >= inicioMes).ToList();
+        IReadOnlyList<OrdenTrabajoResumen> otsMes = ots.Where(x => x.FechaEmision >= inicioMes).ToList();
+        IReadOnlyList<GuiaInternaResumen> guiasMesLista = guias.Where(x => x.FechaEmision >= inicioMes).ToList();
+
+        int ociPendientes = ocisMes.Count(x => EsPendienteProduccion(x.Estado));
+        int ociParciales = ocisMes.Count(x => EsParcial(x.Estado));
+        int ociDespachadas = ocisMes.Count(x => EsDespachado(x.Estado));
+        int ociEntregadas = ocisMes.Count(x => EsEntregadoOTerminado(x.Estado));
+        int ociAnuladas = ocisMes.Count(x => EsAnulado(x.Estado));
+
+        int otProceso = otsMes.Count(x => EsEnProceso(x.Estado));
+        int otCompletadas = otsMes.Count(x => EsEntregadoOTerminado(x.Estado));
+        int otRegularizacion = otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("REGULAR"));
+        int otAbastecimiento = otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("ABAST"));
+        int otAnuladas = otsMes.Count(x => EsAnulado(x.Estado));
+
+        int guiasGeneradas = guiasMesLista.Count;
+        int guiasPendientes = guiasMesLista.Count(x => EsPendienteProduccion(x.Estado));
+        int guiasAtendidas = guiasMesLista.Count(x => EsEntregadoOTerminado(x.Estado) || EsDespachado(x.Estado));
+        int guiasAnuladas = guiasMesLista.Count(x => EsAnulado(x.Estado));
+
         int productosBajos = productos.Count(x => x.StockActual <= 0);
         int insumosBajos = insumos.Count(x => x.StockActual <= 0);
 
-        OciActivasLabel.Text = ociActivas.ToString();
-        OciPendientesLabel.Text = $"{ociPendientes} pendientes";
-        OtActivasLabel.Text = otActivas.ToString();
-        OtParcialesLabel.Text = $"{otParciales} parciales";
-        GuiasMesLabel.Text = guiasMes.ToString();
-        GuiasAnuladasLabel.Text = $"{guiasAnuladas} anuladas";
+        OciActivasLabel.Text = ocisMes.Count.ToString();
+        OciPendientesLabel.Text = ociPendientes.ToString();
+        OciParcialesLabel.Text = ociParciales.ToString();
+        OciDespachadasLabel.Text = ociDespachadas.ToString();
+        OciEntregadasLabel.Text = ociEntregadas.ToString();
+        OciAnuladasLabel.Text = ociAnuladas.ToString();
+
+        OtActivasLabel.Text = otsMes.Count.ToString();
+        OtProcesoLabel.Text = otProceso.ToString();
+        OtCompletadasLabel.Text = otCompletadas.ToString();
+        OtRegularizacionLabel.Text = otRegularizacion.ToString();
+        OtAbastecimientoLabel.Text = otAbastecimiento.ToString();
+        OtAnuladasLabel.Text = otAnuladas.ToString();
+
+        GuiasMesLabel.Text = guiasGeneradas.ToString();
+        GuiasGeneradasLabel.Text = guiasGeneradas.ToString();
+        GuiasPendientesLabel.Text = guiasPendientes.ToString();
+        GuiasAtendidasLabel.Text = guiasAtendidas.ToString();
+        GuiasAnuladasLabel.Text = guiasAnuladas.ToString();
+
         StockAlertasLabel.Text = (productosBajos + insumosBajos).ToString();
         StockResumenLabel.Text = $"{productosBajos} prod. | {insumosBajos} ins.";
+    }
+
+    private void ActualizarRankings(
+        IReadOnlyList<OciResumen> ocis,
+        IReadOnlyList<OrdenTrabajoResumen> ots,
+        IReadOnlyList<ProductoStock> productos)
+    {
+        DateTime inicioMes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+        TopClientesView.ItemsSource = ocis
+            .Where(x => x.FechaEmision >= inicioMes)
+            .GroupBy(x => TextoVacio(x.NombreCliente))
+            .Select(x => new RankingItem(0, x.Key, x.Count()))
+            .OrderByDescending(x => x.Cantidad)
+            .ThenBy(x => x.Nombre)
+            .Take(5)
+            .Select((x, index) => x with { Posicion = index + 1 })
+            .ToList();
+
+        TopProductosView.ItemsSource = productos
+            .OrderByDescending(x => x.StockActual)
+            .Take(5)
+            .Select((x, index) => new RankingItem(index + 1, TextoVacio(x.Producto), Convert.ToInt32(Math.Round(x.StockActual))))
+            .ToList();
+
+        var usuarioOc = ocis
+            .Where(x => x.FechaEmision >= inicioMes)
+            .GroupBy(_ => _session.Usuario?.NombreCompleto ?? "Usuario")
+            .Select(x => new { Nombre = x.Key, Cantidad = x.Count() })
+            .OrderByDescending(x => x.Cantidad)
+            .FirstOrDefault();
+
+        var usuarioOt = ots
+            .Where(x => x.FechaEmision >= inicioMes)
+            .GroupBy(x => TextoVacio(x.UsuarioCreacion))
+            .Select(x => new { Nombre = x.Key, Cantidad = x.Count() })
+            .OrderByDescending(x => x.Cantidad)
+            .FirstOrDefault();
+
+        UsuarioMasOcLabel.Text = usuarioOc?.Nombre ?? "Sin datos";
+        UsuarioMasOcCantidadLabel.Text = $"{usuarioOc?.Cantidad ?? 0} OC";
+        UsuarioMasOtLabel.Text = usuarioOt?.Nombre ?? "Sin datos";
+        UsuarioMasOtCantidadLabel.Text = $"{usuarioOt?.Cantidad ?? 0} OT";
+    }
+
+    private void ActualizarGraficos(
+        IReadOnlyList<OciResumen> ocis,
+        IReadOnlyList<OrdenTrabajoResumen> ots,
+        IReadOnlyList<GuiaInternaResumen> guias)
+    {
+        ChartOciView.ItemsSource = CrearGrafico6Meses(ocis.Select(x => x.FechaEmision));
+        ChartOtView.ItemsSource = CrearGrafico6Meses(ots.Select(x => x.FechaEmision));
+        ChartGuiasView.ItemsSource = CrearGrafico6Meses(guias.Select(x => x.FechaEmision));
+    }
+
+    private static List<ChartItem> CrearGrafico6Meses(IEnumerable<DateTime> fechas)
+    {
+        DateTime mesActual = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var meses = Enumerable.Range(0, 6)
+            .Select(i => mesActual.AddMonths(i - 5))
+            .ToList();
+
+        List<int> totales = meses
+            .Select(mes => fechas.Count(fecha => fecha.Year == mes.Year && fecha.Month == mes.Month))
+            .ToList();
+
+        int maximo = Math.Max(1, totales.Max());
+
+        return meses
+            .Select((mes, index) => new ChartItem(
+                mes.ToString("MMM", new CultureInfo("es-PE")),
+                totales[index],
+                Math.Max(4, 120d * totales[index] / maximo)))
+            .ToList();
     }
 
     private void ActualizarActividad(
@@ -217,10 +324,30 @@ public partial class HomePage : ContentPage
             .ToList();
     }
 
-    private static bool EsCerradoOAnulado(string estado)
+    private static bool EsPendienteProduccion(string estado)
     {
         string valor = DocumentoFiltroHelper.Normalizar(estado);
-        return valor is "ENTREGADO" or "ENTREGADA" or "TERMINADO" or "TERMINADA" or "ANULADO" or "ANULADA";
+        return valor is "PENDIENTE" or "EMITIDA" or "EMITIDO" or "PENDIENTE_PRODUCCION" or "PENDIENTE PRODUCCION";
+    }
+
+    private static bool EsEnProceso(string estado)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return valor.Contains("PROCESO") || valor is "EN_PROCESO" or "EN PROCESO";
+    }
+
+    private static bool EsParcial(string estado) => DocumentoFiltroHelper.Normalizar(estado).Contains("PARCIAL");
+
+    private static bool EsDespachado(string estado)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return valor.Contains("DESPACH") || valor.Contains("ATENDID");
+    }
+
+    private static bool EsEntregadoOTerminado(string estado)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return valor is "ENTREGADO" or "ENTREGADA" or "TERMINADO" or "TERMINADA" or "COMPLETADO" or "COMPLETADA" or "CERRADO" or "CERRADA";
     }
 
     private static bool EsAnulado(string estado) => DocumentoFiltroHelper.Normalizar(estado) is "ANULADO" or "ANULADA";
@@ -290,6 +417,10 @@ public partial class HomePage : ContentPage
     {
         return Shell.Current.GoToAsync($"{nameof(ModuloPage)}?titulo={Uri.EscapeDataString(titulo)}");
     }
+
+    private sealed record RankingItem(int Posicion, string Nombre, int Cantidad);
+
+    private sealed record ChartItem(string Mes, int Total, double Ancho);
 
     private sealed record HomeActivityItem(
         string Tipo,
