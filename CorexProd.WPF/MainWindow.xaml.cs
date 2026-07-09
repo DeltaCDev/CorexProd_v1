@@ -116,6 +116,7 @@ namespace CorexProd.WPF
                 return;
             }
 
+            button.ContextMenu.DataContext = button.DataContext;
             button.ContextMenu.PlacementTarget = button;
             button.ContextMenu.Placement = PlacementMode.Right;
             button.ContextMenu.VerticalOffset = -8;
