@@ -171,41 +171,28 @@
                                                 Clicked="OnGenerarOtClicked" />
                                     </Grid>
 
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding PuedeAnular}">
-                                        <Button Text="🚚 Guía"
+                                    <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                                        <Button Text="{Binding GuiaTexto}"
                                                 Style="{StaticResource CardActionButton}"
+                                                Margin="0,0,8,8"
                                                 BackgroundColor="{Binding GuiaColor}"
                                                 TextColor="#101828"
                                                 IsEnabled="{Binding PuedeGenerarGuia}"
                                                 Clicked="OnGenerarGuiaClicked" />
-                                        <Button Grid.Column="1"
-                                                Text="Editar"
+                                        <Button Text="Editar"
                                                 Style="{StaticResource CardActionButton}"
+                                                Margin="0,0,8,8"
                                                 BackgroundColor="#FFF4E5"
                                                 TextColor="#B54708"
                                                 IsVisible="{Binding ., Converter={StaticResource OciEditarVisibleConverter}}"
                                                 Clicked="OnEditarClicked" />
-                                    </Grid>
-
-                                    <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
-                                        <Button Text="🚚 Guía"
-                                                Style="{StaticResource CardActionButton}"
-                                                Margin="0,0,8,0"
-                                                BackgroundColor="{Binding GuiaColor}"
-                                                TextColor="#101828"
-                                                IsEnabled="{Binding PuedeGenerarGuia}"
-                                                IsVisible="{Binding PuedeAnular}"
-                                                Clicked="OnGenerarGuiaClicked" />
                                         <Button Text="Anular"
                                                 Style="{StaticResource CardActionButton}"
+                                                Margin="0,0,8,8"
                                                 BackgroundColor="#FEE4E2"
                                                 TextColor="#B42318"
                                                 IsVisible="{Binding PuedeAnular}"
                                                 Clicked="OnAnularClicked" />
-                                        <Border Padding="10,5" BackgroundColor="#EAECF0" Stroke="#EAECF0">
-                                            <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                                            <Label Text="Sin pendiente" FontSize="11" TextColor="#344054" />
-                                        </Border>
                                     </FlexLayout>
                                 </VerticalStackLayout>
                             </Grid>
