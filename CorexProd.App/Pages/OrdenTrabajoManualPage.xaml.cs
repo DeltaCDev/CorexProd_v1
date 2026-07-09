@@ -81,7 +81,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
             Refresh.IsRefreshing = true;
             string buscar = BuscarProducto.Text?.Trim() ?? string.Empty;
             IReadOnlyList<ProductoStock> productos = _session.EsDemo
-                ? DemoData.ProductosStock
+                ? DemoData.Productos
                 : (await _apiClient.GetProductosAsync(buscar)).Items;
             ProductoPicker.ItemsSource = productos.Take(150).Select(x => new ProductoPickerItem(x)).ToList();
             if (ProductoPicker.SelectedIndex < 0 && productos.Count > 0)
