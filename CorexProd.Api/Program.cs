@@ -666,9 +666,17 @@ SELECT
         SELECT 1
         FROM dbo.OrdenTrabajo OT
         WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
-          AND OT.Estado IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+          AND UPPER(REPLACE(OT.Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
     ) THEN 1 ELSE 0 END AS BIT) AS TieneOtActiva,
-    CAST(CASE WHEN O.Estado <> 'Anulado' AND EXISTS
+    CAST(CASE WHEN O.Estado <> 'Anulado'
+      AND NOT EXISTS
+      (
+        SELECT 1
+        FROM dbo.OrdenTrabajo OT
+        WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+          AND UPPER(REPLACE(OT.Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+      )
+      AND EXISTS
     (
         SELECT 1
         FROM dbo.OrdenCompraInternaDetalle D
@@ -1139,9 +1147,17 @@ app.MapPost("/api/oci/{id:int}/generar-ot", async (int id, GenerarOtConReservaAp
         || (request.DetallesReserva?.Any(x => x.ModoUsoReserva.Equals("RESERVA_COMPLETA", StringComparison.OrdinalIgnoreCase)) ?? false);
 
     const string validarSql = @"
-SELECT TOP (1) Estado
-FROM dbo.OrdenesCompraInterna
-WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
+SELECT TOP (1)
+    O.Estado,
+    CAST(CASE WHEN EXISTS
+    (
+        SELECT 1
+        FROM dbo.OrdenTrabajo OT
+        WHERE OT.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+          AND UPPER(REPLACE(OT.Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+    ) THEN 1 ELSE 0 END AS BIT) AS TieneOtActiva
+FROM dbo.OrdenesCompraInterna O
+WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
     await using SqlConnection conexion = new(connectionString);
     await conexion.OpenAsync();
@@ -1156,6 +1172,9 @@ WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;";
         string estado = dr["Estado"]?.ToString() ?? string.Empty;
         if (estado.Equals("Anulada", StringComparison.OrdinalIgnoreCase))
             return Results.BadRequest(new { mensaje = "No se puede generar OT de una OCI anulada." });
+
+        if (Convert.ToBoolean(dr["TieneOtActiva"]))
+            return Results.BadRequest(new { mensaje = "La OCI ya tiene una OT activa en proceso. No se puede generar otra OT hasta cerrar o anular la existente." });
     }
 
     List<OtValidacionProductoApi> validaciones = await ValidarOtInsumosAsync(conexion, id);
@@ -1208,6 +1227,16 @@ app.MapGet("/api/oci/{id:int}/orden-trabajo/validacion", async (int id) =>
 {
     await using SqlConnection conexion = new(connectionString);
     await conexion.OpenAsync();
+
+    if (await OciTieneOtActivaAsync(conexion, id))
+    {
+        return Results.Ok(new
+        {
+            puedeGenerar = false,
+            mensaje = "La OCI ya tiene una OT activa en proceso. No se puede generar otra OT hasta cerrar o anular la existente.",
+            productos = Array.Empty<OtValidacionProductoApi>()
+        });
+    }
 
     List<OtValidacionProductoApi> productos = await ValidarOtInsumosAsync(conexion, id);
     if (productos.Count == 0)
@@ -2623,6 +2652,23 @@ static async Task<bool> DocumentoEstaAnuladoAsync(SqlConnection conexion, string
     cmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
     string estado = (await cmd.ExecuteScalarAsync())?.ToString()?.Trim().ToUpperInvariant() ?? string.Empty;
     return estado is "ANULADO" or "ANULADA";
+}
+
+static async Task<bool> OciTieneOtActivaAsync(SqlConnection conexion, int idOrdenCompraInterna)
+{
+    const string sql = @"
+SELECT CAST(CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.OrdenTrabajo
+    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+      AND UPPER(REPLACE(Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+) THEN 1 ELSE 0 END AS BIT);";
+
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
+    object? value = await cmd.ExecuteScalarAsync();
+    return value != null && value != DBNull.Value && Convert.ToBoolean(value);
 }
 
 static async Task<int> ObtenerIdUsuarioPorNombreAsync(SqlConnection conexion, string usuario)

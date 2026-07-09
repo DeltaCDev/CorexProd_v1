@@ -1437,6 +1437,9 @@ public partial class OciPage : ContentPage
         public string NombreCliente => Item.NombreCliente;
         public decimal Total => Item.Total;
         public string Estado => Item.Estado;
+        public Color EstadoBadgeBackground => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Background);
+        public Color EstadoBadgeStroke => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Stroke);
+        public Color EstadoBadgeText => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Text);
         public bool PuedeGenerarOt => (Item.PuedeGenerarOt || NecesitaOt)
             && !Item.TieneOrdenTrabajo
             && !Item.TieneOtActiva
@@ -1460,4 +1463,55 @@ public partial class OciPage : ContentPage
 
     private static string TextoOmitido(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No registrado" : valor.Trim();
     private static string TextoFecha(DateTime? valor) => valor.HasValue ? valor.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada";
+
+    private enum EstadoBadgePart
+    {
+        Background,
+        Stroke,
+        Text
+    }
+
+    private static Color ObtenerEstadoBadgeColor(string estado, EstadoBadgePart part)
+    {
+        string normalizado = DocumentoFiltroHelper.Normalizar(estado);
+        return normalizado switch
+        {
+            "PENDIENTE" or "EMITIDA" or "EMITIDO" => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#FEF3C7"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#F59E0B"),
+                _ => Color.FromArgb("#92400E")
+            },
+            "EN PROCESO" or "PROCESO" => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#DBEAFE"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#2563EB"),
+                _ => Color.FromArgb("#1E3A8A")
+            },
+            "PARCIAL" => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#EDE9FE"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#7C3AED"),
+                _ => Color.FromArgb("#4C1D95")
+            },
+            "ENTREGADO" or "ENTREGADA" => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#DCFCE7"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#16A34A"),
+                _ => Color.FromArgb("#166534")
+            },
+            "ANULADO" or "ANULADA" => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#FEE2E2"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#DC2626"),
+                _ => Color.FromArgb("#991B1B")
+            },
+            _ => part switch
+            {
+                EstadoBadgePart.Background => Color.FromArgb("#F1F5F9"),
+                EstadoBadgePart.Stroke => Color.FromArgb("#94A3B8"),
+                _ => Color.FromArgb("#334155")
+            }
+        };
+    }
 }

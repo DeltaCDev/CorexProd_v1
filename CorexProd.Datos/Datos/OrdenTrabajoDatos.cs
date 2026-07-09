@@ -246,13 +246,31 @@ ORDER BY D.IdDetalleOT;";
                 return CrearRegularizacion(idOci, idOrdenTrabajoRelacionada.Value, idUsuario, observacion, items);
 
             using SqlConnection cn = Conexion.ObtenerConexion();
+            cn.Open();
+            using (SqlCommand validar = new(
+                """
+                SELECT CAST(CASE WHEN EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.OrdenTrabajo
+                    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+                      AND UPPER(REPLACE(Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+                ) THEN 1 ELSE 0 END AS BIT);
+                """,
+                cn))
+            {
+                validar.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOci;
+                if (Convert.ToBoolean(validar.ExecuteScalar()))
+                    throw new InvalidOperationException("La OCI ya tiene una OT activa en proceso. No se puede generar otra OT hasta cerrar o anular la existente.");
+            }
+
             using SqlCommand cmd = new("USP_PRO_OT_CREAR", cn) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci); cmd.Parameters.AddWithValue("@IdUsuario", idUsuario); cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
             cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName="dbo.TipoOTPlanificacion", Value=TablaPlanificacion(items) });
             cmd.Parameters.Add("@ProcesarTodaReserva", SqlDbType.Bit).Value = procesarTodaReserva;
             SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction=ParameterDirection.Output };
             SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar,30) { Direction=ParameterDirection.Output };
-            cmd.Parameters.Add(id); cmd.Parameters.Add(numero); cn.Open(); cmd.ExecuteNonQuery();
+            cmd.Parameters.Add(id); cmd.Parameters.Add(numero); cmd.ExecuteNonQuery();
             return (Convert.ToInt32(id.Value), numero.Value?.ToString() ?? string.Empty);
         }
 

@@ -55,8 +55,12 @@ namespace CorexProd.Negocio.Negocio
             OrdenCompraInterna? orden = Obtener(idOrdenCompraInterna);
             return orden != null
                 && !EsAnulada(orden)
+                && !_datos.TieneOtActiva(idOrdenCompraInterna)
                 && orden.PuedeGenerarOt;
         }
+
+        public bool TieneOtActiva(int idOrdenCompraInterna) =>
+            idOrdenCompraInterna > 0 && _datos.TieneOtActiva(idOrdenCompraInterna);
 
         public bool PuedeGenerarGuiaSalida(int idOrdenCompraInterna)
         {

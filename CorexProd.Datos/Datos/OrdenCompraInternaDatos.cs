@@ -21,7 +21,10 @@ namespace CorexProd.Datos.Datos
 
             while (dr.Read())
             {
-                lista.Add(Mapear(dr));
+                OrdenCompraInterna orden = Mapear(dr);
+                if (orden.PuedeGenerarOt && TieneOtActiva(orden.IdOrdenCompraInterna))
+                    orden.PuedeGenerarOt = false;
+                lista.Add(orden);
             }
 
             return lista;
@@ -41,6 +44,8 @@ namespace CorexProd.Datos.Datos
             }
 
             OrdenCompraInterna oci = Mapear(dr);
+            if (oci.PuedeGenerarOt && TieneOtActiva(oci.IdOrdenCompraInterna))
+                oci.PuedeGenerarOt = false;
 
             if (dr.NextResult())
             {
@@ -271,6 +276,25 @@ namespace CorexProd.Datos.Datos
             conexion.Open();
             cmd.ExecuteNonQuery();
             return mensaje.Value?.ToString() ?? string.Empty;
+        }
+
+        public bool TieneOtActiva(int idOrdenCompraInterna)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                """
+                SELECT CAST(CASE WHEN EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.OrdenTrabajo
+                    WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna
+                      AND UPPER(REPLACE(Estado, ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PARCIAL')
+                ) THEN 1 ELSE 0 END AS BIT);
+                """,
+                conexion);
+            cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
+            conexion.Open();
+            return Convert.ToBoolean(cmd.ExecuteScalar());
         }
 
         private static OrdenCompraInterna Mapear(SqlDataReader dr)
