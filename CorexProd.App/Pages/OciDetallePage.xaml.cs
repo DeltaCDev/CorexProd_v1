@@ -51,15 +51,15 @@ public partial class OciDetallePage : ContentPage
 
             OciCabecera cabecera = detalle.Cabecera;
             _numeroOci = FormatearNumeroOc(cabecera.NumeroOci);
+            string ocCliente = TextoVacio(cabecera.OrdenCompraCliente);
             _observacionGeneral = "Sin observaciones generales.";
 
-            Title = _numeroOci;
-            NumeroLabel.Text = _numeroOci;
+            Title = string.IsNullOrWhiteSpace(cabecera.OrdenCompraCliente) ? _numeroOci : ocCliente;
+            OcClienteDestacadoLabel.Text = ocCliente;
+            NumeroLabel.Text = $"OC interna: {_numeroOci}";
             FechaCreacionLabel.Text = $"Creada el {cabecera.FechaEmision:dd/MM/yyyy}";
             ClienteLabel.Text = TextoVacio(cabecera.NombreCliente);
             FechaEmisionLabel.Text = cabecera.FechaEmision.ToString("dd/MM/yyyy");
-            OcClienteLabel.Text = TextoVacio(cabecera.OrdenCompraCliente);
-            OcClienteContainer.IsVisible = !string.IsNullOrWhiteSpace(cabecera.OrdenCompraCliente);
             SubtotalLabel.Text = Moneda(cabecera.Subtotal);
             IgvLabel.Text = Moneda(cabecera.Igv);
             DescuentoLabel.Text = Moneda(cabecera.Descuento);
