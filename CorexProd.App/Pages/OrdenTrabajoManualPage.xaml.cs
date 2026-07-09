@@ -71,7 +71,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
     {
         if (EsRegularizacion)
         {
-            ProductoPicker.ItemsSource = Array.Empty<ProductoStock>();
+            ProductoPicker.ItemsSource = Array.Empty<ProductoPickerItem>();
             Refresh.IsRefreshing = false;
             return;
         }
@@ -83,7 +83,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
             IReadOnlyList<ProductoStock> productos = _session.EsDemo
                 ? DemoData.ProductosStock
                 : (await _apiClient.GetProductosAsync(buscar)).Items;
-            ProductoPicker.ItemsSource = productos.Take(150).ToList();
+            ProductoPicker.ItemsSource = productos.Take(150).Select(x => new ProductoPickerItem(x)).ToList();
             if (ProductoPicker.SelectedIndex < 0 && productos.Count > 0)
                 ProductoPicker.SelectedIndex = 0;
         }
@@ -106,12 +106,13 @@ public partial class OrdenTrabajoManualPage : ContentPage
             return;
         }
 
-        if (ProductoPicker.SelectedItem is not ProductoStock producto)
+        if (ProductoPicker.SelectedItem is not ProductoPickerItem item)
         {
             await DisplayAlertAsync("OT Manual", "Seleccione un producto.", "OK");
             return;
         }
 
+        ProductoStock producto = item.Producto;
         if (!decimal.TryParse(CantidadEntry.Text?.Trim(), NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad) || cantidad <= 0)
         {
             await DisplayAlertAsync("OT Manual", "Ingrese una cantidad mayor que cero.", "OK");
@@ -247,6 +248,12 @@ public partial class OrdenTrabajoManualPage : ContentPage
     }
 
     private bool EsRegularizacion => MotivoPicker.SelectedItem?.ToString()?.Equals(MotivoRegularizacion, StringComparison.OrdinalIgnoreCase) == true;
+
+    private sealed class ProductoPickerItem(ProductoStock producto)
+    {
+        public ProductoStock Producto { get; } = producto;
+        public string Display => $"{producto.Codigo} | {producto.Producto} | Stock: {producto.StockActual:N2}";
+    }
 
     private sealed class DetalleManualItem(ProductoStock producto, decimal cantidad)
     {
