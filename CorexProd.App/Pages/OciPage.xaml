@@ -3,83 +3,212 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:CorexProd.App.Pages"
              x:Class="CorexProd.App.Pages.OciPage"
-             Title="OC">
+             Title="OC"
+             BackgroundColor="#F4F6F8">
     <ContentPage.Resources>
         <pages:OciEditarVisibleConverter x:Key="OciEditarVisibleConverter" />
+
+        <Style x:Key="PrimaryActionButton" TargetType="Button">
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="MinimumHeightRequest" Value="42" />
+        </Style>
+
+        <Style x:Key="CardActionButton" TargetType="Button">
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
-        <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <VerticalStackLayout Spacing="3"><Label Text="Desde" FontSize="11" TextColor="#667085"/><DatePicker x:Name="FechaDesde" DateSelected="OnFilterChanged"/></VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Hasta" FontSize="11" TextColor="#667085"/><DatePicker x:Name="FechaHasta" DateSelected="OnFilterChanged"/></VerticalStackLayout>
+        <VerticalStackLayout Padding="14" Spacing="12" BackgroundColor="White">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="0,2,0,4">
+                <Label Text="←" FontSize="28" TextColor="#101828" VerticalOptions="Center" />
+                <Label Grid.Column="1" Text="Órdenes de Compra" FontSize="22" FontFamily="OpenSansSemibold" TextColor="#101828" VerticalOptions="Center" />
             </Grid>
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <Picker x:Name="EstadoPicker" Title="Estado" SelectedIndexChanged="OnFilterChanged"/>
-                <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged"/>
-            </Grid>
-            <SearchBar x:Name="Search"
-                       Placeholder="Numero, cliente u OC"
-                       SearchButtonPressed="OnSearchPressed"
-                       TextChanged="OnSearchTextChanged" />
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                <Label x:Name="CountLabel" Text="Sin datos" TextColor="#637083" VerticalOptions="Center" />
-                <Button Grid.Column="1" Text="Nueva OC" BackgroundColor="#0E9384" Clicked="OnNuevaOcClicked" />
-                <Button Grid.Column="2" Text="Buscar" Clicked="OnBuscarClicked" />
+
+            <Border Padding="14" BackgroundColor="White" Stroke="#E4E7EC">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#22000000" Offset="0,4" Radius="12" Opacity="0.18" />
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Desde" FontSize="11" TextColor="#4F46E5" />
+                            <DatePicker x:Name="FechaDesde" DateSelected="OnFilterChanged" TextColor="#101828" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3">
+                            <Label Text="Hasta" FontSize="11" TextColor="#4F46E5" />
+                            <DatePicker x:Name="FechaHasta" DateSelected="OnFilterChanged" TextColor="#101828" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                        <Picker x:Name="EstadoPicker" Title="Estado" SelectedIndexChanged="OnFilterChanged" TextColor="#101828" />
+                        <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged" TextColor="#101828" PlaceholderColor="#98A2B3" />
+                    </Grid>
+
+                    <SearchBar x:Name="Search"
+                               Placeholder="Número, cliente u OC"
+                               SearchButtonPressed="OnSearchPressed"
+                               TextChanged="OnSearchTextChanged"
+                               BackgroundColor="#FFFFFF"
+                               TextColor="#101828"
+                               PlaceholderColor="#667085" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Padding="0,2,0,0">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Border Padding="9" BackgroundColor="#EEF2FF" Stroke="#EEF2FF">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
+                        <Label Text="▣" FontSize="18" TextColor="#4F46E5" />
+                    </Border>
+                    <Label x:Name="CountLabel" Text="Sin datos" TextColor="#344054" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <Button Grid.Column="1"
+                        Text="+ Nueva OC"
+                        Style="{StaticResource PrimaryActionButton}"
+                        BackgroundColor="#0E9384"
+                        TextColor="White"
+                        Clicked="OnNuevaOcClicked" />
+                <Button Grid.Column="2"
+                        Text="Buscar"
+                        Style="{StaticResource PrimaryActionButton}"
+                        BackgroundColor="#4F46E5"
+                        TextColor="White"
+                        Clicked="OnBuscarClicked" />
             </Grid>
         </VerticalStackLayout>
 
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
-            <CollectionView x:Name="ItemsView" Margin="12" SelectionMode="None">
+            <CollectionView x:Name="ItemsView" Margin="12,14,12,12" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No hay OC para mostrar." Padding="24" HorizontalTextAlignment="Center" TextColor="#637083" />
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                            <VerticalStackLayout Spacing="10">
-                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                                    <Label Text="{Binding NumeroOci}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
-                                    <Border Grid.Column="1"
-                                            Padding="10,3"
-                                            BackgroundColor="{Binding EstadoBadgeBackground}"
-                                            Stroke="{Binding EstadoBadgeStroke}"
-                                            VerticalOptions="Center"
-                                            HorizontalOptions="Center">
-                                        <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="7" />
-                                        </Border.StrokeShape>
-                                        <Label Text="{Binding Estado}"
-                                               FontSize="11"
-                                               FontFamily="OpenSansSemibold"
-                                               TextColor="{Binding EstadoBadgeText}" />
-                                    </Border>
-                                    <Label Grid.Column="2" Text="{Binding Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
-                                    <Button Grid.Row="1"
-                                            Grid.Column="2"
-                                            Text="!"
-                                            IsVisible="{Binding MostrarAnulacion}"
-                                            BackgroundColor="#F04438"
-                                            TextColor="White"
-                                            Padding="8,2"
-                                            FontSize="12"
-                                            Clicked="OnAnulacionInfoClicked" />
-                                    <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" />
-                                    <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding OrdenCompraCliente, StringFormat='OC Cliente: {0}'}" FontSize="12" TextColor="#475467" />
-                                    <Label Grid.Row="3" Grid.Column="2" Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
-                                </Grid>
+                        <Border Margin="0,0,0,12" Padding="0" BackgroundColor="White" Stroke="#D9E0E6">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="14" /></Border.StrokeShape>
+                            <Border.Shadow>
+                                <Shadow Brush="#22000000" Offset="0,3" Radius="10" Opacity="0.16" />
+                            </Border.Shadow>
 
-                                <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
-                                    <Button Text="Ver detalle" FontSize="12" Padding="8,6" Margin="0,0,6,6" Clicked="OnVerDetalleVerticalClicked" />
-                                    <Button Text="Imprimir" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#155EEF" TextColor="White" Clicked="OnImprimirClicked" />
-                                    <Button Text="Copiar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#0E9384" TextColor="White" Clicked="OnCopiarClicked" />
-                                    <Button Text="Editar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#F79009" TextColor="White" IsVisible="{Binding ., Converter={StaticResource OciEditarVisibleConverter}}" Clicked="OnEditarClicked" />
-                                    <Button Text="{Binding OtTexto}" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="{Binding OtColor}" IsEnabled="{Binding PuedeGenerarOt}" Clicked="OnGenerarOtClicked" />
-                                    <Button Text="{Binding GuiaTexto}" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="{Binding GuiaColor}" IsEnabled="{Binding PuedeGenerarGuia}" Clicked="OnGenerarGuiaClicked" />
-                                    <Button Text="Anular" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#B42318" IsVisible="{Binding PuedeAnular}" Clicked="OnAnularClicked" />
-                                </FlexLayout>
-                            </VerticalStackLayout>
+                            <Grid ColumnDefinitions="4,*">
+                                <BoxView Color="{Binding EstadoBadgeStroke}" />
+
+                                <VerticalStackLayout Grid.Column="1" Padding="12" Spacing="10">
+                                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                                        <Label Text="{Binding NumeroOci}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
+
+                                        <Border Grid.Column="1"
+                                                Padding="10,4"
+                                                BackgroundColor="{Binding EstadoBadgeBackground}"
+                                                Stroke="{Binding EstadoBadgeStroke}"
+                                                VerticalOptions="Center"
+                                                HorizontalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="12" />
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding Estado}"
+                                                   FontSize="11"
+                                                   FontFamily="OpenSansSemibold"
+                                                   TextColor="{Binding EstadoBadgeText}" />
+                                        </Border>
+
+                                        <Label Grid.Column="2" Text="{Binding Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#067647" VerticalOptions="Center" />
+
+                                        <Button Grid.Column="3"
+                                                Text="!"
+                                                IsVisible="{Binding MostrarAnulacion}"
+                                                BackgroundColor="#F04438"
+                                                TextColor="White"
+                                                CornerRadius="10"
+                                                Padding="10,4"
+                                                MinimumWidthRequest="42"
+                                                MinimumHeightRequest="34"
+                                                FontSize="14"
+                                                FontFamily="OpenSansSemibold"
+                                                Clicked="OnAnulacionInfoClicked" />
+
+                                        <Label Grid.Row="1" Grid.ColumnSpan="4" Text="{Binding NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" FontSize="14" />
+                                        <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding OrdenCompraCliente, StringFormat='OC Cliente: {0}'}" FontSize="12" TextColor="#475467" />
+                                        <HorizontalStackLayout Grid.Row="2" Grid.Column="3" Spacing="4" HorizontalOptions="End">
+                                            <Label Text="📅" FontSize="12" TextColor="#667085" />
+                                            <Label Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                        <Button Text="👁 Ver detalle"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="#F2ECFF"
+                                                TextColor="#4F46E5"
+                                                Clicked="OnVerDetalleVerticalClicked" />
+                                        <Button Grid.Column="1"
+                                                Text="📄 Copiar"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="#EAF2FF"
+                                                TextColor="#155EEF"
+                                                Clicked="OnCopiarClicked" />
+                                        <Button Grid.Column="2"
+                                                Text="💼 OT"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="{Binding OtColor}"
+                                                TextColor="#101828"
+                                                IsEnabled="{Binding PuedeGenerarOt}"
+                                                Clicked="OnGenerarOtClicked" />
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding PuedeAnular}">
+                                        <Button Text="🚚 Guía"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="{Binding GuiaColor}"
+                                                TextColor="#101828"
+                                                IsEnabled="{Binding PuedeGenerarGuia}"
+                                                Clicked="OnGenerarGuiaClicked" />
+                                        <Button Grid.Column="1"
+                                                Text="Editar"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="#FFF4E5"
+                                                TextColor="#B54708"
+                                                IsVisible="{Binding ., Converter={StaticResource OciEditarVisibleConverter}}"
+                                                Clicked="OnEditarClicked" />
+                                    </Grid>
+
+                                    <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                                        <Button Text="🚚 Guía"
+                                                Style="{StaticResource CardActionButton}"
+                                                Margin="0,0,8,0"
+                                                BackgroundColor="{Binding GuiaColor}"
+                                                TextColor="#101828"
+                                                IsEnabled="{Binding PuedeGenerarGuia}"
+                                                IsVisible="{Binding PuedeAnular}"
+                                                Clicked="OnGenerarGuiaClicked" />
+                                        <Button Text="Anular"
+                                                Style="{StaticResource CardActionButton}"
+                                                BackgroundColor="#FEE4E2"
+                                                TextColor="#B42318"
+                                                IsVisible="{Binding PuedeAnular}"
+                                                Clicked="OnAnularClicked" />
+                                        <Border Padding="10,5" BackgroundColor="#EAECF0" Stroke="#EAECF0">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                                            <Label Text="Sin pendiente" FontSize="11" TextColor="#344054" />
+                                        </Border>
+                                    </FlexLayout>
+                                </VerticalStackLayout>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
