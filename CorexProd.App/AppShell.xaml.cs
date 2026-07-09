@@ -15,6 +15,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ProformaEditorPage), typeof(ProformaEditorPage));
         Routing.RegisterRoute(nameof(OciPage), typeof(OciPage));
         Routing.RegisterRoute(nameof(OrdenesTrabajoPage), typeof(OrdenesTrabajoPage));
+        Routing.RegisterRoute(nameof(OrdenTrabajoManualPage), typeof(OrdenTrabajoManualPage));
         Routing.RegisterRoute(nameof(OrdenTrabajoDetallePage), typeof(OrdenTrabajoDetallePage));
         Routing.RegisterRoute(nameof(IngresoManualStockPage), typeof(IngresoManualStockPage));
         Routing.RegisterRoute(nameof(IngresoManualStockDetallePage), typeof(IngresoManualStockDetallePage));
