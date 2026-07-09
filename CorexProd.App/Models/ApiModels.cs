@@ -614,9 +614,25 @@ public sealed record OrdenTrabajoMovimientoItem(
     string Origen,
     string Destino,
     decimal Cantidad,
-    string Accion,
+    [property: JsonPropertyName("accion")] string AccionTecnica,
     string Usuario,
-    string Observacion);
+    string Observacion)
+{
+    public string Accion => FormatearAccion(AccionTecnica);
+
+    private static string FormatearAccion(string accion)
+    {
+        return (accion ?? string.Empty).Trim().ToUpperInvariant() switch
+        {
+            "AVANCE_AREA" => "🔄 Avance de Área",
+            "REGISTRO_MERMA" => "⚠️ Registro de Merma",
+            "CONSUMO_INSUMOS" => "📦 Consumo de Insumos",
+            "CIERRE_PRODUCCION" => "✅ Cierre de Producción",
+            "INGRESO_KARDEX" => "📥 Ingreso a Almacén",
+            _ => accion ?? string.Empty
+        };
+    }
+}
 
 public sealed record OtValidacionResponse(
     bool PuedeGenerar,
