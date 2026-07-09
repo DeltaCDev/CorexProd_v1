@@ -32,9 +32,11 @@ public partial class HomePage : ContentPage
         }
 
         UserLabel.Text = _session.Usuario?.NombreCompleto;
+        DrawerUserLabel.Text = _session.Usuario?.NombreCompleto;
         RoleLabel.Text = $"{_session.Usuario?.NombreUsuario} - {_session.Usuario?.NombreRol}";
         PeriodoLabel.Text = DateTime.Today.ToString("MMMM yyyy", new CultureInfo("es-PE"));
         MenusView.ItemsSource = OrdenarMenus(_session.Menus);
+        ModuleMenuView.ItemsSource = CrearMenuModulos();
         await CargarInicioAsync();
     }
 
@@ -76,6 +78,22 @@ public partial class HomePage : ContentPage
         "OT Produccion" => "OT",
         _ => menu
     };
+
+    private static IReadOnlyList<ModuleMenuItem> CrearMenuModulos()
+    {
+        return
+        [
+            new("Inicio", "Panel principal", "🏠", "Inicio"),
+            new("OC", "Ventas", "🛒", nameof(OciPage)),
+            new("Guía Interna", "Ventas", "🚚", nameof(GuiaInternaPage)),
+            new("OT", "Producción", "🏭", nameof(OrdenesTrabajoPage)),
+            new("OT Manual", "Producción", "📋", nameof(OrdenTrabajoManualPage)),
+            new("Kardex", "Reportes", "📈", "Kardex"),
+            new("Stock productos", "Almacén", "📦", nameof(StockProductosPage)),
+            new("Stock insumos", "Almacén", "🧱", nameof(StockInsumosPage)),
+            new("Ingreso stock", "Almacén", "⬇️", nameof(IngresoManualStockPage))
+        ];
+    }
 
     private async Task CargarInicioAsync()
     {
@@ -359,6 +377,39 @@ public partial class HomePage : ContentPage
 
     private static string TextoVacio(string? value) => string.IsNullOrWhiteSpace(value) ? "Sin dato" : value.Trim();
 
+    private void OnToggleMenuClicked(object? sender, EventArgs e)
+    {
+        MenuDrawerOverlay.IsVisible = true;
+    }
+
+    private void OnCloseMenuClicked(object? sender, EventArgs e)
+    {
+        MenuDrawerOverlay.IsVisible = false;
+        ModuleMenuView.SelectedItem = null;
+    }
+
+    private async void OnModuleMenuSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not ModuleMenuItem item)
+            return;
+
+        ModuleMenuView.SelectedItem = null;
+        MenuDrawerOverlay.IsVisible = false;
+
+        switch (item.Ruta)
+        {
+            case "Inicio":
+                await CargarInicioAsync();
+                break;
+            case "Kardex":
+                await AbrirModuloAsync("Kardex");
+                break;
+            default:
+                await Shell.Current.GoToAsync(item.Ruta);
+                break;
+        }
+    }
+
     private async void OnProductosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockProductosPage));
 
     private async void OnInsumosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockInsumosPage));
@@ -377,11 +428,18 @@ public partial class HomePage : ContentPage
 
     private async void OnLogoutClicked(object? sender, EventArgs e)
     {
+        MenuDrawerOverlay.IsVisible = false;
         await ConfirmarCerrarSesionAsync();
     }
 
     protected override bool OnBackButtonPressed()
     {
+        if (MenuDrawerOverlay.IsVisible)
+        {
+            OnCloseMenuClicked(null, EventArgs.Empty);
+            return true;
+        }
+
         Dispatcher.Dispatch(async () => await ConfirmarSalirAsync());
         return true;
     }
@@ -417,6 +475,8 @@ public partial class HomePage : ContentPage
     {
         return Shell.Current.GoToAsync($"{nameof(ModuloPage)}?titulo={Uri.EscapeDataString(titulo)}");
     }
+
+    private sealed record ModuleMenuItem(string Titulo, string Grupo, string Icono, string Ruta);
 
     private sealed record RankingItem(int Posicion, string Nombre, int Cantidad);
 
