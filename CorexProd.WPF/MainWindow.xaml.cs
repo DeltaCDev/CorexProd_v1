@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -106,6 +107,19 @@ namespace CorexProd.WPF
 
             int cantidad = _tablaActiva.Items.Cast<object>().Count(item => item != CollectionView.NewItemPlaceholder);
             CantidadItemsText.Text = cantidad == 1 ? "1 ítem listado" : $"{cantidad} ítems listados";
+        }
+
+        private void CollapsedMenuButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.ContextMenu == null)
+            {
+                return;
+            }
+
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = PlacementMode.Right;
+            button.ContextMenu.VerticalOffset = -8;
+            button.ContextMenu.IsOpen = true;
         }
 
         private void ExportarListado_Click(object sender, RoutedEventArgs e)
