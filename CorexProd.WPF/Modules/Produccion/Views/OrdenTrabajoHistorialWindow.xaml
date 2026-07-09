@@ -70,12 +70,12 @@
             </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha/Hora" Binding="{Binding FechaHora, StringFormat=dd/MM/yyyy HH:mm:ss}" Width="145"/>
-                <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="80"/>
+                <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="85"/>
                 <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="360" ElementStyle="{StaticResource TextoWrap}"/>
                 <DataGridTextColumn Header="Origen" Binding="{Binding Origen}" Width="120"/>
-                <DataGridTextColumn Header="Destino" Binding="{Binding Destino}" Width="140"/>
+                <DataGridTextColumn Header="Destino" Binding="{Binding Destino}" Width="165"/>
                 <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N3}" Width="90"/>
-                <DataGridTextColumn Header="Accion" Binding="{Binding Accion}" Width="130"/>
+                <DataGridTextColumn Header="Accion" Binding="{Binding Accion}" Width="165"/>
                 <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120"/>
             </DataGrid.Columns>
         </DataGrid>
