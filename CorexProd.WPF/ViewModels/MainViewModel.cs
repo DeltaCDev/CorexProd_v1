@@ -58,15 +58,15 @@ namespace CorexProd.WPF.ViewModels
             }
         }
 
-        public GridLength SidebarWidth => IsSidebarCollapsed ? new GridLength(64) : new GridLength(250);
+        public GridLength SidebarWidth => IsSidebarCollapsed ? new GridLength(76) : new GridLength(250);
 
         public Visibility SidebarExpandedVisibility => IsSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
 
         public Visibility SidebarCollapsedVisibility => IsSidebarCollapsed ? Visibility.Visible : Visibility.Collapsed;
 
-        public string SidebarToggleText => IsSidebarCollapsed ? ">>" : "<<";
+        public string SidebarToggleText => IsSidebarCollapsed ? "›" : "‹";
 
-        public string SidebarToggleToolTip => IsSidebarCollapsed ? "Expandir menu" : "Minimizar menu";
+        public string SidebarToggleToolTip => IsSidebarCollapsed ? "Expandir menú" : "Minimizar menú";
 
         public byte[]? LogoMenu
         {
