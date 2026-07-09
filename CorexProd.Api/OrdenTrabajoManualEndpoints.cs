@@ -85,10 +85,16 @@ internal static class OrdenTrabajoManualEndpoints
             await cmd.ExecuteNonQueryAsync();
 
             string numero = numeroOt.Value?.ToString() ?? string.Empty;
+            int idOrdenTrabajo = idOt.Value == DBNull.Value ? 0 : Convert.ToInt32(idOt.Value);
+            if (idOrdenTrabajo > 0)
+            {
+                try { await AppNotificationStore.AddOtGeneradaAsync(conexion, idOrdenTrabajo, "MANUAL", usuario); } catch { }
+            }
+
             return Results.Ok(new
             {
                 mensaje = $"OT Manual {numero} generada correctamente por Abastecimiento de Stock.",
-                idOrdenTrabajo = idOt.Value == DBNull.Value ? 0 : Convert.ToInt32(idOt.Value),
+                idOrdenTrabajo,
                 numeroOT = numero
             });
         });

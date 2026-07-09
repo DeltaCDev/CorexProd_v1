@@ -120,6 +120,12 @@ app.MapGet("/api/health", async () =>
     }
 });
 
+app.MapGet("/api/notificaciones", async (long? desdeId) =>
+{
+    IReadOnlyList<AppNotificationApi> items = await AppNotificationStore.ListAsync(connectionString, Math.Max(0, desdeId ?? 0));
+    return Results.Ok(new { total = items.Count, items });
+});
+
 app.MapGet("/api/empresa/actual", async () =>
 {
     const string sql = @"
@@ -1214,11 +1220,13 @@ WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
     cmd.Parameters.Add(idOt);
     cmd.Parameters.Add(numeroOt);
     await cmd.ExecuteNonQueryAsync();
+    int idOrdenTrabajo = Convert.ToInt32(idOt.Value);
+    try { await AppNotificationStore.AddOtGeneradaAsync(conexion, idOrdenTrabajo, "OT", usuario); } catch { }
 
     return Results.Ok(new
     {
         mensaje = $"OT {numeroOt.Value} generada correctamente.",
-        idOrdenTrabajo = Convert.ToInt32(idOt.Value),
+        idOrdenTrabajo,
         numeroOT = numeroOt.Value?.ToString() ?? string.Empty
     });
 });
@@ -1342,11 +1350,13 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/regularizacion/generar", async (int i
     cmd.Parameters.Add(idOt);
     cmd.Parameters.Add(numeroOt);
     await cmd.ExecuteNonQueryAsync();
+    int idOrdenTrabajo = Convert.ToInt32(idOt.Value);
+    try { await AppNotificationStore.AddOtGeneradaAsync(conexion, idOrdenTrabajo, "REGULARIZACION", usuario); } catch { }
 
     return Results.Ok(new
     {
         mensaje = $"OT de regularizacion {numeroOt.Value} generada correctamente.",
-        idOrdenTrabajo = Convert.ToInt32(idOt.Value),
+        idOrdenTrabajo,
         numeroOT = numeroOt.Value?.ToString() ?? string.Empty
     });
 });
@@ -2035,10 +2045,13 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/transferir", async (int id, OrdenTrab
     SqlParameter op = new("@IdOperacion", SqlDbType.BigInt) { Direction = ParameterDirection.Output };
     cmd.Parameters.Add(op);
     await cmd.ExecuteNonQueryAsync();
+    long idOperacion = Convert.ToInt64(op.Value);
+    try { await AppNotificationStore.AddTransferenciaAsync(conexion, id, idOperacion, request.EsTerminacion); } catch { }
+
     return Results.Ok(new
     {
         mensaje = request.EsTerminacion ? "Producto terminado correctamente." : "Transferencia realizada correctamente.",
-        idOperacion = Convert.ToInt64(op.Value)
+        idOperacion
     });
 });
 
@@ -2057,6 +2070,8 @@ app.MapPost("/api/ordenes-trabajo/{id:int}/merma", async (int id, OrdenTrabajoMe
     cmd.Parameters.Add("@IdUsuarioAutoriza", SqlDbType.Int).Value = request.IdUsuarioAutoriza <= 0 ? request.IdUsuarioSesion : request.IdUsuarioAutoriza;
     await conexion.OpenAsync();
     await cmd.ExecuteNonQueryAsync();
+    try { await AppNotificationStore.AddMermaAsync(conexion, id, request.IdDetalleArea, request.Cantidad, request.Motivo, request.Observacion); } catch { }
+
     return Results.Ok(new { mensaje = "Merma registrada correctamente." });
 });
 
@@ -2100,6 +2115,7 @@ WHERE DA.IdDetalleArea = @IdDetalleArea
     cmd.Parameters.Add("@IdUsuarioSesion", SqlDbType.Int).Value = request.IdUsuarioSesion;
     cmd.Parameters.Add("@IdUsuarioAutoriza", SqlDbType.Int).Value = idUsuarioAutoriza;
     await cmd.ExecuteNonQueryAsync();
+    try { await AppNotificationStore.AddReservaAsync(conexion, id, request.IdDetalleArea, request.Cantidad, request.Observacion); } catch { }
 
     return Results.Ok(new { mensaje = "Stock en proceso reservado correctamente." });
 });
@@ -2477,6 +2493,8 @@ app.MapGet("/api/fichas-tecnicas/{codigoProducto}", async (string codigoProducto
         fileDownloadName: ficha.NombreArchivo,
         enableRangeProcessing: true);
 });
+
+app.MapOrdenTrabajoManualEndpoints(connectionString);
 
 app.Run();
 
