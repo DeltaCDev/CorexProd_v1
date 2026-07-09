@@ -18,7 +18,8 @@
                        TextChanged="OnBuscarProductoChanged" />
             <Grid ColumnDefinitions="*,110,Auto" ColumnSpacing="8">
                 <Picker x:Name="ProductoPicker"
-                        Title="Producto" />
+                        Title="Producto"
+                        ItemDisplayBinding="{Binding Display}" />
                 <Entry Grid.Column="1"
                        x:Name="CantidadEntry"
                        Placeholder="Cant."
