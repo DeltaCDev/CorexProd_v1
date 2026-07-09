@@ -41,30 +41,110 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <ScrollView Grid.Column="1">
+        <RefreshView Grid.Column="1" x:Name="Refresh" Refreshing="OnRefreshing">
+        <ScrollView>
             <VerticalStackLayout Padding="16" Spacing="14">
                 <Border Padding="16" BackgroundColor="White" Stroke="#D9E0E6">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Image x:Name="CompanyLogo"
-                               Source="logo.png"
-                               WidthRequest="118"
-                               HeightRequest="118"
-                               Aspect="AspectFit" />
-                        <Label x:Name="WelcomeLabel"
-                               Text="Bienvenido"
-                               FontFamily="OpenSansSemibold"
-                               FontSize="22"
-                               TextColor="#101828"
-                               HorizontalTextAlignment="Center"
-                               LineBreakMode="WordWrap" />
-                        <Label x:Name="RoleLabel"
-                               FontSize="13"
-                               TextColor="#667085"
-                               HorizontalTextAlignment="Center"
-                               LineBreakMode="WordWrap" />
+                            Source="logo.png"
+                            WidthRequest="72"
+                            HeightRequest="72"
+                            Aspect="AspectFit" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
+                            <Label x:Name="CompanyNameLabel"
+                                Text="CorexProd"
+                                FontFamily="OpenSansSemibold"
+                                FontSize="20"
+                                TextColor="#101828"
+                                LineBreakMode="WordWrap" />
+                            <Label x:Name="RoleLabel"
+                                FontSize="13"
+                                TextColor="#667085"
+                                LineBreakMode="WordWrap" />
+                            <Label x:Name="ApiStatusLabel"
+                                Text="Conectando..."
+                                FontSize="12"
+                                TextColor="#0E9384"
+                                LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Border Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="OC activas" FontSize="12" TextColor="#667085" />
+                            <Label x:Name="OciActivasLabel" Text="0" FontFamily="OpenSansSemibold" FontSize="24" TextColor="#10324A" />
+                            <Label x:Name="OciPendientesLabel" Text="0 pendientes" FontSize="11" TextColor="#475467" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="OT activas" FontSize="12" TextColor="#667085" />
+                            <Label x:Name="OtActivasLabel" Text="0" FontFamily="OpenSansSemibold" FontSize="24" TextColor="#7A5AF8" />
+                            <Label x:Name="OtParcialesLabel" Text="0 parciales" FontSize="11" TextColor="#475467" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Guias del mes" FontSize="12" TextColor="#667085" />
+                            <Label x:Name="GuiasMesLabel" Text="0" FontFamily="OpenSansSemibold" FontSize="24" TextColor="#0E9384" />
+                            <Label x:Name="GuiasAnuladasLabel" Text="0 anuladas" FontSize="11" TextColor="#475467" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1" Padding="12" BackgroundColor="White" Stroke="#D9E0E6">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Alertas stock" FontSize="12" TextColor="#667085" />
+                            <Label x:Name="StockAlertasLabel" Text="0" FontFamily="OpenSansSemibold" FontSize="24" TextColor="#B42318" />
+                            <Label x:Name="StockResumenLabel" Text="Sin alertas" FontSize="11" TextColor="#475467" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Border Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Actividad reciente"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   TextColor="#101828" />
+                            <Label Grid.Column="1"
+                                   x:Name="LastUpdateLabel"
+                                   FontSize="11"
+                                   TextColor="#667085" />
+                        </Grid>
+                        <CollectionView x:Name="RecentActivityView"
+                                        SelectionMode="None"
+                                        MaximumHeightRequest="260">
+                            <CollectionView.EmptyView>
+                                <Label Text="Sin actividad reciente." Padding="8" TextColor="#667085" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="0,7" ColumnDefinitions="72,*" ColumnSpacing="8">
+                                        <Label Text="{Binding Tipo}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="12"
+                                               TextColor="{Binding Color}" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="{Binding Titulo}" FontFamily="OpenSansSemibold" TextColor="#10324A" LineBreakMode="WordWrap" />
+                                            <Label Text="{Binding Detalle}" FontSize="12" TextColor="#667085" LineBreakMode="WordWrap" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
                     </VerticalStackLayout>
                 </Border>
 
@@ -92,5 +172,6 @@
                 </Border>
             </VerticalStackLayout>
         </ScrollView>
+        </RefreshView>
     </Grid>
 </ContentPage>

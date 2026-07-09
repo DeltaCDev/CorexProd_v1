@@ -7,6 +7,7 @@ public partial class HomePage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
+    private bool _isLoading;
 
     public HomePage()
     {
@@ -32,8 +33,10 @@ public partial class HomePage : ContentPage
         UserLabel.Text = _session.Usuario?.NombreCompleto;
         RoleLabel.Text = $"{_session.Usuario?.NombreUsuario} - {_session.Usuario?.NombreRol}";
         MenusView.ItemsSource = OrdenarMenus(_session.Menus);
-        await CargarEmpresaAsync();
+        await CargarInicioAsync();
     }
+
+    private async void OnRefreshing(object? sender, EventArgs e) => await CargarInicioAsync();
 
     private static IReadOnlyList<string> OrdenarMenus(IReadOnlyList<string> menus)
     {
@@ -72,13 +75,68 @@ public partial class HomePage : ContentPage
         _ => menu
     };
 
+    private async Task CargarInicioAsync()
+    {
+        if (_isLoading)
+            return;
+
+        try
+        {
+            _isLoading = true;
+            Refresh.IsRefreshing = true;
+            await CargarEmpresaAsync();
+
+            HealthResponse? health = null;
+            IReadOnlyList<OciResumen> ocis;
+            IReadOnlyList<OrdenTrabajoResumen> ots;
+            IReadOnlyList<GuiaInternaResumen> guias;
+            IReadOnlyList<ProductoStock> productos;
+            IReadOnlyList<InsumoStock> insumos;
+
+            if (_session.EsDemo)
+            {
+                health = new HealthResponse("OK", "Demo", "Local", DateTime.Now);
+                ocis = DemoData.Ocis;
+                ots = DemoData.OrdenesTrabajo;
+                guias = DemoData.GuiasInternas;
+                productos = DemoData.Productos;
+                insumos = DemoData.Insumos;
+            }
+            else
+            {
+                health = await _apiClient.GetHealthAsync();
+                ocis = (await _apiClient.GetOciAsync(string.Empty)).Items;
+                ots = (await _apiClient.GetOrdenesTrabajoAsync(string.Empty)).Items;
+                guias = (await _apiClient.GetGuiasInternasAsync(string.Empty)).Items;
+                productos = (await _apiClient.GetProductosAsync(string.Empty)).Items;
+                insumos = (await _apiClient.GetInsumosAsync(string.Empty)).Items;
+            }
+
+            ActualizarResumen(ocis, ots, guias, productos, insumos);
+            ActualizarActividad(ocis, ots, guias);
+            ApiStatusLabel.Text = $"API {health.Estado} | BD {health.BaseDatos}";
+            ApiStatusLabel.TextColor = Color.FromArgb("#0E9384");
+            LastUpdateLabel.Text = DateTime.Now.ToString("HH:mm");
+        }
+        catch (Exception ex)
+        {
+            ApiStatusLabel.Text = $"Sin conexion: {ex.Message}";
+            ApiStatusLabel.TextColor = Color.FromArgb("#B42318");
+        }
+        finally
+        {
+            Refresh.IsRefreshing = false;
+            _isLoading = false;
+        }
+    }
+
     private async Task CargarEmpresaAsync()
     {
         try
         {
             EmpresaInfo empresa = _session.EsDemo ? DemoData.Empresa : await _apiClient.GetEmpresaAsync();
             string nombre = string.IsNullOrWhiteSpace(empresa.Nombre) ? "CorexProd" : empresa.Nombre.Trim();
-            WelcomeLabel.Text = $"Bienvenido a {nombre}";
+            CompanyNameLabel.Text = nombre;
 
             if (!string.IsNullOrWhiteSpace(empresa.LogoBase64))
             {
@@ -88,9 +146,91 @@ public partial class HomePage : ContentPage
         }
         catch
         {
-            WelcomeLabel.Text = "Bienvenido a CorexProd";
+            CompanyNameLabel.Text = "CorexProd";
         }
     }
+
+    private void ActualizarResumen(
+        IReadOnlyList<OciResumen> ocis,
+        IReadOnlyList<OrdenTrabajoResumen> ots,
+        IReadOnlyList<GuiaInternaResumen> guias,
+        IReadOnlyList<ProductoStock> productos,
+        IReadOnlyList<InsumoStock> insumos)
+    {
+        int ociActivas = ocis.Count(x => !EsCerradoOAnulado(x.Estado));
+        int ociPendientes = ocis.Count(x => DocumentoFiltroHelper.Normalizar(x.Estado) is "PENDIENTE" or "EMITIDA" or "EMITIDO");
+        int otActivas = ots.Count(x => !EsCerradoOAnulado(x.Estado));
+        int otParciales = ots.Count(x => DocumentoFiltroHelper.Normalizar(x.Estado) is "TERMINADO_PARCIAL" or "PARCIAL");
+        DateTime inicioMes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        int guiasMes = guias.Count(x => x.FechaEmision >= inicioMes && !EsAnulado(x.Estado));
+        int guiasAnuladas = guias.Count(x => EsAnulado(x.Estado));
+        int productosBajos = productos.Count(x => x.StockActual <= 0);
+        int insumosBajos = insumos.Count(x => x.StockActual <= 0);
+
+        OciActivasLabel.Text = ociActivas.ToString();
+        OciPendientesLabel.Text = $"{ociPendientes} pendientes";
+        OtActivasLabel.Text = otActivas.ToString();
+        OtParcialesLabel.Text = $"{otParciales} parciales";
+        GuiasMesLabel.Text = guiasMes.ToString();
+        GuiasAnuladasLabel.Text = $"{guiasAnuladas} anuladas";
+        StockAlertasLabel.Text = (productosBajos + insumosBajos).ToString();
+        StockResumenLabel.Text = $"{productosBajos} prod. | {insumosBajos} ins.";
+    }
+
+    private void ActualizarActividad(
+        IReadOnlyList<OciResumen> ocis,
+        IReadOnlyList<OrdenTrabajoResumen> ots,
+        IReadOnlyList<GuiaInternaResumen> guias)
+    {
+        List<HomeActivityItem> items = [];
+        items.AddRange(ocis
+            .OrderByDescending(x => x.FechaEmision)
+            .Take(3)
+            .Select(x => new HomeActivityItem(
+                "OC",
+                FormatearNumeroOc(x.NumeroOci),
+                $"{TextoVacio(x.NombreCliente)} | {TextoVacio(x.Estado)}",
+                Color.FromArgb("#0E9384"),
+                x.FechaEmision)));
+        items.AddRange(ots
+            .OrderByDescending(x => x.FechaEmision)
+            .Take(3)
+            .Select(x => new HomeActivityItem(
+                "OT",
+                x.NumeroOT,
+                $"{TextoVacio(x.NombreCliente)} | {TextoVacio(x.Estado)}",
+                Color.FromArgb("#7A5AF8"),
+                x.FechaEmision)));
+        items.AddRange(guias
+            .OrderByDescending(x => x.FechaEmision)
+            .Take(3)
+            .Select(x => new HomeActivityItem(
+                "Guia",
+                x.NumeroGuia,
+                $"{TextoVacio(x.EmpresaDestino)} | {TextoVacio(x.Estado)}",
+                Color.FromArgb("#2563EB"),
+                x.FechaEmision)));
+
+        RecentActivityView.ItemsSource = items
+            .OrderByDescending(x => x.Fecha)
+            .Take(6)
+            .ToList();
+    }
+
+    private static bool EsCerradoOAnulado(string estado)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        return valor is "ENTREGADO" or "ENTREGADA" or "TERMINADO" or "TERMINADA" or "ANULADO" or "ANULADA";
+    }
+
+    private static bool EsAnulado(string estado) => DocumentoFiltroHelper.Normalizar(estado) is "ANULADO" or "ANULADA";
+
+    private static string FormatearNumeroOc(string numero) =>
+        numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
+            ? "OC-" + numero[4..]
+            : numero;
+
+    private static string TextoVacio(string? value) => string.IsNullOrWhiteSpace(value) ? "Sin dato" : value.Trim();
 
     private async void OnProductosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockProductosPage));
 
@@ -150,4 +290,11 @@ public partial class HomePage : ContentPage
     {
         return Shell.Current.GoToAsync($"{nameof(ModuloPage)}?titulo={Uri.EscapeDataString(titulo)}");
     }
+
+    private sealed record HomeActivityItem(
+        string Tipo,
+        string Titulo,
+        string Detalle,
+        Color Color,
+        DateTime Fecha);
 }

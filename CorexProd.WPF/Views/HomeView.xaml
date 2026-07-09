@@ -62,8 +62,8 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="DASHBOARD OPERATIVO" FontSize="11" FontWeight="Bold" Foreground="#93C5FD"/>
-                        <TextBlock Text="Resumen general de producción, compras y despacho" FontSize="24" FontWeight="Bold" Foreground="White" Margin="0,6,0,0"/>
-                        <TextBlock Text="Vista inicial para controlar el avance del mes, detectar pendientes y revisar los principales movimientos del sistema." FontSize="13" Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,7,0,0"/>
+                        <TextBlock Text="{Binding EmpresaTitulo}" FontSize="24" FontWeight="Bold" Foreground="White" Margin="0,6,0,0"/>
+                        <TextBlock Text="{Binding ResumenInicio}" FontSize="13" Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,7,0,0"/>
                     </StackPanel>
                     <Border Grid.Column="1" Background="#FFF7ED" CornerRadius="10" Padding="14,10" VerticalAlignment="Center" Margin="18,0,0,0">
                         <StackPanel>
@@ -175,7 +175,7 @@
                         </Border>
 
                         <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="9" Padding="13" Margin="0,16,0,0">
-                            <TextBlock Text="Nota: esta primera versión usa datos de ejemplo para validar el diseño. Luego se conecta a SQL mediante procedimientos almacenados del módulo dashboard." FontSize="12" Foreground="#7C2D12" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding MensajeDatos}" FontSize="12" Foreground="#7C2D12" TextWrapping="Wrap"/>
                         </Border>
                     </StackPanel>
                 </Border>
