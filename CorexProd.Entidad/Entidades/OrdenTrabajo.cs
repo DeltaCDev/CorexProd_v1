@@ -174,6 +174,8 @@ namespace CorexProd.Entidad.Entidades
 
     public class OrdenTrabajoMovimiento
     {
+        private string _accion = string.Empty;
+
         public DateTime FechaHora { get; set; }
         public string CodigoProducto { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
@@ -183,9 +185,27 @@ namespace CorexProd.Entidad.Entidades
         public string Origen { get; set; } = string.Empty;
         public string Destino { get; set; } = string.Empty;
         public decimal Cantidad { get; set; }
-        public string Accion { get; set; } = string.Empty;
+        public string Accion
+        {
+            get => FormatearAccion(_accion);
+            set => _accion = value ?? string.Empty;
+        }
+        public string AccionTecnica => _accion;
         public string Usuario { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
+
+        private static string FormatearAccion(string accion)
+        {
+            return accion.Trim().ToUpperInvariant() switch
+            {
+                "AVANCE_AREA" => "🔄 Avance de Área",
+                "REGISTRO_MERMA" => "⚠️ Registro de Merma",
+                "CONSUMO_INSUMOS" => "📦 Consumo de Insumos",
+                "CIERRE_PRODUCCION" => "✅ Cierre de Producción",
+                "INGRESO_KARDEX" => "📥 Ingreso a Almacén",
+                _ => accion
+            };
+        }
     }
 
     public class OrdenTrabajoKardexIngreso
