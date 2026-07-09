@@ -28,16 +28,20 @@
         </Style>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*,Auto" BackgroundColor="#F6F7FB">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="#F6F7FB">
         <Grid Grid.Row="0"
-              Padding="18,14"
+              Padding="12,12,14,12"
               ColumnDefinitions="Auto,*,Auto,Auto"
-              ColumnSpacing="14"
+              ColumnSpacing="10"
               BackgroundColor="#512BD4">
-            <Label Text="☰"
-                   FontSize="26"
-                   TextColor="White"
-                   VerticalOptions="Center" />
+            <Button Text="☰"
+                    FontSize="25"
+                    TextColor="White"
+                    BackgroundColor="Transparent"
+                    Padding="6,0"
+                    WidthRequest="46"
+                    HeightRequest="42"
+                    Clicked="OnToggleMenuClicked" />
             <Label Grid.Column="1"
                    Text="CorexProd"
                    FontFamily="OpenSansSemibold"
@@ -60,7 +64,7 @@
 
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="18,16,18,10" Spacing="0">
+                <VerticalStackLayout Padding="18,16,18,18" Spacing="0">
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
                         <VerticalStackLayout Spacing="2">
                             <Label Text="¡Bienvenido, Admin!"
@@ -390,16 +394,65 @@
             </ScrollView>
         </RefreshView>
 
-        <Grid Grid.Row="2"
-              Padding="8,7"
-              ColumnDefinitions="*,*,*,*,*"
-              BackgroundColor="White"
-              ColumnSpacing="4">
-            <Button Text="⌂&#10;Inicio" FontSize="11" TextColor="#512BD4" BackgroundColor="Transparent" Padding="0" />
-            <Button Grid.Column="1" Text="OC" FontSize="11" TextColor="#6B7280" BackgroundColor="Transparent" Padding="0" Clicked="OnOciClicked" />
-            <Button Grid.Column="2" Text="OT" FontSize="11" TextColor="#6B7280" BackgroundColor="Transparent" Padding="0" Clicked="OnOrdenesTrabajoClicked" />
-            <Button Grid.Column="3" Text="Guías" FontSize="11" TextColor="#6B7280" BackgroundColor="Transparent" Padding="0" Clicked="OnGuiaInternaClicked" />
-            <Button Grid.Column="4" Text="Más" FontSize="11" TextColor="#6B7280" BackgroundColor="Transparent" Padding="0" Clicked="OnKardexClicked" />
+        <Grid x:Name="MenuDrawerOverlay"
+              Grid.RowSpan="2"
+              IsVisible="False"
+              BackgroundColor="#80000000"
+              ColumnDefinitions="285,*">
+            <Border Grid.Column="0"
+                    BackgroundColor="#071F32"
+                    StrokeThickness="0"
+                    Padding="0">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <VerticalStackLayout Padding="18,22,18,14" Spacing="8" BackgroundColor="#071F32">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="CorexProd" FontFamily="OpenSansSemibold" FontSize="21" TextColor="White" />
+                                <Label x:Name="DrawerUserLabel" FontSize="12" TextColor="#BFD7EA" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1"
+                                    Text="✕"
+                                    FontSize="18"
+                                    TextColor="White"
+                                    BackgroundColor="Transparent"
+                                    Padding="0"
+                                    Clicked="OnCloseMenuClicked" />
+                        </Grid>
+                        <BoxView HeightRequest="1" Color="#21465F" Margin="0,8,0,0" />
+                    </VerticalStackLayout>
+
+                    <CollectionView Grid.Row="1"
+                                    x:Name="ModuleMenuView"
+                                    SelectionMode="Single"
+                                    SelectionChanged="OnModuleMenuSelectionChanged">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="18,10" ColumnDefinitions="34,*" ColumnSpacing="10">
+                                    <Label Text="{Binding Icono}" FontSize="19" TextColor="White" VerticalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="{Binding Titulo}" FontFamily="OpenSansSemibold" FontSize="14" TextColor="White" />
+                                        <Label Text="{Binding Grupo}" FontSize="11" TextColor="#9EC6DD" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <VerticalStackLayout Grid.Row="2" Padding="18,12,18,20" Spacing="10">
+                        <Button Text="Cerrar sesión"
+                                FontSize="13"
+                                FontFamily="OpenSansSemibold"
+                                TextColor="White"
+                                BackgroundColor="#EF4444"
+                                CornerRadius="10"
+                                Clicked="OnLogoutClicked" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <Button Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Clicked="OnCloseMenuClicked" />
         </Grid>
     </Grid>
 </ContentPage>
