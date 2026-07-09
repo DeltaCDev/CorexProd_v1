@@ -71,7 +71,7 @@
                                 </Grid>
 
                                 <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
-                                    <Button Text="Ver detalle" FontSize="12" Padding="8,6" Margin="0,0,6,6" Clicked="OnVerDetalleClicked" />
+                                    <Button Text="Ver detalle" FontSize="12" Padding="8,6" Margin="0,0,6,6" Clicked="OnVerDetalleVerticalClicked" />
                                     <Button Text="Imprimir" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#155EEF" TextColor="White" Clicked="OnImprimirClicked" />
                                     <Button Text="Copiar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#0E9384" TextColor="White" Clicked="OnCopiarClicked" />
                                     <Button Text="Editar" FontSize="12" Padding="8,6" Margin="0,0,6,6" BackgroundColor="#F79009" TextColor="White" IsVisible="{Binding ., Converter={StaticResource OciEditarVisibleConverter}}" Clicked="OnEditarClicked" />
