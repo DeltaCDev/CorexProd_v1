@@ -10,19 +10,15 @@
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="14" />
                 </Border.StrokeShape>
-                <VerticalStackLayout Spacing="14">
+                <VerticalStackLayout Spacing="13">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <VerticalStackLayout Spacing="5">
+                        <VerticalStackLayout Spacing="3">
                             <Label Text="OC Cliente" FontSize="12" TextColor="#3F1D95" />
                             <Label x:Name="OcClienteDestacadoLabel"
                                    FontFamily="OpenSansSemibold"
                                    FontSize="26"
                                    TextColor="#101828"
                                    LineBreakMode="WordWrap" />
-                            <Label x:Name="NumeroLabel"
-                                   FontSize="14"
-                                   TextColor="#667085" />
-                            <Label x:Name="FechaCreacionLabel" FontSize="12" TextColor="#667085" />
                         </VerticalStackLayout>
 
                         <Border x:Name="EstadoBadge" Grid.Column="1" Padding="12,5" VerticalOptions="Start">
@@ -33,47 +29,40 @@
                         </Border>
                     </Grid>
 
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Cliente" FontSize="12" TextColor="#3F1D95" />
+                        <Label x:Name="ClienteLabel"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="17"
+                               TextColor="#101828"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+
                     <BoxView HeightRequest="1" Color="#EAECF0" />
 
-                    <Grid RowDefinitions="Auto" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="Cliente" FontSize="12" TextColor="#3F1D95" />
-                            <Label x:Name="ClienteLabel" FontFamily="OpenSansSemibold" FontSize="17" TextColor="#101828" LineBreakMode="WordWrap" />
+                            <Label Text="Fecha Emisión" FontSize="12" TextColor="#3F1D95" />
+                            <Label x:Name="FechaEmisionLabel"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   TextColor="#101828" />
                         </VerticalStackLayout>
 
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End">
-                            <Label Text="Fecha de Emisión" FontSize="12" TextColor="#3F1D95" HorizontalTextAlignment="End" />
-                            <Label x:Name="FechaEmisionLabel" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#101828" HorizontalTextAlignment="End" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label Text="Fecha Entrega" FontSize="12" TextColor="#3F1D95" />
+                            <Label x:Name="FechaEntregaLabel"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   TextColor="#101828" />
                         </VerticalStackLayout>
                     </Grid>
-                </VerticalStackLayout>
-            </Border>
 
-            <Border Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="14" />
-                </Border.StrokeShape>
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Resumen" FontFamily="OpenSansSemibold" FontSize="20" TextColor="#101828" />
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="11" ColumnSpacing="12">
-                        <Label Text="Subtotal" TextColor="#344054" />
-                        <Label x:Name="SubtotalLabel" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
+                    <BoxView HeightRequest="1" Color="#EAECF0" />
 
-                        <Label Grid.Row="1" Text="IGV (18%)" TextColor="#344054" />
-                        <Label x:Name="IgvLabel" Grid.Row="1" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
-
-                        <Label Grid.Row="2" Text="Descuento" TextColor="#344054" />
-                        <Label x:Name="DescuentoLabel" Grid.Row="2" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
-
-                        <Border Grid.Row="3" Grid.ColumnSpan="2" Padding="12" BackgroundColor="#F3F0FF" Stroke="#D8C8FF">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10" />
-                            </Border.StrokeShape>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <Label Text="TOTAL" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#3F1D95" VerticalOptions="Center" />
-                                <Label x:Name="TotalLabel" Grid.Column="1" FontFamily="OpenSansSemibold" FontSize="28" TextColor="#3F1D95" HorizontalTextAlignment="End" />
-                            </Grid>
-                        </Border>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <Label Text="OC Interna:" FontSize="13" TextColor="#3F1D95" />
+                        <Label x:Name="NumeroLabel" Grid.Column="1" FontSize="13" TextColor="#344054" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>
@@ -83,42 +72,89 @@
                     <RoundRectangle CornerRadius="14" />
                 </Border.StrokeShape>
                 <VerticalStackLayout Spacing="14">
-                    <Label x:Name="ProductosTituloLabel" Text="Productos" FontFamily="OpenSansSemibold" FontSize="20" TextColor="#101828" />
-                    <VerticalStackLayout x:Name="ProductosLayout" Spacing="14" BindableLayout.ItemsSource="{Binding Productos}">
+                    <Label x:Name="ProductosTituloLabel"
+                           Text="Productos"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20"
+                           TextColor="#101828" />
+
+                    <VerticalStackLayout x:Name="ProductosLayout"
+                                         Spacing="12"
+                                         BindableLayout.ItemsSource="{Binding Productos}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="13" BackgroundColor="White" Stroke="#D9E0E6">
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="12" />
                                     </Border.StrokeShape>
-                                    <VerticalStackLayout Spacing="10">
-                                        <Border Padding="9,4" BackgroundColor="#F3F0FF" Stroke="#E4D7FF" HorizontalOptions="Start">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="10" />
-                                            </Border.StrokeShape>
-                                            <Label Text="{Binding CodigoProducto}"
+                                    <VerticalStackLayout Spacing="9">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <Border Padding="9,4"
+                                                    BackgroundColor="#F3F0FF"
+                                                    Stroke="#E4D7FF"
+                                                    HorizontalOptions="Start">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="10" />
+                                                </Border.StrokeShape>
+                                                <Label Text="{Binding CodigoProducto}"
+                                                       FontFamily="OpenSansSemibold"
+                                                       FontSize="12"
+                                                       TextColor="#3F1D95" />
+                                            </Border>
+
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding CantidadTexto}"
                                                    FontFamily="OpenSansSemibold"
-                                                   FontSize="12"
-                                                   TextColor="#3F1D95" />
-                                        </Border>
+                                                   FontSize="17"
+                                                   TextColor="#3F1D95"
+                                                   VerticalOptions="Center"
+                                                   HorizontalTextAlignment="End" />
+                                        </Grid>
 
                                         <Label Text="{Binding NombreProducto}"
                                                FontFamily="OpenSansSemibold"
-                                               FontSize="18"
+                                               FontSize="15"
                                                TextColor="#101828"
                                                LineBreakMode="WordWrap"
                                                MaxLines="3" />
 
-                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
-                                            <VerticalStackLayout Spacing="3">
-                                                <Label Text="Cantidad" FontSize="12" TextColor="#3F1D95" />
-                                                <Label Text="{Binding CantidadTexto}" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#101828" />
-                                            </VerticalStackLayout>
-                                            <VerticalStackLayout Grid.Column="1" Spacing="3">
-                                                <Label Text="Total" FontSize="12" TextColor="#3F1D95" />
-                                                <Label Text="{Binding TotalTexto}" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#101828" />
-                                            </VerticalStackLayout>
-                                        </Grid>
+                                        <VerticalStackLayout IsVisible="{Binding MostrarDisponibilidad}" Spacing="7">
+                                            <BoxView HeightRequest="1" Color="#EAECF0" />
+                                            <Label Text="Disponibilidad" FontSize="13" TextColor="#3F1D95" />
+                                            <ProgressBar Progress="{Binding ProgresoDisponibilidad}"
+                                                         ProgressColor="#22A51B"
+                                                         BackgroundColor="#E5E7EB"
+                                                         HeightRequest="8" />
+                                            <Label Text="{Binding DisponibilidadResumenTexto}"
+                                                   FontSize="12"
+                                                   TextColor="#667085" />
+
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                                <HorizontalStackLayout Spacing="7">
+                                                    <Ellipse WidthRequest="9"
+                                                             HeightRequest="9"
+                                                             Fill="{Binding StockIndicadorColor}"
+                                                             VerticalOptions="Center" />
+                                                    <Label Text="{Binding StockDisponibleTexto}"
+                                                           FontSize="13"
+                                                           TextColor="{Binding StockTextoColor}"
+                                                           LineBreakMode="WordWrap" />
+                                                </HorizontalStackLayout>
+
+                                                <HorizontalStackLayout Grid.Column="1"
+                                                                       Spacing="7"
+                                                                       IsVisible="{Binding TieneFaltante}">
+                                                    <Ellipse WidthRequest="9"
+                                                             HeightRequest="9"
+                                                             Fill="#E11D48"
+                                                             VerticalOptions="Center" />
+                                                    <Label Text="{Binding FaltanteTexto}"
+                                                           FontSize="13"
+                                                           TextColor="#E11D48"
+                                                           LineBreakMode="WordWrap" />
+                                                </HorizontalStackLayout>
+                                            </Grid>
+                                        </VerticalStackLayout>
 
                                         <Border Padding="10" BackgroundColor="#F8FAFC" Stroke="#EEF2F6">
                                             <Border.StrokeShape>
@@ -126,7 +162,10 @@
                                             </Border.StrokeShape>
                                             <VerticalStackLayout Spacing="3">
                                                 <Label Text="Observación" FontSize="12" TextColor="#3F1D95" />
-                                                <Label Text="{Binding ObservacionTexto}" FontSize="13" TextColor="#475467" LineBreakMode="WordWrap" />
+                                                <Label Text="{Binding ObservacionTexto}"
+                                                       FontSize="13"
+                                                       TextColor="#475467"
+                                                       LineBreakMode="WordWrap" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </VerticalStackLayout>
@@ -142,13 +181,62 @@
                     <RoundRectangle CornerRadius="14" />
                 </Border.StrokeShape>
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Observación General" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#101828" />
+                    <Label Text="Observación General"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18"
+                           TextColor="#101828" />
                     <Border Padding="12" BackgroundColor="#F8FAFC" Stroke="#EEF2F6">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="10" />
                         </Border.StrokeShape>
-                        <Label x:Name="ObservacionGeneralLabel" TextColor="#475467" LineBreakMode="WordWrap" />
+                        <Label x:Name="ObservacionGeneralLabel"
+                               TextColor="#475467"
+                               LineBreakMode="WordWrap" />
                     </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Padding="14" BackgroundColor="White" Stroke="#D9E0E6">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="14" />
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Resumen"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20"
+                           TextColor="#101828" />
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="*,Auto"
+                          RowSpacing="11"
+                          ColumnSpacing="12">
+                        <Label Text="Subtotal" TextColor="#344054" />
+                        <Label x:Name="SubtotalLabel" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
+
+                        <Label Grid.Row="1" Text="IGV (18%)" TextColor="#344054" />
+                        <Label x:Name="IgvLabel" Grid.Row="1" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
+
+                        <Label Grid.Row="2" Text="Descuento" TextColor="#344054" />
+                        <Label x:Name="DescuentoLabel" Grid.Row="2" Grid.Column="1" TextColor="#101828" HorizontalTextAlignment="End" />
+
+                        <Border Grid.Row="3" Grid.ColumnSpan="2" Padding="12" BackgroundColor="#F3F0FF" Stroke="#D8C8FF">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Text="TOTAL"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="15"
+                                       TextColor="#3F1D95"
+                                       VerticalOptions="Center" />
+                                <Label x:Name="TotalLabel"
+                                       Grid.Column="1"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="28"
+                                       TextColor="#3F1D95"
+                                       HorizontalTextAlignment="End" />
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 
