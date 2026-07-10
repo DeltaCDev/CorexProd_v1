@@ -33,6 +33,8 @@ namespace CorexProd.Entidad.Entidades
         public string StockDisponibleTexto => $"Stock disponible: {FormatearCantidad(StockActual)} Und";
         public string FaltanteVisualTexto => $"Faltan producir/despachar: {FormatearCantidad(CantidadFaltanteParaEnviar)} Und";
         public string CantidadVisualTexto => $"{FormatearCantidad(Cantidad)} Und";
+        public string StockProcesoVisualTexto => $"{FormatearCantidad(StockProcesoReservado)} Und";
+        public string CantidadDespachadaVisualTexto => $"{FormatearCantidad(CantidadDespachada)} Und";
         public string ObservacionVisual => string.IsNullOrWhiteSpace(Observacion) ? "Sin observaciones." : Observacion.Trim();
 
         public string EstadoEnvioStock
