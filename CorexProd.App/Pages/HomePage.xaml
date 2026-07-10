@@ -10,12 +10,12 @@
             <Setter Property="BackgroundColor" Value="White" />
             <Setter Property="Stroke" Value="#E2E6EF" />
             <Setter Property="StrokeThickness" Value="1" />
-            <Setter Property="Padding" Value="14" />
+            <Setter Property="Padding" Value="10" />
             <Setter Property="StrokeShape">
-                <RoundRectangle CornerRadius="14" />
+                <RoundRectangle CornerRadius="8" />
             </Setter>
             <Setter Property="Shadow">
-                <Shadow Brush="#18000000" Offset="0,2" Radius="8" Opacity="0.16" />
+                <Shadow Brush="#14000000" Offset="0,1" Radius="5" Opacity="0.14" />
             </Setter>
         </Style>
         <Style x:Key="SectionTitle" TargetType="Label">
@@ -67,18 +67,18 @@
         <!-- CONTENIDO -->
         <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="14,12,14,22" Spacing="14">
+                <VerticalStackLayout Padding="14,10,14,18" Spacing="10">
                     <!-- PERIODO -->
-                    <Border BackgroundColor="#F1EFFF" StrokeThickness="0" Padding="13,10">
-                        <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                    <Border BackgroundColor="#F1EFFF" StrokeThickness="0" Padding="11,8">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                            <Border WidthRequest="46" HeightRequest="46" BackgroundColor="#E3DEFF" StrokeThickness="0">
-                                <Border.StrokeShape><RoundRectangle CornerRadius="23" /></Border.StrokeShape>
+                            <Border WidthRequest="36" HeightRequest="36" BackgroundColor="#E3DEFF" StrokeThickness="0">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="18" /></Border.StrokeShape>
                                 <Label Text="▣" FontSize="25" TextColor="#4B2BD4" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                                 <Label Text="Período actual" FontSize="12" TextColor="#344054" />
-                                <Label x:Name="PeriodoLabel" Text="Julio 2026" FontSize="16" FontFamily="OpenSansSemibold" TextColor="#101828" />
+                                <Label x:Name="PeriodoLabel" Text="Julio 2026" FontSize="14" FontFamily="OpenSansSemibold" TextColor="#101828" />
                             </VerticalStackLayout>
                             <Label Grid.Column="2" Text="⌄" FontSize="28" TextColor="#344054" VerticalOptions="Center" />
                         </Grid>
@@ -91,20 +91,21 @@
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource Card}" Padding="8" HeightRequest="148">
-                                    <VerticalStackLayout Spacing="5" HorizontalOptions="Fill" VerticalOptions="Center">
-                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
-                                            <Border WidthRequest="42" HeightRequest="42" BackgroundColor="{Binding SoftColor}" StrokeThickness="0">
-                                                <Border.StrokeShape><RoundRectangle CornerRadius="21" /></Border.StrokeShape>
-                                                <Label Text="{Binding Icono}" FontSize="16" FontFamily="OpenSansSemibold" TextColor="{Binding Color}"
+                                <Border Style="{StaticResource Card}" Padding="8,9" HeightRequest="98">
+                                    <VerticalStackLayout Spacing="4" HorizontalOptions="Fill" VerticalOptions="Center">
+                                        <Grid ColumnDefinitions="32,*" ColumnSpacing="5">
+                                            <Border WidthRequest="32" HeightRequest="32" BackgroundColor="{Binding SoftColor}" StrokeThickness="0">
+                                                <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                                                <Label Text="{Binding Icono}" FontSize="13" FontFamily="OpenSansSemibold" TextColor="{Binding Color}"
                                                        HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                             </Border>
-                                            <Label Grid.Column="1" Text="{Binding Valor}" FontSize="25" FontFamily="OpenSansSemibold"
-                                                   TextColor="{Binding Color}" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="{Binding Valor}" FontSize="20" FontFamily="OpenSansSemibold"
+                                                   TextColor="{Binding Color}" HorizontalTextAlignment="Center" VerticalOptions="Center"
+                                                   LineBreakMode="NoWrap" MaxLines="1" />
                                         </Grid>
-                                        <Label Text="{Binding Titulo}" FontSize="11" FontFamily="OpenSansSemibold" TextColor="#101828"
+                                        <Label Text="{Binding Titulo}" FontSize="9" FontFamily="OpenSansSemibold" TextColor="#101828"
                                                HorizontalTextAlignment="Center" LineBreakMode="WordWrap" MaxLines="2" />
-                                        <Label Text="{Binding Comparacion}" FontSize="9" TextColor="#667085" HorizontalTextAlignment="Center"
+                                        <Label Text="{Binding Comparacion}" FontSize="8" TextColor="#667085" HorizontalTextAlignment="Center"
                                                LineBreakMode="TailTruncation" />
                                     </VerticalStackLayout>
                                 </Border>
@@ -113,16 +114,16 @@
                     </CollectionView>
 
                     <!-- SEGUIMIENTO -->
-                    <Border Style="{StaticResource Card}" Padding="14">
-                        <VerticalStackLayout Spacing="12">
+                    <Border Style="{StaticResource Card}" Padding="10">
+                        <VerticalStackLayout Spacing="8">
                             <Grid ColumnDefinitions="*,Auto">
                                 <VerticalStackLayout Spacing="2">
-                                    <Label Text="Seguimiento de fechas de entrega" Style="{StaticResource SectionTitle}" />
+                                    <Label Text="Seguimiento de fechas de entrega" FontFamily="OpenSansSemibold" FontSize="14" TextColor="#101828" />
                                     <Label Text="Órdenes próximas a vencer" Style="{StaticResource Small}" />
                                 </VerticalStackLayout>
                                 <Button Grid.Column="1" Text="Ver todas  ›" FontSize="12" TextColor="#4F2FD7"
-                                        BackgroundColor="White" BorderColor="#BEB4FF" BorderWidth="1" CornerRadius="10"
-                                        Padding="10,4" HeightRequest="38" Clicked="OnBellClicked" />
+                                        BackgroundColor="White" BorderColor="#BEB4FF" BorderWidth="1" CornerRadius="8"
+                                        Padding="9,3" HeightRequest="32" Clicked="OnBellClicked" />
                             </Grid>
 
                             <CollectionView x:Name="EntregaResumenView" SelectionMode="None">
@@ -131,12 +132,12 @@
                                 </CollectionView.ItemsLayout>
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Padding="6" BackgroundColor="{Binding Background}" StrokeThickness="0" HeightRequest="92">
-                                            <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
-                                            <VerticalStackLayout Spacing="1" VerticalOptions="Center">
-                                                <Label Text="{Binding Valor}" FontSize="21" FontFamily="OpenSansSemibold" TextColor="{Binding Color}" HorizontalTextAlignment="Center" />
-                                                <Label Text="{Binding Titulo}" FontSize="10" TextColor="#101828" HorizontalTextAlignment="Center" LineBreakMode="WordWrap" MaxLines="2" />
-                                                <Label Text="{Binding Subtitulo}" FontSize="9" TextColor="#344054" HorizontalTextAlignment="Center" />
+                                        <Border Padding="5" BackgroundColor="{Binding Background}" StrokeThickness="0" HeightRequest="60">
+                                            <Border.StrokeShape><RoundRectangle CornerRadius="6" /></Border.StrokeShape>
+                                            <VerticalStackLayout Spacing="0" VerticalOptions="Center">
+                                                <Label Text="{Binding Valor}" FontSize="17" FontFamily="OpenSansSemibold" TextColor="{Binding Color}" HorizontalTextAlignment="Center" LineBreakMode="NoWrap" MaxLines="1" />
+                                                <Label Text="{Binding Titulo}" FontSize="8" TextColor="#101828" HorizontalTextAlignment="Center" LineBreakMode="WordWrap" MaxLines="2" />
+                                                <Label Text="{Binding Subtitulo}" FontSize="8" TextColor="#344054" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </DataTemplate>
@@ -145,23 +146,23 @@
 
                             <Label Text="Órdenes más urgentes" Style="{StaticResource Small}" Margin="2,2,0,0" />
                             <Border Stroke="#E4E7EC" StrokeThickness="1" Padding="0">
-                                <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
+                                <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                                 <CollectionView x:Name="UrgentesView" SelectionMode="None">
                                     <CollectionView.EmptyView>
                                         <Label Text="Sin OC vencidas o próximas." Padding="12" TextColor="#667085" />
                                     </CollectionView.EmptyView>
                                     <CollectionView.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Padding="8,9" ColumnDefinitions="18,*,Auto,28" ColumnSpacing="7">
-                                                <Ellipse WidthRequest="11" HeightRequest="11" Fill="{Binding Brush}" VerticalOptions="Center" />
-                                                <VerticalStackLayout Grid.Column="1" Spacing="1">
-                                                    <Label Text="{Binding NumeroOci}" FontFamily="OpenSansSemibold" FontSize="13" TextColor="#101828" />
-                                                    <Label Text="{Binding Cliente}" FontSize="10" TextColor="#475467" LineBreakMode="TailTruncation" />
+                                            <Grid Padding="7,6" ColumnDefinitions="16,*,112,24" ColumnSpacing="6">
+                                                <Ellipse WidthRequest="9" HeightRequest="9" Fill="{Binding Brush}" VerticalOptions="Center" />
+                                                <VerticalStackLayout Grid.Column="1" Spacing="0">
+                                                    <Label Text="{Binding NumeroOci}" FontFamily="OpenSansSemibold" FontSize="11" TextColor="#101828" />
+                                                    <Label Text="{Binding Cliente}" FontSize="9" TextColor="#475467" LineBreakMode="TailTruncation" />
                                                 </VerticalStackLayout>
-                                                <VerticalStackLayout Grid.Column="2" Spacing="1" WidthRequest="125">
-                                                    <Label Text="{Binding EstadoTexto}" FontSize="10" FontFamily="OpenSansSemibold" TextColor="{Binding Color}" />
-                                                    <Label Text="{Binding FechaEntregaTexto}" FontSize="10" TextColor="#344054" />
-                                                    <Label Text="{Binding AlertaTexto}" FontSize="10" TextColor="{Binding Color}" />
+                                                <VerticalStackLayout Grid.Column="2" Spacing="0">
+                                                    <Label Text="{Binding EstadoTexto}" FontSize="9" FontFamily="OpenSansSemibold" TextColor="{Binding Color}" LineBreakMode="TailTruncation" />
+                                                    <Label Text="{Binding FechaEntregaTexto}" FontSize="9" TextColor="#344054" />
+                                                    <Label Text="{Binding AlertaTexto}" FontSize="9" TextColor="{Binding Color}" LineBreakMode="TailTruncation" />
                                                 </VerticalStackLayout>
                                                 <Button Grid.Column="3" Text="›" FontSize="25" TextColor="#344054" BackgroundColor="Transparent" Padding="0" Clicked="OnVerAlertaClicked" />
                                             </Grid>

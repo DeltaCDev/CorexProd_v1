@@ -58,7 +58,7 @@ namespace CorexProd.WPF.ViewModels
             }
         }
 
-        public GridLength SidebarWidth => IsSidebarCollapsed ? new GridLength(76) : new GridLength(250);
+        public GridLength SidebarWidth => IsSidebarCollapsed ? new GridLength(76) : new GridLength(218);
 
         public Visibility SidebarExpandedVisibility => IsSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
 

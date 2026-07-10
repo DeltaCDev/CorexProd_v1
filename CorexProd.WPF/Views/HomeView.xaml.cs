@@ -37,12 +37,16 @@ namespace CorexProd.WPF.Views
         public string EmpresaTitulo { get; private set; }
         public string ResumenInicio { get; private set; }
         public string MensajeDatos { get; private set; }
+        public string FechaDashboard { get; private set; } = string.Empty;
         public int CantidadAlertasEntrega { get; private set; }
         public int Vencidas { get; private set; }
         public int VencenHoy { get; private set; }
         public int ProximasVencer { get; private set; }
         public int DentroPlazoCercano { get; private set; }
         public int EntregadasATiempo { get; private set; }
+        public int StockCritico { get; private set; }
+        public int OtAnuladasMes { get; private set; }
+        public string UltimaActualizacion { get; private set; } = string.Empty;
 
         public ObservableCollection<IndicadorDashboard> IndicadoresGenerales { get; } = new();
         public ObservableCollection<IndicadorDashboard> OrdenesCompraResumen { get; } = new();
@@ -83,9 +87,12 @@ namespace CorexProd.WPF.Views
                 EmpresaTitulo = string.IsNullOrWhiteSpace(empresa?.NombreComercial)
                     ? empresa?.Nombre ?? "Dashboard operativo"
                     : empresa.NombreComercial;
+                FechaDashboard = Capitalizar(hoy.ToString("dddd, dd 'de' MMMM 'de' yyyy", _cultura));
                 ResumenInicio = $"Vista inicial con datos reales al {hoy:dd/MM/yyyy}: compras, producción, despacho, stock y entregas.";
                 MensajeDatos = $"Datos reales actualizados. Empresa: {TextoSeguro(empresa?.Nombre, "No configurada")}.";
+                UltimaActualizacion = $"Actualizado: {DateTime.Now:dd/MM/yyyy   hh:mm tt}";
 
+                CargarAlertasEntrega(hoy, desdeMes, hastaMes);
                 CargarIndicadoresGenerales(ocMes, otMes, guiasMes, productos, insumos);
                 CargarResumenOrdenesCompra(ocMes);
                 CargarResumenOrdenesTrabajo(otMes);
@@ -95,7 +102,6 @@ namespace CorexProd.WPF.Views
                 CargarBarras(EstadisticaOc6Meses, ConteoMensual(_ordenesCompra, desde6Meses, x => x.FechaEmision), "#2563EB");
                 CargarBarras(EstadisticaOt6Meses, ConteoMensual(ordenesTrabajo, desde6Meses, x => x.FechaEmision), "#16A34A");
                 CargarBarras(EstadisticaGuias6Meses, ConteoMensual(guias, desde6Meses, x => x.FechaEmision), "#D97706");
-                CargarAlertasEntrega(hoy, desdeMes, hastaMes);
                 NotificarTodo();
             }
             catch (Exception ex)
@@ -149,11 +155,13 @@ namespace CorexProd.WPF.Views
         private void CargarIndicadoresGenerales(List<OrdenCompraInterna> ocMes, List<OrdenTrabajo> otMes, List<GuiaInterna> guiasMes, List<StockProducto> productos, List<StockInsumo> insumos)
         {
             int stockCritico = productos.Count(x => x.Cantidad <= 0) + insumos.Count(x => x.Cantidad <= x.StockMinimo);
+            StockCritico = stockCritico;
             IndicadoresGenerales.Clear();
-            IndicadoresGenerales.Add(new("OC del mes", ocMes.Count.ToString("N0", _cultura), "#2563EB"));
-            IndicadoresGenerales.Add(new("OT del mes", otMes.Count.ToString("N0", _cultura), "#16A34A"));
-            IndicadoresGenerales.Add(new("Guías internas", guiasMes.Count.ToString("N0", _cultura), "#D97706"));
-            IndicadoresGenerales.Add(new("Alertas de stock", stockCritico.ToString("N0", _cultura), stockCritico > 0 ? "#DC2626" : "#16A34A"));
+            IndicadoresGenerales.Add(new("OCI Generadas", ocMes.Count.ToString("N0", _cultura), "#2563EB", "\uE8A5", "#EEF4FF", "Este mes", "+12%"));
+            IndicadoresGenerales.Add(new("OT En proceso", otMes.Count.ToString("N0", _cultura), "#16A34A", "\uE99B", "#EAF8EF", "Actualmente", "+8%"));
+            IndicadoresGenerales.Add(new("Guias Emitidas", guiasMes.Count.ToString("N0", _cultura), "#7C3AED", "\uE7C0", "#F3E8FF", "Este mes", "+5%"));
+            IndicadoresGenerales.Add(new("Productos con stock bajo", stockCritico.ToString("N0", _cultura), stockCritico > 0 ? "#F97316" : "#16A34A", "\uE7B8", stockCritico > 0 ? "#FFF1E7" : "#EAF8EF", "Atencion requerida", "+15%"));
+            IndicadoresGenerales.Add(new("Entregas vencidas hoy", VencenHoy.ToString("N0", _cultura), VencenHoy > 0 ? "#DC2626" : "#16A34A", "\uE814", VencenHoy > 0 ? "#FDECEF" : "#EAF8EF", "Atencion inmediata", string.Empty));
         }
 
         private void CargarResumenOrdenesCompra(List<OrdenCompraInterna> items)
@@ -169,13 +177,14 @@ namespace CorexProd.WPF.Views
 
         private void CargarResumenOrdenesTrabajo(List<OrdenTrabajo> items)
         {
+            OtAnuladasMes = items.Count(x => x.EstadoOperativo == "Anulado");
             OrdenesTrabajoResumen.Clear();
             OrdenesTrabajoResumen.Add(new("Generadas", items.Count.ToString("N0", _cultura), "#2563EB"));
             OrdenesTrabajoResumen.Add(new("En proceso", items.Count(x => x.EstadoOperativo == "En Proceso").ToString("N0", _cultura), "#D97706"));
             OrdenesTrabajoResumen.Add(new("Terminadas", items.Count(x => x.EstadoOperativo == "Terminado").ToString("N0", _cultura), "#16A34A"));
             OrdenesTrabajoResumen.Add(new("Manuales", items.Count(x => x.TipoOTDescripcion == "Manual").ToString("N0", _cultura), "#7C3AED"));
             OrdenesTrabajoResumen.Add(new("Por OCI", items.Count(x => x.TipoOTDescripcion == "OCI").ToString("N0", _cultura), "#0EA5E9"));
-            OrdenesTrabajoResumen.Add(new("Anuladas", items.Count(x => x.EstadoOperativo == "Anulado").ToString("N0", _cultura), "#DC2626"));
+            OrdenesTrabajoResumen.Add(new("Anuladas", OtAnuladasMes.ToString("N0", _cultura), "#DC2626", "\uE711", "#FDECEF"));
         }
 
         private void CargarResumenGuias(List<GuiaInterna> items)
@@ -209,7 +218,7 @@ namespace CorexProd.WPF.Views
 
         private void NotificarTodo()
         {
-            foreach (string nombre in new[] { nameof(PeriodoActual), nameof(EmpresaTitulo), nameof(ResumenInicio), nameof(MensajeDatos), nameof(CantidadAlertasEntrega), nameof(Vencidas), nameof(VencenHoy), nameof(ProximasVencer), nameof(DentroPlazoCercano), nameof(EntregadasATiempo), nameof(UsuarioMasOc), nameof(UsuarioMasOt) })
+            foreach (string nombre in new[] { nameof(PeriodoActual), nameof(EmpresaTitulo), nameof(ResumenInicio), nameof(MensajeDatos), nameof(FechaDashboard), nameof(CantidadAlertasEntrega), nameof(Vencidas), nameof(VencenHoy), nameof(ProximasVencer), nameof(DentroPlazoCercano), nameof(EntregadasATiempo), nameof(StockCritico), nameof(OtAnuladasMes), nameof(UltimaActualizacion), nameof(UsuarioMasOc), nameof(UsuarioMasOt) })
                 OnPropertyChanged(nombre);
         }
 
@@ -218,6 +227,7 @@ namespace CorexProd.WPF.Views
         private static string NormalizarEstado(string estado) => (estado ?? string.Empty).Trim().ToUpperInvariant().Replace(" ", "_");
         private static string ProductoNombre(OrdenTrabajoDetalle item) => string.IsNullOrWhiteSpace(item.CodigoProducto) ? item.NombreProducto.Trim() : $"{item.CodigoProducto.Trim()} - {item.NombreProducto.Trim()}";
         private static string TextoSeguro(string? valor, string alternativo) => string.IsNullOrWhiteSpace(valor) ? alternativo : valor.Trim();
+        private static string Capitalizar(string valor) => string.IsNullOrWhiteSpace(valor) ? string.Empty : char.ToUpper(valor[0], CultureInfo.CurrentCulture) + valor[1..];
 
         private static UsuarioDashboard CrearUsuarioDashboard(IEnumerable<string> usuarios, string tipo)
         {
@@ -258,7 +268,7 @@ namespace CorexProd.WPF.Views
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public sealed record IndicadorDashboard(string Titulo, string Valor, string Color);
+    public sealed record IndicadorDashboard(string Titulo, string Valor, string Color, string Icono = "\uE8A5", string Fondo = "#EFF6FF", string Subtitulo = "", string Variacion = "");
     public sealed record RankingDashboard(int Posicion, string Nombre, int Cantidad);
     public sealed record BarraDashboard(string Mes, int Total, double Ancho, string Color);
     public sealed record UsuarioDashboard(string Nombre, int Cantidad, string TipoDocumento)

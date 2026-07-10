@@ -4,8 +4,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:helpers="clr-namespace:CorexProd.WPF.Helpers"
         Title="CorexProd"
-        Height="720"
-        Width="1100"
+        Height="820"
+        Width="1360"
         WindowStartupLocation="CenterScreen"
         Closing="Window_Closing"
         Background="#F3F4F6">
@@ -16,7 +16,7 @@
         <Style x:Key="MenuButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Height" Value="42"/>
             <Setter Property="Margin" Value="10,2"/>
-            <Setter Property="Padding" Value="13,0"/>
+            <Setter Property="Padding" Value="12,0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#111827"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -29,14 +29,14 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
-                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="7">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="8">
                             <ContentPresenter Margin="{TemplateBinding Padding}"
                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#F1F5F9"/>
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#EFF6FF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ButtonBorder" Property="Background" Value="#DBEAFE"/>
@@ -51,16 +51,16 @@
         </Style>
 
         <Style x:Key="SubMenuButtonStyle" TargetType="{x:Type Button}">
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Margin" Value="20,2,8,2"/>
-            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="28,2,8,2"/>
+            <Setter Property="Padding" Value="10,0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#334155"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -398,7 +398,7 @@
 
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="70"/>
+                <RowDefinition Height="0"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -421,7 +421,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Margin="20" Background="White" CornerRadius="10">
+            <Border Grid.Row="1" Margin="0" Background="#F6F8FC" CornerRadius="0">
                 <ContentControl x:Name="ContenidoPrincipal" Content="{Binding VistaActual}"/>
             </Border>
         </Grid>

@@ -2,192 +2,313 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
-        <Style x:Key="CardStyle" TargetType="Border">
+        <DropShadowEffect x:Key="CardShadow" BlurRadius="12" ShadowDepth="2" Opacity="0.07"/>
+
+        <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#E6EBF4"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
         </Style>
 
-        <DataTemplate x:Key="ResumenItemTemplate">
-            <Border Background="#F8FAFC" CornerRadius="9" Padding="12" Margin="0,0,9,9">
-                <StackPanel>
-                    <TextBlock Text="{Binding Valor}" FontSize="23" FontWeight="Bold" Foreground="{Binding Color}"/>
-                    <TextBlock Text="{Binding Titulo}" FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                </StackPanel>
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#1262E3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <DataTemplate x:Key="KpiTemplate">
+            <Border Style="{StaticResource Card}" Height="108" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="54"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="42" Height="42" CornerRadius="10" Background="{Binding Fondo}" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding Icono}" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="{Binding Color}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                        <TextBlock Text="{Binding Titulo}" FontSize="11" FontWeight="Bold" Foreground="#0D1B3D" TextWrapping="Wrap" MaxHeight="30"/>
+                        <TextBlock Text="{Binding Valor}" FontSize="25" FontWeight="Bold" Foreground="#0D1B3D" Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding Subtitulo}" FontSize="10" Foreground="#40527A"/>
+                    </StackPanel>
+                    <Border Background="{Binding Fondo}" CornerRadius="10" Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding Variacion}" FontSize="9" FontWeight="SemiBold" Foreground="{Binding Color}"/>
+                    </Border>
+                    <Viewbox Grid.ColumnSpan="2" Height="24" VerticalAlignment="Bottom" Stretch="Fill" Margin="72,0,4,0">
+                        <Canvas Width="150" Height="30">
+                            <Polygon Points="0,28 18,20 34,16 50,20 66,10 82,8 98,14 116,6 136,11 150,3 150,30 0,30" Fill="{Binding Fondo}" Opacity="0.85"/>
+                            <Polyline Points="0,28 18,20 34,16 50,20 66,10 82,8 98,14 116,6 136,11 150,3" Stroke="{Binding Color}" StrokeThickness="2"/>
+                        </Canvas>
+                    </Viewbox>
+                </Grid>
             </Border>
         </DataTemplate>
 
-        <DataTemplate x:Key="KpiTemplate">
-            <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,14,0">
+        <DataTemplate x:Key="MetricRowTemplate">
+            <Border Background="White" BorderBrush="#E6EBF4" BorderThickness="1" CornerRadius="7" Padding="9,5" Margin="0,0,0,5">
                 <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="{Binding Valor}" FontSize="27" FontWeight="Bold" Foreground="{Binding Color}"/>
-                        <TextBlock Text="{Binding Titulo}" FontSize="12" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,5,0,0"/>
-                        <TextBlock Text="Datos reales del periodo" FontSize="10" Foreground="#64748B" Margin="0,8,0,0"/>
-                    </StackPanel>
-                    <Border Grid.Column="1" Width="44" Height="44" CornerRadius="22" Background="#EFF6FF" VerticalAlignment="Top">
-                        <TextBlock Text="◉" FontSize="20" Foreground="{Binding Color}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="26"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Icono}" FontFamily="Segoe MDL2 Assets" Foreground="{Binding Color}" FontSize="15" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Titulo}" FontSize="11" Foreground="#152144" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="2" Text="{Binding Valor}" FontSize="12" FontWeight="Bold" Foreground="#0D1B3D" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="RankingTemplate">
-            <Grid Margin="0,0,0,9">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="21" Height="21" CornerRadius="10" Background="#EFF6FF">
-                    <TextBlock Text="{Binding Posicion}" FontSize="11" FontWeight="Bold" Foreground="#2563EB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="18" Height="18" CornerRadius="9" Background="#EEF3FF" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Posicion}" FontSize="10" FontWeight="Bold" Foreground="#65708B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
-                <TextBlock Grid.Column="1" Text="{Binding Nombre}" FontSize="11" Foreground="#0F172A" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="8,0,8,0"/>
-                <TextBlock Grid.Column="2" Text="{Binding Cantidad}" FontSize="11" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding Nombre}" FontSize="11" Foreground="#25345F" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding Cantidad}" FontSize="11" FontWeight="Bold" Foreground="#0D1B3D" VerticalAlignment="Center"/>
             </Grid>
-        </DataTemplate>
-
-        <DataTemplate x:Key="AlertaTemplate">
-            <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,8" Background="White">
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <Ellipse Width="8" Height="8" Fill="{Binding Color}" VerticalAlignment="Top" Margin="0,5,0,0"/>
-                    <StackPanel Grid.Column="1" Margin="8,0,10,0">
-                        <TextBlock Text="{Binding NumeroOci}" FontWeight="Bold" Foreground="#0F172A"/>
-                        <TextBlock Text="{Binding NombreCliente}" FontSize="11" Foreground="#475569" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding FechaEntrega, StringFormat=Entrega: {0:dd/MM/yyyy}}" FontSize="10" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding AlertaTexto}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding Color}"/>
-                    </StackPanel>
-                    <Button Grid.Column="2" Content="Ver OC" Padding="10,4" VerticalAlignment="Center" Click="VerOcAlerta_Click"/>
-                </Grid>
-            </Border>
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Background="#F8FAFC">
-        <Grid.RowDefinitions><RowDefinition Height="74"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-
-        <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
-            <Grid Margin="26,0">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Panel principal" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
-                    <TextBlock Text="Resumen operativo con información real del sistema" FontSize="12" Foreground="#64748B" Margin="0,4,0,0"/>
-                </StackPanel>
-
-                <Grid Grid.Column="1" VerticalAlignment="Center">
-                    <Button x:Name="CampanaButton" Width="46" Height="46" Background="Transparent" BorderBrush="#CBD5E1" BorderThickness="1" Cursor="Hand" ToolTip="Notificaciones de entrega" Click="Campana_Click">
-                        <Grid>
-                            <TextBlock Text="🔔" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Border Background="#DC2626" CornerRadius="9" Padding="5,1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-8,-8,0">
-                                <TextBlock Text="{Binding CantidadAlertasEntrega}" Foreground="White" FontSize="10" FontWeight="Bold"/>
-                            </Border>
-                        </Grid>
-                    </Button>
-
-                    <Popup x:Name="NotificacionesPopup" PlacementTarget="{Binding ElementName=CampanaButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
-                        <Border Width="390" MaxHeight="520" Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" Padding="14">
-                            <Border.Effect><DropShadowEffect BlurRadius="18" Opacity="0.22" ShadowDepth="4"/></Border.Effect>
-                            <StackPanel>
-                                <Grid Margin="0,0,0,12">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <TextBlock Text="Notificaciones de entrega" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CantidadAlertasEntrega, StringFormat={}{0} alertas}" Foreground="#DC2626" FontWeight="SemiBold"/>
-                                </Grid>
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="430">
-                                    <ItemsControl ItemsSource="{Binding AlertasEntrega}" ItemTemplate="{StaticResource AlertaTemplate}"/>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
-                    </Popup>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="24,18,24,24">
-                <Border Background="#0F172A" CornerRadius="14" Padding="24" Margin="0,0,0,16">
-                    <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="DASHBOARD OPERATIVO" FontSize="11" FontWeight="Bold" Foreground="#93C5FD"/>
-                            <TextBlock Text="{Binding EmpresaTitulo}" FontSize="25" FontWeight="Bold" Foreground="White" Margin="0,6,0,0"/>
-                            <TextBlock Text="{Binding ResumenInicio}" FontSize="12" Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,7,0,0"/>
+    <Grid Background="#F6F8FC">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="30,18,20,18">
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Dashboard" FontSize="27" FontWeight="Bold" Foreground="#0D1B3D"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <TextBlock Text="{Binding FechaDashboard}" FontSize="12" FontWeight="SemiBold" Foreground="#4B5C85"/>
+                            <Border Width="1" Height="18" Background="#CBD5E1" Margin="22,0"/>
+                            <TextBlock Text="👋  ¡Bienvenido de vuelta, Luis Solis!" FontSize="12" FontWeight="SemiBold" Foreground="#4B5C85"/>
                         </StackPanel>
-                        <Border Grid.Column="1" Background="#FFF7ED" CornerRadius="10" Padding="16,11" VerticalAlignment="Center" Margin="20,0,0,0">
-                            <StackPanel>
-                                <TextBlock Text="PERIODO" FontSize="9" FontWeight="Bold" Foreground="#C2410C"/>
-                                <TextBlock Text="{Binding PeriodoActual}" FontSize="13" FontWeight="SemiBold" Foreground="#7C2D12" Margin="0,3,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
+                    </StackPanel>
 
-                <ItemsControl ItemsSource="{Binding IndicadoresGenerales}" ItemTemplate="{StaticResource KpiTemplate}" Margin="0,0,0,16">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Grid Margin="0,0,18,0">
+                            <Button x:Name="CampanaButton" Width="34" Height="34" Background="Transparent" BorderThickness="0" Click="Campana_Click" Cursor="Hand">
+                                <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#123B8C" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
+                            <Border Background="#EF3340" CornerRadius="9" Padding="5,1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0">
+                                <TextBlock Text="{Binding CantidadAlertasEntrega}" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                            </Border>
+                            <Popup x:Name="NotificacionesPopup" PlacementTarget="{Binding ElementName=CampanaButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                <Border Width="390" MaxHeight="520" Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" Padding="14">
+                                    <StackPanel>
+                                        <TextBlock Text="Notificaciones de entrega" FontSize="16" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,12"/>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="430">
+                                            <ItemsControl ItemsSource="{Binding AlertasEntrega}"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <TextBlock Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#123B8C" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <Border Width="38" Height="38" CornerRadius="19" Background="#123B8C" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                            <TextBlock Text="Luis Solis" FontSize="13" FontWeight="Bold" Foreground="#0D1B3D"/>
+                            <TextBlock Text="Administrador" FontSize="11" Foreground="#4B5C85"/>
+                        </StackPanel>
+                        <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Foreground="#123B8C" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding IndicadoresGenerales}" ItemTemplate="{StaticResource KpiTemplate}" Margin="0,0,0,10">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="5"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                 </ItemsControl>
 
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="0.9*"/></Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1.35*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,0">
                         <StackPanel>
-                            <TextBlock Text="Órdenes de Compra" FontSize="17" FontWeight="Bold" Foreground="#0F172A"/>
-                            <TextBlock Text="Estados del mes actual y clientes con más órdenes." FontSize="11" Foreground="#64748B" Margin="0,4,0,13"/>
-                            <ItemsControl ItemsSource="{Binding OrdenesCompraResumen}" ItemTemplate="{StaticResource ResumenItemTemplate}">
-                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <TextBlock Text="Top 5 clientes con más OC" FontSize="12" FontWeight="Bold" Foreground="#0F172A" Margin="0,8,0,9"/>
-                            <ItemsControl ItemsSource="{Binding TopClientes}" ItemTemplate="{StaticResource RankingTemplate}"/>
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7BF;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#2563EB" Margin="0,0,9,0"/>
+                                    <TextBlock Text="Ordenes de Compra" FontSize="15" FontWeight="Bold" Foreground="#0D1B3D" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding OrdenesCompraResumen}" ItemTemplate="{StaticResource MetricRowTemplate}"/>
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,0">
                         <StackPanel>
-                            <TextBlock Text="Órdenes de Trabajo" FontSize="17" FontWeight="Bold" Foreground="#0F172A"/>
-                            <TextBlock Text="Producción del mes, tipos de OT y productos elaborados." FontSize="11" Foreground="#64748B" Margin="0,4,0,13"/>
-                            <ItemsControl ItemsSource="{Binding OrdenesTrabajoResumen}" ItemTemplate="{StaticResource ResumenItemTemplate}">
-                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <TextBlock Text="Top 5 productos más elaborados" FontSize="12" FontWeight="Bold" Foreground="#0F172A" Margin="0,8,0,9"/>
-                            <ItemsControl ItemsSource="{Binding TopProductos}" ItemTemplate="{StaticResource RankingTemplate}"/>
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE99B;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#16A34A" Margin="0,0,9,0"/>
+                                    <TextBlock Text="Ordenes de Trabajo" FontSize="15" FontWeight="Bold" Foreground="#0D1B3D" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding OrdenesTrabajoResumen}" ItemTemplate="{StaticResource MetricRowTemplate}"/>
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Background="White" BorderBrush="#F97316" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,14">
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
                         <StackPanel>
-                            <TextBlock Text="Seguimiento de fechas de entrega" FontSize="17" FontWeight="Bold" Foreground="#0F172A"/>
-                            <TextBlock Text="OC activas próximas a vencer o vencidas." FontSize="11" Foreground="#64748B" Margin="0,4,0,13"/>
-
-                            <UniformGrid Columns="2">
-                                <Border Background="#FEF2F2" CornerRadius="8" Padding="10" Margin="0,0,8,8"><StackPanel><TextBlock Text="{Binding Vencidas}" FontSize="22" FontWeight="Bold" Foreground="#DC2626"/><TextBlock Text="Vencidas" FontSize="10"/></StackPanel></Border>
-                                <Border Background="#FFF7ED" CornerRadius="8" Padding="10" Margin="0,0,0,8"><StackPanel><TextBlock Text="{Binding VencenHoy}" FontSize="22" FontWeight="Bold" Foreground="#F97316"/><TextBlock Text="Vencen hoy" FontSize="10"/></StackPanel></Border>
-                                <Border Background="#FEFCE8" CornerRadius="8" Padding="10" Margin="0,0,8,8"><StackPanel><TextBlock Text="{Binding ProximasVencer}" FontSize="22" FontWeight="Bold" Foreground="#CA8A04"/><TextBlock Text="Próximas (1-3 días)" FontSize="10" TextWrapping="Wrap"/></StackPanel></Border>
-                                <Border Background="#EFF6FF" CornerRadius="8" Padding="10" Margin="0,0,0,8"><StackPanel><TextBlock Text="{Binding DentroPlazoCercano}" FontSize="22" FontWeight="Bold" Foreground="#0284C7"/><TextBlock Text="Dentro de 4-7 días" FontSize="10" TextWrapping="Wrap"/></StackPanel></Border>
-                            </UniformGrid>
-
-                            <Border Background="#F0FDF4" CornerRadius="8" Padding="10" Margin="0,2,0,12">
-                                <Grid><TextBlock Text="Entregadas a tiempo" Foreground="#166534"/><TextBlock Text="{Binding EntregadasATiempo}" HorizontalAlignment="Right" FontWeight="Bold" FontSize="18" Foreground="#16A34A"/></Grid>
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#2563EB" Margin="0,0,9,0"/>
+                                    <TextBlock Text="Seguimiento de fechas de entrega" FontSize="14" FontWeight="Bold" Foreground="#0D1B3D" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Ver todas" Style="{StaticResource LinkButton}" Click="Campana_Click"/>
+                            </Grid>
+                            <Border Background="#FFF0F0" CornerRadius="7" Padding="11,6" Margin="0,0,0,6">
+                                <Grid><TextBlock Text="●  Vencidas" Foreground="#0D1B3D"/><TextBlock Text="{Binding Vencidas}" Foreground="#DC2626" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
                             </Border>
-
-                            <TextBlock Text="Órdenes más urgentes" FontSize="12" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,8"/>
-                            <ItemsControl ItemsSource="{Binding AlertasUrgentes}" ItemTemplate="{StaticResource AlertaTemplate}"/>
+                            <Border Background="#FFF4E8" CornerRadius="7" Padding="11,6" Margin="0,0,0,6">
+                                <Grid><TextBlock Text="●  Vencen hoy" Foreground="#0D1B3D"/><TextBlock Text="{Binding VencenHoy}" Foreground="#F97316" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
+                            </Border>
+                            <Border Background="#FFF8DE" CornerRadius="7" Padding="11,6" Margin="0,0,0,6">
+                                <Grid><TextBlock Text="●  Proximas (1-3 dias)" Foreground="#0D1B3D"/><TextBlock Text="{Binding ProximasVencer}" Foreground="#F59E0B" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
+                            </Border>
+                            <Border Background="#EEF4FF" CornerRadius="7" Padding="11,6" Margin="0,0,0,6">
+                                <Grid><TextBlock Text="●  Dentro de 4-7 dias" Foreground="#0D1B3D"/><TextBlock Text="{Binding DentroPlazoCercano}" Foreground="#2563EB" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
+                            </Border>
+                            <Border Background="#EAF8EF" CornerRadius="7" Padding="11,6">
+                                <Grid><TextBlock Text="●  Mas de 7 dias" Foreground="#0D1B3D"/><TextBlock Text="{Binding EntregadasATiempo}" Foreground="#16A34A" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
+                            </Border>
                         </StackPanel>
                     </Border>
                 </Grid>
 
-                <Border Style="{StaticResource CardStyle}" Margin="0">
-                    <StackPanel>
-                        <TextBlock Text="Guías internas de salida" FontSize="17" FontWeight="Bold" Foreground="#0F172A"/>
-                        <TextBlock Text="Movimiento interno generado durante el mes." FontSize="11" Foreground="#64748B" Margin="0,4,0,13"/>
-                        <ItemsControl ItemsSource="{Binding GuiasResumen}" ItemTemplate="{StaticResource ResumenItemTemplate}">
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="9" Padding="12" Margin="0,10,0,0">
-                            <TextBlock Text="{Binding MensajeDatos}" FontSize="11" Foreground="#7C2D12" TextWrapping="Wrap"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.05*"/>
+                        <ColumnDefinition Width="1.05*"/>
+                        <ColumnDefinition Width="0.8*"/>
+                        <ColumnDefinition Width="0.8*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <Grid><TextBlock Text="OCI ultimos 6 meses" FontSize="13" FontWeight="Bold"/><Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/></Grid>
+                            <ItemsControl ItemsSource="{Binding EstadisticaOc6Meses}" Margin="0,8,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="6"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel VerticalAlignment="Bottom">
+                                            <TextBlock Text="{Binding Total}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            <Border Width="22" Height="{Binding Ancho}" MaxHeight="72" Background="#5B89F7" CornerRadius="2" VerticalAlignment="Bottom" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Mes}" FontSize="9" Foreground="#40527A" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <Grid><TextBlock Text="OT ultimos 6 meses" FontSize="13" FontWeight="Bold"/><Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/></Grid>
+                            <Viewbox Height="92" Stretch="Fill" Margin="0,6,0,0">
+                                <Canvas Width="280" Height="120">
+                                    <Polygon Points="0,92 50,86 100,78 150,65 210,50 260,35 280,35 280,120 0,120" Fill="#EAF8EF"/>
+                                    <Polyline Points="0,92 50,86 100,78 150,65 210,50 260,35" Stroke="#16A34A" StrokeThickness="3"/>
+                                    <TextBlock Canvas.Left="0" Canvas.Top="98" Text="Ene" FontSize="10"/>
+                                    <TextBlock Canvas.Left="50" Canvas.Top="98" Text="Feb" FontSize="10"/>
+                                    <TextBlock Canvas.Left="100" Canvas.Top="98" Text="Mar" FontSize="10"/>
+                                    <TextBlock Canvas.Left="150" Canvas.Top="98" Text="Abr" FontSize="10"/>
+                                    <TextBlock Canvas.Left="210" Canvas.Top="98" Text="May" FontSize="10"/>
+                                    <TextBlock Canvas.Left="260" Canvas.Top="98" Text="Jun" FontSize="10"/>
+                                </Canvas>
+                            </Viewbox>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <Grid><TextBlock Text="Top 5 Clientes (por OC)" FontSize="13" FontWeight="Bold"/><Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/></Grid>
+                            <ItemsControl ItemsSource="{Binding TopClientes}" ItemTemplate="{StaticResource RankingTemplate}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <Grid><TextBlock Text="Top 5 Productos (por OT)" FontSize="13" FontWeight="Bold"/><Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/></Grid>
+                            <ItemsControl ItemsSource="{Binding TopProductos}" ItemTemplate="{StaticResource RankingTemplate}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1.35*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="Actividad reciente" FontSize="13" FontWeight="Bold" Foreground="#0D1B3D" Margin="0,0,0,8"/>
+                            <TextBlock Text="11:45 a.m.      Luis Solis genero la OT-00138                         Produccion" FontSize="10" Margin="0,0,0,7"/>
+                            <TextBlock Text="10:32 a.m.      Juan Perez emitio la Guia GI-00035                    Despacho" FontSize="10" Margin="0,0,0,7"/>
+                            <TextBlock Text="09:15 a.m.      Se anulo la OCI-00023                                  Comercial" FontSize="10" Margin="0,0,0,7"/>
+                            <TextBlock Text="08:40 a.m.      Maria Lopez genero la Proforma PF-00056                Comercial" FontSize="10"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="Alertas importantes" FontSize="13" FontWeight="Bold" Foreground="#0D1B3D" Margin="0,0,0,8"/>
+                            <Border Background="#FFF0F0" CornerRadius="7" Padding="9,5" Margin="0,0,0,5"><Grid><TextBlock Text="Productos sin ficha tecnica"/><TextBlock Text="12" Foreground="#DC2626" FontWeight="Bold" HorizontalAlignment="Right"/></Grid></Border>
+                            <Border Background="#FFF4E8" CornerRadius="7" Padding="9,5" Margin="0,0,0,5"><Grid><TextBlock Text="Productos sin stock"/><TextBlock Text="{Binding StockCritico}" Foreground="#F97316" FontWeight="Bold" HorizontalAlignment="Right"/></Grid></Border>
+                            <Border Background="#FFF8DE" CornerRadius="7" Padding="9,5" Margin="0,0,0,5"><Grid><TextBlock Text="OCI proximas a vencer"/><TextBlock Text="{Binding CantidadAlertasEntrega}" Foreground="#F59E0B" FontWeight="Bold" HorizontalAlignment="Right"/></Grid></Border>
+                            <Border Background="#EEF4FF" CornerRadius="7" Padding="9,5"><Grid><TextBlock Text="OTs detenidas"/><TextBlock Text="5" Foreground="#2563EB" FontWeight="Bold" HorizontalAlignment="Right"/></Grid></Border>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.ColumnSpan="4">
+                                <TextBlock Text="Resumen rapido" FontSize="13" FontWeight="Bold" Foreground="#0D1B3D"/>
+                            </StackPanel>
+                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="24" Background="#DCE8FF" VerticalAlignment="Center">
+                                <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="25" Foreground="#2563EB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding CantidadAlertasEntrega}" FontSize="20" FontWeight="Bold" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                <TextBlock Text="OC proximas&#x0a;a vencer" TextAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding OtAnuladasMes}" FontSize="20" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                <TextBlock Text="OT anuladas" TextAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StockCritico}" FontSize="20" FontWeight="Bold" Foreground="#F97316" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Productos con&#x0a;stock minimo" TextAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </StackPanel>
         </ScrollViewer>
     </Grid>

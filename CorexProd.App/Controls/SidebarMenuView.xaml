@@ -111,9 +111,9 @@
                     </Grid>
                 </Border>
                 <VerticalStackLayout x:Name="ProduccionChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
-                    <Button Text="Órdenes de Trabajo" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="Órdenes de Trabajo" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnOrdenesTrabajoClicked" />
-                    <Button Text="OT Manual" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="OT Manual" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnOtManualClicked" />
                 </VerticalStackLayout>
 
@@ -127,11 +127,11 @@
                     </Grid>
                 </Border>
                 <VerticalStackLayout x:Name="AlmacenChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
-                    <Button Text="Stock de productos" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="Stock de productos" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnStockProductosClicked" />
-                    <Button Text="Stock de insumos" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="Stock de insumos" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnStockInsumosClicked" />
-                    <Button Text="Ingreso de stock" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="Ingreso de stock" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnIngresoStockClicked" />
                 </VerticalStackLayout>
 
@@ -145,7 +145,7 @@
                     </Grid>
                 </Border>
                 <VerticalStackLayout x:Name="ReportesChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
-                    <Button Text="Kardex" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                    <Button Text="Kardex" HorizontalOptions="Fill"
                             TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnKardexClicked" />
                 </VerticalStackLayout>
 
@@ -165,7 +165,7 @@
         <VerticalStackLayout Grid.Row="2" Padding="20,8,20,22" Spacing="10">
             <BoxView HeightRequest="1" Color="#24445C" />
             <Button Text="↪   Cerrar sesión" FontSize="16" FontFamily="OpenSansSemibold"
-                    TextColor="#FF5364" BackgroundColor="Transparent" HorizontalTextAlignment="Start"
+                    TextColor="#FF5364" BackgroundColor="Transparent"
                     Padding="10,12" Clicked="OnLogoutClicked" />
         </VerticalStackLayout>
     </Grid>
