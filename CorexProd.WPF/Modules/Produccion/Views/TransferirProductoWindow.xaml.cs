@@ -2,6 +2,7 @@ using CorexProd.Entidad.Entidades;
 using System;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Produccion.Views
 {
@@ -49,8 +50,12 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             CantidadMermaTextBox.TextChanged += CantidadMerma_Changed;
             CantidadReservaTextBox.TextChanged += (_, _) => ActualizarPendienteResultante();
             ActualizarPendienteResultante();
-            CantidadTextBox.SelectAll();
-            CantidadTextBox.Focus();
+
+            ContentRendered += (_, _) =>
+            {
+                ClavePasswordBox.Focus();
+                Keyboard.Focus(ClavePasswordBox);
+            };
         }
 
         private void RegistrarMerma_Changed(object sender, RoutedEventArgs e)
@@ -154,6 +159,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             if (string.IsNullOrWhiteSpace(Clave))
             {
                 MessageBox.Show(this, "Ingrese la clave del usuario autorizador.", "Clave requerida", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ClavePasswordBox.Focus();
                 return;
             }
 
