@@ -129,7 +129,7 @@ namespace CorexProd.WPF.Views
             });
             textosCabecera.Children.Add(new TextBlock
             {
-                Text = "3 OC con fecha más cercana",
+                Text = "3 OC cliente con fecha más cercana",
                 FontSize = 9.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139)),
                 Margin = new Thickness(0, 1, 0, 0)
@@ -159,10 +159,10 @@ namespace CorexProd.WPF.Views
 
             _proximasEntregasVacio = new TextBlock
             {
-                Text = "No hay OC próximas a vencer.",
+                Text = "No hay OC cliente próximas a vencer.",
                 FontSize = 10.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139)),
-                HorizontalAlignment = HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 8, 0, 0),
                 Visibility = Visibility.Collapsed
@@ -186,7 +186,9 @@ namespace CorexProd.WPF.Views
                 .Select(orden => new OrdenCompraAlertaEntrega
                 {
                     IdOrdenCompraInterna = orden.IdOrdenCompraInterna,
-                    NumeroOci = orden.NumeroOci,
+                    NumeroOci = string.IsNullOrWhiteSpace(orden.OrdenCompraCliente)
+                        ? "Sin OC cliente"
+                        : orden.OrdenCompraCliente.Trim(),
                     NombreCliente = orden.NombreCliente,
                     Estado = orden.Estado,
                     FechaEntrega = orden.FechaEntrega.Date,
@@ -206,7 +208,7 @@ namespace CorexProd.WPF.Views
             _proximasEntregasVacio.Visibility = proximas.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private Button CrearItemProximaEntrega(OrdenCompraAlertaEntrega alerta)
+        private Border CrearItemProximaEntrega(OrdenCompraAlertaEntrega alerta)
         {
             Brush acento = ConvertirColor(alerta.Color, Color.FromRgb(37, 99, 235));
             Brush fondo = alerta.DiasRestantes switch
@@ -216,39 +218,38 @@ namespace CorexProd.WPF.Views
                 _ => new SolidColorBrush(Color.FromRgb(248, 250, 252))
             };
 
-            string numeroOci = string.IsNullOrWhiteSpace(alerta.NumeroOci)
-                ? $"OC {alerta.IdOrdenCompraInterna}"
+            string ordenCompraCliente = string.IsNullOrWhiteSpace(alerta.NumeroOci)
+                ? "Sin OC cliente"
                 : alerta.NumeroOci;
             string cliente = string.IsNullOrWhiteSpace(alerta.NombreCliente)
                 ? "Cliente no especificado"
                 : alerta.NombreCliente;
 
-            Button boton = new()
-            {
-                DataContext = alerta,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Padding = new Thickness(0),
-                Margin = new Thickness(0, 0, 0, 6),
-                MinHeight = 44,
-                Cursor = Cursors.Hand,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                VerticalContentAlignment = VerticalAlignment.Stretch,
-                ToolTip = "Abrir detalle de la orden de compra"
-            };
-            boton.Click += VerOcAlerta_Click;
-
             Border borde = new()
             {
+                DataContext = alerta,
                 Background = fondo,
                 BorderBrush = acento,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(7),
-                Padding = new Thickness(10, 6, 10, 6)
+                Padding = new Thickness(10, 6, 10, 6),
+                Margin = new Thickness(0, 0, 0, 6),
+                MinHeight = 44,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Cursor = Cursors.Hand,
+                ToolTip = "Abrir detalle de la orden de compra"
             };
-            boton.Content = borde;
+            borde.MouseLeftButtonUp += (sender, args) =>
+            {
+                VerOcAlerta_Click(sender, args);
+                args.Handled = true;
+            };
 
-            Grid contenido = new();
+            Grid contenido = new()
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
             contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             contenido.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -257,12 +258,15 @@ namespace CorexProd.WPF.Views
 
             TextBlock codigo = new()
             {
-                Text = numeroOci,
+                Text = ordenCompraCliente,
                 FontSize = 10.5,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(Color.FromRgb(15, 29, 58)),
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
+                TextAlignment = TextAlignment.Left,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = ordenCompraCliente
             };
             contenido.Children.Add(codigo);
 
@@ -285,6 +289,8 @@ namespace CorexProd.WPF.Views
                 FontSize = 9.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 TextTrimming = TextTrimming.CharacterEllipsis,
+                TextAlignment = TextAlignment.Left,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 3, 10, 0),
                 ToolTip = cliente
@@ -306,7 +312,7 @@ namespace CorexProd.WPF.Views
             Grid.SetColumn(estadoEntrega, 1);
             contenido.Children.Add(estadoEntrega);
 
-            return boton;
+            return borde;
         }
 
         private static Brush ConvertirColor(string valor, Color alternativo)
