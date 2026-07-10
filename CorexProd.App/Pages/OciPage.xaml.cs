@@ -1440,6 +1440,7 @@ public partial class OciPage : ContentPage
         public Color EstadoBadgeBackground => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Background);
         public Color EstadoBadgeStroke => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Stroke);
         public Color EstadoBadgeText => ObtenerEstadoBadgeColor(Item.Estado, EstadoBadgePart.Text);
+        public bool MostrarCheckEntregado => DocumentoFiltroHelper.Normalizar(Item.Estado) is "ENTREGADO" or "ENTREGADA";
         public bool PuedeGenerarOt => (Item.PuedeGenerarOt || NecesitaOt)
             && !Item.TieneOrdenTrabajo
             && !Item.TieneOtActiva

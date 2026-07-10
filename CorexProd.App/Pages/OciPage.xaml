@@ -121,10 +121,30 @@
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="12" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding Estado}"
-                                                   FontSize="11"
-                                                   FontFamily="OpenSansSemibold"
-                                                   TextColor="{Binding EstadoBadgeText}" />
+                                            <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                                                <Border WidthRequest="15"
+                                                        HeightRequest="15"
+                                                        Padding="0"
+                                                        BackgroundColor="{Binding EstadoBadgeText}"
+                                                        Stroke="{Binding EstadoBadgeText}"
+                                                        IsVisible="{Binding MostrarCheckEntregado}"
+                                                        VerticalOptions="Center">
+                                                    <Border.StrokeShape>
+                                                        <RoundRectangle CornerRadius="8" />
+                                                    </Border.StrokeShape>
+                                                    <Label Text="✓"
+                                                           FontSize="10"
+                                                           FontFamily="OpenSansSemibold"
+                                                           TextColor="White"
+                                                           HorizontalTextAlignment="Center"
+                                                           VerticalTextAlignment="Center" />
+                                                </Border>
+                                                <Label Text="{Binding Estado}"
+                                                       FontSize="11"
+                                                       FontFamily="OpenSansSemibold"
+                                                       TextColor="{Binding EstadoBadgeText}"
+                                                       VerticalOptions="Center" />
+                                            </HorizontalStackLayout>
                                         </Border>
 
                                         <Label Grid.Column="2" Text="{Binding Total, StringFormat='S/ {0:N2}'}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#067647" VerticalOptions="Center" />
