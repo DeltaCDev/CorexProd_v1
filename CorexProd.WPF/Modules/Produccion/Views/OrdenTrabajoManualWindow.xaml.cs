@@ -121,7 +121,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     return;
 
                 int idUsuario = SessionManager.UsuarioActual?.IdUsuario ?? 0;
-                (int _, string numero) = _ordenTrabajoNegocio.CrearManual(idUsuario, ObservacionTextBox.Text.Trim(), plan);
+                (int idOrdenTrabajo, string numero) = _ordenTrabajoNegocio.CrearManual(idUsuario, ObservacionTextBox.Text.Trim(), plan);
+                OrdenTrabajo? otCreada = _ordenTrabajoNegocio.Obtener(idOrdenTrabajo);
+                if (otCreada != null)
+                    MobileNotificationPublisher.OtNueva(otCreada, "Desktop - OT manual");
 
                 new DocumentoGeneradoResumenWindow(
                     "OT Manual generada correctamente",

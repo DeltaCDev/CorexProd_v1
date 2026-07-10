@@ -3,6 +3,7 @@ using System.Text.Json;
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
+using Android.Media;
 using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Maui.Storage;
@@ -16,7 +17,7 @@ namespace CorexProd.App;
 public sealed class NotificationPollingService : Service
 {
     private const string ServiceChannelId = "corexprod_sync";
-    private const string EventsChannelId = "corexprod_events";
+    private const string EventsChannelId = "corexprod_events_v2";
     private const int ServiceNotificationId = 9401;
     private const string LastNotificationIdKey = "LastAppNotificationId";
     private const string NotificationsInitializedKey = "AppNotificationsInitialized";
@@ -111,6 +112,8 @@ public sealed class NotificationPollingService : Service
             .SetStyle(new NotificationCompat.BigTextStyle().BigText(item.Mensaje))
             .SetContentIntent(pendingIntent)
             .SetAutoCancel(true)
+            .SetDefaults((int)(NotificationDefaults.Sound | NotificationDefaults.Vibrate))
+            .SetSound(RingtoneManager.GetDefaultUri(RingtoneType.Notification))
             .SetPriority((int)NotificationPriority.High)
             .SetCategory(NotificationCompat.CategoryStatus)
             .Build();
@@ -162,6 +165,12 @@ public sealed class NotificationPollingService : Service
         {
             Description = "OT nuevas y movimientos de produccion"
         };
+        eventsChannel.SetSound(
+            RingtoneManager.GetDefaultUri(RingtoneType.Notification),
+            new AudioAttributes.Builder()
+                .SetUsage(AudioUsageKind.Notification)
+                .SetContentType(AudioContentType.Sonification)
+                .Build());
 
         manager.CreateNotificationChannel(serviceChannel);
         manager.CreateNotificationChannel(eventsChannel);

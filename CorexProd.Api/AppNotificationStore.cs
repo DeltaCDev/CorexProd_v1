@@ -23,6 +23,30 @@ internal static class AppNotificationStore
         }
     }
 
+    public static Task PublishAsync(AppNotificationPublishApi request)
+    {
+        string tipo = string.IsNullOrWhiteSpace(request.Tipo) ? "PRODUCCION" : request.Tipo.Trim();
+        string titulo = string.IsNullOrWhiteSpace(request.Titulo) ? "CorexProd produccion" : request.Titulo.Trim();
+        string mensaje = string.IsNullOrWhiteSpace(request.Mensaje) ? "Nueva novedad de produccion." : request.Mensaje.Trim();
+
+        lock (Sync)
+        {
+            Items.Add(new AppNotificationApi(
+                ++_lastId,
+                Truncate(tipo, 40),
+                Truncate(titulo, 120),
+                Truncate(mensaje, 900),
+                request.IdOrdenTrabajo,
+                request.NumeroOT?.Trim() ?? string.Empty,
+                DateTime.Now));
+
+            if (Items.Count > 500)
+                Items.RemoveRange(0, Items.Count - 500);
+        }
+
+        return Task.CompletedTask;
+    }
+
     public static async Task AddOtGeneradaAsync(
         SqlConnection conexion,
         int idOrdenTrabajo,
@@ -261,3 +285,10 @@ internal sealed record AppNotificationApi(
     int? IdOrdenTrabajo,
     string NumeroOT,
     DateTime FechaRegistro);
+
+internal sealed record AppNotificationPublishApi(
+    string? Tipo,
+    string? Titulo,
+    string? Mensaje,
+    int? IdOrdenTrabajo,
+    string? NumeroOT);

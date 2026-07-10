@@ -307,6 +307,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 if (ventana.ReservarStockProceso)
                 {
                     _negocio.ReservarStockProceso(celda.Area.IdDetalleArea, ventana.Cantidad, string.Empty, idSesion, autoriza);
+                    MobileNotificationPublisher.Reserva(
+                        _ot,
+                        celda.Area.NombreArea,
+                        $"{celda.Area.CodigoProducto} - {celda.Area.NombreProducto}",
+                        ventana.Cantidad);
                     Cargar();
                     MessageBox.Show(this, $"Se reservaron {ventana.Cantidad:N2} unidades de {celda.Area.NombreArea} como stock en proceso.", "Reserva registrada", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
@@ -339,6 +344,23 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                         : esTerminacion
                         ? _negocio.Terminar(_id, celda.Area.IdAreaProduccion, idSesion, autoriza, string.Empty, [item])
                         : _negocio.Transferir(_id, celda.Area.IdAreaProduccion, idSesion, autoriza, string.Empty, [item]);
+                string productoNotificacion = $"{celda.Area.CodigoProducto} - {celda.Area.NombreProducto}";
+                if (ventana.RegistrarMerma)
+                {
+                    MobileNotificationPublisher.Merma(
+                        _ot,
+                        celda.Area.NombreArea,
+                        productoNotificacion,
+                        ventana.CantidadMerma,
+                        ventana.ObservacionMerma);
+                }
+                MobileNotificationPublisher.Transferencia(
+                    _ot,
+                    celda.Area.NombreArea,
+                    esTerminacion ? "PRODUCTOS TERMINADOS" : celda.AreaDestino,
+                    ventana.Cantidad,
+                    productoNotificacion,
+                    esTerminacion);
                 Cargar();
                 int totalProductos = _ot.Detalles.Count;
                 int completadosDespues = _ot.Detalles.Count(x => x.Estado == "TERMINADO");
@@ -415,6 +437,15 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 if (auth.ShowDialog() != true) return;
                 Usuario usuario = _negocio.Autorizar(auth.Usuario, auth.Clave);
                 long op = _negocio.Transferir(_id, area.IdAreaProduccion, SessionManager.UsuarioActual?.IdUsuario ?? 0, usuario, auth.Observacion, items);
+                string productos = string.Join("; ", _visibles
+                    .Where(x => x.Seleccionado)
+                    .Select(x => $"{x.CodigoProducto} - {x.NombreProducto}"));
+                string destino = _ot.Areas
+                    .Where(x => x.OrdenSecuencia > area.OrdenSecuencia)
+                    .OrderBy(x => x.OrdenSecuencia)
+                    .Select(x => x.NombreArea)
+                    .FirstOrDefault() ?? "Siguiente area";
+                MobileNotificationPublisher.Transferencia(_ot, area.NombreArea, destino, items.Sum(x => x.Cantidad), productos, false);
                 NotificationService.Success($"Transferencia grupal #{op} confirmada para {items.Count} producto(s).");
                 Cargar();
             }
@@ -455,6 +486,12 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 if (string.IsNullOrWhiteSpace(auth.Observacion)) throw new InvalidOperationException("La merma requiere un motivo en la observación.");
                 Usuario usuario = _negocio.Autorizar(auth.Usuario, auth.Clave);
                 _negocio.RegistrarMerma(item.IdDetalleArea, item.CantidadOperacion, auth.Observacion, string.Empty, SessionManager.UsuarioActual?.IdUsuario ?? 0, usuario);
+                MobileNotificationPublisher.Merma(
+                    _ot,
+                    item.NombreArea,
+                    $"{item.CodigoProducto} - {item.NombreProducto}",
+                    item.CantidadOperacion,
+                    auth.Observacion);
                 NotificationService.Success("Merma registrada por producto y área.");
                 Cargar();
             }

@@ -146,13 +146,17 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     }).ToList();
 
                 int idUsuario = SessionManager.UsuarioActual?.IdUsuario ?? 0;
-                (int _, string numero) = _negocio.Crear(
+                (int idOrdenTrabajo, string numero) = _negocio.Crear(
                     _oci.IdOrdenCompraInterna,
                     idUsuario,
                     ObservacionText.Text.Trim(),
                     items,
                     _otRelacionada?.IdOrdenTrabajo,
                     usoReserva == UsoReservaDecision.UsarTodaReserva);
+
+                OrdenTrabajo? otCreada = _negocio.Obtener(idOrdenTrabajo);
+                if (otCreada != null)
+                    MobileNotificationPublisher.OtNueva(otCreada, _otRelacionada == null ? "Desktop" : "Desktop - regularizacion");
 
                 new DocumentoGeneradoResumenWindow(
                     "OT generada correctamente",

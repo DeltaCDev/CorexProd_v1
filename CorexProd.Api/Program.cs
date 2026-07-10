@@ -126,6 +126,12 @@ app.MapGet("/api/notificaciones", async (long? desdeId) =>
     return Results.Ok(new { total = items.Count, items });
 });
 
+app.MapPost("/api/notificaciones/publicar", async (AppNotificationPublishApi request) =>
+{
+    await AppNotificationStore.PublishAsync(request);
+    return Results.Ok(new { mensaje = "Notificacion publicada." });
+});
+
 app.MapGet("/api/empresa/actual", async () =>
 {
     const string sql = @"
