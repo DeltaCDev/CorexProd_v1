@@ -17,14 +17,21 @@ namespace CorexProd.Datos.Datos
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_VEN_OCI_LISTAR", conexion) { CommandType = CommandType.StoredProcedure };
             conexion.Open();
-            using SqlDataReader dr = cmd.ExecuteReader();
 
-            while (dr.Read())
+            using (SqlDataReader dr = cmd.ExecuteReader())
             {
-                OrdenCompraInterna orden = Mapear(dr);
-                if (orden.PuedeGenerarOt && TieneOtActiva(orden.IdOrdenCompraInterna))
-                    orden.PuedeGenerarOt = false;
-                lista.Add(orden);
+                while (dr.Read())
+                    lista.Add(Mapear(dr));
+            }
+
+            if (lista.Exists(orden => orden.PuedeGenerarOt))
+            {
+                HashSet<int> idsConOtActiva = ObtenerIdsConOtActiva(conexion);
+                foreach (OrdenCompraInterna orden in lista)
+                {
+                    if (orden.PuedeGenerarOt && idsConOtActiva.Contains(orden.IdOrdenCompraInterna))
+                        orden.PuedeGenerarOt = false;
+                }
             }
 
             return lista;
@@ -295,6 +302,23 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
             conexion.Open();
             return Convert.ToBoolean(cmd.ExecuteScalar());
+        }
+
+        private static HashSet<int> ObtenerIdsConOtActiva(SqlConnection conexion)
+        {
+            HashSet<int> ids = [];
+            using SqlCommand cmd = new(
+                """
+                SELECT DISTINCT IdOrdenCompraInterna
+                FROM dbo.OrdenTrabajo
+                WHERE IdOrdenCompraInterna IS NOT NULL
+                  AND UPPER(REPLACE(LTRIM(RTRIM(Estado)), ' ', '_')) IN ('PENDIENTE', 'EMITIDA', 'EN_PROCESO', 'PROCESO', 'PARCIAL');
+                """,
+                conexion);
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+                ids.Add(Convert.ToInt32(dr["IdOrdenCompraInterna"]));
+            return ids;
         }
 
         private static OrdenCompraInterna Mapear(SqlDataReader dr)
