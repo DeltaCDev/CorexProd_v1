@@ -28,6 +28,13 @@ namespace CorexProd.Entidad.Entidades
         public string StockProcesoReservadoTooltip => TieneStockProcesoReservado
             ? $"Reservado en proceso: {StockProcesoReservado:N2}\n{StockProcesoReservadoDetalle}"
             : "Sin stock en proceso reservado";
+
+        public string DisponibilidadTexto => $"{FormatearCantidad(StockActual)} / {FormatearCantidad(Cantidad)} disponibles";
+        public string StockDisponibleTexto => $"Stock disponible: {FormatearCantidad(StockActual)} Und";
+        public string FaltanteVisualTexto => $"Faltan producir/despachar: {FormatearCantidad(CantidadFaltanteParaEnviar)} Und";
+        public string CantidadVisualTexto => $"{FormatearCantidad(Cantidad)} Und";
+        public string ObservacionVisual => string.IsNullOrWhiteSpace(Observacion) ? "Sin observaciones." : Observacion.Trim();
+
         public string EstadoEnvioStock
         {
             get
@@ -42,7 +49,6 @@ namespace CorexProd.Entidad.Entidades
                 {
                     if (DeficitCubiertoConReserva)
                         return $"Déficit {CantidadFaltanteParaEnviar:N2}: tomar reserva {CantidadTomarDeReserva:N2} / queda {StockProcesoDisponibleRestante:N2}";
-
                     return $"Parcial: déficit {CantidadFaltanteParaEnviar:N2} / reserva {CantidadTomarDeReserva:N2} / falta {CantidadFaltanteParaEnviar - CantidadTomarDeReserva:N2}";
                 }
 
@@ -81,5 +87,8 @@ namespace CorexProd.Entidad.Entidades
         public string Observacion { get; set; } = string.Empty;
         public bool Seleccionado { get; set; }
         public decimal CantidadPlanificada { get; set; }
+
+        private static string FormatearCantidad(decimal valor) =>
+            decimal.Truncate(valor) == valor ? valor.ToString("N0") : valor.ToString("N2");
     }
 }
