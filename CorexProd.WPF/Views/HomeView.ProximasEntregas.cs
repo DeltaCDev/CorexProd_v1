@@ -53,29 +53,39 @@ namespace CorexProd.WPF.Views
 
         private bool AgregarTarjetaProximasEntregas()
         {
-            TextBlock? tituloSeguimiento = BuscarDescendiente<TextBlock>(
+            TextBlock? tituloEstadistica = BuscarDescendiente<TextBlock>(
                 this,
-                texto => string.Equals(texto.Text, "Seguimiento de fechas de entrega", StringComparison.Ordinal));
+                texto => string.Equals(texto.Text, "OCI últimos 6 meses", StringComparison.Ordinal));
 
-            if (tituloSeguimiento == null)
+            if (tituloEstadistica == null)
                 return false;
 
-            Grid? resumenOperativo = BuscarAncestro<Grid>(tituloSeguimiento, grid =>
-                grid.Children.OfType<Border>().Any(borde => Grid.GetColumn(borde) == 2));
+            Grid? filaEstadisticas = BuscarAncestro<Grid>(tituloEstadistica, grid =>
+                grid.ColumnDefinitions.Count == 2
+                && grid.Children.OfType<Border>().Count() >= 2);
 
-            if (resumenOperativo == null || VisualTreeHelper.GetParent(resumenOperativo) is not StackPanel contenedorPrincipal)
+            if (filaEstadisticas == null)
                 return false;
+
+            if (filaEstadisticas.ColumnDefinitions.Count == 2)
+                filaEstadisticas.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            Border? tarjetaOt = filaEstadisticas.Children
+                .OfType<Border>()
+                .FirstOrDefault(borde => Grid.GetColumn(borde) == 1);
+            if (tarjetaOt != null)
+                tarjetaOt.Margin = new Thickness(0, 0, 10, 0);
 
             Border tarjeta = new()
             {
-                Style = TryFindResource("Card") as Style,
-                Margin = new Thickness(0, 0, 0, 10)
+                Style = TryFindResource("Card") as Style
             };
+            Grid.SetColumn(tarjeta, 2);
 
             StackPanel contenido = new();
             tarjeta.Child = contenido;
 
-            Grid cabecera = new() { Margin = new Thickness(0, 0, 0, 10) };
+            Grid cabecera = new() { Margin = new Thickness(0, 0, 0, 8) };
             cabecera.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             cabecera.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             cabecera.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -84,9 +94,9 @@ namespace CorexProd.WPF.Views
             {
                 Text = "\uE787",
                 FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                FontSize = 19,
+                FontSize = 18,
                 Foreground = new SolidColorBrush(Color.FromRgb(37, 99, 235)),
-                Margin = new Thickness(0, 0, 8, 0),
+                Margin = new Thickness(0, 0, 7, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
             cabecera.Children.Add(icono);
@@ -102,17 +112,17 @@ namespace CorexProd.WPF.Views
             });
             textosCabecera.Children.Add(new TextBlock
             {
-                Text = "Las 3 órdenes de compra con fecha de entrega más cercana",
-                FontSize = 10,
+                Text = "3 OC con fecha más cercana",
+                FontSize = 9.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139)),
-                Margin = new Thickness(0, 2, 0, 0)
+                Margin = new Thickness(0, 1, 0, 0)
             });
             cabecera.Children.Add(textosCabecera);
 
             TextBlock etiqueta = new()
             {
-                Text = "Próximas 3",
-                FontSize = 10,
+                Text = "Top 3",
+                FontSize = 9.5,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(Color.FromRgb(37, 99, 235)),
                 VerticalAlignment = VerticalAlignment.Center
@@ -121,22 +131,21 @@ namespace CorexProd.WPF.Views
             cabecera.Children.Add(etiqueta);
             contenido.Children.Add(cabecera);
 
-            _proximasEntregasGrid = new UniformGrid { Columns = 3 };
+            _proximasEntregasGrid = new UniformGrid { Columns = 1 };
             contenido.Children.Add(_proximasEntregasGrid);
 
             _proximasEntregasVacio = new TextBlock
             {
-                Text = "No hay órdenes de compra próximas a vencer.",
-                FontSize = 11,
+                Text = "No hay OC próximas a vencer.",
+                FontSize = 10.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139)),
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 12, 0, 8),
+                Margin = new Thickness(0, 22, 0, 8),
                 Visibility = Visibility.Collapsed
             };
             contenido.Children.Add(_proximasEntregasVacio);
 
-            int indice = contenedorPrincipal.Children.IndexOf(resumenOperativo);
-            contenedorPrincipal.Children.Insert(indice + 1, tarjeta);
+            filaEstadisticas.Children.Add(tarjeta);
             return true;
         }
 
@@ -188,7 +197,7 @@ namespace CorexProd.WPF.Views
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
                 Padding = new Thickness(0),
-                Margin = new Thickness(0, 0, 8, 0),
+                Margin = new Thickness(0, 0, 0, 6),
                 Cursor = Cursors.Hand,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Stretch,
@@ -201,62 +210,59 @@ namespace CorexProd.WPF.Views
                 Background = fondo,
                 BorderBrush = acento,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(12, 9, 12, 9)
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(9, 6, 9, 6)
             };
             boton.Content = borde;
 
-            StackPanel contenido = new();
+            Grid contenido = new();
+            contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             borde.Child = contenido;
 
-            Grid filaSuperior = new();
-            filaSuperior.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            filaSuperior.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            filaSuperior.Children.Add(new TextBlock
+            StackPanel datos = new();
+            datos.Children.Add(new TextBlock
             {
                 Text = alerta.NumeroOci,
-                FontSize = 11,
+                FontSize = 10.5,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(Color.FromRgb(15, 29, 58)),
                 TextTrimming = TextTrimming.CharacterEllipsis
             });
-
-            TextBlock fecha = new()
-            {
-                Text = alerta.FechaEntrega.ToString("dd/MM/yyyy"),
-                FontSize = 10,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = acento,
-                Margin = new Thickness(8, 0, 0, 0)
-            };
-            Grid.SetColumn(fecha, 1);
-            filaSuperior.Children.Add(fecha);
-            contenido.Children.Add(filaSuperior);
-
-            contenido.Children.Add(new TextBlock
+            datos.Children.Add(new TextBlock
             {
                 Text = alerta.NombreCliente,
-                FontSize = 10.5,
+                FontSize = 9.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 5, 0, 7)
+                Margin = new Thickness(0, 2, 8, 0)
             });
+            contenido.Children.Add(datos);
 
-            Border estado = new()
+            StackPanel entrega = new()
             {
-                Background = Brushes.White,
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(8, 3, 8, 3),
-                HorizontalAlignment = HorizontalAlignment.Left
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center
             };
-            estado.Child = new TextBlock
+            entrega.Children.Add(new TextBlock
             {
-                Text = alerta.AlertaTexto,
+                Text = alerta.FechaEntrega.ToString("dd/MM/yyyy"),
                 FontSize = 9.5,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = acento
-            };
-            contenido.Children.Add(estado);
+                Foreground = acento,
+                HorizontalAlignment = HorizontalAlignment.Right
+            });
+            entrega.Children.Add(new TextBlock
+            {
+                Text = alerta.AlertaTexto,
+                FontSize = 9,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = acento,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+            Grid.SetColumn(entrega, 1);
+            contenido.Children.Add(entrega);
 
             return boton;
         }
