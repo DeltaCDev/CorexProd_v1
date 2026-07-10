@@ -55,7 +55,7 @@ namespace CorexProd.WPF.Views
 
         private static void ContenedorBarra_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!EsContenedorBarra(sender, out Grid? contenedor, out BarraDashboard? dato))
+            if (!EsContenedorBarra(sender, out Grid contenedor, out BarraDashboard dato))
                 return;
 
             if (contenedor.Tag as string == "BarraDashboardAnimada")
@@ -91,7 +91,7 @@ namespace CorexProd.WPF.Views
 
         private static void ContenedorBarra_MouseEnter(object sender, MouseEventArgs e)
         {
-            if (!EsContenedorBarra(sender, out Grid? contenedor, out _))
+            if (!EsContenedorBarra(sender, out Grid contenedor, out _))
                 return;
 
             AnimarContenedor(contenedor, esHover: true);
@@ -99,21 +99,30 @@ namespace CorexProd.WPF.Views
 
         private static void ContenedorBarra_MouseLeave(object sender, MouseEventArgs e)
         {
-            if (!EsContenedorBarra(sender, out Grid? contenedor, out _))
+            if (!EsContenedorBarra(sender, out Grid contenedor, out _))
                 return;
 
             AnimarContenedor(contenedor, esHover: false);
         }
 
-        private static bool EsContenedorBarra(object sender, out Grid? contenedor, out BarraDashboard? dato)
+        private static bool EsContenedorBarra(
+            object sender,
+            out Grid contenedor,
+            out BarraDashboard dato)
         {
-            contenedor = sender as Grid;
-            dato = contenedor?.DataContext as BarraDashboard;
+            if (sender is Grid grid
+                && grid.DataContext is BarraDashboard barraDashboard
+                && !double.IsNaN(grid.Height)
+                && Math.Abs(grid.Height - AlturaContenedorBarra) < 0.1)
+            {
+                contenedor = grid;
+                dato = barraDashboard;
+                return true;
+            }
 
-            return contenedor != null
-                && dato != null
-                && !double.IsNaN(contenedor.Height)
-                && Math.Abs(contenedor.Height - AlturaContenedorBarra) < 0.1;
+            contenedor = null!;
+            dato = null!;
+            return false;
         }
 
         private static void AnimarContenedor(Grid contenedor, bool esHover)
