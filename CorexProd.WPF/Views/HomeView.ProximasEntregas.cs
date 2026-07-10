@@ -202,7 +202,7 @@ namespace CorexProd.WPF.Views
                 BorderBrush = acento,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(12, 9)
+                Padding = new Thickness(12, 9, 12, 9)
             };
             boton.Content = borde;
 
@@ -246,7 +246,7 @@ namespace CorexProd.WPF.Views
             {
                 Background = Brushes.White,
                 CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(8, 3),
+                Padding = new Thickness(8, 3, 8, 3),
                 HorizontalAlignment = HorizontalAlignment.Left
             };
             estado.Child = new TextBlock
