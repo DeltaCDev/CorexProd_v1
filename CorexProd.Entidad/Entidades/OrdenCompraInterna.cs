@@ -25,6 +25,15 @@ namespace CorexProd.Entidad.Entidades
         public string MotivoAnulacion { get; set; } = string.Empty;
         public string UsuarioAnulacion { get; set; } = string.Empty;
         public DateTime? FechaAnulacion { get; set; }
+
+        public string FechaEmisionVisual => FechaEmision.ToString("dd/MM/yyyy");
+        public string FechaEntregaVisual => FechaEntrega == default ? "-" : FechaEntrega.ToString("dd/MM/yyyy");
+        public string SubtotalVisual => $"S/ {Subtotal:N2}";
+        public string DescuentoVisual => $"S/ {Descuento:N2}";
+        public string IgvVisual => $"S/ {Igv:N2}";
+        public string IgvEtiqueta => $"IGV ({IgvPorcentaje:N0}%)";
+        public string TotalVisual => $"S/ {Total:N2}";
+
         public string DetalleAnulacion =>
             $"Motivo: {TextoOmitido(MotivoAnulacion)}\nFecha y Hora: {(FechaAnulacion.HasValue ? FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")}\nUsuario: {TextoOmitido(UsuarioAnulacion)}";
         public bool TieneGuiaSalida { get; set; }
