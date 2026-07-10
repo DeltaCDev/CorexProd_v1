@@ -21,11 +21,22 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         public ProduccionView()
         {
             InitializeComponent();
+            ConfigurarOrdenColumnas();
             InicializarFiltros();
             _refreshTimer.Tick += (_, _) => Cargar(silencioso: true);
             Loaded += (_, _) => _refreshTimer.Start();
             Unloaded += (_, _) => _refreshTimer.Stop();
             Cargar();
+        }
+
+        private void ConfigurarOrdenColumnas()
+        {
+            if (OrdenesGrid.Columns.Count < 10)
+                return;
+
+            int[] ordenColumnas = [0, 1, 3, 4, 6, 5, 2, 7, 8, 9];
+            for (int posicion = 0; posicion < ordenColumnas.Length; posicion++)
+                OrdenesGrid.Columns[ordenColumnas[posicion]].DisplayIndex = posicion;
         }
 
         private void Cargar(bool silencioso = false)
