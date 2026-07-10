@@ -70,7 +70,7 @@
                                                FontSize="12"
                                                TextColor="#344054" />
                                         <Entry Grid.Column="1"
-                                               Text="{Binding CantidadTexto}"
+                                               Text="{Binding CantidadTexto, Mode=OneWay}"
                                                Keyboard="Numeric"
                                                Placeholder="Cantidad"
                                                TextChanged="OnCantidadCopiadaChanged" />
