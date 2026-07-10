@@ -8,7 +8,9 @@ public partial class HomePage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
+    private readonly CultureInfo _culture = new("es-PE");
     private bool _isLoading;
+    private IReadOnlyList<EntregaAlertItem> _alertasEntrega = [];
 
     public HomePage()
     {
@@ -31,69 +33,13 @@ public partial class HomePage : ContentPage
             return;
         }
 
-        UserLabel.Text = _session.Usuario?.NombreCompleto;
-        DrawerUserLabel.Text = _session.Usuario?.NombreCompleto;
-        RoleLabel.Text = $"{_session.Usuario?.NombreUsuario} - {_session.Usuario?.NombreRol}";
-        PeriodoLabel.Text = DateTime.Today.ToString("MMMM yyyy", new CultureInfo("es-PE"));
-        MenusView.ItemsSource = OrdenarMenus(_session.Menus);
+        DrawerUserLabel.Text = $"{_session.Usuario?.NombreCompleto} | {_session.Usuario?.NombreRol}";
+        PeriodoLabel.Text = Capitalizar(DateTime.Today.ToString("MMMM yyyy", _culture));
         ModuleMenuView.ItemsSource = CrearMenuModulos();
         await CargarInicioAsync();
     }
 
     private async void OnRefreshing(object? sender, EventArgs e) => await CargarInicioAsync();
-
-    private static IReadOnlyList<string> OrdenarMenus(IReadOnlyList<string> menus)
-    {
-        string[] orden =
-        [
-            "Ventas",
-            "OC",
-            "Guia Interna",
-            "Produccion",
-            "OT",
-            "OT Manual",
-            "Reportes",
-            "Kardex",
-            "Almacen",
-            "Stock productos",
-            "Stock insumos",
-            "Ingreso stock"
-        ];
-
-        Dictionary<string, int> posiciones = orden
-            .Select((menu, index) => new { menu, index })
-            .ToDictionary(x => x.menu, x => x.index, StringComparer.OrdinalIgnoreCase);
-
-        return menus
-            .Select(NormalizarMenuVisible)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => posiciones.TryGetValue(x, out int posicion) ? posicion : int.MaxValue)
-            .ThenBy(x => x)
-            .ToList();
-    }
-
-    private static string NormalizarMenuVisible(string menu) => menu.Trim() switch
-    {
-        "OCI" => "OC",
-        "OT Produccion" => "OT",
-        _ => menu
-    };
-
-    private static IReadOnlyList<ModuleMenuItem> CrearMenuModulos()
-    {
-        return
-        [
-            new("Inicio", "Panel principal", "🏠", "Inicio"),
-            new("OC", "Ventas", "🛒", nameof(OciPage)),
-            new("Guía Interna", "Ventas", "🚚", nameof(GuiaInternaPage)),
-            new("OT", "Producción", "🏭", nameof(OrdenesTrabajoPage)),
-            new("OT Manual", "Producción", "📋", nameof(OrdenTrabajoManualPage)),
-            new("Kardex", "Reportes", "📈", "Kardex"),
-            new("Stock productos", "Almacén", "📦", nameof(StockProductosPage)),
-            new("Stock insumos", "Almacén", "🧱", nameof(StockInsumosPage)),
-            new("Ingreso stock", "Almacén", "⬇️", nameof(IngresoManualStockPage))
-        ];
-    }
 
     private async Task CargarInicioAsync()
     {
@@ -104,9 +50,8 @@ public partial class HomePage : ContentPage
         {
             _isLoading = true;
             Refresh.IsRefreshing = true;
-            await CargarEmpresaAsync();
 
-            HealthResponse? health;
+            HealthResponse health;
             IReadOnlyList<OciResumen> ocis;
             IReadOnlyList<OrdenTrabajoResumen> ots;
             IReadOnlyList<GuiaInternaResumen> guias;
@@ -132,13 +77,12 @@ public partial class HomePage : ContentPage
                 insumos = (await _apiClient.GetInsumosAsync(string.Empty)).Items;
             }
 
-            ActualizarResumen(ocis, ots, guias, productos, insumos);
-            ActualizarRankings(ocis, ots, productos);
-            ActualizarGraficos(ocis, ots, guias);
-            ActualizarActividad(ocis, ots, guias);
+            DashboardData data = await PrepararDashboardAsync(ocis, ots, guias, productos, insumos);
+            PintarDashboard(data);
+
             ApiStatusLabel.Text = $"API {health.Estado} | BD {health.BaseDatos}";
             ApiStatusLabel.TextColor = Color.FromArgb("#0E9384");
-            LastUpdateLabel.Text = DateTime.Now.ToString("HH:mm");
+            LastUpdateLabel.Text = $"Actualizado {DateTime.Now:HH:mm}";
         }
         catch (Exception ex)
         {
@@ -152,194 +96,206 @@ public partial class HomePage : ContentPage
         }
     }
 
-    private async Task CargarEmpresaAsync()
-    {
-        try
-        {
-            EmpresaInfo empresa = _session.EsDemo ? DemoData.Empresa : await _apiClient.GetEmpresaAsync();
-            string nombre = string.IsNullOrWhiteSpace(empresa.Nombre) ? "CorexProd" : empresa.Nombre.Trim();
-            CompanyNameLabel.Text = nombre;
-
-            if (!string.IsNullOrWhiteSpace(empresa.LogoBase64))
-            {
-                byte[] bytes = Convert.FromBase64String(empresa.LogoBase64);
-                CompanyLogo.Source = ImageSource.FromStream(() => new MemoryStream(bytes));
-            }
-        }
-        catch
-        {
-            CompanyNameLabel.Text = "CorexProd";
-        }
-    }
-
-    private void ActualizarResumen(
+    private async Task<DashboardData> PrepararDashboardAsync(
         IReadOnlyList<OciResumen> ocis,
         IReadOnlyList<OrdenTrabajoResumen> ots,
         IReadOnlyList<GuiaInternaResumen> guias,
         IReadOnlyList<ProductoStock> productos,
         IReadOnlyList<InsumoStock> insumos)
     {
-        DateTime inicioMes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-        IReadOnlyList<OciResumen> ocisMes = ocis.Where(x => x.FechaEmision >= inicioMes).ToList();
-        IReadOnlyList<OrdenTrabajoResumen> otsMes = ots.Where(x => x.FechaEmision >= inicioMes).ToList();
-        IReadOnlyList<GuiaInternaResumen> guiasMesLista = guias.Where(x => x.FechaEmision >= inicioMes).ToList();
+        DateTime hoy = DateTime.Today;
+        DateTime inicioMes = new(hoy.Year, hoy.Month, 1);
+        DateTime inicioMesSiguiente = inicioMes.AddMonths(1);
+        DateTime inicioMesAnterior = inicioMes.AddMonths(-1);
+        string mesAnterior = Capitalizar(inicioMesAnterior.ToString("MMMM", _culture));
 
-        int ociPendientes = ocisMes.Count(x => EsPendienteProduccion(x.Estado));
-        int ociParciales = ocisMes.Count(x => EsParcial(x.Estado));
-        int ociDespachadas = ocisMes.Count(x => EsDespachado(x.Estado));
-        int ociEntregadas = ocisMes.Count(x => EsEntregadoOTerminado(x.Estado));
-        int ociAnuladas = ocisMes.Count(x => EsAnulado(x.Estado));
+        List<OciResumen> ocisMes = FiltrarMes(ocis, inicioMes, inicioMesSiguiente).ToList();
+        List<OciResumen> ocisMesAnterior = FiltrarMes(ocis, inicioMesAnterior, inicioMes).ToList();
+        List<OrdenTrabajoResumen> otsMes = FiltrarMes(ots, inicioMes, inicioMesSiguiente).ToList();
+        List<OrdenTrabajoResumen> otsMesAnterior = FiltrarMes(ots, inicioMesAnterior, inicioMes).ToList();
+        List<GuiaInternaResumen> guiasMes = FiltrarMes(guias, inicioMes, inicioMesSiguiente).ToList();
+        List<GuiaInternaResumen> guiasMesAnterior = FiltrarMes(guias, inicioMesAnterior, inicioMes).ToList();
 
-        int otProceso = otsMes.Count(x => EsEnProceso(x.Estado));
-        int otCompletadas = otsMes.Count(x => EsEntregadoOTerminado(x.Estado));
-        int otRegularizacion = otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("REGULAR"));
-        int otAbastecimiento = otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("ABAST"));
-        int otAnuladas = otsMes.Count(x => EsAnulado(x.Estado));
+        int alertasStock = productos.Count(x => x.StockActual <= 0) + insumos.Count(x => x.StockActual <= 0);
+        List<EntregaAlertItem> alertas = CrearAlertasEntrega(ocis, hoy).ToList();
 
-        int guiasGeneradas = guiasMesLista.Count;
-        int guiasPendientes = guiasMesLista.Count(x => EsPendienteProduccion(x.Estado));
-        int guiasAtendidas = guiasMesLista.Count(x => EsEntregadoOTerminado(x.Estado) || EsDespachado(x.Estado));
-        int guiasAnuladas = guiasMesLista.Count(x => EsAnulado(x.Estado));
+        int vencidas = alertas.Count(x => x.DiasRestantes < 0);
+        int vencenHoy = alertas.Count(x => x.DiasRestantes == 0);
+        int proximas13 = alertas.Count(x => x.DiasRestantes is >= 1 and <= 3);
+        int proximas47 = alertas.Count(x => x.DiasRestantes is >= 4 and <= 7);
+        int entregadasATiempo = ocisMes.Count(EsEntregadaATiempo);
 
-        int productosBajos = productos.Count(x => x.StockActual <= 0);
-        int insumosBajos = insumos.Count(x => x.StockActual <= 0);
-
-        OciActivasLabel.Text = ocisMes.Count.ToString();
-        OciPendientesLabel.Text = ociPendientes.ToString();
-        OciParcialesLabel.Text = ociParciales.ToString();
-        OciDespachadasLabel.Text = ociDespachadas.ToString();
-        OciEntregadasLabel.Text = ociEntregadas.ToString();
-        OciAnuladasLabel.Text = ociAnuladas.ToString();
-
-        OtActivasLabel.Text = otsMes.Count.ToString();
-        OtProcesoLabel.Text = otProceso.ToString();
-        OtCompletadasLabel.Text = otCompletadas.ToString();
-        OtRegularizacionLabel.Text = otRegularizacion.ToString();
-        OtAbastecimientoLabel.Text = otAbastecimiento.ToString();
-        OtAnuladasLabel.Text = otAnuladas.ToString();
-
-        GuiasMesLabel.Text = guiasGeneradas.ToString();
-        GuiasGeneradasLabel.Text = guiasGeneradas.ToString();
-        GuiasPendientesLabel.Text = guiasPendientes.ToString();
-        GuiasAtendidasLabel.Text = guiasAtendidas.ToString();
-        GuiasAnuladasLabel.Text = guiasAnuladas.ToString();
-
-        StockAlertasLabel.Text = (productosBajos + insumosBajos).ToString();
-        StockResumenLabel.Text = $"{productosBajos} prod. | {insumosBajos} ins.";
+        return new DashboardData(
+            Kpis:
+            [
+                new("OC", ocisMes.Count.ToString(), "OC del mes", CrearComparacion(ocisMes.Count, ocisMesAnterior.Count, mesAnterior), "#135DFF", "#EEF2FF"),
+                new("OT", otsMes.Count.ToString(), "OT del mes", CrearComparacion(otsMes.Count, otsMesAnterior.Count, mesAnterior), "#16A34A", "#EAF7EF"),
+                new("GI", guiasMes.Count.ToString(), "Guias internas", CrearComparacion(guiasMes.Count, guiasMesAnterior.Count, mesAnterior), "#F97316", "#FFF1E7"),
+                new("!", alertasStock.ToString(), "Alertas de stock", "Stock bajo o cero", "#E11D48", "#FDECEF")
+            ],
+            EntregaResumen:
+            [
+                new(vencidas.ToString(), "Vencidas", "(> 0 dias)", "#DC2626", "#FDECEC"),
+                new(vencenHoy.ToString(), "Vencen hoy", "(0 dias)", "#F97316", "#FFF1E7"),
+                new(proximas13.ToString(), "Proximas", "(1 - 3 dias)", "#F59E0B", "#FFF7DF"),
+                new(proximas47.ToString(), "Proximas", "(4 - 7 dias)", "#2563EB", "#EEF4FF"),
+                new(entregadasATiempo.ToString(), "Entregadas", "a tiempo", "#16A34A", "#EAF7EF")
+            ],
+            Urgentes: alertas.Take(5).ToList(),
+            Alertas: alertas,
+            OcResumen:
+            [
+                new("Generadas", ocisMes.Count.ToString(), "#135DFF"),
+                new("Pendiente / Produccion", ocisMes.Count(x => EsPendienteProduccion(x.Estado) || EsEnProceso(x.Estado) || EsParcial(x.Estado)).ToString(), "#F97316"),
+                new("Con OT activa", ocisMes.Count(x => x.TieneOtActiva || x.TieneOrdenTrabajo).ToString(), "#7C3AED"),
+                new("Con guia", ocisMes.Count(x => x.TieneGuiaSalida).ToString(), "#0EA5E9"),
+                new("Entregadas", ocisMes.Count(x => EsEntregadoOTerminado(x.Estado)).ToString(), "#16A34A"),
+                new("Anuladas", ocisMes.Count(x => EsAnulado(x.Estado)).ToString(), "#E11D48")
+            ],
+            OtResumen:
+            [
+                new("Generadas", otsMes.Count.ToString(), "#135DFF"),
+                new("En proceso", otsMes.Count(x => EsEnProceso(x.Estado)).ToString(), "#F97316"),
+                new("Terminadas", otsMes.Count(x => EsEntregadoOTerminado(x.Estado)).ToString(), "#16A34A"),
+                new("Manuales", otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("MANUAL")).ToString(), "#7C3AED"),
+                new("Por OCI", otsMes.Count(x => !string.IsNullOrWhiteSpace(x.NumeroOci)).ToString(), "#0EA5E9"),
+                new("Anuladas", otsMes.Count(x => EsAnulado(x.Estado)).ToString(), "#E11D48")
+            ],
+            TopProductos: await ObtenerTopProductosElaboradosAsync(otsMes));
     }
 
-    private void ActualizarRankings(
-        IReadOnlyList<OciResumen> ocis,
-        IReadOnlyList<OrdenTrabajoResumen> ots,
-        IReadOnlyList<ProductoStock> productos)
+    private void PintarDashboard(DashboardData data)
     {
-        DateTime inicioMes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        _alertasEntrega = data.Alertas;
 
-        TopClientesView.ItemsSource = ocis
-            .Where(x => x.FechaEmision >= inicioMes)
-            .GroupBy(x => TextoVacio(x.NombreCliente))
-            .Select(x => new RankingItem(0, x.Key, x.Count()))
-            .OrderByDescending(x => x.Cantidad)
-            .ThenBy(x => x.Nombre)
+        KpiView.ItemsSource = data.Kpis;
+        EntregaResumenView.ItemsSource = data.EntregaResumen;
+        UrgentesView.ItemsSource = data.Urgentes;
+        AlertasView.ItemsSource = data.Alertas;
+        OcResumenView.ItemsSource = data.OcResumen;
+        OtResumenView.ItemsSource = data.OtResumen;
+        TopProductosView.ItemsSource = data.TopProductos;
+
+        AlertCountLabel.Text = data.Alertas.Count.ToString();
+        AlertBadge.IsVisible = data.Alertas.Count > 0;
+    }
+
+    private IEnumerable<EntregaAlertItem> CrearAlertasEntrega(IReadOnlyList<OciResumen> ocis, DateTime hoy)
+    {
+        return ocis
+            .Where(x => !EsEntregadoOTerminado(x.Estado) && !EsAnulado(x.Estado))
+            .Where(x => x.FechaEntrega != default)
+            .Select(x => CrearAlertaEntrega(x, hoy))
+            .Where(x => x.DiasRestantes <= 7)
+            .OrderBy(x => x.FechaEntrega)
+            .ThenBy(x => x.NumeroOci);
+    }
+
+    private EntregaAlertItem CrearAlertaEntrega(OciResumen oci, DateTime hoy)
+    {
+        DateTime fechaEntrega = oci.FechaEntrega.Date;
+        int dias = (fechaEntrega - hoy).Days;
+        string color = dias switch
+        {
+            < 0 => "#DC2626",
+            0 => "#F97316",
+            <= 3 => "#F59E0B",
+            _ => "#2563EB"
+        };
+
+        string alerta = dias switch
+        {
+            < 0 => $"Vencida hace {Math.Abs(dias)} dia{Plural(Math.Abs(dias))}",
+            0 => "Vence hoy",
+            1 => "Vence manana",
+            _ => $"Vence en {dias} dias"
+        };
+
+        return new EntregaAlertItem(
+            oci.IdOrdenCompraInterna,
+            FormatearNumeroOc(oci.NumeroOci),
+            TextoVacio(oci.NombreCliente),
+            TextoVacio(oci.Estado),
+            fechaEntrega,
+            fechaEntrega.ToString("dd/MM/yyyy", _culture),
+            alerta,
+            dias,
+            color);
+    }
+
+    private async Task<IReadOnlyList<RankingItem>> ObtenerTopProductosElaboradosAsync(IReadOnlyList<OrdenTrabajoResumen> otsMes)
+    {
+        Dictionary<string, decimal> acumulado = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (OrdenTrabajoResumen ot in otsMes.Where(x => !EsAnulado(x.Estado)).Take(30))
+        {
+            OrdenTrabajoDetalleResponse? detalle = null;
+
+            try
+            {
+                detalle = _session.EsDemo
+                    ? DemoData.OrdenTrabajoDetalle(ot.IdOrdenTrabajo)
+                    : await _apiClient.GetOrdenTrabajoDetalleAsync(ot.IdOrdenTrabajo);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (OrdenTrabajoProducto producto in detalle.Detalles)
+            {
+                decimal cantidad = producto.CantidadProducida > 0
+                    ? producto.CantidadProducida
+                    : Math.Max(producto.CantidadLanzada, producto.CantidadPlanificada);
+
+                if (cantidad <= 0)
+                    continue;
+
+                string nombre = $"{TextoVacio(producto.CodigoProducto)} - {TextoVacio(producto.NombreProducto)}";
+                acumulado[nombre] = acumulado.TryGetValue(nombre, out decimal actual)
+                    ? actual + cantidad
+                    : cantidad;
+            }
+        }
+
+        return acumulado
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
             .Take(5)
-            .Select((x, index) => x with { Posicion = index + 1 })
-            .ToList();
-
-        TopProductosView.ItemsSource = productos
-            .OrderByDescending(x => x.StockActual)
-            .Take(5)
-            .Select((x, index) => new RankingItem(index + 1, TextoVacio(x.Producto), Convert.ToInt32(Math.Round(x.StockActual))))
-            .ToList();
-
-        var usuarioOc = ocis
-            .Where(x => x.FechaEmision >= inicioMes)
-            .GroupBy(_ => _session.Usuario?.NombreCompleto ?? "Usuario")
-            .Select(x => new { Nombre = x.Key, Cantidad = x.Count() })
-            .OrderByDescending(x => x.Cantidad)
-            .FirstOrDefault();
-
-        var usuarioOt = ots
-            .Where(x => x.FechaEmision >= inicioMes)
-            .GroupBy(x => TextoVacio(x.UsuarioCreacion))
-            .Select(x => new { Nombre = x.Key, Cantidad = x.Count() })
-            .OrderByDescending(x => x.Cantidad)
-            .FirstOrDefault();
-
-        UsuarioMasOcLabel.Text = usuarioOc?.Nombre ?? "Sin datos";
-        UsuarioMasOcCantidadLabel.Text = $"{usuarioOc?.Cantidad ?? 0} OC";
-        UsuarioMasOtLabel.Text = usuarioOt?.Nombre ?? "Sin datos";
-        UsuarioMasOtCantidadLabel.Text = $"{usuarioOt?.Cantidad ?? 0} OT";
-    }
-
-    private void ActualizarGraficos(
-        IReadOnlyList<OciResumen> ocis,
-        IReadOnlyList<OrdenTrabajoResumen> ots,
-        IReadOnlyList<GuiaInternaResumen> guias)
-    {
-        ChartOciView.ItemsSource = CrearGrafico6Meses(ocis.Select(x => x.FechaEmision));
-        ChartOtView.ItemsSource = CrearGrafico6Meses(ots.Select(x => x.FechaEmision));
-        ChartGuiasView.ItemsSource = CrearGrafico6Meses(guias.Select(x => x.FechaEmision));
-    }
-
-    private static List<ChartItem> CrearGrafico6Meses(IEnumerable<DateTime> fechas)
-    {
-        DateTime mesActual = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-        var meses = Enumerable.Range(0, 6)
-            .Select(i => mesActual.AddMonths(i - 5))
-            .ToList();
-
-        List<int> totales = meses
-            .Select(mes => fechas.Count(fecha => fecha.Year == mes.Year && fecha.Month == mes.Month))
-            .ToList();
-
-        int maximo = Math.Max(1, totales.Max());
-
-        return meses
-            .Select((mes, index) => new ChartItem(
-                mes.ToString("MMM", new CultureInfo("es-PE")),
-                totales[index],
-                Math.Max(4, 120d * totales[index] / maximo)))
+            .Select((x, index) => new RankingItem(index + 1, x.Key, FormatearCantidad(x.Value)))
             .ToList();
     }
 
-    private void ActualizarActividad(
-        IReadOnlyList<OciResumen> ocis,
-        IReadOnlyList<OrdenTrabajoResumen> ots,
-        IReadOnlyList<GuiaInternaResumen> guias)
+    private static IEnumerable<T> FiltrarMes<T>(IEnumerable<T> items, DateTime inicio, DateTime fin)
     {
-        List<HomeActivityItem> items = [];
-        items.AddRange(ocis
-            .OrderByDescending(x => x.FechaEmision)
-            .Take(3)
-            .Select(x => new HomeActivityItem(
-                "OC",
-                FormatearNumeroOc(x.NumeroOci),
-                $"{TextoVacio(x.NombreCliente)} | {TextoVacio(x.Estado)}",
-                Color.FromArgb("#0E9384"),
-                x.FechaEmision)));
-        items.AddRange(ots
-            .OrderByDescending(x => x.FechaEmision)
-            .Take(3)
-            .Select(x => new HomeActivityItem(
-                "OT",
-                x.NumeroOT,
-                $"{TextoVacio(x.NombreCliente)} | {TextoVacio(x.Estado)}",
-                Color.FromArgb("#7A5AF8"),
-                x.FechaEmision)));
-        items.AddRange(guias
-            .OrderByDescending(x => x.FechaEmision)
-            .Take(3)
-            .Select(x => new HomeActivityItem(
-                "Guia",
-                x.NumeroGuia,
-                $"{TextoVacio(x.EmpresaDestino)} | {TextoVacio(x.Estado)}",
-                Color.FromArgb("#2563EB"),
-                x.FechaEmision)));
+        return items.Where(x =>
+        {
+            DateTime fecha = x switch
+            {
+                OciResumen oci => oci.FechaEmision,
+                OrdenTrabajoResumen ot => ot.FechaEmision,
+                GuiaInternaResumen guia => guia.FechaEmision,
+                _ => DateTime.MinValue
+            };
 
-        RecentActivityView.ItemsSource = items
-            .OrderByDescending(x => x.Fecha)
-            .Take(6)
-            .ToList();
+            return fecha >= inicio && fecha < fin;
+        });
+    }
+
+    private static bool EsEntregadaATiempo(OciResumen oci)
+    {
+        if (!EsEntregadoOTerminado(oci.Estado))
+            return false;
+
+        DateTime fechaCierre = (oci.FechaCierre ?? oci.FechaEmision).Date;
+        return oci.FechaEntrega == default || fechaCierre <= oci.FechaEntrega.Date;
+    }
+
+    private static string CrearComparacion(int actual, int anterior, string mesAnterior)
+    {
+        int diferencia = actual - anterior;
+        string signo = diferencia >= 0 ? "+" : string.Empty;
+        return $"{signo}{diferencia} vs. {mesAnterior}";
     }
 
     private static bool EsPendienteProduccion(string estado)
@@ -356,12 +312,6 @@ public partial class HomePage : ContentPage
 
     private static bool EsParcial(string estado) => DocumentoFiltroHelper.Normalizar(estado).Contains("PARCIAL");
 
-    private static bool EsDespachado(string estado)
-    {
-        string valor = DocumentoFiltroHelper.Normalizar(estado);
-        return valor.Contains("DESPACH") || valor.Contains("ATENDID");
-    }
-
     private static bool EsEntregadoOTerminado(string estado)
     {
         string valor = DocumentoFiltroHelper.Normalizar(estado);
@@ -375,6 +325,16 @@ public partial class HomePage : ContentPage
             ? "OC-" + numero[4..]
             : numero;
 
+    private static string FormatearCantidad(decimal cantidad) =>
+        cantidad % 1 == 0 ? cantidad.ToString("N0", CultureInfo.InvariantCulture) : cantidad.ToString("N2", CultureInfo.InvariantCulture);
+
+    private static string Capitalizar(string value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : char.ToUpper(value[0], new CultureInfo("es-PE")) + value[1..];
+
+    private static string Plural(int cantidad) => cantidad == 1 ? string.Empty : "s";
+
     private static string TextoVacio(string? value) => string.IsNullOrWhiteSpace(value) ? "Sin dato" : value.Trim();
 
     private void OnToggleMenuClicked(object? sender, EventArgs e)
@@ -386,6 +346,25 @@ public partial class HomePage : ContentPage
     {
         MenuDrawerOverlay.IsVisible = false;
         ModuleMenuView.SelectedItem = null;
+    }
+
+    private void OnBellClicked(object? sender, EventArgs e)
+    {
+        AlertOverlay.IsVisible = true;
+    }
+
+    private void OnCloseAlertsClicked(object? sender, EventArgs e)
+    {
+        AlertOverlay.IsVisible = false;
+    }
+
+    private async void OnVerAlertaClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not EntregaAlertItem item)
+            return;
+
+        AlertOverlay.IsVisible = false;
+        await Shell.Current.GoToAsync($"{nameof(OciDetallePage)}?id={item.IdOrdenCompraInterna}");
     }
 
     private async void OnModuleMenuSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -410,21 +389,11 @@ public partial class HomePage : ContentPage
         }
     }
 
-    private async void OnProductosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockProductosPage));
-
-    private async void OnInsumosClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(StockInsumosPage));
-
     private async void OnOciClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OciPage));
 
-    private async void OnIngresoStockClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(IngresoManualStockPage));
+    private async void OnNuevaOcClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProformaEditorPage));
 
     private async void OnOrdenesTrabajoClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OrdenesTrabajoPage));
-
-    private async void OnOtManualClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(OrdenTrabajoManualPage));
-
-    private async void OnKardexClicked(object? sender, EventArgs e) => await AbrirModuloAsync("Kardex");
-
-    private async void OnGuiaInternaClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(GuiaInternaPage));
 
     private async void OnLogoutClicked(object? sender, EventArgs e)
     {
@@ -434,6 +403,12 @@ public partial class HomePage : ContentPage
 
     protected override bool OnBackButtonPressed()
     {
+        if (AlertOverlay.IsVisible)
+        {
+            AlertOverlay.IsVisible = false;
+            return true;
+        }
+
         if (MenuDrawerOverlay.IsVisible)
         {
             OnCloseMenuClicked(null, EventArgs.Empty);
@@ -476,16 +451,64 @@ public partial class HomePage : ContentPage
         return Shell.Current.GoToAsync($"{nameof(ModuloPage)}?titulo={Uri.EscapeDataString(titulo)}");
     }
 
+    private static IReadOnlyList<ModuleMenuItem> CrearMenuModulos()
+    {
+        return
+        [
+            new("Inicio", "Panel principal", "IN", "Inicio"),
+            new("OC", "Ventas", "OC", nameof(OciPage)),
+            new("Guia Interna", "Ventas", "GI", nameof(GuiaInternaPage)),
+            new("OT", "Produccion", "OT", nameof(OrdenesTrabajoPage)),
+            new("OT Manual", "Produccion", "OM", nameof(OrdenTrabajoManualPage)),
+            new("Kardex", "Reportes", "KX", "Kardex"),
+            new("Stock productos", "Almacen", "SP", nameof(StockProductosPage)),
+            new("Stock insumos", "Almacen", "SI", nameof(StockInsumosPage)),
+            new("Ingreso stock", "Almacen", "IS", nameof(IngresoManualStockPage))
+        ];
+    }
+
+    private sealed record DashboardData(
+        IReadOnlyList<DashboardKpi> Kpis,
+        IReadOnlyList<DeliveryMetric> EntregaResumen,
+        IReadOnlyList<EntregaAlertItem> Urgentes,
+        IReadOnlyList<EntregaAlertItem> Alertas,
+        IReadOnlyList<SummaryMetric> OcResumen,
+        IReadOnlyList<SummaryMetric> OtResumen,
+        IReadOnlyList<RankingItem> TopProductos);
+
+    private sealed record DashboardKpi(string Icono, string Valor, string Titulo, string Comparacion, string ColorHex, string SoftColorHex)
+    {
+        public Color Color => Color.FromArgb(ColorHex);
+        public Color SoftColor => Color.FromArgb(SoftColorHex);
+    }
+
+    private sealed record DeliveryMetric(string Valor, string Titulo, string Subtitulo, string ColorHex, string BackgroundHex)
+    {
+        public Color Color => Color.FromArgb(ColorHex);
+        public Color Background => Color.FromArgb(BackgroundHex);
+    }
+
+    private sealed record EntregaAlertItem(
+        int IdOrdenCompraInterna,
+        string NumeroOci,
+        string Cliente,
+        string EstadoTexto,
+        DateTime FechaEntrega,
+        string FechaEntregaTexto,
+        string AlertaTexto,
+        int DiasRestantes,
+        string ColorHex)
+    {
+        public Color Color => Color.FromArgb(ColorHex);
+        public Brush Brush => new SolidColorBrush(Color);
+    }
+
+    private sealed record SummaryMetric(string Titulo, string Valor, string ColorHex)
+    {
+        public Color Color => Color.FromArgb(ColorHex);
+    }
+
+    private sealed record RankingItem(int Posicion, string Nombre, string Cantidad);
+
     private sealed record ModuleMenuItem(string Titulo, string Grupo, string Icono, string Ruta);
-
-    private sealed record RankingItem(int Posicion, string Nombre, int Cantidad);
-
-    private sealed record ChartItem(string Mes, int Total, double Ancho);
-
-    private sealed record HomeActivityItem(
-        string Tipo,
-        string Titulo,
-        string Detalle,
-        Color Color,
-        DateTime Fecha);
 }
