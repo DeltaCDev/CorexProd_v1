@@ -145,8 +145,19 @@ namespace CorexProd.WPF.Views
             if (_proximasEntregasGrid == null || _proximasEntregasVacio == null)
                 return;
 
-            var proximas = AlertasEntrega
-                .Where(alerta => alerta.DiasRestantes >= 0)
+            DateTime hoy = DateTime.Today;
+            var proximas = _ordenesCompra
+                .Where(orden => orden.FechaEntrega != default && orden.FechaEntrega.Date >= hoy)
+                .Where(orden => NormalizarEstado(orden.Estado) is not ("ENTREGADO" or "ENTREGADA" or "ANULADO" or "ANULADA"))
+                .Select(orden => new OrdenCompraAlertaEntrega
+                {
+                    IdOrdenCompraInterna = orden.IdOrdenCompraInterna,
+                    NumeroOci = orden.NumeroOci,
+                    NombreCliente = orden.NombreCliente,
+                    Estado = orden.Estado,
+                    FechaEntrega = orden.FechaEntrega.Date,
+                    DiasRestantes = (orden.FechaEntrega.Date - hoy).Days
+                })
                 .OrderBy(alerta => alerta.DiasRestantes)
                 .ThenBy(alerta => alerta.FechaEntrega)
                 .ThenBy(alerta => alerta.IdOrdenCompraInterna)
