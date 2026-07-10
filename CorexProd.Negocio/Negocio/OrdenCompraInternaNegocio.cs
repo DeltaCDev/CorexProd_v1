@@ -23,8 +23,21 @@ namespace CorexProd.Negocio.Negocio
             return ordenes;
         }
 
-        public OrdenCompraInterna? Obtener(int idOrdenCompraInterna) =>
-            idOrdenCompraInterna > 0 ? _datos.Obtener(idOrdenCompraInterna) : null;
+        public OrdenCompraInterna? Obtener(int idOrdenCompraInterna)
+        {
+            if (idOrdenCompraInterna <= 0)
+                return null;
+
+            OrdenCompraInterna? orden = _datos.Obtener(idOrdenCompraInterna);
+            if (orden == null)
+                return null;
+
+            DateTime? fechaEntrega = _entregaDatos.ObtenerFechaEntrega(idOrdenCompraInterna);
+            if (fechaEntrega.HasValue)
+                orden.FechaEntrega = fechaEntrega.Value;
+
+            return orden;
+        }
 
         public string Generar(int idProforma, string usuarioGenerador)
         {
