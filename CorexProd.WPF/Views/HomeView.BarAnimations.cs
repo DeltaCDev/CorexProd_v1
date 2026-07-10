@@ -12,6 +12,7 @@ namespace CorexProd.WPF.Views
     public partial class HomeView
     {
         private const double AlturaContenedorBarra = 112d;
+        private const double AlturaMaximaBarra = 76d;
         private const double AnchoBarraNormal = 30d;
         private const double AnchoBarraHover = 36d;
 
@@ -37,13 +38,13 @@ namespace CorexProd.WPF.Views
 
                 EventManager.RegisterClassHandler(
                     typeof(Grid),
-                    Mouse.MouseEnterEvent,
+                    UIElement.MouseEnterEvent,
                     new MouseEventHandler(ContenedorBarra_MouseEnter),
                     true);
 
                 EventManager.RegisterClassHandler(
                     typeof(Grid),
-                    Mouse.MouseLeaveEvent,
+                    UIElement.MouseLeaveEvent,
                     new MouseEventHandler(ContenedorBarra_MouseLeave),
                     true);
 
@@ -234,7 +235,8 @@ namespace CorexProd.WPF.Views
                 DependencyObject hijo = VisualTreeHelper.GetChild(origen, i);
                 if (hijo is Border borde
                     && borde.DataContext is BarraDashboard
-                    && Math.Abs(borde.Width - AnchoBarraNormal) < 0.1
+                    && Math.Abs(borde.MaxHeight - AlturaMaximaBarra) < 0.1
+                    && borde.HorizontalAlignment == HorizontalAlignment.Center
                     && borde.VerticalAlignment == VerticalAlignment.Bottom)
                 {
                     return borde;
