@@ -56,10 +56,10 @@ public partial class OciDetallePage : ContentPage
 
             Title = string.IsNullOrWhiteSpace(cabecera.OrdenCompraCliente) ? _numeroOci : ocCliente;
             OcClienteDestacadoLabel.Text = ocCliente;
-            NumeroLabel.Text = $"OC interna: {_numeroOci}";
-            FechaCreacionLabel.Text = $"Creada el {cabecera.FechaEmision:dd/MM/yyyy}";
+            NumeroLabel.Text = _numeroOci;
             ClienteLabel.Text = TextoVacio(cabecera.NombreCliente);
             FechaEmisionLabel.Text = cabecera.FechaEmision.ToString("dd/MM/yyyy");
+            FechaEntregaLabel.Text = cabecera.FechaEntrega.ToString("dd/MM/yyyy");
             SubtotalLabel.Text = Moneda(cabecera.Subtotal);
             IgvLabel.Text = Moneda(cabecera.Igv);
             DescuentoLabel.Text = Moneda(cabecera.Descuento);
@@ -69,9 +69,10 @@ public partial class OciDetallePage : ContentPage
 
             AplicarEstado(cabecera.Estado);
 
+            bool mostrarDisponibilidad = EstadoPermiteDisponibilidad(cabecera.Estado);
             _productos.Clear();
             foreach (DocumentoDetalle item in detalle.Detalles)
-                _productos.Add(OciDetalleProductoItem.FromDetalle(item));
+                _productos.Add(OciDetalleProductoItem.FromDetalle(item, mostrarDisponibilidad));
         }
         catch (Exception ex)
         {
@@ -100,7 +101,9 @@ public partial class OciDetallePage : ContentPage
             }
 
             byte[] pdf = await _apiClient.GetOciPdfAsync(_idOrdenCompra);
-            string fileName = string.IsNullOrWhiteSpace(_numeroOci) ? $"orden-compra-{_idOrdenCompra}.pdf" : $"{_numeroOci}.pdf";
+            string fileName = string.IsNullOrWhiteSpace(_numeroOci)
+                ? $"orden-compra-{_idOrdenCompra}.pdf"
+                : $"{_numeroOci}.pdf";
             string path = Path.Combine(FileSystem.CacheDirectory, fileName);
             await File.WriteAllBytesAsync(path, pdf);
 
@@ -134,12 +137,20 @@ public partial class OciDetallePage : ContentPage
         EstadoBadge.Stroke = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke);
     }
 
+    private static bool EstadoPermiteDisponibilidad(string estado)
+    {
+        string normalizado = DocumentoFiltroHelper.Normalizar(estado);
+        return normalizado is "PENDIENTE" or "EMITIDA" or "EMITIDO" or "EN PROCESO" or "PROCESO" or "PARCIAL";
+    }
+
     private static string FormatearNumeroOc(string numero) =>
         numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
             ? "OC-" + numero[4..]
             : numero;
 
-    private static string TextoVacio(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor.Trim();
+    private static string TextoVacio(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor.Trim();
+
     private static string Moneda(decimal valor) => $"S/ {valor:N2}";
 
     private enum EstadoBadgePart
@@ -198,17 +209,53 @@ public partial class OciDetallePage : ContentPage
         public string CodigoProducto { get; init; } = string.Empty;
         public string NombreProducto { get; init; } = string.Empty;
         public string CantidadTexto { get; init; } = string.Empty;
-        public string TotalTexto { get; init; } = string.Empty;
         public string ObservacionTexto { get; init; } = string.Empty;
+        public bool MostrarDisponibilidad { get; init; }
+        public bool TieneFaltante { get; init; }
+        public double ProgresoDisponibilidad { get; init; }
+        public string DisponibilidadResumenTexto { get; init; } = string.Empty;
+        public string StockDisponibleTexto { get; init; } = string.Empty;
+        public string FaltanteTexto { get; init; } = string.Empty;
+        public Color StockIndicadorColor { get; init; } = Color.FromArgb("#22A51B");
+        public Color StockTextoColor { get; init; } = Color.FromArgb("#15803D");
 
-        public static OciDetalleProductoItem FromDetalle(DocumentoDetalle detalle) => new()
+        public static OciDetalleProductoItem FromDetalle(DocumentoDetalle detalle, bool estadoPermiteDisponibilidad)
         {
-            CodigoProducto = TextoVacio(detalle.CodigoProducto),
-            NombreProducto = TextoVacio(detalle.NombreProducto).ToUpperInvariant(),
-            CantidadTexto = $"{FormatearCantidad(detalle.Cantidad)} Unidades",
-            TotalTexto = Moneda(detalle.Importe),
-            ObservacionTexto = string.IsNullOrWhiteSpace(detalle.Observacion) ? "Sin observaciones." : detalle.Observacion.Trim()
-        };
+            decimal cantidadDespachada = Math.Max(0, detalle.CantidadDespachada ?? 0);
+            decimal cantidadPendiente = Math.Max(0, detalle.Cantidad - cantidadDespachada);
+            decimal stockActual = Math.Max(0, detalle.StockActual ?? 0);
+            decimal stockDisponible = Math.Min(stockActual, cantidadPendiente);
+            decimal faltante = Math.Max(0, cantidadPendiente - stockDisponible);
+            bool tieneStock = stockDisponible > 0;
+            bool mostrarDisponibilidad = estadoPermiteDisponibilidad && cantidadPendiente > 0;
+            double progreso = cantidadPendiente <= 0
+                ? 1
+                : Math.Clamp((double)(stockDisponible / cantidadPendiente), 0, 1);
+
+            return new OciDetalleProductoItem
+            {
+                CodigoProducto = TextoVacio(detalle.CodigoProducto),
+                NombreProducto = TextoVacio(detalle.NombreProducto),
+                CantidadTexto = $"{FormatearCantidad(detalle.Cantidad)} Und",
+                ObservacionTexto = string.IsNullOrWhiteSpace(detalle.Observacion)
+                    ? "Sin observaciones."
+                    : detalle.Observacion.Trim(),
+                MostrarDisponibilidad = mostrarDisponibilidad,
+                TieneFaltante = faltante > 0,
+                ProgresoDisponibilidad = progreso,
+                DisponibilidadResumenTexto = $"{FormatearCantidad(stockDisponible)} / {FormatearCantidad(cantidadPendiente)} disponibles",
+                StockDisponibleTexto = tieneStock
+                    ? $"Stock disponible: {FormatearCantidad(stockDisponible)} Und"
+                    : "Sin stock disponible",
+                FaltanteTexto = $"Faltan producir/despachar: {FormatearCantidad(faltante)} Und",
+                StockIndicadorColor = tieneStock
+                    ? Color.FromArgb("#22A51B")
+                    : Color.FromArgb("#E11D48"),
+                StockTextoColor = tieneStock
+                    ? Color.FromArgb("#15803D")
+                    : Color.FromArgb("#E11D48")
+            };
+        }
 
         private static string FormatearCantidad(decimal cantidad) =>
             cantidad == decimal.Truncate(cantidad)
