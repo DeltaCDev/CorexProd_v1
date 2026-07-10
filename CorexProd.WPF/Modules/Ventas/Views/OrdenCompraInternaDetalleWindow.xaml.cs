@@ -31,6 +31,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         {
             Loaded -= OrdenCompraInternaDetalleWindow_Loaded;
             ConfigurarCabecera();
+            ConfigurarCodigosProducto(this);
         }
 
         private void ConfigurarCabecera()
@@ -107,6 +108,35 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             panelUsuario.Children.Add(etiquetaUsuario);
             panelUsuario.Children.Add(valorUsuario);
             gridDatos.Children.Add(panelUsuario);
+        }
+
+        private void ConfigurarCodigosProducto(DependencyObject origen)
+        {
+            int cantidad = VisualTreeHelper.GetChildrenCount(origen);
+            for (int i = 0; i < cantidad; i++)
+            {
+                DependencyObject hijo = VisualTreeHelper.GetChild(origen, i);
+
+                if (hijo is TextBlock texto
+                    && !string.IsNullOrWhiteSpace(texto.Text)
+                    && _orden.Detalles.Any(detalle =>
+                        string.Equals(detalle.CodigoProducto, texto.Text, StringComparison.OrdinalIgnoreCase)))
+                {
+                    texto.FontFamily = new FontFamily("Consolas");
+                    texto.FontSize = 11;
+                    texto.FontWeight = FontWeights.SemiBold;
+                    TextOptions.SetTextFormattingMode(texto, TextFormattingMode.Display);
+                    TextOptions.SetTextRenderingMode(texto, TextRenderingMode.ClearType);
+
+                    if (VisualTreeHelper.GetParent(texto) is Border contenedorCodigo)
+                    {
+                        contenedorCodigo.MinWidth = 80;
+                        contenedorCodigo.Padding = new Thickness(10, 4, 10, 4);
+                    }
+                }
+
+                ConfigurarCodigosProducto(hijo);
+            }
         }
 
         private static T? BuscarDescendiente<T>(DependencyObject origen, Func<T, bool> condicion)
