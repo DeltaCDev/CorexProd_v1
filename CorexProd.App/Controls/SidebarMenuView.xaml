@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="CorexProd.App.Controls.SidebarMenuView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="#061F33">
+
+    <Grid RowDefinitions="Auto,*,Auto" BackgroundColor="#061F33">
+        <!-- CABECERA -->
+        <VerticalStackLayout Padding="22,24,20,14" Spacing="14">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0" BackgroundColor="#5B32DB">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16" />
+                    </Border.StrokeShape>
+                    <Label Text="C" FontSize="27" FontFamily="OpenSansSemibold" TextColor="White"
+                           HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                </Border>
+
+                <Label Grid.Column="1" Text="CorexProd" FontSize="24" FontFamily="OpenSansSemibold"
+                       TextColor="White" VerticalTextAlignment="Center" />
+
+                <Button Grid.Column="2" Text="×" FontSize="34" TextColor="White"
+                        BackgroundColor="Transparent" Padding="0" WidthRequest="44" HeightRequest="50"
+                        Clicked="OnCloseClicked" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <Border WidthRequest="54" HeightRequest="54" Stroke="#BFAFFF" StrokeThickness="1"
+                        BackgroundColor="#7A5BE7">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="27" />
+                    </Border.StrokeShape>
+                    <Label Text="●" FontSize="31" TextColor="White"
+                           HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                </Border>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label x:Name="UserNameLabel" Text="Usuario" FontSize="16"
+                           FontFamily="OpenSansSemibold" TextColor="White" LineBreakMode="TailTruncation" />
+                    <Label x:Name="UserRoleLabel" Text="Administrador" FontSize="13"
+                           TextColor="#A9C8E3" LineBreakMode="TailTruncation" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <BoxView HeightRequest="1" Color="#24445C" Margin="0,5,0,0" />
+        </VerticalStackLayout>
+
+        <!-- MENÚ -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="16,2,16,18" Spacing="8">
+                <Border BackgroundColor="#102E46" StrokeThickness="0" Padding="15,12">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnInicioTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*" ColumnSpacing="12">
+                        <Label Text="⌂" FontSize="27" TextColor="#A97BFF" VerticalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="Inicio" FontSize="16" FontFamily="OpenSansSemibold"
+                               TextColor="White" VerticalTextAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- VENTAS -->
+                <Border x:Name="VentasHeader" BackgroundColor="#4C2ACB" StrokeThickness="0" Padding="15,12" Margin="0,6,0,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnVentasTapped" /></Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="12">
+                        <Label Text="🛒" FontSize="22" TextColor="White" />
+                        <Label Grid.Column="1" Text="Ventas" FontSize="17" FontFamily="OpenSansSemibold" TextColor="White" />
+                        <Label x:Name="VentasArrow" Grid.Column="2" Text="⌄" FontSize="24" TextColor="White" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="VentasChildren" BackgroundColor="#0C2A42" StrokeThickness="0" Padding="13,10" Margin="5,-6,5,4">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="0,0,12,12" /></Border.StrokeShape>
+                    <Grid ColumnDefinitions="26,*" RowDefinitions="Auto,Auto" RowSpacing="7">
+                        <Grid Grid.RowSpan="2" WidthRequest="20">
+                            <BoxView WidthRequest="2" Color="#395B74" HorizontalOptions="Center" />
+                            <Ellipse WidthRequest="9" HeightRequest="9" Fill="#865CFF" VerticalOptions="Start" Margin="0,16,0,0" />
+                            <Ellipse WidthRequest="7" HeightRequest="7" Fill="#395B74" VerticalOptions="End" Margin="0,0,0,16" />
+                        </Grid>
+
+                        <Border Grid.Column="1" BackgroundColor="Transparent" StrokeThickness="0" Padding="10,10">
+                            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnOrdenesCompraTapped" /></Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="34,*" ColumnSpacing="10">
+                                <Label Text="▣" FontSize="22" TextColor="White" />
+                                <Label Grid.Column="1" Text="Órdenes de Compra" FontSize="15" FontFamily="OpenSansSemibold"
+                                       TextColor="#A779FF" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="1" BackgroundColor="Transparent" StrokeThickness="0" Padding="10,10">
+                            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnGuiasInternasTapped" /></Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="34,*" ColumnSpacing="10">
+                                <Label Text="▤" FontSize="22" TextColor="White" />
+                                <Label Grid.Column="1" Text="Guías Internas" FontSize="15" FontFamily="OpenSansSemibold"
+                                       TextColor="White" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- PRODUCCIÓN -->
+                <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="15,12">
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnProduccionTapped" /></Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="12">
+                        <Label Text="▥" FontSize="23" TextColor="#55B6FF" />
+                        <Label Grid.Column="1" Text="Producción" FontSize="17" FontFamily="OpenSansSemibold" TextColor="White" />
+                        <Label x:Name="ProduccionArrow" Grid.Column="2" Text="›" FontSize="26" TextColor="White" />
+                    </Grid>
+                </Border>
+                <VerticalStackLayout x:Name="ProduccionChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
+                    <Button Text="Órdenes de Trabajo" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnOrdenesTrabajoClicked" />
+                    <Button Text="OT Manual" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnOtManualClicked" />
+                </VerticalStackLayout>
+
+                <!-- ALMACÉN -->
+                <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="15,12">
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnAlmacenTapped" /></Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="12">
+                        <Label Text="□" FontSize="25" TextColor="#F6B943" />
+                        <Label Grid.Column="1" Text="Almacén" FontSize="17" FontFamily="OpenSansSemibold" TextColor="White" />
+                        <Label x:Name="AlmacenArrow" Grid.Column="2" Text="›" FontSize="26" TextColor="White" />
+                    </Grid>
+                </Border>
+                <VerticalStackLayout x:Name="AlmacenChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
+                    <Button Text="Stock de productos" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnStockProductosClicked" />
+                    <Button Text="Stock de insumos" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnStockInsumosClicked" />
+                    <Button Text="Ingreso de stock" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnIngresoStockClicked" />
+                </VerticalStackLayout>
+
+                <!-- REPORTES -->
+                <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="15,12">
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnReportesTapped" /></Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="12">
+                        <Label Text="▥" FontSize="23" TextColor="#52D68B" />
+                        <Label Grid.Column="1" Text="Reportes" FontSize="17" FontFamily="OpenSansSemibold" TextColor="White" />
+                        <Label x:Name="ReportesArrow" Grid.Column="2" Text="›" FontSize="26" TextColor="White" />
+                    </Grid>
+                </Border>
+                <VerticalStackLayout x:Name="ReportesChildren" IsVisible="False" Margin="44,-4,0,4" Spacing="0">
+                    <Button Text="Kardex" HorizontalOptions="Fill" HorizontalTextAlignment="Start"
+                            TextColor="White" BackgroundColor="Transparent" FontSize="14" Clicked="OnKardexClicked" />
+                </VerticalStackLayout>
+
+                <!-- CONFIGURACIÓN -->
+                <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="15,12">
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnConfiguracionTapped" /></Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="12">
+                        <Label Text="⚙" FontSize="24" TextColor="#B9C9D7" />
+                        <Label Grid.Column="1" Text="Configuración" FontSize="17" FontFamily="OpenSansSemibold" TextColor="White" />
+                        <Label Grid.Column="2" Text="›" FontSize="26" TextColor="White" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- CERRAR SESIÓN -->
+        <VerticalStackLayout Grid.Row="2" Padding="20,8,20,22" Spacing="10">
+            <BoxView HeightRequest="1" Color="#24445C" />
+            <Button Text="↪   Cerrar sesión" FontSize="16" FontFamily="OpenSansSemibold"
+                    TextColor="#FF5364" BackgroundColor="Transparent" HorizontalTextAlignment="Start"
+                    Padding="10,12" Clicked="OnLogoutClicked" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentView>
