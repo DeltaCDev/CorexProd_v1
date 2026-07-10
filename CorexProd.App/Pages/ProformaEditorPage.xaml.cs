@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using CorexProd.App.Models;
 using CorexProd.App.Services;
 
@@ -10,6 +12,7 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
     private readonly ObservableCollection<ProformaLineaItem> _detalles = [];
+    private List<ClienteApi> _clientes = [];
     private List<ProductoProformaApi> _productos = [];
     private bool _guardando;
     private int _idOrdenCompraInterna;
@@ -38,7 +41,7 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (ClientePicker.ItemsSource == null)
+        if (_clientes.Count == 0)
             await CargarPreparacionAsync();
     }
 
@@ -50,7 +53,15 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             NumeroLabel.Text = string.IsNullOrWhiteSpace(response.SiguienteNumero)
                 ? "Nueva OC"
                 : $"Nueva OC {response.SiguienteNumero}";
-            ClientePicker.ItemsSource = response.Clientes.ToList();
+
+            _clientes = response.Clientes
+                .OrderBy(x => x.NombreRazonSocial)
+                .ThenBy(x => x.NumeroDocumento)
+                .ToList();
+            ClientePicker.ItemsSource = Array.Empty<ClienteApi>();
+            ClientePicker.IsVisible = false;
+            ClienteAyudaLabel.IsVisible = true;
+
             _productos = response.Productos
                 .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.NombreProducto).Cliente)
                 .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.NombreProducto).NumeroNuloOrden)
@@ -94,9 +105,16 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             ? detalle.Cabecera.FechaEmision.Date.AddDays(1)
             : detalle.Cabecera.FechaEntrega.Date;
 
-        ClienteApi? cliente = clientes.FirstOrDefault(x => x.NombreRazonSocial.Equals(detalle.Cabecera.NombreCliente, StringComparison.OrdinalIgnoreCase));
+        ClienteApi? cliente = clientes.FirstOrDefault(x =>
+            x.NombreRazonSocial.Equals(detalle.Cabecera.NombreCliente, StringComparison.OrdinalIgnoreCase));
         if (cliente != null)
+        {
+            ClienteSearch.Text = cliente.Display;
+            ClientePicker.ItemsSource = new List<ClienteApi> { cliente };
             ClientePicker.SelectedItem = cliente;
+            ClientePicker.IsVisible = true;
+            ClienteAyudaLabel.IsVisible = false;
+        }
 
         _detalles.Clear();
         foreach (DocumentoDetalle item in detalle.Detalles)
@@ -109,12 +127,57 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
                 item.PrecioUnitario,
                 item.Descuento,
                 item.Importe,
-                item.Observacion));
+                item.Observacion,
+                copiar));
         }
         ActualizarTotales();
 
         if (copiar)
             _idOrdenCompraInterna = 0;
+    }
+
+    private void OnClienteSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        string filtro = (e.NewTextValue ?? string.Empty).Trim();
+
+        if (filtro.Length < 4)
+        {
+            ClientePicker.SelectedItem = null;
+            ClientePicker.ItemsSource = Array.Empty<ClienteApi>();
+            ClientePicker.IsVisible = false;
+            ClienteAyudaLabel.Text = "Escriba mínimo 4 caracteres para buscar.";
+            ClienteAyudaLabel.IsVisible = true;
+            return;
+        }
+
+        List<ClienteApi> coincidencias = _clientes
+            .Where(x =>
+                x.NombreRazonSocial.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                || x.NumeroDocumento.Contains(filtro, StringComparison.OrdinalIgnoreCase)
+                || x.Display.Contains(filtro, StringComparison.OrdinalIgnoreCase))
+            .Take(50)
+            .ToList();
+
+        ClientePicker.ItemsSource = coincidencias;
+        ClientePicker.IsVisible = coincidencias.Count > 0;
+        ClienteAyudaLabel.Text = coincidencias.Count == 0
+            ? "No se encontraron clientes."
+            : $"{coincidencias.Count} coincidencia(s). Seleccione un cliente.";
+        ClienteAyudaLabel.IsVisible = true;
+
+        if (ClientePicker.SelectedItem is ClienteApi seleccionado
+            && !coincidencias.Any(x => x.IdCliente == seleccionado.IdCliente))
+            ClientePicker.SelectedItem = null;
+    }
+
+    private void OnClienteSeleccionado(object? sender, EventArgs e)
+    {
+        if (ClientePicker.SelectedItem is ClienteApi cliente)
+        {
+            ClienteSearch.Text = cliente.Display;
+            ClienteAyudaLabel.Text = $"Cliente seleccionado: {cliente.NombreRazonSocial}";
+            ClienteAyudaLabel.IsVisible = true;
+        }
     }
 
     private void OnProductoSearchChanged(object? sender, TextChangedEventArgs e) => FiltrarProductos();
@@ -160,13 +223,26 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             precio,
             descuento,
             importe,
-            DetalleObservacionEntry.Text ?? string.Empty));
+            DetalleObservacionEntry.Text ?? string.Empty,
+            false));
 
         CantidadEntry.Text = string.Empty;
         PrecioEntry.Text = string.Empty;
         DescuentoEntry.Text = string.Empty;
         DetalleObservacionEntry.Text = string.Empty;
         ActualizarTotales();
+    }
+
+    private void OnCantidadCopiadaChanged(object? sender, TextChangedEventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not ProformaLineaItem item || !item.EsCantidadEditable)
+            return;
+
+        if (LeerDecimal(e.NewTextValue, out decimal cantidad) && cantidad > 0)
+        {
+            item.ActualizarCantidad(cantidad);
+            ActualizarTotales();
+        }
     }
 
     private void OnQuitarProductoClicked(object? sender, EventArgs e)
@@ -185,13 +261,19 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
 
         if (ClientePicker.SelectedItem is not ClienteApi cliente)
         {
-            await DisplayAlertAsync("OC", "Seleccione un cliente.", "OK");
+            await DisplayAlertAsync("OC", "Busque y seleccione un cliente.", "OK");
             return;
         }
 
         if (_detalles.Count == 0)
         {
             await DisplayAlertAsync("OC", "Agregue al menos un producto.", "OK");
+            return;
+        }
+
+        if (_detalles.Any(x => x.Cantidad <= 0))
+        {
+            await DisplayAlertAsync("OC", "Todas las cantidades deben ser mayores a cero.", "OK");
             return;
         }
 
@@ -259,16 +341,58 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             && detalle.Detalles.All(x => (x.CantidadDespachada ?? 0) <= 0);
     }
 
-    private sealed record ProformaLineaItem(
-        int IdProducto,
-        string CodigoProducto,
-        string NombreProducto,
-        decimal Cantidad,
-        decimal PrecioUnitario,
-        decimal Descuento,
-        decimal Importe,
-        string Observacion)
+    private sealed class ProformaLineaItem : INotifyPropertyChanged
     {
+        private decimal _cantidad;
+        private decimal _importe;
+
+        public ProformaLineaItem(
+            int idProducto,
+            string codigoProducto,
+            string nombreProducto,
+            decimal cantidad,
+            decimal precioUnitario,
+            decimal descuento,
+            decimal importe,
+            string observacion,
+            bool esCantidadEditable)
+        {
+            IdProducto = idProducto;
+            CodigoProducto = codigoProducto;
+            NombreProducto = nombreProducto;
+            _cantidad = cantidad;
+            PrecioUnitario = precioUnitario;
+            Descuento = descuento;
+            _importe = importe;
+            Observacion = observacion;
+            EsCantidadEditable = esCantidadEditable;
+        }
+
+        public int IdProducto { get; }
+        public string CodigoProducto { get; }
+        public string NombreProducto { get; }
+        public decimal Cantidad => _cantidad;
+        public decimal PrecioUnitario { get; }
+        public decimal Descuento { get; }
+        public decimal Importe => _importe;
+        public string Observacion { get; }
+        public bool EsCantidadEditable { get; }
+        public string CantidadTexto => Cantidad.ToString("0.##", CultureInfo.InvariantCulture);
         public string CantidadPrecio => $"{Cantidad:N2} x S/ {PrecioUnitario:N2} | Desc. S/ {Descuento:N2}";
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public void ActualizarCantidad(decimal cantidad)
+        {
+            _cantidad = cantidad;
+            _importe = Math.Max(0, Math.Round((_cantidad * PrecioUnitario) - Descuento, 2));
+            OnPropertyChanged(nameof(Cantidad));
+            OnPropertyChanged(nameof(CantidadTexto));
+            OnPropertyChanged(nameof(Importe));
+            OnPropertyChanged(nameof(CantidadPrecio));
+        }
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
