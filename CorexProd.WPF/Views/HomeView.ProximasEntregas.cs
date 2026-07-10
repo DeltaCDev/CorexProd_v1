@@ -1,5 +1,6 @@
 using CorexProd.Datos.Datos;
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -7,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
 namespace CorexProd.WPF.Views
@@ -15,6 +18,26 @@ namespace CorexProd.WPF.Views
     {
         private const double AlturaTarjetasEstadisticas = 220;
 
+        private static readonly HashSet<string> EtiquetasFilasAnimables = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Generadas",
+            "Pendiente / Producción",
+            "Con OT activa",
+            "Con guía",
+            "Entregadas",
+            "Anuladas",
+            "Pendientes / En proceso",
+            "Terminadas",
+            "Manuales",
+            "Por OCI",
+            "Vencidas",
+            "Vencen hoy",
+            "Próximas (1-3 días)",
+            "Dentro de 4-7 días",
+            "Más de 7 días"
+        };
+
+        private readonly HashSet<Border> _elementosAnimados = new();
         private bool _tarjetaProximasEntregasInicializada;
         private bool _actualizacionProximasPendiente;
         private UniformGrid? _proximasEntregasGrid;
@@ -38,6 +61,7 @@ namespace CorexProd.WPF.Views
             }
 
             ActualizarTarjetaProximasEntregas();
+            Dispatcher.BeginInvoke(new Action(ConfigurarAnimacionesDashboard), DispatcherPriority.Loaded);
         }
 
         private void AlertasEntrega_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -312,7 +336,95 @@ namespace CorexProd.WPF.Views
             Grid.SetColumn(estadoEntrega, 1);
             contenido.Children.Add(estadoEntrega);
 
+            AplicarAnimacionHover(borde);
             return borde;
+        }
+
+        private void ConfigurarAnimacionesDashboard()
+        {
+            ConfigurarAnimacionesDashboard(this);
+        }
+
+        private void ConfigurarAnimacionesDashboard(DependencyObject origen)
+        {
+            int cantidad = VisualTreeHelper.GetChildrenCount(origen);
+            for (int i = 0; i < cantidad; i++)
+            {
+                DependencyObject hijo = VisualTreeHelper.GetChild(origen, i);
+
+                if (hijo is TextBlock texto
+                    && EtiquetasFilasAnimables.Contains(NormalizarEtiquetaAnimable(texto.Text)))
+                {
+                    Border? fila = BuscarAncestro<Border>(texto, _ => true);
+                    if (fila != null)
+                        AplicarAnimacionHover(fila);
+                }
+
+                ConfigurarAnimacionesDashboard(hijo);
+            }
+        }
+
+        private static string NormalizarEtiquetaAnimable(string texto) =>
+            texto.Replace("●", string.Empty, StringComparison.Ordinal).Trim();
+
+        private void AplicarAnimacionHover(Border borde)
+        {
+            if (!_elementosAnimados.Add(borde))
+                return;
+
+            borde.RenderTransformOrigin = new Point(0.5, 0.5);
+
+            ScaleTransform escala = new(1, 1);
+            TranslateTransform desplazamiento = new(0, 0);
+            TransformGroup transformaciones = new();
+            transformaciones.Children.Add(escala);
+            transformaciones.Children.Add(desplazamiento);
+            borde.RenderTransform = transformaciones;
+
+            DropShadowEffect sombra = new()
+            {
+                Color = Color.FromRgb(30, 64, 175),
+                BlurRadius = 0,
+                ShadowDepth = 0,
+                Opacity = 0,
+                RenderingBias = RenderingBias.Performance
+            };
+            borde.Effect = sombra;
+
+            borde.MouseEnter += (_, _) =>
+            {
+                AnimarPropiedad(escala, ScaleTransform.ScaleXProperty, 1.012, 150);
+                AnimarPropiedad(escala, ScaleTransform.ScaleYProperty, 1.012, 150);
+                AnimarPropiedad(desplazamiento, TranslateTransform.YProperty, -2, 150);
+                AnimarPropiedad(sombra, DropShadowEffect.BlurRadiusProperty, 14, 170);
+                AnimarPropiedad(sombra, DropShadowEffect.OpacityProperty, 0.18, 170);
+            };
+
+            borde.MouseLeave += (_, _) =>
+            {
+                AnimarPropiedad(escala, ScaleTransform.ScaleXProperty, 1, 180);
+                AnimarPropiedad(escala, ScaleTransform.ScaleYProperty, 1, 180);
+                AnimarPropiedad(desplazamiento, TranslateTransform.YProperty, 0, 180);
+                AnimarPropiedad(sombra, DropShadowEffect.BlurRadiusProperty, 0, 180);
+                AnimarPropiedad(sombra, DropShadowEffect.OpacityProperty, 0, 180);
+            };
+        }
+
+        private static void AnimarPropiedad(
+            Animatable elemento,
+            DependencyProperty propiedad,
+            double valorDestino,
+            int duracionMilisegundos)
+        {
+            DoubleAnimation animacion = new()
+            {
+                To = valorDestino,
+                Duration = TimeSpan.FromMilliseconds(duracionMilisegundos),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                FillBehavior = FillBehavior.HoldEnd
+            };
+
+            elemento.BeginAnimation(propiedad, animacion, HandoffBehavior.SnapshotAndReplace);
         }
 
         private static Brush ConvertirColor(string valor, Color alternativo)
