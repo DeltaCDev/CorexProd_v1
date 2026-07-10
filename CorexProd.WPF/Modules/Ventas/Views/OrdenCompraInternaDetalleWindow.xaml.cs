@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace CorexProd.WPF.Modules.Ventas.Views
 {
@@ -19,7 +21,110 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         {
             _orden = orden;
             InitializeComponent();
+
+            Title = "Detalle Orden de Compra";
             DataContext = orden;
+            Loaded += OrdenCompraInternaDetalleWindow_Loaded;
+        }
+
+        private void OrdenCompraInternaDetalleWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= OrdenCompraInternaDetalleWindow_Loaded;
+            ConfigurarCabecera();
+        }
+
+        private void ConfigurarCabecera()
+        {
+            TextBlock? titulo = BuscarDescendiente<TextBlock>(
+                this,
+                texto => string.Equals(texto.Text, "Detalle de OCI", StringComparison.Ordinal));
+
+            if (titulo != null)
+                titulo.Text = "Detalle Orden de Compra";
+
+            AgregarUsuarioCabecera();
+        }
+
+        private void AgregarUsuarioCabecera()
+        {
+            TextBlock? etiquetaOcInterna = BuscarDescendiente<TextBlock>(
+                this,
+                texto => string.Equals(texto.Text, "OC Interna", StringComparison.Ordinal));
+
+            if (etiquetaOcInterna?.Parent is not StackPanel panelOcInterna
+                || panelOcInterna.Parent is not Grid gridDatos)
+            {
+                return;
+            }
+
+            bool usuarioYaAgregado = gridDatos.Children
+                .OfType<StackPanel>()
+                .SelectMany(panel => panel.Children.OfType<TextBlock>())
+                .Any(texto => string.Equals(texto.Text, "Usuario", StringComparison.Ordinal));
+
+            if (usuarioYaAgregado)
+                return;
+
+            while (gridDatos.ColumnDefinitions.Count < 5)
+                gridDatos.ColumnDefinitions.Add(new ColumnDefinition());
+
+            gridDatos.ColumnDefinitions[0].Width = new GridLength(1.6, GridUnitType.Star);
+            gridDatos.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+            gridDatos.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+            gridDatos.ColumnDefinitions[3].Width = new GridLength(1.15, GridUnitType.Star);
+            gridDatos.ColumnDefinitions[4].Width = new GridLength(1, GridUnitType.Star);
+
+            Grid.SetColumn(panelOcInterna, 4);
+            panelOcInterna.Margin = new Thickness(22, 0, 0, 0);
+
+            StackPanel panelUsuario = new()
+            {
+                Margin = new Thickness(22, 0, 0, 0)
+            };
+            Grid.SetColumn(panelUsuario, 3);
+
+            TextBlock etiquetaUsuario = new()
+            {
+                Text = "Usuario"
+            };
+
+            if (TryFindResource("FieldLabel") is Style estiloEtiqueta)
+                etiquetaUsuario.Style = estiloEtiqueta;
+
+            string usuario = string.IsNullOrWhiteSpace(_orden.UsuarioGenerador)
+                ? "No registrado"
+                : _orden.UsuarioGenerador.Trim();
+
+            TextBlock valorUsuario = new()
+            {
+                Text = usuario,
+                ToolTip = usuario
+            };
+
+            if (TryFindResource("FieldValue") is Style estiloValor)
+                valorUsuario.Style = estiloValor;
+
+            panelUsuario.Children.Add(etiquetaUsuario);
+            panelUsuario.Children.Add(valorUsuario);
+            gridDatos.Children.Add(panelUsuario);
+        }
+
+        private static T? BuscarDescendiente<T>(DependencyObject origen, Func<T, bool> condicion)
+            where T : DependencyObject
+        {
+            int cantidad = VisualTreeHelper.GetChildrenCount(origen);
+            for (int i = 0; i < cantidad; i++)
+            {
+                DependencyObject hijo = VisualTreeHelper.GetChild(origen, i);
+                if (hijo is T encontrado && condicion(encontrado))
+                    return encontrado;
+
+                T? resultado = BuscarDescendiente(hijo, condicion);
+                if (resultado != null)
+                    return resultado;
+            }
+
+            return null;
         }
 
         private void Cerrar_Click(object sender, RoutedEventArgs e) => Close();
