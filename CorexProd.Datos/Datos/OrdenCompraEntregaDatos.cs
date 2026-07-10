@@ -20,6 +20,24 @@ namespace CorexProd.Datos.Datos
             return valor == null || valor == DBNull.Value ? null : Convert.ToDateTime(valor);
         }
 
+        public Dictionary<int, DateTime> ListarFechasEntrega()
+        {
+            Dictionary<int, DateTime> fechas = [];
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                """
+                SELECT IdOrdenCompraInterna, FechaEntrega
+                FROM dbo.OrdenesCompraInterna
+                WHERE FechaEntrega IS NOT NULL;
+                """,
+                conexion);
+            conexion.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+                fechas[Convert.ToInt32(dr["IdOrdenCompraInterna"])] = Convert.ToDateTime(dr["FechaEntrega"]).Date;
+            return fechas;
+        }
+
         public void ActualizarFechaEntrega(int idOrdenCompraInterna, DateTime fechaEntrega)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
