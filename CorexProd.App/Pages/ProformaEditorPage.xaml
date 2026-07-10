@@ -12,7 +12,8 @@
                         <Label x:Name="NumeroLabel" Text="Nueva OC" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
                         <Picker x:Name="ClientePicker" Title="Cliente" ItemDisplayBinding="{Binding Display}" />
                         <Entry x:Name="OrdenCompraEntry" Placeholder="OC de cliente" />
-                        <DatePicker x:Name="VencimientoPicker" />
+                        <Label Text="Fecha de entrega *" FontSize="12" TextColor="#475467" />
+                        <DatePicker x:Name="FechaEntregaPicker" />
                         <Editor x:Name="ObservacionEditor" Placeholder="Observacion" AutoSize="TextChanges" HeightRequest="78" />
                     </VerticalStackLayout>
                 </Border>

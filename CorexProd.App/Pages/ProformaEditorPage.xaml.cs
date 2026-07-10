@@ -22,7 +22,7 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
         _apiClient = ServiceHelper.GetRequiredService<CorexProdApiClient>();
         _session = ServiceHelper.GetRequiredService<SessionState>();
         DetallesView.ItemsSource = _detalles;
-        VencimientoPicker.Date = DateTime.Today.AddDays(7);
+        FechaEntregaPicker.Date = DateTime.Today.AddDays(1);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -90,7 +90,9 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             ? $"Copiar como {siguienteNumero}"
             : $"Editar {detalle.Cabecera.NumeroOci}";
         OrdenCompraEntry.Text = detalle.Cabecera.OrdenCompraCliente;
-        VencimientoPicker.Date = detalle.Cabecera.FechaEmision;
+        FechaEntregaPicker.Date = detalle.Cabecera.FechaEntrega == default
+            ? detalle.Cabecera.FechaEmision.Date.AddDays(1)
+            : detalle.Cabecera.FechaEntrega.Date;
 
         ClienteApi? cliente = clientes.FirstOrDefault(x => x.NombreRazonSocial.Equals(detalle.Cabecera.NombreCliente, StringComparison.OrdinalIgnoreCase));
         if (cliente != null)
@@ -193,12 +195,21 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
             return;
         }
 
+        DateTime fechaEmision = DateTime.Today;
+        DateTime fechaEntrega = (FechaEntregaPicker.Date ?? DateTime.Today.AddDays(1)).Date;
+        if (fechaEntrega <= fechaEmision)
+        {
+            await DisplayAlertAsync("OC", "La fecha de entrega debe ser diferente y posterior a la fecha de emisión.", "OK");
+            return;
+        }
+
         try
         {
             _guardando = true;
             ProformaGuardarRequest request = new(
                 cliente.IdCliente,
-                VencimientoPicker.Date ?? DateTime.Today.AddDays(7),
+                fechaEntrega,
+                fechaEntrega,
                 OrdenCompraEntry.Text ?? string.Empty,
                 ObservacionEditor.Text ?? string.Empty,
                 18,

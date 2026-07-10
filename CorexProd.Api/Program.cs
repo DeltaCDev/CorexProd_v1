@@ -663,6 +663,7 @@ SELECT
     O.NumeroOci,
     '' AS NumeroProforma,
     O.FechaEmision,
+    O.FechaEntrega,
     O.OrdenCompraCliente,
     O.NombreCliente,
     O.Total,
@@ -774,6 +775,7 @@ ORDER BY O.FechaEmision DESC, O.IdOrdenCompraInterna DESC;";
             numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
             numeroProforma = dr["NumeroProforma"]?.ToString() ?? string.Empty,
             fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
+            fechaEntrega = Convert.ToDateTime(dr["FechaEntrega"]),
             ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
             nombreCliente = dr["NombreCliente"]?.ToString() ?? string.Empty,
             total = Convert.ToDecimal(dr["Total"]),
@@ -801,6 +803,7 @@ SELECT TOP (1)
     O.NumeroOci,
     '' AS NumeroProforma,
     O.FechaEmision,
+    O.FechaEntrega,
     O.OrdenCompraCliente,
     O.NombreCliente,
     O.Subtotal,
@@ -843,6 +846,7 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
         numeroOci = dr["NumeroOci"]?.ToString() ?? string.Empty,
         numeroProforma = LeerString(dr, "NumeroProforma"),
         fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
+        fechaEntrega = Convert.ToDateTime(dr["FechaEntrega"]),
         ordenCompraCliente = dr["OrdenCompraCliente"]?.ToString() ?? string.Empty,
         nombreCliente = dr["NombreCliente"]?.ToString() ?? string.Empty,
         subtotal = Convert.ToDecimal(dr["Subtotal"]),
@@ -926,6 +930,12 @@ app.MapGet("/api/oci/{id:int}/pdf", async (int id) =>
 
 app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
 {
+    DateTime fechaEmision = DateTime.Today;
+    DateTime fechaEntrega = ObtenerFechaEntregaRequest(request, fechaEmision);
+
+    if (fechaEntrega <= fechaEmision)
+        return Results.BadRequest(new { mensaje = "La fecha de entrega debe ser diferente y posterior a la fecha de emisión." });
+
     if (request.IdCliente <= 0)
         return Results.BadRequest(new { mensaje = "Seleccione un cliente." });
 
@@ -952,7 +962,7 @@ app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
     await ConfigurarOpcionesInsertAsync(conexion);
 
     await using SqlCommand cmd = new("USP_VEN_ORDEN_COMPRA_GUARDAR", conexion) { CommandType = CommandType.StoredProcedure };
-    cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = DateTime.Today;
+    cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = fechaEmision;
     cmd.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 100).Value = request.OrdenCompraCliente?.Trim() ?? string.Empty;
     cmd.Parameters.Add("@IdCliente", SqlDbType.Int).Value = request.IdCliente;
     cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = subtotal;
@@ -978,10 +988,21 @@ app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
     if (resultado.Value is bool ok && !ok)
         return Results.BadRequest(new { mensaje });
 
+    int idOrdenGenerada = idGenerado.Value == DBNull.Value ? 0 : Convert.ToInt32(idGenerado.Value);
+    if (idOrdenGenerada > 0)
+    {
+        await using SqlCommand entregaCmd = new(
+            "UPDATE dbo.OrdenesCompraInterna SET FechaEntrega = @FechaEntrega WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;",
+            conexion);
+        entregaCmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenGenerada;
+        entregaCmd.Parameters.Add("@FechaEntrega", SqlDbType.Date).Value = fechaEntrega;
+        await entregaCmd.ExecuteNonQueryAsync();
+    }
+
     return Results.Ok(new
     {
         mensaje,
-        idOrdenCompraInterna = idGenerado.Value == DBNull.Value ? 0 : Convert.ToInt32(idGenerado.Value),
+        idOrdenCompraInterna = idOrdenGenerada,
         numeroOrden = numeroOrden.Value?.ToString() ?? string.Empty,
         subtotal,
         igv,
@@ -991,6 +1012,12 @@ app.MapPost("/api/oci", async (ProformaGuardarApiRequest request) =>
 
 app.MapPut("/api/oci/{id:int}", async (int id, ProformaGuardarApiRequest request) =>
 {
+    DateTime fechaEmision = DateTime.Today;
+    DateTime fechaEntrega = ObtenerFechaEntregaRequest(request, fechaEmision);
+
+    if (fechaEntrega <= fechaEmision)
+        return Results.BadRequest(new { mensaje = "La fecha de entrega debe ser diferente y posterior a la fecha de emisión." });
+
     if (id <= 0)
         return Results.BadRequest(new { mensaje = "Seleccione una OC valida." });
 
@@ -1070,6 +1097,7 @@ SELECT CAST(CASE WHEN EXISTS
         const string actualizarSql = @"
 UPDATE O
 SET FechaEmision = @FechaEmision,
+    FechaEntrega = @FechaEntrega,
     OrdenCompraCliente = @OrdenCompraCliente,
     IdCliente = C.IdCliente,
     NombreCliente = C.NombreRazonSocial,
@@ -1119,7 +1147,8 @@ WHERE X.Cantidad > 0;";
         await using (SqlCommand cmd = new(actualizarSql, conexion, tx))
         {
             cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = id;
-            cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = DateTime.Today;
+            cmd.Parameters.Add("@FechaEmision", SqlDbType.Date).Value = fechaEmision;
+            cmd.Parameters.Add("@FechaEntrega", SqlDbType.Date).Value = fechaEntrega;
             cmd.Parameters.Add("@OrdenCompraCliente", SqlDbType.VarChar, 100).Value = request.OrdenCompraCliente?.Trim() ?? string.Empty;
             cmd.Parameters.Add("@IdCliente", SqlDbType.Int).Value = request.IdCliente;
             cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = subtotal;
@@ -3356,6 +3385,10 @@ static string CrearDetallesProformaXml(IEnumerable<ProformaGuardarDetalleApiRequ
 static string CrearAtributoXml(string nombre, string valor)
     => $"{nombre}=\"{System.Security.SecurityElement.Escape(valor) ?? string.Empty}\" ";
 
+static DateTime ObtenerFechaEntregaRequest(ProformaGuardarApiRequest request, DateTime fechaEmision) =>
+    request.FechaEntrega?.Date
+    ?? (request.FechaVencimiento == default ? fechaEmision.AddDays(1) : request.FechaVencimiento.Date);
+
 static async Task ConfigurarOpcionesInsertAsync(SqlConnection conexion)
 {
     await using SqlCommand cmd = new(
@@ -3621,6 +3654,7 @@ internal sealed record IngresoManualDetalleApiRequest(
 internal sealed record ProformaGuardarApiRequest(
     int IdCliente,
     DateTime FechaVencimiento,
+    DateTime? FechaEntrega,
     string? OrdenCompraCliente,
     string? Observacion,
     decimal IgvPorcentaje,

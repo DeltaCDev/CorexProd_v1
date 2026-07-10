@@ -91,6 +91,7 @@ public sealed record OciResumen(
     string NumeroOci,
     string NumeroProforma,
     DateTime FechaEmision,
+    DateTime FechaEntrega,
     string OrdenCompraCliente,
     string NombreCliente,
     decimal Total,
@@ -114,6 +115,7 @@ public sealed record OciCabecera(
     string NumeroOci,
     string NumeroProforma,
     DateTime FechaEmision,
+    DateTime FechaEntrega,
     string OrdenCompraCliente,
     string NombreCliente,
     decimal Subtotal,
@@ -174,6 +176,7 @@ public sealed record ProductoProformaApi(
 public sealed record ProformaGuardarRequest(
     int IdCliente,
     DateTime FechaVencimiento,
+    DateTime FechaEntrega,
     string OrdenCompraCliente,
     string Observacion,
     decimal IgvPorcentaje,

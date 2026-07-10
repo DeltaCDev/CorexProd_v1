@@ -31,7 +31,9 @@ BEGIN
     WHERE DC.parent_object_id = OBJECT_ID('dbo.OrdenesCompraInterna')
       AND C.name = 'FechaEntrega';
 
-    EXEC('ALTER TABLE dbo.OrdenesCompraInterna DROP CONSTRAINT ' + QUOTENAME(@DefaultName));
+    DECLARE @DropDefaultSql NVARCHAR(MAX);
+    SET @DropDefaultSql = N'ALTER TABLE dbo.OrdenesCompraInterna DROP CONSTRAINT ' + QUOTENAME(@DefaultName);
+    EXEC(@DropDefaultSql);
 END;
 GO
 

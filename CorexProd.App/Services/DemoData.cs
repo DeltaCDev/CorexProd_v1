@@ -35,8 +35,8 @@ public static class DemoData
 
     public static IReadOnlyList<OciResumen> Ocis { get; } =
     [
-        new(1, "OC-DEMO-001", string.Empty, DateTime.Today.AddDays(-1), "OC-CLI-1001", "SGS DEL PERU S.A.C.", 2450, "PROCESO", false, false),
-        new(2, "OC-DEMO-002", string.Empty, DateTime.Today, "OC-CLI-1002", "MARCOBRE S.A.C.", 3780, "Emitida", true, true)
+        new(1, "OC-DEMO-001", string.Empty, DateTime.Today.AddDays(-1), DateTime.Today.AddDays(2), "OC-CLI-1001", "SGS DEL PERU S.A.C.", 2450, "PROCESO", false, false),
+        new(2, "OC-DEMO-002", string.Empty, DateTime.Today, DateTime.Today.AddDays(4), "OC-CLI-1002", "MARCOBRE S.A.C.", 3780, "Emitida", true, true)
     ];
 
     public static IReadOnlyList<GuiaInternaResumen> GuiasInternas { get; } =
@@ -78,6 +78,7 @@ public static class DemoData
             o.NumeroOci,
             o.NumeroProforma,
             o.FechaEmision,
+            o.FechaEntrega,
             o.OrdenCompraCliente,
             o.NombreCliente,
             2076.27m,
