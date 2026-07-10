@@ -13,6 +13,8 @@ namespace CorexProd.WPF.Views
 {
     public partial class HomeView
     {
+        private const double AlturaTarjetasEstadisticas = 220;
+
         private bool _tarjetaProximasEntregasInicializada;
         private bool _actualizacionProximasPendiente;
         private UniformGrid? _proximasEntregasGrid;
@@ -67,6 +69,16 @@ namespace CorexProd.WPF.Views
             if (filaEstadisticas == null)
                 return false;
 
+            filaEstadisticas.MinHeight = AlturaTarjetasEstadisticas;
+            filaEstadisticas.VerticalAlignment = VerticalAlignment.Stretch;
+
+            foreach (Border tarjetaEstadistica in filaEstadisticas.Children.OfType<Border>())
+            {
+                tarjetaEstadistica.MinHeight = AlturaTarjetasEstadisticas;
+                tarjetaEstadistica.VerticalAlignment = VerticalAlignment.Stretch;
+                tarjetaEstadistica.ClipToBounds = true;
+            }
+
             if (filaEstadisticas.ColumnDefinitions.Count == 2)
                 filaEstadisticas.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -78,11 +90,16 @@ namespace CorexProd.WPF.Views
 
             Border tarjeta = new()
             {
-                Style = TryFindResource("Card") as Style
+                Style = TryFindResource("Card") as Style,
+                MinHeight = AlturaTarjetasEstadisticas,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                ClipToBounds = true
             };
             Grid.SetColumn(tarjeta, 2);
 
-            StackPanel contenido = new();
+            Grid contenido = new();
+            contenido.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            contenido.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             tarjeta.Child = contenido;
 
             Grid cabecera = new() { Margin = new Thickness(0, 0, 0, 8) };
@@ -131,7 +148,13 @@ namespace CorexProd.WPF.Views
             cabecera.Children.Add(etiqueta);
             contenido.Children.Add(cabecera);
 
-            _proximasEntregasGrid = new UniformGrid { Columns = 1 };
+            _proximasEntregasGrid = new UniformGrid
+            {
+                Columns = 1,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
+            Grid.SetRow(_proximasEntregasGrid, 1);
             contenido.Children.Add(_proximasEntregasGrid);
 
             _proximasEntregasVacio = new TextBlock
@@ -140,9 +163,11 @@ namespace CorexProd.WPF.Views
                 FontSize = 10.5,
                 Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139)),
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 22, 0, 8),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 8, 0, 0),
                 Visibility = Visibility.Collapsed
             };
+            Grid.SetRow(_proximasEntregasVacio, 1);
             contenido.Children.Add(_proximasEntregasVacio);
 
             filaEstadisticas.Children.Add(tarjeta);
@@ -186,10 +211,17 @@ namespace CorexProd.WPF.Views
             Brush acento = ConvertirColor(alerta.Color, Color.FromRgb(37, 99, 235));
             Brush fondo = alerta.DiasRestantes switch
             {
-                0 => new SolidColorBrush(Color.FromRgb(255, 244, 232)),
-                <= 3 => new SolidColorBrush(Color.FromRgb(255, 248, 222)),
-                _ => new SolidColorBrush(Color.FromRgb(238, 244, 255))
+                0 => new SolidColorBrush(Color.FromRgb(255, 247, 237)),
+                <= 3 => new SolidColorBrush(Color.FromRgb(255, 251, 235)),
+                _ => new SolidColorBrush(Color.FromRgb(248, 250, 252))
             };
+
+            string numeroOci = string.IsNullOrWhiteSpace(alerta.NumeroOci)
+                ? $"OC {alerta.IdOrdenCompraInterna}"
+                : alerta.NumeroOci;
+            string cliente = string.IsNullOrWhiteSpace(alerta.NombreCliente)
+                ? "Cliente no especificado"
+                : alerta.NombreCliente;
 
             Button boton = new()
             {
@@ -198,6 +230,7 @@ namespace CorexProd.WPF.Views
                 BorderThickness = new Thickness(0),
                 Padding = new Thickness(0),
                 Margin = new Thickness(0, 0, 0, 6),
+                MinHeight = 44,
                 Cursor = Cursors.Hand,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Stretch,
@@ -211,58 +244,67 @@ namespace CorexProd.WPF.Views
                 BorderBrush = acento,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(7),
-                Padding = new Thickness(9, 6, 9, 6)
+                Padding = new Thickness(10, 6, 10, 6)
             };
             boton.Content = borde;
 
             Grid contenido = new();
             contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             contenido.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            contenido.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            contenido.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             borde.Child = contenido;
 
-            StackPanel datos = new();
-            datos.Children.Add(new TextBlock
+            TextBlock codigo = new()
             {
-                Text = alerta.NumeroOci,
+                Text = numeroOci,
                 FontSize = 10.5,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(Color.FromRgb(15, 29, 58)),
-                TextTrimming = TextTrimming.CharacterEllipsis
-            });
-            datos.Children.Add(new TextBlock
-            {
-                Text = alerta.NombreCliente,
-                FontSize = 9.5,
-                Foreground = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 2, 8, 0)
-            });
-            contenido.Children.Add(datos);
-
-            StackPanel entrega = new()
-            {
-                HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            entrega.Children.Add(new TextBlock
+            contenido.Children.Add(codigo);
+
+            TextBlock fecha = new()
             {
                 Text = alerta.FechaEntrega.ToString("dd/MM/yyyy"),
                 FontSize = 9.5,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = acento,
-                HorizontalAlignment = HorizontalAlignment.Right
-            });
-            entrega.Children.Add(new TextBlock
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 0, 0)
+            };
+            Grid.SetColumn(fecha, 1);
+            contenido.Children.Add(fecha);
+
+            TextBlock nombreCliente = new()
+            {
+                Text = cliente,
+                FontSize = 9.5,
+                Foreground = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 3, 10, 0),
+                ToolTip = cliente
+            };
+            Grid.SetRow(nombreCliente, 1);
+            contenido.Children.Add(nombreCliente);
+
+            TextBlock estadoEntrega = new()
             {
                 Text = alerta.AlertaTexto,
                 FontSize = 9,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = acento,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 2, 0, 0)
-            });
-            Grid.SetColumn(entrega, 1);
-            contenido.Children.Add(entrega);
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 3, 0, 0)
+            };
+            Grid.SetRow(estadoEntrega, 1);
+            Grid.SetColumn(estadoEntrega, 1);
+            contenido.Children.Add(estadoEntrega);
 
             return boton;
         }
