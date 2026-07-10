@@ -163,7 +163,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Título -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
             <Button Style="{StaticResource BackButton}" Click="Cerrar_Click" ToolTip="Volver">
                 <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#111827"/>
@@ -176,7 +175,6 @@
                        Margin="10,0,0,0"/>
         </StackPanel>
 
-        <!-- Cabecera de la orden -->
         <Border Grid.Row="1"
                 Style="{StaticResource CardStyle}"
                 Padding="18,14"
@@ -193,6 +191,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+
                     <StackPanel>
                         <TextBlock Text="OC Cliente" Style="{StaticResource FieldLabel}"/>
                         <TextBlock Text="{Binding OrdenCompraCliente}"
@@ -208,7 +207,6 @@
                                 <Setter Property="BorderBrush" Value="#60A5FA"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Estado}" Value="PROCESO"><Setter Property="Background" Value="#DBEAFE"/><Setter Property="BorderBrush" Value="#60A5FA"/></DataTrigger>
                                     <DataTrigger Binding="{Binding Estado}" Value="En proceso"><Setter Property="Background" Value="#FEF3C7"/><Setter Property="BorderBrush" Value="#F59E0B"/></DataTrigger>
                                     <DataTrigger Binding="{Binding Estado}" Value="Parcial"><Setter Property="Background" Value="#FFEDD5"/><Setter Property="BorderBrush" Value="#FB923C"/></DataTrigger>
                                     <DataTrigger Binding="{Binding Estado}" Value="Entregado"><Setter Property="Background" Value="#DCFCE7"/><Setter Property="BorderBrush" Value="#4ADE80"/></DataTrigger>
@@ -249,12 +247,12 @@
 
                     <StackPanel Grid.Column="1" Margin="22,0">
                         <TextBlock Text="Fecha Emisión" Style="{StaticResource FieldLabel}"/>
-                        <TextBlock Text="{Binding FechaEmision, StringFormat=dd/MM/yyyy}" Style="{StaticResource FieldValue}"/>
+                        <TextBlock Text="{Binding FechaEmisionVisual}" Style="{StaticResource FieldValue}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Margin="22,0">
                         <TextBlock Text="Fecha Entrega" Style="{StaticResource FieldLabel}"/>
-                        <TextBlock Text="{Binding FechaEntrega, StringFormat=dd/MM/yyyy}" Style="{StaticResource FieldValue}"/>
+                        <TextBlock Text="{Binding FechaEntregaVisual}" Style="{StaticResource FieldValue}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="3" Margin="22,0,0,0">
@@ -265,14 +263,12 @@
             </Grid>
         </Border>
 
-        <!-- Contenido principal -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2.55*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Productos -->
             <Border Grid.Column="0"
                     Style="{StaticResource CardStyle}"
                     Padding="16"
@@ -283,8 +279,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="{Binding Detalles.Count, StringFormat=Productos ({0})}"
+                    <TextBlock Text="{Binding CantidadProductosTexto}"
                                Style="{StaticResource SectionTitle}"
                                Margin="0,0,0,12"/>
 
@@ -307,7 +302,7 @@
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <Grid Grid.Row="0">
+                                            <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
@@ -391,11 +386,11 @@
                                                     <WrapPanel Margin="0,1,0,0">
                                                         <StackPanel Orientation="Horizontal" Margin="0,0,18,0" ToolTip="{Binding StockProcesoReservadoTooltip}">
                                                             <TextBlock Text="En proceso reservado: " Foreground="#64748B" FontSize="9.8"/>
-                                                            <TextBlock Text="{Binding StockProcesoReservado, StringFormat={}{0:N2} Und}" Foreground="#475569" FontSize="9.8" FontWeight="SemiBold"/>
+                                                            <TextBlock Text="{Binding StockProcesoVisualTexto}" Foreground="#475569" FontSize="9.8" FontWeight="SemiBold"/>
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="Despachado: " Foreground="#64748B" FontSize="9.8"/>
-                                                            <TextBlock Text="{Binding CantidadDespachada, StringFormat={}{0:N2} Und}" Foreground="#475569" FontSize="9.8" FontWeight="SemiBold"/>
+                                                            <TextBlock Text="{Binding CantidadDespachadaVisualTexto}" Foreground="#475569" FontSize="9.8" FontWeight="SemiBold"/>
                                                         </StackPanel>
                                                     </WrapPanel>
                                                 </StackPanel>
@@ -427,7 +422,6 @@
                 </Grid>
             </Border>
 
-            <!-- Panel derecho -->
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -435,10 +429,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0"
-                        Style="{StaticResource CardStyle}"
-                        Padding="16"
-                        Margin="0,0,0,12">
+                <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="Observación General" Style="{StaticResource SectionTitle}" FontSize="16" Margin="0,0,0,10"/>
                         <Border Background="#F8FAFC" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="7" Padding="12">
@@ -450,10 +441,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="1"
-                        Style="{StaticResource CardStyle}"
-                        Padding="16"
-                        Margin="0,0,0,12">
+                <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,12">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -464,29 +452,21 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Resumen" Style="{StaticResource SectionTitle}" FontSize="17" Margin="0,0,0,16"/>
+                        <TextBlock Text="Resumen" Style="{StaticResource SectionTitle}" FontSize="17" Margin="0,0,0,16"/>
 
                         <Grid Grid.Row="1" Margin="0,0,0,11">
                             <TextBlock Text="Subtotal" Foreground="#64748B" FontSize="11.5"/>
-                            <TextBlock HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5">
-                                <Run Text="S/ "/><Run Text="{Binding Subtotal, StringFormat={}{0:N2}}"/>
-                            </TextBlock>
+                            <TextBlock Text="{Binding SubtotalVisual}" HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5"/>
                         </Grid>
 
                         <Grid Grid.Row="2" Margin="0,0,0,11">
-                            <TextBlock Foreground="#64748B" FontSize="11.5">
-                                <Run Text="IGV ("/><Run Text="{Binding IgvPorcentaje, StringFormat={}{0:N0}}"/><Run Text="%)"/>
-                            </TextBlock>
-                            <TextBlock HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5">
-                                <Run Text="S/ "/><Run Text="{Binding Igv, StringFormat={}{0:N2}}"/>
-                            </TextBlock>
+                            <TextBlock Text="{Binding IgvEtiqueta}" Foreground="#64748B" FontSize="11.5"/>
+                            <TextBlock Text="{Binding IgvVisual}" HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5"/>
                         </Grid>
 
                         <Grid Grid.Row="3" Margin="0,0,0,12">
                             <TextBlock Text="Descuento" Foreground="#64748B" FontSize="11.5"/>
-                            <TextBlock HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5">
-                                <Run Text="S/ "/><Run Text="{Binding Descuento, StringFormat={}{0:N2}}"/>
-                            </TextBlock>
+                            <TextBlock Text="{Binding DescuentoVisual}" HorizontalAlignment="Right" Foreground="#334155" FontSize="11.5"/>
                         </Grid>
 
                         <Border Grid.Row="5"
@@ -501,13 +481,12 @@
                                            FontWeight="SemiBold"
                                            Foreground="#4C1D95"
                                            VerticalAlignment="Center"/>
-                                <TextBlock HorizontalAlignment="Right"
+                                <TextBlock Text="{Binding TotalVisual}"
+                                           HorizontalAlignment="Right"
                                            FontSize="27"
                                            FontWeight="SemiBold"
                                            Foreground="#3F168C"
-                                           VerticalAlignment="Center">
-                                    <Run Text="S/ "/><Run Text="{Binding Total, StringFormat={}{0:N2}}"/>
-                                </TextBlock>
+                                           VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </Grid>
