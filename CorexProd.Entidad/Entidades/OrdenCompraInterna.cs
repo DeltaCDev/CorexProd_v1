@@ -28,6 +28,7 @@ namespace CorexProd.Entidad.Entidades
 
         public string FechaEmisionVisual => FechaEmision.ToString("dd/MM/yyyy");
         public string FechaEntregaVisual => FechaEntrega == default ? "-" : FechaEntrega.ToString("dd/MM/yyyy");
+        public string CantidadProductosTexto => $"Productos ({Detalles.Count})";
         public string SubtotalVisual => $"S/ {Subtotal:N2}";
         public string DescuentoVisual => $"S/ {Descuento:N2}";
         public string IgvVisual => $"S/ {Igv:N2}";
