@@ -78,8 +78,18 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private static bool EsEstadoFinalizado(string? estado)
         {
-            string normalizado = (estado ?? string.Empty).Trim().ToUpperInvariant();
-            return normalizado is "TERMINADO" or "TERMINADA" or "ANULADO" or "ANULADA";
+            string normalizado = (estado ?? string.Empty)
+                .Trim()
+                .Replace('_', ' ')
+                .ToUpperInvariant();
+
+            return normalizado is
+                "TERMINADO" or
+                "TERMINADA" or
+                "TERMINADO PARCIAL" or
+                "TERMINADA PARCIAL" or
+                "ANULADO" or
+                "ANULADA";
         }
     }
 }
