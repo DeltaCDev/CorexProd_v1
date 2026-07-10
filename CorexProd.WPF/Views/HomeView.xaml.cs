@@ -12,6 +12,8 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -21,9 +23,10 @@ namespace CorexProd.WPF.Views
     public partial class HomeView : UserControl, INotifyPropertyChanged
     {
         private readonly CultureInfo _cultura = new("es-PE");
-        private readonly OrdenCompraEntregaNegocio _entregaNegocio = new();
+        private readonly SemaphoreSlim _cargaDatos = new(1, 1);
         private List<OrdenCompraInterna> _ordenesCompra = [];
         private bool _refrescoDiferidoPendiente;
+        private bool _cargaInicialEjecutada;
 
         public HomeView()
         {
@@ -33,7 +36,7 @@ namespace CorexProd.WPF.Views
             ResumenInicio = "Cargando información real de producción, compras, despacho y fechas de entrega.";
             MensajeDatos = "Conectando con los datos del sistema.";
             DataContext = this;
-            CargarDatosReales();
+            Loaded += HomeView_Loaded;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -69,46 +72,27 @@ namespace CorexProd.WPF.Views
         public UsuarioDashboard UsuarioMasOc { get; private set; } = new("-", 0, "OC");
         public UsuarioDashboard UsuarioMasOt { get; private set; } = new("-", 0, "OT");
 
-        private void CargarDatosReales()
+        private async void HomeView_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_cargaInicialEjecutada)
+                return;
+
+            _cargaInicialEjecutada = true;
+            await RefrescarDatosAsync();
+        }
+
+        private async Task RefrescarDatosAsync()
+        {
+            if (!await _cargaDatos.WaitAsync(0))
+                return;
+
             try
             {
-                DateTime hoy = DateTime.Today;
-                DateTime desdeMes = new(hoy.Year, hoy.Month, 1);
-                DateTime desde6Meses = desdeMes.AddMonths(-5);
-                DateTime hastaMes = desdeMes.AddMonths(1).AddDays(-1);
+                MensajeDatos = "Actualizando información del panel principal...";
+                OnPropertyChanged(nameof(MensajeDatos));
 
-                Empresa? empresa = new EmpresaNegocio().ObtenerPredeterminada();
-                OrdenTrabajoNegocio ordenTrabajoNegocio = new();
-                _ordenesCompra = new OrdenCompraInternaNegocio().Listar();
-                List<OrdenTrabajo> ordenesTrabajo = ordenTrabajoNegocio.Listar();
-                List<GuiaInterna> guias = new GuiaInternaNegocio().Listar(desde6Meses, hastaMes, null, "Todos", "Todos", string.Empty);
-                List<StockProducto> productos = new StockProductoNegocio().Listar();
-                List<StockInsumo> insumos = new StockInsumoNegocio().Listar();
-
-                List<OrdenCompraInterna> ocMes = _ordenesCompra.Where(x => EstaEnMes(x.FechaEmision, desdeMes)).ToList();
-                List<OrdenTrabajo> otMes = ordenesTrabajo.Where(x => EstaEnMes(x.FechaEmision, desdeMes)).ToList();
-                List<GuiaInterna> guiasMes = guias.Where(x => EstaEnMes(x.FechaEmision, desdeMes)).ToList();
-
-                EmpresaTitulo = string.IsNullOrWhiteSpace(empresa?.NombreComercial)
-                    ? empresa?.Nombre ?? "Dashboard operativo"
-                    : empresa.NombreComercial;
-                FechaDashboard = Capitalizar(hoy.ToString("dddd, dd 'de' MMMM 'de' yyyy", _cultura));
-                ResumenInicio = $"Vista inicial con datos reales al {hoy:dd/MM/yyyy}: compras, producción, despacho, stock y entregas.";
-                MensajeDatos = $"Datos reales actualizados. Empresa: {TextoSeguro(empresa?.Nombre, "No configurada")}.";
-                UltimaActualizacion = $"Actualizado: {DateTime.Now:dd/MM/yyyy   hh:mm tt}";
-
-                CargarAlertasEntrega(hoy, desdeMes, hastaMes);
-                CargarIndicadoresGenerales(ocMes, otMes, guiasMes, productos, insumos);
-                CargarResumenOrdenesCompra(ocMes);
-                CargarResumenOrdenesTrabajo(otMes);
-                CargarResumenGuias(guiasMes);
-                CargarRankings(ocMes, desdeMes, hastaMes.AddDays(1), ordenTrabajoNegocio);
-                CargarUsuarios(ocMes, otMes);
-                CargarBarras(EstadisticaOc6Meses, ConteoMensual(_ordenesCompra, desde6Meses, x => x.FechaEmision), "#2563EB");
-                CargarBarras(EstadisticaOt6Meses, ConteoMensual(ordenesTrabajo, desde6Meses, x => x.FechaEmision), "#16A34A");
-                CargarBarras(EstadisticaGuias6Meses, ConteoMensual(guias, desde6Meses, x => x.FechaEmision), "#D97706");
-                NotificarTodo();
+                DashboardCarga datos = await Task.Run(ObtenerDatosDashboard);
+                AplicarDatosDashboard(datos);
             }
             catch (Exception ex)
             {
@@ -117,11 +101,86 @@ namespace CorexProd.WPF.Views
                 LimpiarColecciones();
                 NotificarTodo();
             }
+            finally
+            {
+                _cargaDatos.Release();
+            }
+        }
+
+        private static DashboardCarga ObtenerDatosDashboard()
+        {
+            DateTime hoy = DateTime.Today;
+            DateTime desdeMes = new(hoy.Year, hoy.Month, 1);
+            DateTime desde6Meses = desdeMes.AddMonths(-5);
+            DateTime hastaMes = desdeMes.AddMonths(1).AddDays(-1);
+
+            Empresa? empresa = new EmpresaNegocio().ObtenerPredeterminada();
+            OrdenTrabajoNegocio ordenTrabajoNegocio = new();
+            List<OrdenCompraInterna> ordenesCompra = new OrdenCompraInternaNegocio().Listar();
+            List<OrdenTrabajo> ordenesTrabajo = ordenTrabajoNegocio.Listar();
+            List<GuiaInterna> guias = new GuiaInternaNegocio().Listar(desde6Meses, hastaMes, null, "Todos", "Todos", string.Empty);
+            List<StockProducto> productos = new StockProductoNegocio().Listar();
+            List<StockInsumo> insumos = new StockInsumoNegocio().Listar();
+
+            OrdenCompraEntregaNegocio entregaNegocio = new();
+            List<OrdenCompraAlertaEntrega> alertas = entregaNegocio.ListarAlertas(hoy);
+            int entregadasATiempo = entregaNegocio.ContarEntregadasATiempo(desdeMes, hastaMes);
+            List<(string Nombre, int Cantidad)> topProductos = ordenTrabajoNegocio.ListarTopProductosPorMes(desdeMes, hastaMes.AddDays(1));
+
+            return new DashboardCarga(
+                hoy,
+                desdeMes,
+                desde6Meses,
+                hastaMes,
+                empresa,
+                ordenesCompra,
+                ordenesTrabajo,
+                guias,
+                productos,
+                insumos,
+                alertas,
+                entregadasATiempo,
+                topProductos);
+        }
+
+        private void AplicarDatosDashboard(DashboardCarga datos)
+        {
+            _ordenesCompra = datos.OrdenesCompra;
+
+            List<OrdenCompraInterna> ocMes = datos.OrdenesCompra
+                .Where(x => EstaEnMes(x.FechaEmision, datos.DesdeMes))
+                .ToList();
+            List<OrdenTrabajo> otMes = datos.OrdenesTrabajo
+                .Where(x => EstaEnMes(x.FechaEmision, datos.DesdeMes))
+                .ToList();
+            List<GuiaInterna> guiasMes = datos.Guias
+                .Where(x => EstaEnMes(x.FechaEmision, datos.DesdeMes))
+                .ToList();
+
+            EmpresaTitulo = string.IsNullOrWhiteSpace(datos.Empresa?.NombreComercial)
+                ? datos.Empresa?.Nombre ?? "Dashboard operativo"
+                : datos.Empresa.NombreComercial;
+            FechaDashboard = Capitalizar(datos.Hoy.ToString("dddd, dd 'de' MMMM 'de' yyyy", _cultura));
+            ResumenInicio = $"Vista inicial con datos reales al {datos.Hoy:dd/MM/yyyy}: compras, producción, despacho, stock y entregas.";
+            MensajeDatos = $"Datos reales actualizados. Empresa: {TextoSeguro(datos.Empresa?.Nombre, "No configurada")}.";
+            UltimaActualizacion = $"Actualizado: {DateTime.Now:dd/MM/yyyy   hh:mm tt}";
+
+            CargarAlertasEntrega(datos.Alertas, datos.EntregadasATiempo);
+            CargarIndicadoresGenerales(ocMes, otMes, guiasMes, datos.Productos, datos.Insumos);
+            CargarResumenOrdenesCompra(ocMes);
+            CargarResumenOrdenesTrabajo(otMes);
+            CargarResumenGuias(guiasMes);
+            CargarRankings(ocMes, datos.TopProductos);
+            CargarUsuarios(ocMes, otMes);
+            CargarBarras(EstadisticaOc6Meses, ConteoMensual(datos.OrdenesCompra, datos.Desde6Meses, x => x.FechaEmision), "#2563EB");
+            CargarBarras(EstadisticaOt6Meses, ConteoMensual(datos.OrdenesTrabajo, datos.Desde6Meses, x => x.FechaEmision), "#16A34A");
+            CargarBarras(EstadisticaGuias6Meses, ConteoMensual(datos.Guias, datos.Desde6Meses, x => x.FechaEmision), "#D97706");
+            NotificarTodo();
         }
 
         public void RefrescarDatos()
         {
-            CargarDatosReales();
+            _ = RefrescarDatosAsync();
         }
 
         public void RefrescarDatosDiferido()
@@ -130,11 +189,11 @@ namespace CorexProd.WPF.Views
                 return;
 
             _refrescoDiferidoPendiente = true;
-            Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(new Action(async () =>
             {
                 try
                 {
-                    RefrescarDatos();
+                    await RefrescarDatosAsync();
                 }
                 finally
                 {
@@ -143,10 +202,8 @@ namespace CorexProd.WPF.Views
             }), DispatcherPriority.ApplicationIdle);
         }
 
-        private void CargarAlertasEntrega(DateTime hoy, DateTime desdeMes, DateTime hastaMes)
+        private void CargarAlertasEntrega(List<OrdenCompraAlertaEntrega> alertas, int entregadasATiempo)
         {
-            List<OrdenCompraAlertaEntrega> alertas = _entregaNegocio.ListarAlertas(hoy);
-
             AlertasEntrega.Clear();
             AlertasUrgentes.Clear();
 
@@ -161,12 +218,12 @@ namespace CorexProd.WPF.Views
             DentroPlazoCercano = alertas.Count(x => x.DiasRestantes is >= 4 and <= 7);
             MasDe7Dias = alertas.Count(x => x.DiasRestantes > 7);
             CantidadAlertasEntrega = Vencidas + VencenHoy + ProximasVencer;
-            EntregadasATiempo = _entregaNegocio.ContarEntregadasATiempo(desdeMes, hastaMes);
+            EntregadasATiempo = entregadasATiempo;
         }
 
         private void Campana_Click(object sender, RoutedEventArgs e) => NotificacionesPopup.IsOpen = !NotificacionesPopup.IsOpen;
 
-        private void VerOcAlerta_Click(object sender, RoutedEventArgs e)
+        private async void VerOcAlerta_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as FrameworkElement)?.DataContext is not OrdenCompraAlertaEntrega alerta)
                 return;
@@ -181,7 +238,7 @@ namespace CorexProd.WPF.Views
                 Owner = Window.GetWindow(this)
             };
             ventana.ShowDialog();
-            CargarDatosReales();
+            await RefrescarDatosAsync();
         }
 
         private void VerReporteClientes_Click(object sender, RoutedEventArgs e)
@@ -265,10 +322,10 @@ namespace CorexProd.WPF.Views
             GuiasResumen.Add(new("Anuladas", items.Count(x => x.EsAnulada).ToString("N0", _cultura), "#DC2626"));
         }
 
-        private void CargarRankings(List<OrdenCompraInterna> ocMes, DateTime desdeMes, DateTime hastaMesExclusivo, OrdenTrabajoNegocio negocio)
+        private void CargarRankings(List<OrdenCompraInterna> ocMes, IEnumerable<(string Nombre, int Cantidad)> topProductos)
         {
             CargarRanking(TopClientes, ocMes.Where(x => !string.IsNullOrWhiteSpace(x.NombreCliente)).GroupBy(x => x.NombreCliente.Trim()).Select(x => (x.Key, x.Count())).OrderByDescending(x => x.Item2).Take(5));
-            CargarRanking(TopProductos, negocio.ListarTopProductosPorMes(desdeMes, hastaMesExclusivo));
+            CargarRanking(TopProductos, topProductos);
         }
 
         private void CargarUsuarios(List<OrdenCompraInterna> ocMes, List<OrdenTrabajo> otMes)
@@ -334,6 +391,21 @@ namespace CorexProd.WPF.Views
         }
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        private sealed record DashboardCarga(
+            DateTime Hoy,
+            DateTime DesdeMes,
+            DateTime Desde6Meses,
+            DateTime HastaMes,
+            Empresa? Empresa,
+            List<OrdenCompraInterna> OrdenesCompra,
+            List<OrdenTrabajo> OrdenesTrabajo,
+            List<GuiaInterna> Guias,
+            List<StockProducto> Productos,
+            List<StockInsumo> Insumos,
+            List<OrdenCompraAlertaEntrega> Alertas,
+            int EntregadasATiempo,
+            List<(string Nombre, int Cantidad)> TopProductos);
     }
 
     public sealed record IndicadorDashboard(string Titulo, string Valor, string Color, string Icono = "\uE8A5", string Fondo = "#EFF6FF", string Subtitulo = "", string Variacion = "");
