@@ -95,6 +95,41 @@ ORDER BY O.IdOrdenTrabajo DESC;";
             return lista;
         }
 
+        public List<(string Nombre, int Cantidad)> ListarTopProductosPorMes(DateTime desde, DateTime hastaExclusivo)
+        {
+            const string sql = """
+SELECT TOP (5)
+    CASE
+        WHEN NULLIF(LTRIM(RTRIM(D.CodigoProducto)), '') IS NULL THEN LTRIM(RTRIM(D.NombreProducto))
+        ELSE LTRIM(RTRIM(D.CodigoProducto)) + ' - ' + LTRIM(RTRIM(D.NombreProducto))
+    END AS Producto,
+    CONVERT(INT, ROUND(SUM(ISNULL(D.CantidadPlanificada, 0)), 0)) AS Cantidad
+FROM dbo.OrdenTrabajo O
+JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = O.IdOrdenTrabajo
+WHERE O.FechaEmision >= @Desde
+  AND O.FechaEmision < @Hasta
+  AND UPPER(REPLACE(LTRIM(RTRIM(O.Estado)), ' ', '_')) NOT IN ('ANULADO', 'ANULADA')
+  AND NULLIF(LTRIM(RTRIM(D.NombreProducto)), '') IS NOT NULL
+GROUP BY
+    CASE
+        WHEN NULLIF(LTRIM(RTRIM(D.CodigoProducto)), '') IS NULL THEN LTRIM(RTRIM(D.NombreProducto))
+        ELSE LTRIM(RTRIM(D.CodigoProducto)) + ' - ' + LTRIM(RTRIM(D.NombreProducto))
+    END
+ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
+""";
+
+            List<(string Nombre, int Cantidad)> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(sql, cn);
+            cmd.Parameters.Add("@Desde", SqlDbType.Date).Value = desde.Date;
+            cmd.Parameters.Add("@Hasta", SqlDbType.Date).Value = hastaExclusivo.Date;
+            cn.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+                lista.Add((Texto(dr, "Producto"), Convert.ToInt32(dr["Cantidad"])));
+            return lista;
+        }
+
         public OrdenTrabajo? Obtener(int id)
         {
             using SqlConnection cn = Conexion.ObtenerConexion();

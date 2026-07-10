@@ -68,7 +68,7 @@ namespace CorexProd.Datos.Datos
                 FROM dbo.OrdenesCompraInterna
                 WHERE UPPER(REPLACE(LTRIM(RTRIM(Estado)), ' ', '_')) NOT IN ('ENTREGADO','ENTREGADA','ANULADO','ANULADA')
                   AND FechaEntrega IS NOT NULL
-                  AND FechaEntrega <= DATEADD(DAY, 7, @Hoy)
+                  AND FechaEntrega <= DATEADD(DAY, 14, @Hoy)
                 ORDER BY FechaEntrega, IdOrdenCompraInterna;
                 """,
                 conexion);

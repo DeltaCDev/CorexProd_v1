@@ -24,5 +24,10 @@ namespace CorexProd.WPF.Modules.Reportes.Views
         {
             InitializeComponent();
         }
+
+        public ReportesView(int selectedTabIndex) : this()
+        {
+            ReportesTabControl.SelectedIndex = selectedTabIndex;
+        }
     }
 }

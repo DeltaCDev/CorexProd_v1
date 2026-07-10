@@ -28,6 +28,7 @@ namespace CorexProd.WPF.ViewModels
         private bool _isSidebarCollapsed;
         private byte[]? _logoMenu;
         private byte[]? _iconoMenu;
+        private HomeView? _homeView;
 
         public string NombreRol
         {
@@ -715,7 +716,20 @@ namespace CorexProd.WPF.ViewModels
         private void IrInicio()
         {
             Titulo = "Panel principal";
-            VistaActual = new HomeView();
+
+            if (VistaActual is HomeView)
+                return;
+
+            if (_homeView == null)
+            {
+                _homeView = new HomeView();
+                VistaActual = _homeView;
+            }
+            else
+            {
+                VistaActual = _homeView;
+                _homeView.RefrescarDatosDiferido();
+            }
         }
 
         private void IrVista(string vista)

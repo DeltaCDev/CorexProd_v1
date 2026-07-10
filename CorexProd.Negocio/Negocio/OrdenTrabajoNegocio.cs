@@ -13,6 +13,7 @@ namespace CorexProd.Negocio.Negocio
         private readonly UsuarioDatos _usuarios=new();
         public List<OrdenTrabajo> Listar()=>_datos.Listar();
         public OrdenTrabajo? Obtener(int id)=>_datos.Obtener(id);
+        public List<(string Nombre, int Cantidad)> ListarTopProductosPorMes(DateTime desde, DateTime hastaExclusivo)=>_datos.ListarTopProductosPorMes(desde,hastaExclusivo);
         public List<OrdenTrabajoMovimiento> ListarMovimientos(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarMovimientos(idOrdenTrabajo):[];
         public List<OrdenTrabajoKardexIngreso> ListarIngresosKardex(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarIngresosKardex(idOrdenTrabajo):[];
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)=>_datos.ValidarInsumos(idOci);

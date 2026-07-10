@@ -195,17 +195,7 @@
                                     Height="16"
                                     Background="#D5DCE7"
                                     Margin="20,0"/>
-                            <TextBlock Text="👋  ¡Bienvenido de vuelta, "
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       Foreground="#536382"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding DataContext.NombreUsuario, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       FontSize="11"
-                                       FontWeight="Bold"
-                                       Foreground="#315CA8"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="!"
+                            <TextBlock Text="Bienvenido de vuelta"
                                        FontSize="11"
                                        FontWeight="SemiBold"
                                        Foreground="#536382"
@@ -287,29 +277,13 @@
                         <Button Style="{StaticResource HeaderIconButton}"
                                 Command="{Binding DataContext.CerrarSesionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 ToolTip="Cerrar sesión"
-                                Margin="0,0,12,0">
+                                Margin="0">
                             <TextBlock Text="&#xE8AC;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="18"
                                        Foreground="#DC2626"/>
                         </Button>
 
-                        <!-- 3. Usuario logueado; sin repetir avatar ni rol de la barra lateral -->
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#xE77B;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Foreground="#1747A6"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,7,0"/>
-                            <TextBlock Text="{Binding DataContext.NombreUsuario, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       FontSize="12"
-                                       FontWeight="Bold"
-                                       Foreground="#0F1D3A"
-                                       VerticalAlignment="Center"
-                                       MaxWidth="180"
-                                       TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
                     </StackPanel>
                 </Grid>
 
@@ -348,7 +322,7 @@
                                 <TextBlock Text="&#xE99B;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#16A34A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <TextBlock Text="OT en proceso" FontSize="11" FontWeight="Bold" Foreground="#0F1D3A"/>
+                                <TextBlock Text="OT pendientes / en proceso" FontSize="11" FontWeight="Bold" Foreground="#0F1D3A" TextWrapping="Wrap"/>
                                 <TextBlock Text="{Binding OrdenesTrabajoResumen[1].Valor}" FontSize="27" FontWeight="Bold" Foreground="#0F1D3A" Margin="0,3,0,0"/>
                                 <TextBlock Text="Actualmente" FontSize="10" Foreground="#52627F"/>
                             </StackPanel>
@@ -392,7 +366,7 @@
                                     <TextBlock Text="&#xE7BF;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#2563EB" Margin="0,0,8,0"/>
                                     <TextBlock Text="Órdenes de Compra" Style="{StaticResource SectionTitle}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}"/>
+                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}" Click="VerOrdenesCompra_Click"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding OrdenesCompraResumen}" ItemTemplate="{StaticResource MetricRowTemplate}"/>
                         </StackPanel>
@@ -409,7 +383,7 @@
                                     <TextBlock Text="&#xE99B;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#16A34A" Margin="0,0,8,0"/>
                                     <TextBlock Text="Órdenes de Trabajo" Style="{StaticResource SectionTitle}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}"/>
+                                <Button Grid.Column="1" Content="Ver detalle" Style="{StaticResource LinkButton}" Click="VerOrdenesTrabajo_Click"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding OrdenesTrabajoResumen}" ItemTemplate="{StaticResource MetricRowTemplate}"/>
                         </StackPanel>
@@ -426,7 +400,6 @@
                                     <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="19" Foreground="#2563EB" Margin="0,0,8,0"/>
                                     <TextBlock Text="Seguimiento de fechas de entrega" FontSize="12.5" FontWeight="Bold" Foreground="#0F1D3A" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Ver todas" Style="{StaticResource LinkButton}" Click="Campana_Click"/>
                             </Grid>
 
                             <Border Background="#FFF0F0" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
@@ -442,7 +415,7 @@
                                 <Grid><TextBlock Text="●   Dentro de 4-7 días" Foreground="#25334F" FontSize="10.5"/><TextBlock Text="{Binding DentroPlazoCercano}" Foreground="#2563EB" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
                             </Border>
                             <Border Background="#EAF8EF" CornerRadius="6" Padding="10,6">
-                                <Grid><TextBlock Text="●   Más de 7 días" Foreground="#25334F" FontSize="10.5"/><TextBlock Text="{Binding EntregadasATiempo}" Foreground="#16A34A" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
+                                <Grid><TextBlock Text="●   Más de 7 días" Foreground="#25334F" FontSize="10.5"/><TextBlock Text="{Binding MasDe7Dias}" Foreground="#16A34A" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
                             </Border>
                         </StackPanel>
                     </Border>
@@ -459,7 +432,6 @@
                         <StackPanel>
                             <Grid Margin="0,0,0,4">
                                 <TextBlock Text="OCI últimos 6 meses" Style="{StaticResource SectionTitle}"/>
-                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding EstadisticaOc6Meses}" ItemTemplate="{StaticResource BarTemplate}">
                                 <ItemsControl.ItemsPanel>
@@ -475,7 +447,6 @@
                         <StackPanel>
                             <Grid Margin="0,0,0,4">
                                 <TextBlock Text="OT últimos 6 meses" Style="{StaticResource SectionTitle}"/>
-                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding EstadisticaOt6Meses}" ItemTemplate="{StaticResource BarTemplate}">
                                 <ItemsControl.ItemsPanel>
@@ -499,7 +470,7 @@
                         <StackPanel>
                             <Grid Margin="0,0,0,8">
                                 <TextBlock Text="Top 5 Clientes (por OC)" Style="{StaticResource SectionTitle}"/>
-                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/>
+                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Click="VerReporteClientes_Click"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding TopClientes}" ItemTemplate="{StaticResource RankingTemplate}"/>
                         </StackPanel>
@@ -509,7 +480,7 @@
                         <StackPanel>
                             <Grid Margin="0,0,0,8">
                                 <TextBlock Text="Top 5 Productos (por OT)" Style="{StaticResource SectionTitle}"/>
-                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right"/>
+                                <Button Content="Ver reporte" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Click="VerReporteProductosDespachados_Click"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding TopProductos}" ItemTemplate="{StaticResource RankingTemplate}"/>
                         </StackPanel>
@@ -602,3 +573,4 @@
         </ScrollViewer>
     </Grid>
 </UserControl>
+

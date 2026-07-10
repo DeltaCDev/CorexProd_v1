@@ -93,7 +93,7 @@
             </StackPanel>
         </Border>
 
-        <TabControl Grid.Row="2" Background="Transparent">
+        <TabControl x:Name="ReportesTabControl" Grid.Row="2" Background="Transparent">
             <TabItem Header="Productos despachados">
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>

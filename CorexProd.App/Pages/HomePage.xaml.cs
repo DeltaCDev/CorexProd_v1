@@ -155,7 +155,7 @@ public partial class HomePage : ContentPage
             OtResumen:
             [
                 new("Generadas", otsMes.Count.ToString(), "#135DFF"),
-                new("En proceso", otsMes.Count(x => EsEnProceso(x.Estado)).ToString(), "#F97316"),
+                new("Pendientes / En proceso", otsMes.Count(x => EsOtActiva(x.Estado)).ToString(), "#F97316"),
                 new("Terminadas", otsMes.Count(x => EsEntregadoOTerminado(x.Estado)).ToString(), "#16A34A"),
                 new("Manuales", otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("MANUAL")).ToString(), "#7C3AED"),
                 new("Por OCI", otsMes.Count(x => !string.IsNullOrWhiteSpace(x.NumeroOci)).ToString(), "#0EA5E9"),
@@ -308,6 +308,13 @@ public partial class HomePage : ContentPage
     {
         string valor = DocumentoFiltroHelper.Normalizar(estado);
         return valor.Contains("PROCESO") || valor is "EN_PROCESO" or "EN PROCESO";
+    }
+
+    private static bool EsOtActiva(string estado)
+    {
+        string valor = DocumentoFiltroHelper.Normalizar(estado);
+        bool esPendiente = valor is "PENDIENTE" or "PENDIENTE_PRODUCCION" or "PENDIENTE PRODUCCION";
+        return esPendiente || EsEnProceso(estado);
     }
 
     private static bool EsParcial(string estado) => DocumentoFiltroHelper.Normalizar(estado).Contains("PARCIAL");
