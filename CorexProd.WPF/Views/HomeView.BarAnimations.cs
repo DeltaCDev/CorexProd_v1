@@ -209,7 +209,7 @@ namespace CorexProd.WPF.Views
             foreach (TextBlock texto in contenedor.Children.OfType<TextBlock>())
             {
                 if (texto.Foreground is SolidColorBrush pincel)
-                    texto.Foreground = new SolidColorBrush(pincel.Color);
+                    texto.Foreground = pincel.CloneCurrentValue();
             }
         }
 
@@ -219,12 +219,21 @@ namespace CorexProd.WPF.Views
             Duration duracion,
             IEasingFunction easing)
         {
-            if (texto.Foreground is not SolidColorBrush pincel)
+            if (texto.Foreground is not SolidColorBrush pincelActual)
                 return;
 
-            pincel.BeginAnimation(
+            // Los pinceles declarados en XAML pueden quedar congelados por WPF.
+            // Se clona siempre el valor actual para garantizar una instancia animable.
+            SolidColorBrush pincelAnimable = pincelActual.CloneCurrentValue();
+            texto.Foreground = pincelAnimable;
+
+            pincelAnimable.BeginAnimation(
                 SolidColorBrush.ColorProperty,
-                new ColorAnimation(destino, duracion) { EasingFunction = easing });
+                new ColorAnimation(destino, duracion)
+                {
+                    EasingFunction = easing,
+                    FillBehavior = FillBehavior.HoldEnd
+                });
         }
 
         private static Border? BuscarBarraVisual(DependencyObject origen)
