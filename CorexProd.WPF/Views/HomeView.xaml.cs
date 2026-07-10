@@ -294,7 +294,7 @@ namespace CorexProd.WPF.Views
         {
             OrdenesCompraResumen.Clear();
             OrdenesCompraResumen.Add(new("Generadas", items.Count.ToString("N0", _cultura), "#2563EB"));
-            OrdenesCompraResumen.Add(new("Pendiente / Producción", ContarEstados(items, "PENDIENTE", "EMITIDA", "EMITIDO", "PROCESO", "EN_PROCESO").ToString("N0", _cultura), "#D97706"));
+            OrdenesCompraResumen.Add(new("Pendiente / Producción", ContarEstados(items, "PENDIENTE", "EMITIDA", "EMITIDO", "PROCESO", "EN_PROCESO", "PARCIAL").ToString("N0", _cultura), "#D97706"));
             OrdenesCompraResumen.Add(new("Con OT activa", items.Count(x => x.TieneOrdenTrabajo || !x.PuedeGenerarOt).ToString("N0", _cultura), "#7C3AED"));
             OrdenesCompraResumen.Add(new("Con guía", items.Count(x => x.TieneGuiaSalida).ToString("N0", _cultura), "#0EA5E9"));
             OrdenesCompraResumen.Add(new("Entregadas", ContarEstados(items, "ENTREGADO", "ENTREGADA").ToString("N0", _cultura), "#16A34A"));
