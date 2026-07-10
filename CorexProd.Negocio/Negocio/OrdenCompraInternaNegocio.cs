@@ -1,5 +1,6 @@
 using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,8 +9,19 @@ namespace CorexProd.Negocio.Negocio
     public class OrdenCompraInternaNegocio
     {
         private readonly OrdenCompraInternaDatos _datos = new();
+        private readonly OrdenCompraEntregaDatos _entregaDatos = new();
 
-        public List<OrdenCompraInterna> Listar() => _datos.Listar();
+        public List<OrdenCompraInterna> Listar()
+        {
+            List<OrdenCompraInterna> ordenes = _datos.Listar();
+            Dictionary<int, DateTime> fechasEntrega = _entregaDatos.ListarFechasEntrega();
+            foreach (OrdenCompraInterna orden in ordenes)
+            {
+                if (fechasEntrega.TryGetValue(orden.IdOrdenCompraInterna, out DateTime fechaEntrega))
+                    orden.FechaEntrega = fechaEntrega;
+            }
+            return ordenes;
+        }
 
         public OrdenCompraInterna? Obtener(int idOrdenCompraInterna) =>
             idOrdenCompraInterna > 0 ? _datos.Obtener(idOrdenCompraInterna) : null;
