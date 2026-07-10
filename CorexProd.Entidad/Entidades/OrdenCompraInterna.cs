@@ -9,6 +9,7 @@ namespace CorexProd.Entidad.Entidades
         public int IdOrdenCompraInterna { get; set; }
         public string NumeroOci { get; set; } = string.Empty;
         public DateTime FechaEmision { get; set; }
+        public DateTime FechaEntrega { get; set; }
         public string OrdenCompraCliente { get; set; } = string.Empty;
         public int IdCliente { get; set; }
         public string NombreCliente { get; set; } = string.Empty;
