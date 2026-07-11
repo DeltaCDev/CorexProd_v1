@@ -940,7 +940,20 @@ SELECT
     D.CodigoProducto,
     D.NombreProducto,
     D.Cantidad,
-    CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockActual,
+    CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockFisico,
+    CAST(ISNULL(RO.ReservaOci, 0) AS DECIMAL(18,2)) AS StockReservadoOci,
+    CAST(ISNULL(RT.ReservaTotal, 0) - ISNULL(RO.ReservaOci, 0) AS DECIMAL(18,2)) AS StockReservadoOtros,
+    CAST(
+        CASE
+            WHEN D.Cantidad - D.CantidadDespachada <= 0 THEN 0
+            WHEN D.Cantidad - D.CantidadDespachada <
+                ISNULL(RO.ReservaOci, 0) +
+                CASE WHEN ISNULL(S.StockActual, 0) - ISNULL(RT.ReservaTotal, 0) > 0 THEN ISNULL(S.StockActual, 0) - ISNULL(RT.ReservaTotal, 0) ELSE 0 END
+            THEN D.Cantidad - D.CantidadDespachada
+            ELSE
+                ISNULL(RO.ReservaOci, 0) +
+                CASE WHEN ISNULL(S.StockActual, 0) - ISNULL(RT.ReservaTotal, 0) > 0 THEN ISNULL(S.StockActual, 0) - ISNULL(RT.ReservaTotal, 0) ELSE 0 END
+        END AS DECIMAL(18,2)) AS StockActual,
     D.CantidadDespachada,
     D.PrecioUnitario,
     D.Descuento,
@@ -948,6 +961,22 @@ SELECT
     D.Observacion
 FROM dbo.OrdenCompraInternaDetalle D
 LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+OUTER APPLY
+(
+    SELECT SUM(R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada) AS ReservaOci
+    FROM dbo.StockReserva R
+    WHERE R.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+      AND R.Estado IN ('ACTIVA','PARCIALMENTE_CONSUMIDA')
+      AND R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada > 0
+) RO
+OUTER APPLY
+(
+    SELECT SUM(R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada) AS ReservaTotal
+    FROM dbo.StockReserva R
+    WHERE R.IdProducto = D.IdProducto
+      AND R.Estado IN ('ACTIVA','PARCIALMENTE_CONSUMIDA')
+      AND R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada > 0
+) RT
 WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna
 ORDER BY D.IdOrdenCompraInternaDetalle;";
 
@@ -990,6 +1019,10 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
             nombreProducto = detalleReader["NombreProducto"]?.ToString() ?? string.Empty,
             cantidad = Convert.ToDecimal(detalleReader["Cantidad"]),
             stockActual = Convert.ToDecimal(detalleReader["StockActual"]),
+            stockFisico = LeerDecimal(detalleReader, "StockFisico", Convert.ToDecimal(detalleReader["StockActual"])),
+            stockReservadoOci = LeerDecimal(detalleReader, "StockReservadoOci", 0),
+            stockReservadoOtros = LeerDecimal(detalleReader, "StockReservadoOtros", 0),
+            stockDisponibleReal = Convert.ToDecimal(detalleReader["StockActual"]),
             cantidadDespachada = Convert.ToDecimal(detalleReader["CantidadDespachada"]),
             precioUnitario = Convert.ToDecimal(detalleReader["PrecioUnitario"]),
             descuento = Convert.ToDecimal(detalleReader["Descuento"]),

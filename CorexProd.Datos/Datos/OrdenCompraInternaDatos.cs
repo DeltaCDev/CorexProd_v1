@@ -78,7 +78,61 @@ namespace CorexProd.Datos.Datos
                 }
             }
 
+            dr.Close();
+            AjustarStockDisponibleReservado(conexion, oci);
+
             return oci;
+        }
+
+        private static void AjustarStockDisponibleReservado(SqlConnection conexion, OrdenCompraInterna oci)
+        {
+            if (oci.Detalles.Count == 0)
+                return;
+
+            const string sql = @"
+SELECT
+    D.IdOrdenCompraInternaDetalle,
+    CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockFisico,
+    CAST(ISNULL(RO.ReservaOci, 0) AS DECIMAL(18,2)) AS ReservaOci,
+    CAST(ISNULL(RT.ReservaTotal, 0) AS DECIMAL(18,2)) AS ReservaTotal
+FROM dbo.OrdenCompraInternaDetalle D
+LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+OUTER APPLY
+(
+    SELECT SUM(R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada) AS ReservaOci
+    FROM dbo.StockReserva R
+    WHERE R.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+      AND R.Estado IN ('ACTIVA','PARCIALMENTE_CONSUMIDA')
+      AND R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada > 0
+) RO
+OUTER APPLY
+(
+    SELECT SUM(R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada) AS ReservaTotal
+    FROM dbo.StockReserva R
+    WHERE R.IdProducto = D.IdProducto
+      AND R.Estado IN ('ACTIVA','PARCIALMENTE_CONSUMIDA')
+      AND R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada > 0
+) RT
+WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
+
+            Dictionary<int, OrdenCompraInternaDetalle> porDetalle = oci.Detalles
+                .ToDictionary(detalle => detalle.IdOrdenCompraInternaDetalle);
+
+            using SqlCommand cmd = new(sql, conexion);
+            cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", oci.IdOrdenCompraInterna);
+            using SqlDataReader stockReader = cmd.ExecuteReader();
+            while (stockReader.Read())
+            {
+                int idDetalle = Convert.ToInt32(stockReader["IdOrdenCompraInternaDetalle"]);
+                if (!porDetalle.TryGetValue(idDetalle, out OrdenCompraInternaDetalle? detalle))
+                    continue;
+
+                decimal stockFisico = Convert.ToDecimal(stockReader["StockFisico"]);
+                decimal reservaOci = Convert.ToDecimal(stockReader["ReservaOci"]);
+                decimal reservaTotal = Convert.ToDecimal(stockReader["ReservaTotal"]);
+                decimal stockLibre = Math.Max(0, stockFisico - reservaTotal);
+                detalle.StockActual = Math.Min(detalle.CantidadPendiente, reservaOci + stockLibre);
+            }
         }
 
         public string Generar(int idProforma, string usuarioGenerador)
