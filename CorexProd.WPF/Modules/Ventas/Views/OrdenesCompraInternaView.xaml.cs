@@ -36,7 +36,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 return;
 
             titulo.Text = "Lista de Órdenes de Compra Clientes";
-            titulo.FontSize = 17;
+            titulo.FontSize = 19;
             titulo.FontWeight = FontWeights.SemiBold;
             titulo.Foreground = new SolidColorBrush(Color.FromRgb(15, 23, 42));
             titulo.Margin = new Thickness(0, 2, 0, 0);
