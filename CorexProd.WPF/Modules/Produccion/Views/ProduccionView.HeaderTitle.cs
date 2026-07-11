@@ -26,8 +26,14 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 return;
 
             TextBlock? cabecera = BuscarTextoCabecera(vista);
-            if (cabecera != null)
-                cabecera.Text = "Lista de Órdenes de Trabajo";
+            if (cabecera == null)
+                return;
+
+            cabecera.Text = "Lista de Órdenes de Trabajo";
+            cabecera.FontSize = 19;
+            cabecera.FontWeight = FontWeights.SemiBold;
+            cabecera.Foreground = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            cabecera.Margin = new Thickness(0, 2, 0, 0);
         }
 
         private static TextBlock? BuscarTextoCabecera(DependencyObject origen)
