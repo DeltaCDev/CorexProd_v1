@@ -36,11 +36,13 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 return;
             }
 
-            DateTime fechaEmision = _ot.FechaEmision != default
-                ? _ot.FechaEmision
-                : _ot.FechaRegistro;
+            // FechaRegistro contiene la fecha y hora real en la que se creó la OT.
+            // FechaEmision se conserva solo como respaldo porque normalmente guarda 00:00.
+            DateTime fechaInicio = _ot.FechaRegistro != default
+                ? _ot.FechaRegistro
+                : _ot.FechaEmision;
 
-            if (fechaEmision == default)
+            if (fechaInicio == default)
             {
                 MostrarTiempoNoDisponible();
                 return;
@@ -52,7 +54,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             bool terminada = estado is "TERMINADO" or "TERMINADA" || terminadaParcial;
             bool enProceso = estado is "EN PROCESO" or "PROCESO";
 
-            FechaEmisionProduccionText.Text = $"F. emisión: {fechaEmision:dd/MM/yyyy HH:mm}";
+            FechaEmisionProduccionText.Text = $"F. creación: {fechaInicio:dd/MM/yyyy HH:mm}";
 
             if (anulada)
             {
@@ -62,7 +64,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     ? $"F. término: {fechaAnulacion.Value:dd/MM/yyyy HH:mm}"
                     : "F. término: No registrada";
                 TiempoProduccionText.Text = fechaAnulacion.HasValue
-                    ? FormatearDuracion(fechaEmision, fechaAnulacion.Value)
+                    ? FormatearDuracion(fechaInicio, fechaAnulacion.Value)
                     : "No disponible";
                 AplicarEstiloTiempoProduccion(
                     Color.FromRgb(254, 242, 242),
@@ -79,7 +81,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     ? $"F. término: {fechaTermino.Value:dd/MM/yyyy HH:mm}"
                     : "F. término: No registrada";
                 TiempoProduccionText.Text = fechaTermino.HasValue
-                    ? FormatearDuracion(fechaEmision, fechaTermino.Value)
+                    ? FormatearDuracion(fechaInicio, fechaTermino.Value)
                     : "No disponible";
 
                 if (terminadaParcial)
@@ -104,7 +106,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             {
                 TiempoProduccionTituloText.Text = "Tiempo de producción";
                 FechaTerminoProduccionText.Text = "F. término: En proceso";
-                TiempoProduccionText.Text = FormatearDuracion(fechaEmision, DateTime.Now);
+                TiempoProduccionText.Text = FormatearDuracion(fechaInicio, DateTime.Now);
                 AplicarEstiloTiempoProduccion(
                     Color.FromRgb(239, 246, 255),
                     Color.FromRgb(147, 197, 253),
@@ -150,7 +152,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private void MostrarTiempoNoDisponible()
         {
             TiempoProduccionTituloText.Text = "Tiempo de producción";
-            FechaEmisionProduccionText.Text = "F. emisión: No registrada";
+            FechaEmisionProduccionText.Text = "F. creación: No registrada";
             FechaTerminoProduccionText.Text = "F. término: No registrada";
             TiempoProduccionText.Text = "No disponible";
             AplicarEstiloTiempoProduccion(
