@@ -9,17 +9,14 @@ namespace CorexProd.WPF.Modules.Produccion.Views
     {
         private const double AnchoBotonPrincipalOt = 112d;
 
-        private static readonly object RegistroAnchoBotonesOt = RegistrarAnchoBotonesOt();
-
-        private static object RegistrarAnchoBotonesOt()
+        static ProduccionView()
         {
+            // El constructor estático fuerza el registro antes de crear la vista.
             EventManager.RegisterClassHandler(
                 typeof(Button),
                 FrameworkElement.LoadedEvent,
                 new RoutedEventHandler(BotonAccionOt_Loaded),
                 true);
-
-            return new object();
         }
 
         private static void BotonAccionOt_Loaded(object sender, RoutedEventArgs e)
@@ -28,14 +25,18 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 return;
 
             string tooltip = boton.ToolTip?.ToString() ?? string.Empty;
-            if (!tooltip.Equals(
+            bool esBotonPrincipal =
+                tooltip.Equals(
+                    "Ingresar a las áreas y realizar transferencias",
+                    StringComparison.OrdinalIgnoreCase)
+                || tooltip.Equals(
                     "Consultar las áreas, cantidades y recorrido de la OT",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
+                    StringComparison.OrdinalIgnoreCase);
 
-            // Mantiene alineados los botones principales, sin importar el estado de la OT.
+            if (!esBotonPrincipal)
+                return;
+
+            // Producción y Detalle siempre conservan exactamente el mismo ancho.
             boton.MinWidth = AnchoBotonPrincipalOt;
             boton.Width = AnchoBotonPrincipalOt;
         }
