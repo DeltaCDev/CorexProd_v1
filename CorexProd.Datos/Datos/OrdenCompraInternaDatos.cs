@@ -79,9 +79,21 @@ namespace CorexProd.Datos.Datos
             }
 
             dr.Close();
-            AjustarStockDisponibleReservado(conexion, oci);
+            TryAjustarStockDisponibleReservado(conexion, oci);
 
             return oci;
+        }
+
+        private static void TryAjustarStockDisponibleReservado(SqlConnection conexion, OrdenCompraInterna oci)
+        {
+            try
+            {
+                AjustarStockDisponibleReservado(conexion, oci);
+            }
+            catch (SqlException ex) when (ex.Number == 208 || ex.Number == 2812 || ex.Number == 207)
+            {
+                // Compatibilidad con bases que aun no tienen aplicado el modulo de reservas.
+            }
         }
 
         private static void AjustarStockDisponibleReservado(SqlConnection conexion, OrdenCompraInterna oci)

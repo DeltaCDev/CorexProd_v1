@@ -169,14 +169,21 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private void Ver(object? parametro)
         {
             if (parametro is not OrdenCompraInterna fila) return;
-            OrdenCompraInterna? orden = _negocio.Obtener(fila.IdOrdenCompraInterna);
-            if (orden == null)
+            try
             {
-                NotificationService.Warning("No se encontró la orden seleccionada.");
-                return;
-            }
+                OrdenCompraInterna? orden = _negocio.Obtener(fila.IdOrdenCompraInterna);
+                if (orden == null)
+                {
+                    NotificationService.Warning("No se encontró la orden seleccionada.");
+                    return;
+                }
 
-            new OrdenCompraInternaDetalleWindow(orden) { Owner = Application.Current.MainWindow }.ShowDialog();
+                new OrdenCompraInternaDetalleWindow(orden) { Owner = Application.Current.MainWindow }.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error($"No se pudo abrir el detalle de la OCI: {ex.Message}");
+            }
         }
 
         private void Imprimir(object? parametro)
