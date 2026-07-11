@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -45,10 +46,10 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 DatePicker? fechaDesde = BuscarControlPorEtiquetaOc<DatePicker>(vista, "Fecha desde");
                 DatePicker? fechaHasta = BuscarControlPorEtiquetaOc<DatePicker>(vista, "Fecha hasta");
                 Button? quitarFiltros = BuscarBotonOc(vista, texto =>
-                    texto.Equals("Quitar filtros", StringComparison.OrdinalIgnoreCase));
+                    texto.Contains("Quitar filtros", StringComparison.OrdinalIgnoreCase));
                 Button? nuevo = BuscarBotonOc(vista, texto =>
-                    texto.Equals("Nuevo", StringComparison.OrdinalIgnoreCase)
-                    || texto.Equals("Nueva OC", StringComparison.OrdinalIgnoreCase));
+                    texto.Contains("Nuevo", StringComparison.OrdinalIgnoreCase)
+                    || texto.Contains("Nueva OC", StringComparison.OrdinalIgnoreCase));
 
                 ReducirAnchoOc(buscador, 0.80, 200, 250);
                 ReducirAnchoOc(fechaDesde, 0.80, 108, 155);
@@ -184,6 +185,15 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 return texto.Trim();
             if (boton.Content is TextBlock bloque)
                 return bloque.Text.Trim();
+            if (boton.Content is Panel panel)
+            {
+                return string.Join(
+                    " ",
+                    panel.Children
+                        .OfType<TextBlock>()
+                        .Select(x => x.Text?.Trim())
+                        .Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
             if (boton.Content is DependencyObject contenido)
             {
                 TextBlock? textoInterno = BuscarPrimerControlOc<TextBlock>(contenido);
