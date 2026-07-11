@@ -2,11 +2,11 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CorexProd.App.Pages.StockProductosPage"
-             Title="Stock productos">
+             Title="Disponibilidad productos">
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="10" BackgroundColor="White">
             <SearchBar x:Name="Search"
-                       Placeholder="Codigo, modelo o producto"
+                       Placeholder="Codigo, producto o almacen"
                        SearchButtonPressed="OnSearchPressed"
                        TextChanged="OnSearchTextChanged" />
             <SearchBar x:Name="EtiquetaSearch"
@@ -35,7 +35,7 @@
                             SelectionMode="None">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout Padding="24" Spacing="8">
-                        <Label Text="No hay productos para mostrar."
+                        <Label Text="No hay disponibilidad para mostrar."
                                HorizontalTextAlignment="Center"
                                TextColor="#637083" />
                     </VerticalStackLayout>
@@ -46,13 +46,13 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="10" RowSpacing="4">
                                 <Label Text="{Binding Codigo}"
                                        FontFamily="OpenSansSemibold"
                                        FontSize="15"
                                        TextColor="#10324A" />
                                 <Label Grid.Column="1"
-                                       Text="{Binding StockActual, StringFormat='{0:N3}'}"
+                                       Text="{Binding StockDisponible, StringFormat='{0:N3}'}"
                                        FontFamily="OpenSansSemibold"
                                        FontSize="16"
                                        TextColor="#067647" />
@@ -68,9 +68,30 @@
                                        TextColor="#0F766E" />
                                 <Label Grid.Row="3"
                                        Grid.ColumnSpan="2"
-                                       Text="{Binding Categoria}"
+                                       Text="{Binding NombreAlmacen}"
                                        FontSize="12"
                                        TextColor="#667085" />
+                                <Grid Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,4,0,0">
+                                    <VerticalStackLayout Spacing="0">
+                                        <Label Text="Fisico" FontSize="11" TextColor="#667085" />
+                                        <Label Text="{Binding StockFisico, StringFormat='{0:N3}'}" FontFamily="OpenSansSemibold" TextColor="#344054" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="0">
+                                        <Label Text="Reservado" FontSize="11" TextColor="#667085" />
+                                        <Label Text="{Binding StockReservado, StringFormat='{0:N3}'}" FontFamily="OpenSansSemibold" TextColor="#B54708" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" Spacing="0">
+                                        <Label Text="Disponible" FontSize="11" TextColor="#667085" />
+                                        <Label Text="{Binding StockDisponible, StringFormat='{0:N3}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                                <Button Grid.Row="5"
+                                        Grid.ColumnSpan="2"
+                                        Text="Historial de reservas"
+                                        Margin="0,8,0,0"
+                                        BackgroundColor="#EAF2FF"
+                                        TextColor="#155EEF"
+                                        Clicked="OnHistorialClicked" />
                             </Grid>
                         </Border>
                     </DataTemplate>

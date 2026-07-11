@@ -45,6 +45,53 @@ public sealed record ProductoStock(
     string Categoria,
     decimal StockActual);
 
+public sealed record StockDisponibilidad(
+    int IdProducto,
+    string Codigo,
+    string NombreProducto,
+    string EtiquetaCliente,
+    int IdAlmacen,
+    string NombreAlmacen,
+    decimal StockFisico,
+    decimal StockReservado,
+    decimal StockDisponible)
+{
+    public string Producto => NombreProducto;
+}
+
+public sealed record StockReservaHistorico(
+    long IdStockReservaMovimiento,
+    long IdStockReserva,
+    int IdOrdenCompraInterna,
+    string NumeroOci,
+    string OrdenCompraCliente,
+    string NombreCliente,
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    string CodigoProducto,
+    string NombreProducto,
+    string EtiquetaCliente,
+    int? IdAlmacen,
+    string NombreAlmacen,
+    int? IdOrdenTrabajo,
+    string NumeroOT,
+    int? IdDetalleOT,
+    string TipoOrigen,
+    string EstadoReserva,
+    decimal CantidadReservada,
+    decimal CantidadConsumida,
+    decimal CantidadLiberada,
+    decimal CantidadPendiente,
+    string TipoMovimiento,
+    decimal CantidadMovimiento,
+    string EstadoAnterior,
+    string EstadoNuevo,
+    string DocumentoReferencia,
+    string UsuarioMovimiento,
+    DateTime FechaMovimiento,
+    string ObservacionMovimiento,
+    string ObservacionReserva);
+
 public sealed record InsumoStock(
     int IdInsumo,
     string Codigo,
@@ -316,7 +363,10 @@ public sealed record GuiaInternaDetalleApi(
     decimal StockActual,
     decimal PrecioUnitario,
     decimal CantidadDespachar,
-    string Observacion);
+    string Observacion,
+    decimal StockFisico = 0,
+    decimal StockReservadoOci = 0,
+    decimal StockDisponibleReal = 0);
 
 public sealed record GuiaInternaManualPrepararResponse(
     GuiaInternaManualCabecera Cabecera,
@@ -665,7 +715,11 @@ public sealed record OtValidacionProducto(
     int? IdAreaReserva = null,
     string NombreAreaReserva = "",
     bool PermiteUsarReserva = false,
-    bool PermiteProcesarReservaCompleta = false)
+    bool PermiteProcesarReservaCompleta = false,
+    decimal StockFisico = 0,
+    decimal StockReservadoOci = 0,
+    decimal StockReservadoOtros = 0,
+    decimal StockDisponibleReal = 0)
 {
     public decimal ReservaDisponible => StockReservadoTotal > 0
         ? StockReservadoTotal

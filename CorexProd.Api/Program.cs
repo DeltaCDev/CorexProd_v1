@@ -1,3 +1,5 @@
+using CorexProd.Datos.Datos;
+using CorexProd.Entidad.Entidades;
 using CorexProd.Entidad.Utilidades;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -281,6 +283,123 @@ ORDER BY I.Codigo;";
     }
 
     return Results.Ok(new { total = insumos.Count, items = insumos });
+});
+
+app.MapGet("/api/stock/reservas/disponibilidad", (int? idProducto, int? idAlmacen, string? buscar) =>
+{
+    StockReservaDatos datos = new(connectionString);
+    List<StockDisponibilidad> items = datos.ListarDisponibilidad(idProducto, idAlmacen, buscar ?? string.Empty);
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/stock/reservas", (int? idOrdenCompraInterna, int? idProducto, bool? soloActivas) =>
+{
+    StockReservaDatos datos = new(connectionString);
+    List<StockReserva> items = datos.Listar(idOrdenCompraInterna, idProducto, soloActivas == true);
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/stock/reservas/historico", (
+    int? idProducto,
+    int? idAlmacen,
+    int? idOrdenCompraInterna,
+    int? idOrdenTrabajo,
+    string? tipoMovimiento,
+    string? documentoReferencia,
+    DateTime? desde,
+    DateTime? hasta,
+    string? buscar,
+    int? top) =>
+{
+    StockReservaDatos datos = new(connectionString);
+    List<StockReservaHistorico> items = datos.ListarHistorico(
+        idProducto,
+        idAlmacen,
+        idOrdenCompraInterna,
+        idOrdenTrabajo,
+        tipoMovimiento ?? string.Empty,
+        documentoReferencia ?? string.Empty,
+        desde,
+        hasta,
+        buscar ?? string.Empty,
+        top ?? 300);
+
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/stock/reservas/{id:long}/movimientos", (long id) =>
+{
+    StockReservaDatos datos = new(connectionString);
+    List<StockReservaMovimiento> items = datos.ListarMovimientos(id);
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapPost("/api/stock/reservas", (StockReservaCrearApiRequest request) =>
+{
+    try
+    {
+        StockReservaDatos datos = new(connectionString);
+        long id = datos.Crear(new StockReservaCrearRequest
+        {
+            IdOrdenCompraInterna = request.IdOrdenCompraInterna,
+            IdOrdenCompraInternaDetalle = request.IdOrdenCompraInternaDetalle,
+            IdProducto = request.IdProducto,
+            IdAlmacen = request.IdAlmacen,
+            IdOrdenTrabajo = request.IdOrdenTrabajo,
+            IdDetalleOT = request.IdDetalleOT,
+            Cantidad = request.Cantidad,
+            TipoOrigen = request.TipoOrigen ?? "STOCK_FISICO",
+            Usuario = request.Usuario ?? "API",
+            Observacion = request.Observacion ?? string.Empty
+        });
+
+        return Results.Ok(new { mensaje = "Reserva creada correctamente.", idStockReserva = id });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { mensaje = ex.Message });
+    }
+});
+
+app.MapPost("/api/stock/reservas/consumir", (StockReservaConsumirApiRequest request) =>
+{
+    try
+    {
+        StockReservaDatos datos = new(connectionString);
+        datos.Consumir(
+            request.IdOrdenCompraInterna,
+            request.IdOrdenCompraInternaDetalle,
+            request.Cantidad,
+            request.Usuario ?? "API",
+            request.DocumentoReferencia ?? string.Empty,
+            request.Observacion ?? string.Empty);
+
+        return Results.Ok(new { mensaje = "Reserva consumida correctamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { mensaje = ex.Message });
+    }
+});
+
+app.MapPost("/api/stock/reservas/{id:long}/liberar", (long id, StockReservaLiberarApiRequest request) =>
+{
+    try
+    {
+        StockReservaDatos datos = new(connectionString);
+        datos.Liberar(
+            id,
+            request.Cantidad,
+            request.Usuario ?? "API",
+            request.DocumentoReferencia ?? string.Empty,
+            request.Observacion ?? string.Empty);
+
+        return Results.Ok(new { mensaje = "Reserva liberada correctamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { mensaje = ex.Message });
+    }
 });
 
 app.MapGet("/api/proformas", async (string? buscar) =>
@@ -1505,6 +1624,9 @@ app.MapGet("/api/oci/{id:int}/guia-interna/preparar", async (int id, int? idAlma
                 cantidadEntregada = Convert.ToDecimal(dr["CantidadEntregada"]),
                 cantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
                 stockActual = Convert.ToDecimal(dr["StockActual"]),
+                stockFisico = LeerDecimal(dr, "StockFisico", Convert.ToDecimal(dr["StockActual"])),
+                stockReservadoOci = LeerDecimal(dr, "StockReservadoOci", 0),
+                stockDisponibleReal = LeerDecimal(dr, "StockDisponibleReal", Convert.ToDecimal(dr["StockActual"])),
                 precioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
                 cantidadDespachar = Convert.ToDecimal(dr["CantidadSugerida"]),
                 observacion = dr["Observacion"]?.ToString() ?? string.Empty
@@ -2676,6 +2798,9 @@ static object MapearGuiaInternaDetalle(SqlDataReader dr) => new
     cantidadEntregada = Convert.ToDecimal(dr["CantidadEntregada"]),
     cantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
     stockActual = Convert.ToDecimal(dr["StockActual"]),
+    stockFisico = LeerDecimal(dr, "StockFisico", Convert.ToDecimal(dr["StockActual"])),
+    stockReservadoOci = LeerDecimal(dr, "StockReservadoOci", 0),
+    stockDisponibleReal = LeerDecimal(dr, "StockDisponibleReal", Convert.ToDecimal(dr["StockActual"])),
     precioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
     cantidadDespachar = Convert.ToDecimal(dr["CantidadSugerida"]),
     observacion = dr["Observacion"]?.ToString() ?? string.Empty
@@ -2950,21 +3075,42 @@ static async Task<List<OtValidacionProductoApi>> ValidarOtInsumosAsync(SqlConnec
     await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
     while (await dr.ReadAsync())
     {
+        decimal stockAlmacen = Convert.ToDecimal(dr["StockAlmacen"]);
+        decimal stockFisico = LeerDecimal(dr, "StockFisico", stockAlmacen);
+        decimal stockReservadoOci = LeerDecimal(dr, "StockReservadoOci", 0);
+        decimal stockReservadoOtros = LeerDecimal(dr, "StockReservadoOtros", 0);
+        decimal stockDisponibleReal = LeerDecimal(dr, "StockDisponibleReal", stockAlmacen);
+        decimal cantidadRequerida = Convert.ToDecimal(dr["CantidadRequerida"]);
+        decimal deficit = Convert.ToDecimal(dr["Deficit"]);
+
         productos.Add(new OtValidacionProductoApi(
             Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
             Convert.ToInt32(dr["IdProducto"]),
             LeerString(dr, "CodigoProducto"),
             LeerString(dr, "NombreProducto"),
             LeerString(dr, "Observacion"),
-            Convert.ToDecimal(dr["CantidadRequerida"]),
+            cantidadRequerida,
             dr["IdFichaTecnica"] == DBNull.Value ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
-            Convert.ToDecimal(dr["StockAlmacen"]),
+            stockAlmacen,
             Convert.ToDecimal(dr["StockCorte"]),
             Convert.ToDecimal(dr["StockConfeccion"]),
             Convert.ToDecimal(dr["StockAcabado"]),
             Convert.ToDecimal(dr["StockTotal"]),
-            Convert.ToDecimal(dr["Deficit"]),
-            LeerString(dr, "EstadoInsumos")));
+            deficit,
+            LeerString(dr, "EstadoInsumos"),
+            0,
+            Math.Max(0, cantidadRequerida - stockAlmacen),
+            0,
+            deficit,
+            0,
+            null,
+            string.Empty,
+            false,
+            false,
+            stockFisico,
+            stockReservadoOci,
+            stockReservadoOtros,
+            stockDisponibleReal));
     }
 
     return productos;
@@ -3651,6 +3797,32 @@ internal sealed record IngresoManualDetalleApiRequest(
     int IdProducto,
     decimal Cantidad);
 
+internal sealed record StockReservaCrearApiRequest(
+    int IdOrdenCompraInterna,
+    int IdOrdenCompraInternaDetalle,
+    int IdProducto,
+    int? IdAlmacen,
+    int? IdOrdenTrabajo,
+    int? IdDetalleOT,
+    decimal Cantidad,
+    string? TipoOrigen,
+    string? Usuario,
+    string? Observacion);
+
+internal sealed record StockReservaConsumirApiRequest(
+    int IdOrdenCompraInterna,
+    int IdOrdenCompraInternaDetalle,
+    decimal Cantidad,
+    string? Usuario,
+    string? DocumentoReferencia,
+    string? Observacion);
+
+internal sealed record StockReservaLiberarApiRequest(
+    decimal? Cantidad,
+    string? Usuario,
+    string? DocumentoReferencia,
+    string? Observacion);
+
 internal sealed record ProformaGuardarApiRequest(
     int IdCliente,
     DateTime FechaVencimiento,
@@ -3738,7 +3910,11 @@ internal sealed record OtValidacionProductoApi(
     int? IdAreaReserva = null,
     string NombreAreaReserva = "",
     bool PermiteUsarReserva = false,
-    bool PermiteProcesarReservaCompleta = false);
+    bool PermiteProcesarReservaCompleta = false,
+    decimal StockFisico = 0,
+    decimal StockReservadoOci = 0,
+    decimal StockReservadoOtros = 0,
+    decimal StockDisponibleReal = 0);
 
 internal sealed record OtValidacionInsumoApi(
     int IdInsumo,

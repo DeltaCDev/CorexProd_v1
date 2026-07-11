@@ -75,6 +75,33 @@ public sealed class CorexProdApiClient
         return await GetAsync<ApiListResponse<ProductoStock>>($"api/stock/productos{query}", cancellationToken);
     }
 
+    public async Task<ApiListResponse<StockDisponibilidad>> GetStockDisponibilidadAsync(string buscar = "", CancellationToken cancellationToken = default)
+    {
+        string query = string.IsNullOrWhiteSpace(buscar) ? string.Empty : $"?buscar={Uri.EscapeDataString(buscar.Trim())}";
+        return await GetAsync<ApiListResponse<StockDisponibilidad>>($"api/stock/reservas/disponibilidad{query}", cancellationToken);
+    }
+
+    public async Task<ApiListResponse<StockReservaHistorico>> GetStockReservaHistoricoAsync(
+        int? idProducto = null,
+        int? idAlmacen = null,
+        string buscar = "",
+        int top = 100,
+        CancellationToken cancellationToken = default)
+    {
+        List<string> parametros = [];
+        if (idProducto.HasValue && idProducto.Value > 0)
+            parametros.Add($"idProducto={idProducto.Value}");
+        if (idAlmacen.HasValue && idAlmacen.Value > 0)
+            parametros.Add($"idAlmacen={idAlmacen.Value}");
+        if (!string.IsNullOrWhiteSpace(buscar))
+            parametros.Add($"buscar={Uri.EscapeDataString(buscar.Trim())}");
+        if (top > 0)
+            parametros.Add($"top={top}");
+
+        string query = parametros.Count == 0 ? string.Empty : $"?{string.Join("&", parametros)}";
+        return await GetAsync<ApiListResponse<StockReservaHistorico>>($"api/stock/reservas/historico{query}", cancellationToken);
+    }
+
     public async Task<ApiListResponse<InsumoStock>> GetInsumosAsync(string buscar, CancellationToken cancellationToken = default)
     {
         string query = string.IsNullOrWhiteSpace(buscar) ? string.Empty : $"?buscar={Uri.EscapeDataString(buscar.Trim())}";

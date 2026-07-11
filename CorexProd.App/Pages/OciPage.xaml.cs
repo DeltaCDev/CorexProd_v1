@@ -564,6 +564,13 @@ public partial class OciPage : ContentPage
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
         stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N2} | Produccion nueva: {producto.ProduccionNuevaSugerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
         stack.Add(CrearOtResumenLabel(producto, estadoColor));
+        stack.Add(new Label
+        {
+            Text = $"Fisico: {producto.StockFisico:N2} | Reservado OC: {producto.StockReservadoOci:N2} | Reservado otros: {producto.StockReservadoOtros:N2} | Disponible real: {producto.StockDisponibleReal:N2}",
+            FontSize = 12,
+            TextColor = Color.FromArgb("#475467"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
 
         if (producto.TieneReservaDisponible)
         {

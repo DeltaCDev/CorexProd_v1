@@ -114,6 +114,9 @@ namespace CorexProd.Datos.Datos
                         CantidadEntregada = Convert.ToDecimal(dr["CantidadEntregada"]),
                         CantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
                         StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        StockFisico = LeerDecimal(dr, "StockFisico", Convert.ToDecimal(dr["StockActual"])),
+                        StockReservadoOci = LeerDecimal(dr, "StockReservadoOci"),
+                        StockDisponibleReal = LeerDecimal(dr, "StockDisponibleReal", Convert.ToDecimal(dr["StockActual"])),
                         PrecioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
                         CantidadDespachar = Convert.ToDecimal(dr["CantidadSugerida"]),
                         Observacion = dr["Observacion"]?.ToString() ?? string.Empty
@@ -243,6 +246,9 @@ namespace CorexProd.Datos.Datos
             IdUnidadMedida=Convert.ToInt32(dr["IdUnidadMedida"]), NombreUnidad=dr["NombreUnidad"]?.ToString() ?? string.Empty,
             CantidadRequerida=Convert.ToDecimal(dr["CantidadRequerida"]), CantidadEntregada=Convert.ToDecimal(dr["CantidadEntregada"]),
             CantidadPendiente=Convert.ToDecimal(dr["CantidadPendiente"]), StockActual=Convert.ToDecimal(dr["StockActual"]),
+            StockFisico=LeerDecimal(dr, "StockFisico", Convert.ToDecimal(dr["StockActual"])),
+            StockReservadoOci=LeerDecimal(dr, "StockReservadoOci"),
+            StockDisponibleReal=LeerDecimal(dr, "StockDisponibleReal", Convert.ToDecimal(dr["StockActual"])),
             PrecioUnitario=Convert.ToDecimal(dr["PrecioUnitario"]), CantidadDespachar=Convert.ToDecimal(dr["CantidadSugerida"]),
             Observacion=dr["Observacion"]?.ToString() ?? string.Empty
         };
@@ -257,6 +263,19 @@ namespace CorexProd.Datos.Datos
             catch (IndexOutOfRangeException)
             {
                 return string.Empty;
+            }
+        }
+
+        private static decimal LeerDecimal(SqlDataReader dr, string columna, decimal valorPredeterminado = 0)
+        {
+            try
+            {
+                int ordinal = dr.GetOrdinal(columna);
+                return dr.IsDBNull(ordinal) ? valorPredeterminado : Convert.ToDecimal(dr.GetValue(ordinal));
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return valorPredeterminado;
             }
         }
     }

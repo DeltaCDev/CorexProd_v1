@@ -20,6 +20,19 @@ public static class DemoData
         new(3, "SGS006M", "SGS006", "POLO SEGURIDAD SGS - TALLA M", "SGS DEL PERU S.A.C.", "Prendas", 35)
     ];
 
+    public static IReadOnlyList<StockDisponibilidad> StockDisponibilidadProductos { get; } =
+    [
+        new(1, "MT009M", "CONJUNTO MARCOBRE (CAMISA+PANT) - DRILL NARANJA TALLA M", "MARCOBRE", 1, "Almacen Principal", 18, 8, 10),
+        new(2, "MT009L", "CONJUNTO MARCOBRE (CAMISA+PANT) - DRILL NARANJA TALLA L", "MARCOBRE", 1, "Almacen Principal", 12, 12, 0),
+        new(3, "SGS006M", "POLO SEGURIDAD SGS - TALLA M", "SGS DEL PERU S.A.C.", 1, "Almacen Principal", 35, 5, 30)
+    ];
+
+    public static IReadOnlyList<StockReservaHistorico> StockReservaHistorico { get; } =
+    [
+        new(1, 1, 1, "OC-DEMO-001", "OC-CLI-1001", "SGS DEL PERU S.A.C.", 1, 1, "MT009M", "CONJUNTO MARCOBRE TALLA M", "MARCOBRE", 1, "Almacen Principal", 1, "OT-DEMO-001", 1, "STOCK_FISICO", "ACTIVA", 8, 0, 0, 8, "CREADA", 8, "", "ACTIVA", "OC-DEMO-001", "Demo", DateTime.Now.AddHours(-5), "Reserva demo por OC.", ""),
+        new(2, 2, 2, "OC-DEMO-002", "OC-CLI-1002", "MARCOBRE S.A.C.", 2, 2, "MT009L", "CONJUNTO MARCOBRE TALLA L", "MARCOBRE", 1, "Almacen Principal", 2, "OT-DEMO-002", 2, "PRODUCCION_OT", "ACTIVA", 12, 0, 0, 12, "CREADA", 12, "", "ACTIVA", "OT-DEMO-002", "Demo", DateTime.Now.AddHours(-2), "Produccion comprometida demo.", "")
+    ];
+
     public static IReadOnlyList<InsumoStock> Insumos { get; } =
     [
         new(1, "TEL-DRILL-NAR", "Tela drill naranja", "Tela", "m", 240),
@@ -94,8 +107,8 @@ public static class DemoData
         GuiaInternaResumen guia = GuiasInternas.FirstOrDefault(x => x.IdGuiaInterna == id) ?? GuiasInternas[0];
         List<GuiaInternaDetalleApi> detalles =
         [
-            new(1, 1, "MT009M", "CONJUNTO MARCOBRE TALLA M", 1, "UND", 25, 0, 25, 18, 0, 10, "Demo"),
-            new(2, 2, "SGS006M", "POLO SEGURIDAD SGS TALLA M", 1, "UND", 35, 0, 35, 35, 0, 8, "Demo")
+            new(1, 1, "MT009M", "CONJUNTO MARCOBRE TALLA M", 1, "UND", 25, 0, 25, 18, 0, 10, "Demo", 18, 8, 10),
+            new(2, 2, "SGS006M", "POLO SEGURIDAD SGS TALLA M", 1, "UND", 35, 0, 35, 35, 0, 8, "Demo", 35, 5, 30)
         ];
 
         return new(guia, detalles);

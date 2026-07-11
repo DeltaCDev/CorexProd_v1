@@ -59,6 +59,9 @@ namespace CorexProd.Entidad.Entidades
         public decimal CantidadEntregada { get; set; }
         public decimal CantidadPendiente { get; set; }
         public decimal StockActual { get; set; }
+        public decimal StockFisico { get; set; }
+        public decimal StockReservadoOci { get; set; }
+        public decimal StockDisponibleReal { get; set; }
         public decimal CantidadMaxima => Math.Max(0, Math.Min(CantidadPendiente, StockActual));
         public decimal PrecioUnitario { get; set; }
         public decimal CantidadDespachar

@@ -30,11 +30,25 @@
                 <DataTemplate>
                     <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
                         <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4" ColumnSpacing="10">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4" ColumnSpacing="10">
                             <Label Text="{Binding CodigoProducto}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
                             <Label Grid.Column="1" Text="{Binding CantidadDespachar, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
                             <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreProducto}" TextColor="#344054" LineBreakMode="WordWrap" />
                             <Label Grid.Row="2" Text="{Binding NombreUnidad}" FontSize="12" TextColor="#667085" />
+                            <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,4,0,0">
+                                <VerticalStackLayout Spacing="0">
+                                    <Label Text="Fisico" FontSize="11" TextColor="#667085" />
+                                    <Label Text="{Binding StockFisico, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#344054" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="0">
+                                    <Label Text="Reserva OC" FontSize="11" TextColor="#667085" />
+                                    <Label Text="{Binding StockReservadoOci, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#B54708" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2" Spacing="0">
+                                    <Label Text="Disp. real" FontSize="11" TextColor="#667085" />
+                                    <Label Text="{Binding StockDisponibleReal, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                </VerticalStackLayout>
+                            </Grid>
                         </Grid>
                     </Border>
                 </DataTemplate>

@@ -25,6 +25,7 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -49,7 +50,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,20,16">
-                    <TextBlock Text="Consulta de codigo, producto, etiqueta y cantidad disponible."
+                    <TextBlock Text="Consulta de codigo, producto, etiqueta, stock fisico, reservado y disponible real."
                                Foreground="#6B7280"
                                Margin="0,4,0,0"/>
                 </StackPanel>
@@ -83,7 +84,7 @@
                         Padding="14,8"
                         Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="Cantidad total"
+                        <TextBlock Text="Disponible total"
                                    Foreground="#047857"
                                    FontSize="12"/>
                         <TextBlock Text="{Binding CantidadTotal, StringFormat=N2}"
@@ -155,6 +156,7 @@
                 BorderThickness="1">
 
             <DataGrid ItemsSource="{Binding StockProductos}"
+                      SelectedItem="{Binding StockProductoSeleccionado, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       IsReadOnly="True"
@@ -175,11 +177,80 @@
                     <DataGridTextColumn Header="CATEGORIA"
                                         Binding="{Binding NombreCategoria}"
                                         Width="160"/>
-                    <DataGridTextColumn Header="CANTIDAD"
-                                        Binding="{Binding Cantidad, StringFormat=N2}"
+                    <DataGridTextColumn Header="ALMACEN"
+                                        Binding="{Binding NombreAlmacen}"
+                                        Width="150"/>
+                    <DataGridTextColumn Header="FISICO"
+                                        Binding="{Binding StockFisico, StringFormat=N2}"
+                                        Width="105"/>
+                    <DataGridTextColumn Header="RESERVADO"
+                                        Binding="{Binding StockReservado, StringFormat=N2}"
+                                        Width="110"/>
+                    <DataGridTextColumn Header="DISPONIBLE"
+                                        Binding="{Binding StockDisponible, StringFormat=N2}"
                                         Width="120"/>
                 </DataGrid.Columns>
             </DataGrid>
+        </Border>
+
+        <Border Grid.Row="2"
+                Background="White"
+                CornerRadius="8"
+                BorderBrush="#E5E7EB"
+                BorderThickness="1"
+                Margin="0,12,0,0"
+                Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="Historial de reservas"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="#111827"
+                               DockPanel.Dock="Left"/>
+                    <TextBlock Text="{Binding ResumenHistorial}"
+                               Foreground="#6B7280"
+                               HorizontalAlignment="Right"/>
+                </DockPanel>
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding HistorialReservas}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          RowHeight="36"
+                          GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="FECHA"
+                                            Binding="{Binding FechaMovimiento, StringFormat=dd/MM/yyyy HH:mm}"
+                                            Width="125"/>
+                        <DataGridTextColumn Header="MOVIMIENTO"
+                                            Binding="{Binding TipoMovimiento}"
+                                            Width="110"/>
+                        <DataGridTextColumn Header="CANTIDAD"
+                                            Binding="{Binding CantidadMovimiento, StringFormat=N2}"
+                                            Width="95"/>
+                        <DataGridTextColumn Header="OCI"
+                                            Binding="{Binding NumeroOci}"
+                                            Width="105"/>
+                        <DataGridTextColumn Header="OT"
+                                            Binding="{Binding NumeroOT}"
+                                            Width="105"/>
+                        <DataGridTextColumn Header="DOCUMENTO"
+                                            Binding="{Binding DocumentoReferencia}"
+                                            Width="120"/>
+                        <DataGridTextColumn Header="USUARIO"
+                                            Binding="{Binding UsuarioMovimiento}"
+                                            Width="120"/>
+                        <DataGridTextColumn Header="OBSERVACION"
+                                            Binding="{Binding ObservacionMovimiento}"
+                                            Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

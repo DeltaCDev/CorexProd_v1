@@ -6,6 +6,8 @@ using CorexProd.App.Services;
 using AColor = Android.Graphics.Color;
 using ACanvas = Android.Graphics.Canvas;
 using APaint = Android.Graphics.Paint;
+using MColor = Microsoft.Maui.Graphics.Color;
+using MRoundRectangle = Microsoft.Maui.Controls.Shapes.RoundRectangle;
 
 namespace CorexProd.App.Pages;
 
@@ -13,7 +15,7 @@ public partial class StockProductosPage : ContentPage
 {
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
-    private readonly ObservableCollection<ProductoStock> _productos = [];
+    private readonly ObservableCollection<StockDisponibilidad> _productos = [];
     private CancellationTokenSource? _searchDelay;
 
     public StockProductosPage()
@@ -80,6 +82,28 @@ public partial class StockProductosPage : ContentPage
         }
     }
 
+    private async void OnHistorialClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not StockDisponibilidad item)
+            return;
+
+        try
+        {
+            IReadOnlyList<StockReservaHistorico> historico = _session.EsDemo
+                ? DemoData.StockReservaHistorico
+                    .Where(x => x.IdProducto == item.IdProducto && (!x.IdAlmacen.HasValue || x.IdAlmacen == item.IdAlmacen))
+                    .OrderByDescending(x => x.FechaMovimiento)
+                    .ToList()
+                : (await _apiClient.GetStockReservaHistoricoAsync(item.IdProducto, item.IdAlmacen, top: 100)).Items;
+
+            await Navigation.PushModalAsync(CrearHistorialPage(item, historico));
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Historial de reservas", ex.Message, "OK");
+        }
+    }
+
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
     {
         _searchDelay?.Cancel();
@@ -100,12 +124,12 @@ public partial class StockProductosPage : ContentPage
         try
         {
             Refresh.IsRefreshing = true;
-            IReadOnlyList<ProductoStock> items = _session.EsDemo
-                ? DemoData.Productos
-                : (await _apiClient.GetProductosAsync(Search.Text ?? string.Empty)).Items;
-            List<ProductoStock> productosFiltrados = FiltrarPorEtiquetaOCliente(FiltrarGeneral(items, Search.Text), EtiquetaSearch.Text).ToList();
+            IReadOnlyList<StockDisponibilidad> items = _session.EsDemo
+                ? DemoData.StockDisponibilidadProductos
+                : (await _apiClient.GetStockDisponibilidadAsync(Search.Text ?? string.Empty)).Items;
+            List<StockDisponibilidad> productosFiltrados = FiltrarPorEtiquetaOCliente(FiltrarGeneral(items, Search.Text), EtiquetaSearch.Text).ToList();
             _productos.Clear();
-            foreach (ProductoStock item in productosFiltrados
+            foreach (StockDisponibilidad item in productosFiltrados
                          .OrderBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Cliente)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NumeroNuloOrden)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).Numero)
@@ -113,12 +137,13 @@ public partial class StockProductosPage : ContentPage
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).OrdenTalla)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).TallaNumero)
                          .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).CodigoOrden)
-                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NombreProducto))
+                         .ThenBy(x => ProductoOrdenHelper.CrearClave(x.Codigo, x.Producto).NombreProducto)
+                         .ThenBy(x => x.NombreAlmacen))
             {
                 _productos.Add(item);
             }
 
-            CountLabel.Text = $"{_productos.Count} producto(s)";
+            CountLabel.Text = $"{_productos.Count} registro(s)";
         }
         catch (Exception ex)
         {
@@ -133,7 +158,7 @@ public partial class StockProductosPage : ContentPage
     private string CrearTextoExportacion()
     {
         StringBuilder sb = new();
-        foreach (ProductoStock producto in _productos)
+        foreach (StockDisponibilidad producto in _productos)
         {
             sb.Append(producto.EtiquetaCliente);
             sb.Append(" | ");
@@ -141,7 +166,13 @@ public partial class StockProductosPage : ContentPage
             sb.Append(" | ");
             sb.Append(producto.Producto);
             sb.Append(" | ");
-            sb.Append(producto.StockActual.ToString("N3"));
+            sb.Append(producto.NombreAlmacen);
+            sb.Append(" | Fisico: ");
+            sb.Append(producto.StockFisico.ToString("N3"));
+            sb.Append(" | Reservado: ");
+            sb.Append(producto.StockReservado.ToString("N3"));
+            sb.Append(" | Disponible: ");
+            sb.Append(producto.StockDisponible.ToString("N3"));
             sb.AppendLine();
         }
 
@@ -173,8 +204,8 @@ public partial class StockProductosPage : ContentPage
         int cantidadW = 150;
         int productoW = width - (margin * 2) - etiquetaW - codigoW - cantidadW - (gap * 3);
 
-        List<(ProductoStock Producto, int Alto, List<string> NombreLineas, List<string> EtiquetaLineas)> filas = [];
-        foreach (ProductoStock producto in _productos)
+        List<(StockDisponibilidad Producto, int Alto, List<string> NombreLineas, List<string> EtiquetaLineas)> filas = [];
+        foreach (StockDisponibilidad producto in _productos)
         {
             List<string> nombreLineas = DividirLineas(producto.Producto, textPaint, productoW);
             List<string> etiquetaLineas = DividirLineas(producto.EtiquetaCliente, textPaint, etiquetaW);
@@ -189,7 +220,7 @@ public partial class StockProductosPage : ContentPage
         canvas.DrawColor(AColor.White);
 
         float y = margin;
-        canvas.DrawText("Stock productos filtrado", margin, y + 38, titlePaint);
+        canvas.DrawText("Disponibilidad productos", margin, y + 38, titlePaint);
         string filtros = $"Codigo/producto: {TextoFiltro(Search.Text)}   Etiqueta: {TextoFiltro(EtiquetaSearch.Text)}";
         canvas.DrawText(filtros, margin, y + 76, subtitlePaint);
         canvas.DrawText($"{_productos.Count} producto(s) | {DateTime.Now:dd/MM/yyyy HH:mm}", margin, y + 110, subtitlePaint);
@@ -203,7 +234,7 @@ public partial class StockProductosPage : ContentPage
         canvas.DrawText("ETIQUETA", xEtiqueta, y + 38, headerPaint);
         canvas.DrawText("CODIGO", xCodigo, y + 38, headerPaint);
         canvas.DrawText("PRODUCTO", xProducto, y + 38, headerPaint);
-        canvas.DrawText("CANT.", xCantidad, y + 38, headerPaint);
+        canvas.DrawText("DISP.", xCantidad, y + 38, headerPaint);
         y += headerHeight;
 
         for (int i = 0; i < filas.Count; i++)
@@ -218,7 +249,7 @@ public partial class StockProductosPage : ContentPage
             DibujarLineas(canvas, fila.EtiquetaLineas, xEtiqueta, textY, textPaint);
             canvas.DrawText(fila.Producto.Codigo, xCodigo, textY, strongPaint);
             DibujarLineas(canvas, fila.NombreLineas, xProducto, textY, textPaint);
-            canvas.DrawText(fila.Producto.StockActual.ToString("N3"), xCantidad, textY, qtyPaint);
+            canvas.DrawText(fila.Producto.StockDisponible.ToString("N3"), xCantidad, textY, qtyPaint);
             canvas.DrawLine(margin, y + fila.Alto, width - margin, y + fila.Alto, linePaint);
             y += fila.Alto;
         }
@@ -243,7 +274,7 @@ public partial class StockProductosPage : ContentPage
 
     private static string TextoFiltro(string? value) => string.IsNullOrWhiteSpace(value) ? "Todos" : value.Trim();
 
-    private static IEnumerable<ProductoStock> FiltrarPorEtiquetaOCliente(IEnumerable<ProductoStock> productos, string? filtro)
+    private static IEnumerable<StockDisponibilidad> FiltrarPorEtiquetaOCliente(IEnumerable<StockDisponibilidad> productos, string? filtro)
     {
         string texto = filtro?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(texto))
@@ -262,14 +293,92 @@ public partial class StockProductosPage : ContentPage
     private static bool Contiene(string? valor, string filtro)
         => (valor ?? string.Empty).Contains(filtro, StringComparison.OrdinalIgnoreCase);
 
-    private static IEnumerable<ProductoStock> FiltrarGeneral(IEnumerable<ProductoStock> productos, string? filtro)
+    private static IEnumerable<StockDisponibilidad> FiltrarGeneral(IEnumerable<StockDisponibilidad> productos, string? filtro)
     {
         string texto = filtro?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(texto))
             return productos;
 
-        return productos.Where(x => Contiene(x.Codigo, texto) || Contiene(x.Producto, texto) || Contiene(x.EtiquetaCliente, texto));
+        return productos.Where(x =>
+            Contiene(x.Codigo, texto)
+            || Contiene(x.Producto, texto)
+            || Contiene(x.EtiquetaCliente, texto)
+            || Contiene(x.NombreAlmacen, texto));
     }
+
+    private static ContentPage CrearHistorialPage(StockDisponibilidad producto, IReadOnlyList<StockReservaHistorico> items)
+    {
+        VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
+        contenido.Add(new Label { Text = "Historial de reservas", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = MColor.FromArgb("#101828") });
+        contenido.Add(new Label
+        {
+            Text = $"{producto.Codigo} | {producto.Producto}",
+            TextColor = MColor.FromArgb("#344054"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+        contenido.Add(new Label { Text = producto.NombreAlmacen, FontSize = 12, TextColor = MColor.FromArgb("#667085") });
+
+        if (items.Count == 0)
+        {
+            contenido.Add(new Label { Text = "No hay movimientos de reserva para este producto.", Padding = 12, TextColor = MColor.FromArgb("#667085") });
+        }
+        else
+        {
+            foreach (StockReservaHistorico item in items.OrderByDescending(x => x.FechaMovimiento))
+                contenido.Add(CrearHistoricoCard(item));
+        }
+
+        Button cerrar = new() { Text = "Cerrar", BackgroundColor = MColor.FromArgb("#3F1D95"), TextColor = Colors.White };
+        ContentPage page = new()
+        {
+            Title = "Historial",
+            BackgroundColor = MColor.FromArgb("#F4F6F8"),
+            Content = new ScrollView { Content = contenido }
+        };
+        cerrar.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+        contenido.Add(cerrar);
+        return page;
+    }
+
+    private static Border CrearHistoricoCard(StockReservaHistorico item)
+    {
+        VerticalStackLayout stack = new() { Spacing = 5 };
+        stack.Add(new Label
+        {
+            Text = $"{item.TipoMovimiento} | {item.CantidadMovimiento:N2}",
+            FontFamily = "OpenSansSemibold",
+            TextColor = MColor.FromArgb("#10324A")
+        });
+        stack.Add(new Label { Text = $"{item.FechaMovimiento:dd/MM/yyyy HH:mm} | {item.UsuarioMovimiento}", FontSize = 12, TextColor = MColor.FromArgb("#667085") });
+        stack.Add(new Label
+        {
+            Text = $"OC: {TextoHistorial(item.NumeroOci)} | OT: {TextoHistorial(item.NumeroOT)} | Doc.: {TextoHistorial(item.DocumentoReferencia)}",
+            FontSize = 12,
+            TextColor = MColor.FromArgb("#475467"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+        stack.Add(new Label
+        {
+            Text = $"Reserva: {item.CantidadReservada:N2} | Consumida: {item.CantidadConsumida:N2} | Liberada: {item.CantidadLiberada:N2} | Pendiente: {item.CantidadPendiente:N2}",
+            FontSize = 12,
+            TextColor = MColor.FromArgb("#475467"),
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+
+        if (!string.IsNullOrWhiteSpace(item.ObservacionMovimiento))
+            stack.Add(new Label { Text = item.ObservacionMovimiento, FontSize = 12, TextColor = MColor.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
+
+        return new Border
+        {
+            Padding = 12,
+            BackgroundColor = Colors.White,
+            Stroke = MColor.FromArgb("#D9E0E6"),
+            StrokeShape = new MRoundRectangle { CornerRadius = 8 },
+            Content = stack
+        };
+    }
+
+    private static string TextoHistorial(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
 
     private static List<string> DividirLineas(string? text, APaint paint, int maxWidth)
     {
