@@ -1,14 +1,17 @@
 using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Produccion.Views;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace CorexProd.WPF.Modules.Ventas.Views
 {
@@ -16,6 +19,8 @@ namespace CorexProd.WPF.Modules.Ventas.Views
     {
         private readonly OrdenCompraInterna _orden;
         private readonly EmpresaNegocio _empresaNegocio = new();
+        private readonly OrdenTrabajoNegocio _ordenTrabajoNegocio = new();
+        private readonly DispatcherTimer _tiempoTimer = new() { Interval = TimeSpan.FromMinutes(1) };
 
         public OrdenCompraInternaDetalleWindow(OrdenCompraInterna orden)
         {
@@ -25,90 +30,169 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             Title = "Detalle Orden de Compra";
             DataContext = orden;
             Loaded += OrdenCompraInternaDetalleWindow_Loaded;
+            Closed += (_, _) => _tiempoTimer.Stop();
+            _tiempoTimer.Tick += (_, _) => ActualizarIndicadoresTiempo();
         }
 
         private void OrdenCompraInternaDetalleWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= OrdenCompraInternaDetalleWindow_Loaded;
-            ConfigurarCabecera();
             ConfigurarCodigosProducto(this);
+            CargarOrdenesTrabajoAsociadas();
+            ActualizarIndicadoresTiempo();
+            _tiempoTimer.Start();
         }
 
-        private void ConfigurarCabecera()
+        private void CargarOrdenesTrabajoAsociadas()
         {
-            TextBlock? titulo = BuscarDescendiente<TextBlock>(
-                this,
-                texto => string.Equals(texto.Text, "Detalle de OCI", StringComparison.Ordinal));
-
-            if (titulo != null)
-                titulo.Text = "Detalle Orden de Compra";
-
-            AgregarUsuarioCabecera();
-        }
-
-        private void AgregarUsuarioCabecera()
-        {
-            TextBlock? etiquetaOcInterna = BuscarDescendiente<TextBlock>(
-                this,
-                texto => string.Equals(texto.Text, "OC Interna", StringComparison.Ordinal));
-
-            if (etiquetaOcInterna?.Parent is not StackPanel panelOcInterna
-                || panelOcInterna.Parent is not Grid gridDatos)
+            try
             {
+                List<OtAsociadaItem> items = _ordenTrabajoNegocio
+                    .Listar()
+                    .Where(x => x.IdOrdenCompraInterna == _orden.IdOrdenCompraInterna)
+                    .OrderByDescending(x => x.FechaEmision)
+                    .Select(CrearOtAsociadaItem)
+                    .ToList();
+
+                OrdenesTrabajoItems.ItemsSource = items;
+                decimal unidadesActivas = items
+                    .Where(x => x.Estado is "Pendiente" or "En Proceso" or "Terminado Parcial")
+                    .Sum(x => x.Unidades);
+
+                ResumenOtText.Text = items.Count == 0
+                    ? "Sin OT relacionadas"
+                    : $"{items.Count} OT relacionadas · {FormatearCantidad(unidadesActivas)} unidades actualmente en elaboración";
+            }
+            catch (Exception ex)
+            {
+                OrdenesTrabajoItems.ItemsSource = Array.Empty<OtAsociadaItem>();
+                ResumenOtText.Text = "No se pudieron cargar las OT relacionadas";
+                NotificationService.Warning($"No se pudieron cargar las OT asociadas: {ex.Message}");
+            }
+        }
+
+        private static OtAsociadaItem CrearOtAsociadaItem(OrdenTrabajo ot)
+        {
+            OrdenTrabajoDetalleArea? areaActual = ot.Areas
+                .Where(x => x.CantidadPendiente > 0 && x.Estado is not ("FINALIZADA" or "ANULADA"))
+                .OrderBy(x => x.OrdenSecuencia)
+                .FirstOrDefault();
+
+            string estado = ot.EstadoOperativo;
+            string areaTexto = estado switch
+            {
+                "Pendiente" => areaActual == null ? "Pendiente de iniciar" : $"Próxima área: {areaActual.NombreArea}",
+                "En Proceso" => areaActual == null ? "Producción en proceso" : $"Área actual: {areaActual.NombreArea}",
+                "Terminado Parcial" => areaActual == null ? "Producción parcial" : $"Área actual: {areaActual.NombreArea}",
+                "Terminado" => "Producción terminada",
+                "Anulado" => "Orden anulada",
+                _ => areaActual?.NombreArea ?? "Sin área registrada"
+            };
+
+            (string fondo, string color) = estado switch
+            {
+                "Pendiente" => ("#FFF1D6", "#C45A08"),
+                "En Proceso" => ("#DBEAFE", "#1D4ED8"),
+                "Terminado Parcial" => ("#FFEDD5", "#C2410C"),
+                "Terminado" => ("#DCFCE7", "#166534"),
+                "Anulado" => ("#FEE2E2", "#B91C1C"),
+                _ => ("#F1F5F9", "#475569")
+            };
+
+            decimal unidades = estado is "Pendiente" or "En Proceso"
+                ? Math.Max(ot.TotalPendiente, ot.TotalPlanificado)
+                : Math.Max(ot.TotalPendiente, ot.TotalProducido);
+
+            return new OtAsociadaItem
+            {
+                IdOrdenTrabajo = ot.IdOrdenTrabajo,
+                NumeroOT = ot.NumeroOT,
+                Estado = estado,
+                EstadoFondo = fondo,
+                EstadoColor = color,
+                Unidades = unidades,
+                UnidadesTexto = $"{FormatearCantidad(unidades)} Und",
+                AreaTexto = areaTexto
+            };
+        }
+
+        private void AbrirOrdenTrabajo_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button boton || !int.TryParse(boton.Tag?.ToString(), out int idOrdenTrabajo) || idOrdenTrabajo <= 0)
+                return;
+
+            OrdenTrabajoDetalleWindow ventana = new(idOrdenTrabajo) { Owner = this };
+            ventana.ShowDialog();
+            CargarOrdenesTrabajoAsociadas();
+        }
+
+        private void ActualizarIndicadoresTiempo()
+        {
+            DateTime inicio = _orden.FechaRegistro != default ? _orden.FechaRegistro : _orden.FechaEmision;
+            DateTime ahora = DateTime.Now;
+            string estado = (_orden.Estado ?? string.Empty).Trim().ToUpperInvariant();
+            bool cerrada = estado is "ENTREGADO" or "DESPACHADO" or "ANULADO" or "ANULADA";
+            DateTime fin = cerrada && _orden.FechaAnulacion.HasValue ? _orden.FechaAnulacion.Value : ahora;
+            TimeSpan transcurrido = fin > inicio ? fin - inicio : TimeSpan.Zero;
+
+            FechaEmisionHoraText.Text = $"F. Emisión: {inicio:dd/MM/yyyy HH:mm}";
+            FechaCierreText.Text = cerrada ? $"F. Cierre: {fin:dd/MM/yyyy HH:mm}" : "F. Cierre: En proceso";
+            TiempoTranscurridoText.Text = FormatearDuracion(transcurrido);
+
+            if (_orden.FechaEntrega == default)
+            {
+                FechaEntregaCabeceraText.Text = "No registrada";
+                FechaEntregaEstadoText.Text = "Sin fecha de entrega";
+                FechaEntregaPanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F8FAFC"));
+                FechaEntregaPanel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CBD5E1"));
                 return;
             }
 
-            bool usuarioYaAgregado = gridDatos.Children
-                .OfType<StackPanel>()
-                .SelectMany(panel => panel.Children.OfType<TextBlock>())
-                .Any(texto => string.Equals(texto.Text, "Usuario", StringComparison.Ordinal));
+            FechaEntregaCabeceraText.Text = _orden.FechaEntrega.ToString("dd/MM/yyyy");
+            int dias = (_orden.FechaEntrega.Date - ahora.Date).Days;
+            string fondo;
+            string borde;
+            string texto;
 
-            if (usuarioYaAgregado)
-                return;
-
-            while (gridDatos.ColumnDefinitions.Count < 5)
-                gridDatos.ColumnDefinitions.Add(new ColumnDefinition());
-
-            gridDatos.ColumnDefinitions[0].Width = new GridLength(1.6, GridUnitType.Star);
-            gridDatos.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-            gridDatos.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
-            gridDatos.ColumnDefinitions[3].Width = new GridLength(1.15, GridUnitType.Star);
-            gridDatos.ColumnDefinitions[4].Width = new GridLength(1, GridUnitType.Star);
-
-            Grid.SetColumn(panelOcInterna, 4);
-            panelOcInterna.Margin = new Thickness(22, 0, 0, 0);
-
-            StackPanel panelUsuario = new()
+            if (dias < 0)
             {
-                Margin = new Thickness(22, 0, 0, 0)
-            };
-            Grid.SetColumn(panelUsuario, 3);
-
-            TextBlock etiquetaUsuario = new()
+                texto = $"Vencido hace {Math.Abs(dias)} {(Math.Abs(dias) == 1 ? "día" : "días")}";
+                fondo = "#FEE2E2";
+                borde = "#F87171";
+            }
+            else if (dias == 0)
             {
-                Text = "Usuario"
-            };
-
-            if (TryFindResource("FieldLabel") is Style estiloEtiqueta)
-                etiquetaUsuario.Style = estiloEtiqueta;
-
-            string usuario = string.IsNullOrWhiteSpace(_orden.UsuarioGenerador)
-                ? "No registrado"
-                : _orden.UsuarioGenerador.Trim();
-
-            TextBlock valorUsuario = new()
+                texto = "Vence hoy";
+                fondo = "#FEF3C7";
+                borde = "#F59E0B";
+            }
+            else
             {
-                Text = usuario,
-                ToolTip = usuario
-            };
+                texto = $"Vence en {dias} {(dias == 1 ? "día" : "días")}";
+                fondo = dias <= 2 ? "#FFF1F2" : "#ECFDF5";
+                borde = dias <= 2 ? "#FCA5A5" : "#6EE7B7";
+            }
 
-            if (TryFindResource("FieldValue") is Style estiloValor)
-                valorUsuario.Style = estiloValor;
-
-            panelUsuario.Children.Add(etiquetaUsuario);
-            panelUsuario.Children.Add(valorUsuario);
-            gridDatos.Children.Add(panelUsuario);
+            FechaEntregaEstadoText.Text = texto;
+            FechaEntregaPanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fondo));
+            FechaEntregaPanel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(borde));
         }
+
+        private static string FormatearDuracion(TimeSpan tiempo)
+        {
+            int dias = Math.Max(0, (int)tiempo.TotalDays);
+            int horas = Math.Max(0, tiempo.Hours);
+            int minutos = Math.Max(0, tiempo.Minutes);
+
+            if (dias > 0)
+                return $"{dias} {(dias == 1 ? "día" : "días")} {horas} h {minutos} min";
+            if (horas > 0)
+                return $"{horas} h {minutos} min";
+            return $"{minutos} min";
+        }
+
+        private static string FormatearCantidad(decimal valor) =>
+            decimal.Truncate(valor) == valor ? valor.ToString("N0") : valor.ToString("N2");
 
         private void ConfigurarCodigosProducto(DependencyObject origen)
         {
@@ -137,24 +221,6 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
                 ConfigurarCodigosProducto(hijo);
             }
-        }
-
-        private static T? BuscarDescendiente<T>(DependencyObject origen, Func<T, bool> condicion)
-            where T : DependencyObject
-        {
-            int cantidad = VisualTreeHelper.GetChildrenCount(origen);
-            for (int i = 0; i < cantidad; i++)
-            {
-                DependencyObject hijo = VisualTreeHelper.GetChild(origen, i);
-                if (hijo is T encontrado && condicion(encontrado))
-                    return encontrado;
-
-                T? resultado = BuscarDescendiente(hijo, condicion);
-                if (resultado != null)
-                    return resultado;
-            }
-
-            return null;
         }
 
         private void Cerrar_Click(object sender, RoutedEventArgs e) => Close();
@@ -206,7 +272,6 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 string ruta = Path.Combine(carpeta, CrearNombreArchivo());
                 ExportarPdf(ruta, empresa);
                 Clipboard.SetText(ruta);
-
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "explorer.exe",
@@ -273,5 +338,17 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 Observacion = detalle.Observacion
             }).ToList()
         };
+
+        private sealed class OtAsociadaItem
+        {
+            public int IdOrdenTrabajo { get; init; }
+            public string NumeroOT { get; init; } = string.Empty;
+            public string Estado { get; init; } = string.Empty;
+            public string EstadoFondo { get; init; } = "#F1F5F9";
+            public string EstadoColor { get; init; } = "#475569";
+            public decimal Unidades { get; init; }
+            public string UnidadesTexto { get; init; } = string.Empty;
+            public string AreaTexto { get; init; } = string.Empty;
+        }
     }
 }
