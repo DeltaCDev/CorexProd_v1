@@ -158,9 +158,20 @@ namespace CorexProd.Negocio.Negocio
             if (claveActual == claveNueva)
                 return "La nueva clave debe ser diferente a la clave actual.";
 
+            Usuario? usuarioDB = _usuarioDatos.ObtenerPorId(idUsuario);
+
+            if (usuarioDB == null)
+                return "No se encontró el usuario en sesión.";
+
+            if (!usuarioDB.Estado)
+                return "El usuario se encuentra inactivo.";
+
+            if (!PasswordService.VerifyPassword(claveActual, usuarioDB.Clave))
+                return "La clave actual no es correcta.";
+
             string claveNuevaHash = PasswordService.HashPassword(claveNueva);
 
-            return _usuarioDatos.CambiarClave(idUsuario, claveActual, claveNuevaHash);
+            return _usuarioDatos.CambiarClave(idUsuario, usuarioDB.Clave, claveNuevaHash);
         }
     }
 }

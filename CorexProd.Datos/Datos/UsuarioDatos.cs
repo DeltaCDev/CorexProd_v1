@@ -71,6 +71,35 @@ namespace CorexProd.Datos.Datos
             return lista;
         }
 
+        public Usuario? ObtenerPorId(int idUsuario)
+        {
+            Usuario? obj = null;
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                "SELECT IdUsuario, NombreUsuario, Clave, Estado FROM Usuarios WHERE IdUsuario = @IdUsuario",
+                conexion);
+
+            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            if (dr.Read())
+            {
+                obj = new Usuario
+                {
+                    IdUsuario = Convert.ToInt32(dr["IdUsuario"]),
+                    NombreUsuario = dr["NombreUsuario"]?.ToString() ?? string.Empty,
+                    Clave = dr["Clave"]?.ToString() ?? string.Empty,
+                    Estado = Convert.ToBoolean(dr["Estado"])
+                };
+            }
+
+            return obj;
+        }
+
         public string Registrar(Usuario usuario)
         {
             string mensaje = string.Empty;
