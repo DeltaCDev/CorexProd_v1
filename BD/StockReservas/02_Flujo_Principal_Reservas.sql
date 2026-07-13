@@ -227,20 +227,20 @@ BEGIN
             CONVERT(DECIMAL(18,2),
                 CASE
                     WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) <= 0 THEN 0
-                    WHEN DISP.StockLibre >= PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0)
+                    WHEN ISNULL(DISP.StockLibre, 0) >= PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0)
                         THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0)
-                    ELSE DISP.StockLibre
+                    ELSE ISNULL(DISP.StockLibre, 0)
                 END),
             CONVERT(DECIMAL(18,2),
                 CASE
-                    WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre > 0
-                    THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre
+                    WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0) > 0
+                    THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0)
                     ELSE 0
                 END),
             CONVERT(DECIMAL(18,2),
                 CASE
-                    WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre - ISNULL(RES.StockProceso, 0) > 0
-                    THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre - ISNULL(RES.StockProceso, 0)
+                    WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0) - ISNULL(RES.StockProceso, 0) > 0
+                    THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0) - ISNULL(RES.StockProceso, 0)
                     ELSE 0
                 END),
             CONVERT(DECIMAL(18,2),
@@ -248,13 +248,13 @@ BEGIN
                     WHEN @ProcesarTodaReserva = 1 THEN ISNULL(RES.StockProceso, 0)
                     WHEN ISNULL(RES.StockProceso, 0) >=
                         CASE
-                            WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre > 0
-                            THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre
+                            WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0) > 0
+                            THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0)
                             ELSE 0
                         END
                         THEN CASE
-                            WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre > 0
-                            THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - DISP.StockLibre
+                            WHEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0) > 0
+                            THEN PEND.CantidadPendiente - ISNULL(ROC.StockReservadoOci, 0) - ISNULL(DISP.StockLibre, 0)
                             ELSE 0
                         END
                     ELSE ISNULL(RES.StockProceso, 0)

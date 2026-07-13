@@ -7,12 +7,25 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="20"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Roles"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="#0F172A"/>
+            <TextBlock Text="Administra roles y permisos de acceso al sistema"
+                       Foreground="#64748B"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
         <!-- FORMULARIO ROL -->
-        <Border Background="#F9FAFB"
+        <Border Grid.Row="2"
+                Background="#F9FAFB"
                 Padding="20"
                 CornerRadius="10">
 
@@ -56,7 +69,7 @@
         </Border>
 
         <!-- TABLA + PERMISOS -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="4">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
@@ -112,8 +125,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>

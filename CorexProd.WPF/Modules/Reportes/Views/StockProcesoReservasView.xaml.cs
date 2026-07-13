@@ -10,5 +10,11 @@ namespace CorexProd.WPF.Modules.Reportes.Views
             InitializeComponent();
             DataContext = new StockProcesoReservasViewModel();
         }
+
+        public StockProcesoReservasView(string filtroInicial)
+        {
+            InitializeComponent();
+            DataContext = new StockProcesoReservasViewModel(filtroInicial);
+        }
     }
 }

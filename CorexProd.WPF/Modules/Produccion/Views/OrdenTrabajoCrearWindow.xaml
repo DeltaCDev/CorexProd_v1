@@ -1,9 +1,10 @@
-<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.OrdenTrabajoCrearWindow"
+﻿<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.OrdenTrabajoCrearWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Generar Orden de Trabajo"
         Height="660" Width="1340" MinHeight="540" MinWidth="1120"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        WindowState="Maximized">
     <Window.Resources>
         <Style x:Key="BotonAccion" TargetType="Button">
             <Setter Property="Width" Value="34"/>
@@ -73,7 +74,7 @@
                   GridLinesVisibility="Horizontal">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="105"/>
-                <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="520">
+                <DataGridTemplateColumn Header="Producto" Width="*" MinWidth="430">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding NombreProducto}"
@@ -85,13 +86,22 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Acciones" Width="100">
+                <DataGridTemplateColumn Header="Observacion" Width="190">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Observacion}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxHeight="38"
+                                       VerticalAlignment="Center"
+                                       ToolTip="{Binding Observacion}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Ficha Tecnica" Width="95">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <Button Content="👁" ToolTip="Ver observaciones"
-                                        Style="{StaticResource BotonAccion}"
-                                        Click="Observacion_Click"/>
                                 <Button Content="🖨" ToolTip="Imprimir ficha técnica"
                                         Style="{StaticResource BotonAccion}"
                                         Click="ImprimirFicha_Click"/>

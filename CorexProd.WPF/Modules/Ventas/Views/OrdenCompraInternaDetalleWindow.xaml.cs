@@ -20,6 +20,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         private readonly OrdenCompraInterna _orden;
         private readonly EmpresaNegocio _empresaNegocio = new();
         private readonly OrdenTrabajoNegocio _ordenTrabajoNegocio = new();
+        private readonly GuiaInternaNegocio _guiaInternaNegocio = new();
         private readonly DispatcherTimer _tiempoTimer = new() { Interval = TimeSpan.FromMinutes(1) };
 
         public OrdenCompraInternaDetalleWindow(OrdenCompraInterna orden)
@@ -39,6 +40,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             Loaded -= OrdenCompraInternaDetalleWindow_Loaded;
             ConfigurarCodigosProducto(this);
             CargarOrdenesTrabajoAsociadas();
+            CargarGuiasInternasAsociadas();
             ActualizarIndicadoresTiempo();
             _tiempoTimer.Start();
         }
@@ -126,32 +128,130 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             CargarOrdenesTrabajoAsociadas();
         }
 
+        private void CargarGuiasInternasAsociadas()
+        {
+            try
+            {
+                List<GuiaInternaAsociadaItem> items = _guiaInternaNegocio
+                    .Listar(null, null, null, "Todos", "Todos", string.Empty)
+                    .Where(x => x.IdOrdenCompraInterna == _orden.IdOrdenCompraInterna)
+                    .Where(x => !string.Equals(x.Estado, "Borrador", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.FechaEmision)
+                    .Select(CrearGuiaInternaAsociadaItem)
+                    .ToList();
+
+                GuiasInternasItems.ItemsSource = items;
+                ResumenGuiaText.Text = items.Count == 0
+                    ? "Sin guías emitidas"
+                    : $"{items.Count} guía{(items.Count == 1 ? string.Empty : "s")} emitida{(items.Count == 1 ? string.Empty : "s")} por esta OC";
+            }
+            catch (Exception ex)
+            {
+                GuiasInternasItems.ItemsSource = Array.Empty<GuiaInternaAsociadaItem>();
+                ResumenGuiaText.Text = "No se pudieron cargar las guías emitidas";
+                NotificationService.Warning($"No se pudieron cargar las guías internas asociadas: {ex.Message}");
+            }
+        }
+
+        private static GuiaInternaAsociadaItem CrearGuiaInternaAsociadaItem(GuiaInterna guia)
+        {
+            string estado = string.IsNullOrWhiteSpace(guia.Estado) ? "Emitida" : guia.Estado.Trim();
+            (string fondo, string color) = estado.ToUpperInvariant() switch
+            {
+                "ANULADA" or "ANULADO" => ("#FEE2E2", "#B91C1C"),
+                "EMITIDA" or "ENTREGADA" or "ENTREGADO" => ("#D1FAE5", "#047857"),
+                _ => ("#F1F5F9", "#475569")
+            };
+
+            string almacen = string.IsNullOrWhiteSpace(guia.NombreAlmacen) ? "Sin almacén" : guia.NombreAlmacen.Trim();
+            string emisor = string.IsNullOrWhiteSpace(guia.UsuarioEmisor) ? "Sin emisor" : guia.UsuarioEmisor.Trim();
+
+            return new GuiaInternaAsociadaItem
+            {
+                IdGuiaInterna = guia.IdGuiaInterna,
+                NumeroGuia = guia.NumeroGuia,
+                Estado = estado,
+                EstadoFondo = fondo,
+                EstadoColor = color,
+                FechaTexto = guia.FechaEmision.ToString("dd/MM/yyyy"),
+                AlmacenEmisorTexto = $"{almacen} · {emisor}"
+            };
+        }
+
+        private void AbrirGuiaInterna_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button boton || !int.TryParse(boton.Tag?.ToString(), out int idGuiaInterna) || idGuiaInterna <= 0)
+                return;
+
+            GuiaInterna? guia = _guiaInternaNegocio.Obtener(idGuiaInterna);
+            if (guia == null)
+            {
+                NotificationService.Warning("No se pudo cargar el detalle de la guía interna.");
+                return;
+            }
+
+            new GuiaInternaDetalleWindow(guia) { Owner = this }.ShowDialog();
+            CargarGuiasInternasAsociadas();
+        }
+
         private void ActualizarIndicadoresTiempo()
         {
             DateTime inicio = _orden.FechaRegistro != default ? _orden.FechaRegistro : _orden.FechaEmision;
             DateTime ahora = DateTime.Now;
             string estado = (_orden.Estado ?? string.Empty).Trim().ToUpperInvariant();
-            bool cerrada = estado is "ENTREGADO" or "DESPACHADO" or "ANULADO" or "ANULADA";
+            bool entregada = estado is "ENTREGADO" or "ENTREGADA" or "DESPACHADO" or "DESPACHADA";
+            bool anulada = estado is "ANULADO" or "ANULADA";
+            bool cerrada = entregada || anulada;
             DateTime fin = cerrada && _orden.FechaAnulacion.HasValue ? _orden.FechaAnulacion.Value : ahora;
             TimeSpan transcurrido = fin > inicio ? fin - inicio : TimeSpan.Zero;
 
             FechaEmisionHoraText.Text = $"F. Emisión: {inicio:dd/MM/yyyy HH:mm}";
             FechaCierreText.Text = cerrada ? $"F. Cierre: {fin:dd/MM/yyyy HH:mm}" : "F. Cierre: En proceso";
             TiempoTranscurridoText.Text = FormatearDuracion(transcurrido);
+            ConfigurarEstadoBadge(estado);
 
             if (_orden.FechaEntrega == default)
             {
                 FechaEntregaCabeceraText.Text = "No registrada";
-                FechaEntregaEstadoText.Text = "Sin fecha de entrega";
-                FechaEntregaPanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F8FAFC"));
-                FechaEntregaPanel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CBD5E1"));
+                FechaEntregaEstadoText.Text = entregada ? "Entregado sin fecha planificada" : "Sin fecha de entrega";
+                AplicarEstadoEntrega("#F8FAFC", "#CBD5E1", "#475569");
                 return;
             }
 
             FechaEntregaCabeceraText.Text = _orden.FechaEntrega.ToString("dd/MM/yyyy");
+            if (entregada)
+            {
+                int diferenciaCierre = (fin.Date - _orden.FechaEntrega.Date).Days;
+                if (diferenciaCierre < 0)
+                {
+                    int diasAntes = Math.Abs(diferenciaCierre);
+                    FechaEntregaEstadoText.Text = diasAntes == 1 ? "Entregado 1 dia antes" : $"Entregado {diasAntes} dias antes";
+                    AplicarEstadoEntrega("#ECFDF5", "#34D399", "#047857");
+                }
+                else if (diferenciaCierre == 0)
+                {
+                    FechaEntregaEstadoText.Text = "Entregado a tiempo";
+                    AplicarEstadoEntrega("#ECFDF5", "#34D399", "#047857");
+                }
+                else
+                {
+                    FechaEntregaEstadoText.Text = diferenciaCierre == 1 ? "Entregado 1 dia tarde" : $"Entregado {diferenciaCierre} dias tarde";
+                    AplicarEstadoEntrega("#FEE2E2", "#F87171", "#B91C1C");
+                }
+                return;
+            }
+
+            if (anulada)
+            {
+                FechaEntregaEstadoText.Text = "Orden anulada";
+                AplicarEstadoEntrega("#F8FAFC", "#CBD5E1", "#475569");
+                return;
+            }
+
             int dias = (_orden.FechaEntrega.Date - ahora.Date).Days;
             string fondo;
             string borde;
+            string color;
             string texto;
 
             if (dias < 0)
@@ -159,23 +259,49 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 texto = $"Vencido hace {Math.Abs(dias)} {(Math.Abs(dias) == 1 ? "día" : "días")}";
                 fondo = "#FEE2E2";
                 borde = "#F87171";
+                color = "#B91C1C";
             }
             else if (dias == 0)
             {
                 texto = "Vence hoy";
                 fondo = "#FEF3C7";
                 borde = "#F59E0B";
+                color = "#B45309";
             }
             else
             {
                 texto = $"Vence en {dias} {(dias == 1 ? "día" : "días")}";
                 fondo = dias <= 2 ? "#FFF1F2" : "#ECFDF5";
                 borde = dias <= 2 ? "#FCA5A5" : "#6EE7B7";
+                color = dias <= 2 ? "#BE123C" : "#047857";
             }
 
             FechaEntregaEstadoText.Text = texto;
+            AplicarEstadoEntrega(fondo, borde, color);
+        }
+
+        private void AplicarEstadoEntrega(string fondo, string borde, string color)
+        {
+            SolidColorBrush texto = new((Color)ColorConverter.ConvertFromString(color));
             FechaEntregaPanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fondo));
             FechaEntregaPanel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(borde));
+            FechaEntregaCabeceraText.Foreground = texto;
+            FechaEntregaEstadoText.Foreground = texto;
+        }
+
+        private void ConfigurarEstadoBadge(string estado)
+        {
+            (string fondo, string borde, string color) = estado switch
+            {
+                "ENTREGADO" or "ENTREGADA" or "DESPACHADO" or "DESPACHADA" => ("#DBEAFE", "#60A5FA", "#1D4ED8"),
+                "ANULADO" or "ANULADA" => ("#FEE2E2", "#FCA5A5", "#B91C1C"),
+                "PROCESO" or "EN PROCESO" or "PARCIAL" => ("#FEF3C7", "#F59E0B", "#B45309"),
+                _ => ("#DBEAFE", "#60A5FA", "#1D4ED8")
+            };
+
+            EstadoPanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fondo));
+            EstadoPanel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(borde));
+            EstadoText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
         }
 
         private static string FormatearDuracion(TimeSpan tiempo)
@@ -349,6 +475,17 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             public decimal Unidades { get; init; }
             public string UnidadesTexto { get; init; } = string.Empty;
             public string AreaTexto { get; init; } = string.Empty;
+        }
+
+        private sealed class GuiaInternaAsociadaItem
+        {
+            public int IdGuiaInterna { get; init; }
+            public string NumeroGuia { get; init; } = string.Empty;
+            public string Estado { get; init; } = string.Empty;
+            public string EstadoFondo { get; init; } = "#F1F5F9";
+            public string EstadoColor { get; init; } = "#475569";
+            public string FechaTexto { get; init; } = string.Empty;
+            public string AlmacenEmisorTexto { get; init; } = string.Empty;
         }
     }
 }

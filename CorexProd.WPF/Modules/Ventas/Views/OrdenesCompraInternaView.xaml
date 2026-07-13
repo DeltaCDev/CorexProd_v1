@@ -1,4 +1,4 @@
-<UserControl x:Class="CorexProd.WPF.Modules.Ventas.Views.OrdenesCompraInternaView"
+﻿<UserControl x:Class="CorexProd.WPF.Modules.Ventas.Views.OrdenesCompraInternaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
@@ -49,7 +49,8 @@
             </Setter>
         </Style>
         <Style x:Key="BotonGuiaAccion" TargetType="Button" BasedOn="{StaticResource BotonAccion}">
-            <Setter Property="MinWidth" Value="104"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="MinWidth" Value="128"/>
             <Setter Property="Background" Value="#0F766E"/>
             <Setter Property="BorderBrush" Value="#0F766E"/>
             <Setter Property="Foreground" Value="White"/>
@@ -63,15 +64,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ActionBorder" Property="Background" Value="#0D9488"/>
-                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#0D9488"/>
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.92"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ActionBorder" Property="Background" Value="#115E59"/>
-                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#115E59"/>
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.82"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ActionBorder" Property="Opacity" Value="0.45"/>
+                                <Setter TargetName="ActionBorder" Property="Opacity" Value="1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -259,7 +258,7 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Gestiona las ordenes de compra" FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
+                    <TextBlock Text="Lista de Ordenes de Compra Clientes" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Style="{StaticResource Boton}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
@@ -323,11 +322,15 @@
                                     <TextBlock Text="OT" VerticalAlignment="Center" Foreground="#7E22CE"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BotonGuiaAccion}" ToolTip="Guía Interna"
-                                     Command="{Binding DataContext.GenerarGuiaSalidaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🚚" FontFamily="Segoe UI Emoji" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Guía Interna" VerticalAlignment="Center"/>
+                            <Button Style="{StaticResource BotonGuiaAccion}"
+                                    Background="{Binding GuiaSalidaFondo}"
+                                    BorderBrush="{Binding GuiaSalidaBorde}"
+                                    ToolTip="{Binding GuiaSalidaToolTip}"
+                                    Command="{Binding DataContext.GenerarGuiaSalidaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                    CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding GuiaSalidaTexto}" VerticalAlignment="Center" TextAlignment="Center" LineHeight="15"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource BotonAccion}" Width="30" Padding="0" Margin="0" Foreground="#DC2626" BorderBrush="#FCA5A5" ToolTip="Anular"
@@ -340,8 +343,8 @@
                     <DataGridTextColumn Header="Orden de compra" Binding="{Binding OrdenCompraCliente}" Width="120" ElementStyle="{StaticResource Celda}"/>
                     <DataGridTemplateColumn Header="Estado" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding Estado}" Style="{StaticResource EstadoBadgeTexto}"/>
+                            <Border Style="{StaticResource EstadoBadge}" HorizontalAlignment="Center" Background="{Binding EstadoListadoFondo}">
+                                <TextBlock Text="{Binding EstadoListadoTexto}" Style="{StaticResource EstadoBadgeTexto}" Foreground="{Binding EstadoListadoColor}"/>
                             </Border>
                             <TextBlock Style="{StaticResource IconoInfoAnulacion}"/>
                         </StackPanel>

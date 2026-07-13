@@ -131,6 +131,15 @@ namespace CorexProd.Negocio.Negocio
 
             return _usuarioDatos.Eliminar(idUsuario);
         }
+
+        public string Desactivar(int idUsuario)
+        {
+            if (idUsuario <= 0)
+                return "Debe seleccionar un usuario válido";
+
+            return _usuarioDatos.Desactivar(idUsuario);
+        }
+
         public string CambiarClave(int idUsuario, string claveActual, string claveNueva, string confirmarClave)
         {
             claveActual = claveActual.Trim();

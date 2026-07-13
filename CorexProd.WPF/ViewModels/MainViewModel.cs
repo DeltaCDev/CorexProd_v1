@@ -491,7 +491,10 @@ namespace CorexProd.WPF.ViewModels
                     Titulo = "Stock Productos",
                     Vista = "StockProductos"
                 });
+            }
 
+            if (menusPermitidos.Contains("Stock Reservas"))
+            {
                 reportes.Hijos.Add(new MenuItemSistema
                 {
                     Titulo = "Stock Reservas",
@@ -526,7 +529,7 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
-            if (menusPermitidos.Contains("Reportes"))
+            if (menusPermitidos.Contains("Estadísticas") || menusPermitidos.Contains("Reportes"))
             {
                 reportes.Hijos.Add(new MenuItemSistema
                 {

@@ -35,7 +35,7 @@ Para detener:
 .\Detener-CorexProdApi.ps1
 ```
 
-Los PDF se almacenan físicamente en `D:\FICHAS_TECNICAS`.
+Los PDF se almacenan físicamente en `D:\COMPARTIDO\SISTEMA ERP\FICHA_TECNICA_SISTEMA`.
 La tabla `FichaTecnicaDocumento` registra modelo, archivo, ruta relativa y versión.
 
 ## Habilitar acceso desde Android

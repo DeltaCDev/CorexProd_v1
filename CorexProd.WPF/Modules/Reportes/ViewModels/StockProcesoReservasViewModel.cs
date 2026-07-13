@@ -17,6 +17,10 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
         private string _textoBusqueda = string.Empty;
         private string _areaBusqueda = string.Empty;
         private decimal _cantidadTotal;
+        private decimal _cantidadUsadaTotal;
+        private decimal _cantidadDisponibleTotal;
+        private DateTime? _fechaDesde;
+        private DateTime? _fechaHasta;
 
         public ObservableCollection<StockProcesoReservaReporte> Reservas { get; } = [];
 
@@ -52,7 +56,50 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
             }
         }
 
+        public decimal CantidadUsadaTotal
+        {
+            get => _cantidadUsadaTotal;
+            set
+            {
+                _cantidadUsadaTotal = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public decimal CantidadDisponibleTotal
+        {
+            get => _cantidadDisponibleTotal;
+            set
+            {
+                _cantidadDisponibleTotal = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public DateTime? FechaDesde
+        {
+            get => _fechaDesde;
+            set
+            {
+                _fechaDesde = value;
+                OnPropertyChanged();
+                Filtrar();
+            }
+        }
+
+        public DateTime? FechaHasta
+        {
+            get => _fechaHasta;
+            set
+            {
+                _fechaHasta = value;
+                OnPropertyChanged();
+                Filtrar();
+            }
+        }
+
         public int TotalRegistros => Reservas.Count;
+        public int TotalProductosReservados => Reservas.Select(x => x.IdProducto).Distinct().Count();
         public ICommand BuscarCommand { get; }
         public ICommand LimpiarCommand { get; }
         public ICommand ActualizarCommand { get; }
@@ -63,6 +110,13 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
             LimpiarCommand = new RelayCommand(_ => Limpiar());
             ActualizarCommand = new RelayCommand(_ => CargarDatos());
             CargarDatos();
+        }
+
+        public StockProcesoReservasViewModel(string filtroInicial) : this()
+        {
+            _textoBusqueda = filtroInicial;
+            OnPropertyChanged(nameof(TextoBusqueda));
+            Filtrar();
         }
 
         private void CargarDatos()
@@ -76,6 +130,8 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
         {
             string texto = TextoBusqueda.Trim();
             string area = AreaBusqueda.Trim();
+            DateTime? desde = FechaDesde?.Date;
+            DateTime? hasta = FechaHasta?.Date.AddDays(1).AddTicks(-1);
 
             List<StockProcesoReservaReporte> filtradas = _reservasBase
                 .Where(x =>
@@ -84,23 +140,32 @@ namespace CorexProd.WPF.Modules.Reportes.ViewModels
                         || x.NombreProducto.Contains(texto, StringComparison.OrdinalIgnoreCase)
                         || x.NumeroOT.Contains(texto, StringComparison.OrdinalIgnoreCase))
                     && (string.IsNullOrWhiteSpace(area)
-                        || x.NombreArea.Contains(area, StringComparison.OrdinalIgnoreCase)))
+                        || x.NombreArea.Contains(area, StringComparison.OrdinalIgnoreCase))
+                    && (!desde.HasValue || x.FechaRegistro >= desde.Value)
+                    && (!hasta.HasValue || x.FechaRegistro <= hasta.Value))
                 .ToList();
 
             Reservas.Clear();
             foreach (StockProcesoReservaReporte reserva in filtradas)
                 Reservas.Add(reserva);
 
-            CantidadTotal = Reservas.Sum(x => x.CantidadDisponible);
+            CantidadTotal = Reservas.Sum(x => x.CantidadReservada);
+            CantidadUsadaTotal = Reservas.Sum(x => x.CantidadAplicada);
+            CantidadDisponibleTotal = Reservas.Sum(x => x.CantidadDisponible);
             OnPropertyChanged(nameof(TotalRegistros));
+            OnPropertyChanged(nameof(TotalProductosReservados));
         }
 
         private void Limpiar()
         {
             _textoBusqueda = string.Empty;
             _areaBusqueda = string.Empty;
+            _fechaDesde = null;
+            _fechaHasta = null;
             OnPropertyChanged(nameof(TextoBusqueda));
             OnPropertyChanged(nameof(AreaBusqueda));
+            OnPropertyChanged(nameof(FechaDesde));
+            OnPropertyChanged(nameof(FechaHasta));
             Filtrar();
         }
     }

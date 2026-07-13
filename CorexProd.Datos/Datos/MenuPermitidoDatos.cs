@@ -11,6 +11,8 @@ namespace CorexProd.Datos.Datos
         {
             List<string> menus = [];
 
+            new MenuSistemaDatos().SincronizarMenusPredeterminados();
+
             using (SqlConnection cn = Conexion.ObtenerConexion())
             {
                 cn.Open();

@@ -174,32 +174,61 @@ namespace CorexProd.Datos.Datos
         {
             string mensaje = string.Empty;
 
-            using SqlConnection conexion = Conexion.ObtenerConexion();
-            using SqlCommand cmd = new("USP_SEG_USUARIO_ELIMINAR", conexion);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
-
-            SqlParameter resultado = new("@Resultado", SqlDbType.Bit)
+            try
             {
-                Direction = ParameterDirection.Output
-            };
+                using SqlConnection conexion = Conexion.ObtenerConexion();
+                using SqlCommand cmd = new("USP_SEG_USUARIO_ELIMINAR", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-            SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500)
+                cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+
+                SqlParameter resultado = new("@Resultado", SqlDbType.Bit)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                SqlParameter mensajeParam = new("@Mensaje", SqlDbType.VarChar, 500)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                cmd.Parameters.Add(resultado);
+                cmd.Parameters.Add(mensajeParam);
+
+                conexion.Open();
+                cmd.ExecuteNonQuery();
+
+                mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+            }
+            catch (SqlException ex) when (ex.Number == 547)
             {
-                Direction = ParameterDirection.Output
-            };
-
-            cmd.Parameters.Add(resultado);
-            cmd.Parameters.Add(mensajeParam);
-
-            conexion.Open();
-            cmd.ExecuteNonQuery();
-
-            mensaje = mensajeParam.Value?.ToString() ?? string.Empty;
+                mensaje = "Usuario tiene registros, no se puede eliminar ahora.";
+            }
+            catch (SqlException ex)
+            {
+                mensaje = $"No se pudo eliminar el usuario: {ex.Message}";
+            }
 
             return mensaje;
         }
+
+        public string Desactivar(int idUsuario)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                "UPDATE Usuarios SET Estado = 0 WHERE IdUsuario = @IdUsuario",
+                conexion);
+
+            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+
+            conexion.Open();
+            int filasAfectadas = cmd.ExecuteNonQuery();
+
+            return filasAfectadas > 0
+                ? "Usuario desactivado correctamente."
+                : "No se encontró el usuario seleccionado.";
+        }
+
         public string CambiarClave(int idUsuario, string claveActual, string claveNueva)
         {
             string mensaje = string.Empty;

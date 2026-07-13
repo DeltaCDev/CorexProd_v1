@@ -3,6 +3,7 @@ using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.IO;
@@ -10,6 +11,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
@@ -36,9 +38,11 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private bool _estado = true;
         private bool _mostrarFormulario;
         private bool _isConsultandoDocumento;
+        private string _textoBusqueda = string.Empty;
         private ProveedorStock? _proveedorSeleccionado;
 
         public ObservableCollection<ProveedorStock> Proveedores { get; set; } = [];
+        public ICollectionView ProveedoresVista { get; private set; }
 
         public int IdProveedor
         {
@@ -125,6 +129,17 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             set { _proveedorSeleccionado = value; OnPropertyChanged(); }
         }
 
+        public string TextoBusqueda
+        {
+            get => _textoBusqueda;
+            set
+            {
+                _textoBusqueda = value ?? string.Empty;
+                OnPropertyChanged();
+                ProveedoresVista.Refresh();
+            }
+        }
+
         public ICommand NuevoCommand { get; }
         public ICommand EditarCommand { get; }
         public ICommand GuardarCommand { get; }
@@ -134,6 +149,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         public ProveedoresViewModel()
         {
+            ProveedoresVista = CollectionViewSource.GetDefaultView(Proveedores);
+            ProveedoresVista.Filter = FiltrarProveedor;
+
             NuevoCommand = new RelayCommand(_ => Nuevo());
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             GuardarCommand = new RelayCommand(_ => Guardar());
@@ -154,7 +172,34 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Proveedores.Add(proveedor);
             }
+
+            ProveedoresVista.Refresh();
         }
+
+        private bool FiltrarProveedor(object item)
+        {
+            if (item is not ProveedorStock proveedor)
+            {
+                return false;
+            }
+
+            string filtro = TextoBusqueda.Trim();
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return true;
+            }
+
+            return Contiene(proveedor.NombreRazonSocial, filtro)
+                || Contiene(proveedor.NumeroDocumento, filtro)
+                || Contiene(proveedor.TipoDocumento, filtro)
+                || Contiene(proveedor.Direccion, filtro)
+                || Contiene(proveedor.Telefono, filtro)
+                || Contiene(proveedor.Correo, filtro);
+        }
+
+        private static bool Contiene(string? valor, string filtro) =>
+            !string.IsNullOrWhiteSpace(valor)
+            && valor.Contains(filtro, StringComparison.OrdinalIgnoreCase);
 
         private void Nuevo()
         {

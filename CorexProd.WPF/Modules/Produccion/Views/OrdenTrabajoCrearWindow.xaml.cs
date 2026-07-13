@@ -38,6 +38,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 ? $"OCI {oci.NumeroOci} | Cliente: {oci.NombreCliente}"
                 : $"Regularizacion de OT {otRelacionada.NumeroOT} | OCI {oci.NumeroOci} | Cliente: {oci.NombreCliente}";
             OrdenCompraText.Text = oci.OrdenCompraCliente;
+            if (!string.IsNullOrWhiteSpace(oci.Observacion))
+                ObservacionText.Text = oci.Observacion.Trim();
+
             if (otRelacionada != null && string.IsNullOrWhiteSpace(ObservacionText.Text))
                 ObservacionText.Text = $"Regularizacion de OT por faltante de {otRelacionada.NumeroOT}";
             DetallesGrid.ItemsSource = _productos;

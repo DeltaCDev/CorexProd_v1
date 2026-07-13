@@ -3,6 +3,7 @@ using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.ViewModels;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.IO;
@@ -10,6 +11,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.Seguridad.ViewModels
@@ -36,9 +38,11 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private bool _estado = true;
         private bool _mostrarFormulario;
         private bool _isConsultandoDocumento;
+        private string _textoBusqueda = string.Empty;
         private Cliente? _clienteSeleccionado;
 
         public ObservableCollection<Cliente> Clientes { get; set; } = [];
+        public ICollectionView ClientesVista { get; private set; }
 
         public int IdCliente
         {
@@ -157,6 +161,17 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
         }
 
+        public string TextoBusqueda
+        {
+            get => _textoBusqueda;
+            set
+            {
+                _textoBusqueda = value ?? string.Empty;
+                OnPropertyChanged();
+                ClientesVista.Refresh();
+            }
+        }
+
         public ICommand NuevoCommand { get; }
         public ICommand EditarCommand { get; }
         public ICommand GuardarCommand { get; }
@@ -166,6 +181,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
 
         public ClientesViewModel()
         {
+            ClientesVista = CollectionViewSource.GetDefaultView(Clientes);
+            ClientesVista.Filter = FiltrarCliente;
+
             NuevoCommand = new RelayCommand(_ => Nuevo());
             EditarCommand = new RelayCommand(parametro => Editar(parametro));
             GuardarCommand = new RelayCommand(_ => Guardar());
@@ -186,7 +204,34 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             {
                 Clientes.Add(cliente);
             }
+
+            ClientesVista.Refresh();
         }
+
+        private bool FiltrarCliente(object item)
+        {
+            if (item is not Cliente cliente)
+            {
+                return false;
+            }
+
+            string filtro = TextoBusqueda.Trim();
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return true;
+            }
+
+            return Contiene(cliente.NombreRazonSocial, filtro)
+                || Contiene(cliente.NumeroDocumento, filtro)
+                || Contiene(cliente.TipoDocumento, filtro)
+                || Contiene(cliente.Direccion, filtro)
+                || Contiene(cliente.Telefono, filtro)
+                || Contiene(cliente.Correo, filtro);
+        }
+
+        private static bool Contiene(string? valor, string filtro) =>
+            !string.IsNullOrWhiteSpace(valor)
+            && valor.Contains(filtro, StringComparison.OrdinalIgnoreCase);
 
         private void Nuevo()
         {

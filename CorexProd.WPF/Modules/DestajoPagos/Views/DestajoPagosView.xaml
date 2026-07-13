@@ -50,6 +50,10 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
+                        <TextBlock Text="Destajo y Pagos"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"/>
                         <TextBlock Text="{Binding EstadoPeriodo}"
                                    Foreground="#2563EB" FontWeight="SemiBold"
                                    Margin="0,4,0,0"/>

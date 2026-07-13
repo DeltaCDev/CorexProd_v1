@@ -4,6 +4,7 @@
         Title="Detalle de Guía Interna"
         Width="1000"
         Height="620"
+        WindowState="Maximized"
         WindowStartupLocation="CenterOwner"
         Background="#F8FAFC">
     <Grid Margin="18">
@@ -137,11 +138,23 @@
             <TextBlock Text="{Binding DetalleAnulacion}"
                        Foreground="#BE123C"
                        TextWrapping="Wrap"/>
-            <Button Content="Cerrar"
-                    Width="100"
-                    Height="34"
-                    HorizontalAlignment="Right"
-                    IsCancel="True"/>
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Content="Imprimir"
+                        Width="112"
+                        Height="34"
+                        Margin="0,0,8,0"
+                        Click="Imprimir_Click"/>
+                <Button Content="Compartir PDF"
+                        Width="130"
+                        Height="34"
+                        Margin="0,0,8,0"
+                        Click="Compartir_Click"/>
+                <Button Content="Cerrar"
+                        Width="100"
+                        Height="34"
+                        IsCancel="True"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

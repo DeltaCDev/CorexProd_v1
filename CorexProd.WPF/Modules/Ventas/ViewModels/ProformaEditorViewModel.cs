@@ -462,7 +462,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
             OrdenCompraCliente = orden.OrdenCompraCliente;
             ClienteSeleccionado = _todosLosClientes.FirstOrDefault(c => c.IdCliente == orden.IdCliente);
             TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;
-            Observacion = string.Empty;
+            Observacion = orden.Observacion;
             _igvPorcentaje = orden.IgvPorcentaje;
             _igvActivo = !orden.CondicionTributaria.Equals("Exonerado de IGV", StringComparison.OrdinalIgnoreCase)
                 && !orden.CondicionTributaria.Equals("INAFECTO", StringComparison.OrdinalIgnoreCase);
@@ -825,6 +825,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
                 Igv = Igv,
                 IgvPorcentaje = _igvPorcentaje,
                 CondicionTributaria = _condicionTributaria,
+                Observacion = Observacion,
                 Total = Total,
                 UsuarioGenerador = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema",
                 Detalles = Detalles.Select(d => new OrdenCompraInternaDetalle

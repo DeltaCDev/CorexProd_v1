@@ -358,8 +358,11 @@
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <TextBlock Text="Salidas de productos originadas por OCI o por regularización manual"
-                           FontSize="13" Foreground="#64748B" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Lista de Guias Internas" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
+                    <TextBlock Text="Salidas de productos originadas por OCI o por regularizacion manual"
+                               FontSize="13" Foreground="#64748B" Margin="0,4,0,0"/>
+                </StackPanel>
                 <Button Grid.Column="1" Style="{StaticResource BotonPrimario}" Command="{Binding NuevaManualCommand}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0"/>

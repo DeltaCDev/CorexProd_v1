@@ -31,6 +31,11 @@
                 Margin="0,0,0,14">
 
             <StackPanel>
+                <TextBlock Text="Parametros del Sistema"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Foreground="#0F172A"
+                           Margin="0,0,0,6"/>
                 <TextBlock Margin="0,0,0,18"
                            FontSize="14">
                     <Run Text="Configure valores generales del sistema. Los campos marcados con "/>

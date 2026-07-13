@@ -261,6 +261,31 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             }
             else
             {
+                if (mensaje.Contains("registros", StringComparison.OrdinalIgnoreCase))
+                {
+                    bool desactivar = ConfirmDialogService.Confirmar(
+                        $"{mensaje}\n\n¿Deseas desactivarlo?",
+                        "Desactivar usuario");
+
+                    if (desactivar)
+                    {
+                        string mensajeDesactivar = _usuarioNegocio.Desactivar(idUsuario);
+
+                        if (mensajeDesactivar.Contains("correctamente"))
+                        {
+                            NotificationService.Success(mensajeDesactivar);
+                            CargarUsuarios();
+                            Limpiar();
+                        }
+                        else
+                        {
+                            NotificationService.Warning(mensajeDesactivar);
+                        }
+                    }
+
+                    return;
+                }
+
                 NotificationService.Warning(mensaje);
             }
         }

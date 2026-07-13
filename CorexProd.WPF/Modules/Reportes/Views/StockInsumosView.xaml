@@ -49,9 +49,13 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,20,16">
+                    <TextBlock Text="Stock de Insumos"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"/>
                     <TextBlock Text="Consulta de codigo, insumo, categoria y cantidad disponible."
                                Foreground="#6B7280"
-                               Margin="0,4,0,0"/>
+                               Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <Border Grid.Row="0"

@@ -150,6 +150,11 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,14">
+                    <TextBlock Text="Lista de Empresas"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"
+                               Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ResumenRegistros}"
                                FontSize="13"
                                Foreground="#64748B"/>

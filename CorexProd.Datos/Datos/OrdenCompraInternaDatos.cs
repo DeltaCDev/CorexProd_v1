@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Security;
 using System.Text;
 
@@ -17,6 +18,7 @@ namespace CorexProd.Datos.Datos
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_VEN_OCI_LISTAR", conexion) { CommandType = CommandType.StoredProcedure };
             conexion.Open();
+            AsegurarColumnaObservacion(conexion);
 
             using (SqlDataReader dr = cmd.ExecuteReader())
             {
@@ -34,6 +36,8 @@ namespace CorexProd.Datos.Datos
                 }
             }
 
+            CargarDetallesResumen(conexion, lista);
+
             return lista;
         }
 
@@ -43,6 +47,7 @@ namespace CorexProd.Datos.Datos
             using SqlCommand cmd = new("USP_VEN_OCI_OBTENER", conexion) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOrdenCompraInterna);
             conexion.Open();
+            AsegurarColumnaObservacion(conexion);
             using SqlDataReader dr = cmd.ExecuteReader();
 
             if (!dr.Read())
@@ -79,9 +84,71 @@ namespace CorexProd.Datos.Datos
             }
 
             dr.Close();
+            oci.Observacion = ObtenerObservacionGeneral(conexion, oci.IdOrdenCompraInterna);
             TryAjustarStockDisponibleReservado(conexion, oci);
 
             return oci;
+        }
+
+        private static void CargarDetallesResumen(SqlConnection conexion, List<OrdenCompraInterna> ordenes)
+        {
+            if (ordenes.Count == 0)
+                return;
+
+            Dictionary<int, OrdenCompraInterna> porOrden = ordenes.ToDictionary(o => o.IdOrdenCompraInterna);
+            string ids = string.Join(",", porOrden.Keys);
+
+            using SqlCommand cmd = new(
+                """
+                SELECT
+                    D.IdOrdenCompraInternaDetalle,
+                    D.IdOrdenCompraInterna,
+                    D.IdProducto,
+                    D.CodigoProducto,
+                    D.NombreProducto,
+                    D.Cantidad,
+                    CAST(ISNULL(S.StockActual, 0) AS DECIMAL(18,2)) AS StockActual,
+                    CAST(ISNULL(D.CantidadDespachada, 0) AS DECIMAL(18,2)) AS CantidadDespachada,
+                    D.PrecioUnitario,
+                    D.Descuento,
+                    D.Importe,
+                    ISNULL(D.Observacion, '') AS Observacion
+                FROM dbo.OrdenCompraInternaDetalle D
+                LEFT JOIN dbo.StockProductos S ON S.IdProducto = D.IdProducto
+                INNER JOIN STRING_SPLIT(@Ids, ',') I ON TRY_CONVERT(INT, I.value) = D.IdOrdenCompraInterna
+                ORDER BY D.IdOrdenCompraInterna, D.IdOrdenCompraInternaDetalle;
+                """,
+                conexion);
+            cmd.Parameters.Add("@Ids", SqlDbType.VarChar, -1).Value = ids;
+
+            using (SqlDataReader dr = cmd.ExecuteReader())
+            {
+                while (dr.Read())
+                {
+                    int idOrden = Convert.ToInt32(dr["IdOrdenCompraInterna"]);
+                    if (!porOrden.TryGetValue(idOrden, out OrdenCompraInterna? orden))
+                        continue;
+
+                    orden.Detalles.Add(new OrdenCompraInternaDetalle
+                    {
+                        IdOrdenCompraInternaDetalle = Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+                        IdOrdenCompraInterna = idOrden,
+                        IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                        CodigoProducto = dr["CodigoProducto"]?.ToString() ?? string.Empty,
+                        NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
+                        Cantidad = Convert.ToDecimal(dr["Cantidad"]),
+                        StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        CantidadDespachada = Convert.ToDecimal(dr["CantidadDespachada"]),
+                        PrecioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
+                        Descuento = Convert.ToDecimal(dr["Descuento"]),
+                        Importe = Convert.ToDecimal(dr["Importe"]),
+                        Observacion = dr["Observacion"]?.ToString() ?? string.Empty
+                    });
+                }
+            }
+
+            foreach (OrdenCompraInterna orden in ordenes)
+                TryAjustarStockDisponibleReservado(conexion, orden);
         }
 
         private static void TryAjustarStockDisponibleReservado(SqlConnection conexion, OrdenCompraInterna oci)
@@ -195,8 +262,16 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
             SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
             cmd.Parameters.Add(mensaje);
             conexion.Open();
+            AsegurarColumnaObservacion(conexion);
             ConfigurarOpcionesInsert(conexion);
             cmd.ExecuteNonQuery();
+            if (Convert.ToBoolean(cmd.Parameters["@Resultado"].Value) && cmd.Parameters["@IdGenerado"].Value is not DBNull)
+            {
+                ActualizarObservacionGeneral(
+                    conexion,
+                    Convert.ToInt32(cmd.Parameters["@IdGenerado"].Value),
+                    orden.Observacion);
+            }
             return mensaje.Value?.ToString() ?? string.Empty;
         }
 
@@ -204,6 +279,7 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
             conexion.Open();
+            AsegurarColumnaObservacion(conexion);
             ConfigurarOpcionesInsert(conexion);
             using SqlTransaction transaction = conexion.BeginTransaction();
 
@@ -271,6 +347,7 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                         Igv = @Igv,
                         IgvPorcentaje = @IgvPorcentaje,
                         CondicionTributaria = @CondicionTributaria,
+                        Observacion = @Observacion,
                         Total = @Total,
                         UsuarioGenerador = @UsuarioGenerador
                     FROM dbo.OrdenesCompraInterna O
@@ -321,6 +398,7 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                     actualizar.Parameters.Add("@Igv", SqlDbType.Decimal).Value = orden.Igv;
                     actualizar.Parameters.Add("@IgvPorcentaje", SqlDbType.Decimal).Value = orden.IgvPorcentaje;
                     actualizar.Parameters.Add("@CondicionTributaria", SqlDbType.VarChar, 50).Value = orden.CondicionTributaria ?? string.Empty;
+                    actualizar.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = orden.Observacion ?? string.Empty;
                     actualizar.Parameters.Add("@Total", SqlDbType.Decimal).Value = orden.Total;
                     actualizar.Parameters.Add("@UsuarioGenerador", SqlDbType.VarChar, 80).Value = orden.UsuarioGenerador ?? "Sistema";
                     actualizar.Parameters.Add("@DetallesXml", SqlDbType.Xml).Value = CrearDetallesXml(orden.Detalles);
@@ -402,6 +480,7 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                 Igv = Convert.ToDecimal(dr["Igv"]),
                 IgvPorcentaje = Convert.ToDecimal(dr["IgvPorcentaje"]),
                 CondicionTributaria = dr["CondicionTributaria"]?.ToString() ?? string.Empty,
+                Observacion = TextoOpcional(dr, "Observacion"),
                 Total = Convert.ToDecimal(dr["Total"]),
                 Estado = dr["Estado"]?.ToString() ?? string.Empty,
                 UsuarioGenerador = dr["UsuarioGenerador"]?.ToString() ?? string.Empty,
@@ -461,6 +540,44 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
             {
                 return string.Empty;
             }
+        }
+
+        private static void AsegurarColumnaObservacion(SqlConnection conexion)
+        {
+            using SqlCommand cmd = new(
+                """
+                IF COL_LENGTH('dbo.OrdenesCompraInterna', 'Observacion') IS NULL
+                    ALTER TABLE dbo.OrdenesCompraInterna ADD Observacion VARCHAR(500) NULL;
+                """,
+                conexion);
+            cmd.ExecuteNonQuery();
+        }
+
+        private static string ObtenerObservacionGeneral(SqlConnection conexion, int idOrdenCompraInterna)
+        {
+            using SqlCommand cmd = new(
+                """
+                SELECT ISNULL(Observacion, '')
+                FROM dbo.OrdenesCompraInterna
+                WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+                """,
+                conexion);
+            cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
+            return cmd.ExecuteScalar()?.ToString() ?? string.Empty;
+        }
+
+        private static void ActualizarObservacionGeneral(SqlConnection conexion, int idOrdenCompraInterna, string? observacion)
+        {
+            using SqlCommand cmd = new(
+                """
+                UPDATE dbo.OrdenesCompraInterna
+                SET Observacion = @Observacion
+                WHERE IdOrdenCompraInterna = @IdOrdenCompraInterna;
+                """,
+                conexion);
+            cmd.Parameters.Add("@IdOrdenCompraInterna", SqlDbType.Int).Value = idOrdenCompraInterna;
+            cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = observacion ?? string.Empty;
+            cmd.ExecuteNonQuery();
         }
 
         private static void ConfigurarOpcionesInsert(SqlConnection conexion)

@@ -66,6 +66,8 @@ namespace CorexProd.WPF.Modules.Ventas.Views
             if (DataContext is not ProformaEditorViewModel viewModel)
                 return;
 
+            ConfirmarEdicionDetalle();
+
             if (!_esOrdenCompra)
             {
                 if (viewModel.GuardarCommand.CanExecute(null))
@@ -121,6 +123,15 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                     "Fecha de entrega",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+            }
+        }
+
+        private void ConfirmarEdicionDetalle()
+        {
+            foreach (DataGrid grid in BuscarDescendientes<DataGrid>(this))
+            {
+                grid.CommitEdit(DataGridEditingUnit.Cell, true);
+                grid.CommitEdit(DataGridEditingUnit.Row, true);
             }
         }
 
