@@ -43,6 +43,7 @@ SELECT
     SUM(ISNULL(D.CantidadLanzada, 0)) AS TotalLanzado,
     SUM(ISNULL(D.CantidadProducida, 0)) AS TotalProducido,
     SUM(ISNULL(D.CantidadPendiente, 0)) AS TotalPendiente,
+    MAX(CONVERT(DECIMAL(18,2), ISNULL(AREA.TotalPendienteDisponible, 0))) AS TotalPendienteDisponibleProceso,
     CAST(CASE WHEN EXISTS
     (
         SELECT 1
@@ -64,6 +65,28 @@ JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
 LEFT JOIN dbo.Usuarios UA ON UA.IdUsuario = O.IdUsuarioAutorizaCreacion
 LEFT JOIN dbo.OrdenTrabajo REL ON REL.IdOrdenTrabajo = O.IdOrdenTrabajoRelacionada
 LEFT JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = O.IdOrdenTrabajo
+OUTER APPLY
+(
+    SELECT SUM
+    (
+        CASE
+            WHEN DA.Estado IN ('FINALIZADA','BLOQUEADA','ANULADA') THEN 0
+            WHEN DA.CantidadPendiente - ISNULL(R.CantidadReservada, 0) > 0
+                THEN DA.CantidadPendiente - ISNULL(R.CantidadReservada, 0)
+            ELSE 0
+        END
+    ) AS TotalPendienteDisponible
+    FROM dbo.OrdenTrabajoDetalleArea DA
+    OUTER APPLY
+    (
+        SELECT SUM(SPR.Cantidad - SPR.CantidadAplicada) AS CantidadReservada
+        FROM dbo.StockProcesoReserva SPR
+        WHERE SPR.IdDetalleArea = DA.IdDetalleArea
+          AND SPR.Estado IN ('DISPONIBLE','RESERVADO')
+          AND SPR.Cantidad - SPR.CantidadAplicada > 0
+    ) R
+    WHERE DA.IdOrdenTrabajo = O.IdOrdenTrabajo
+) AREA
 GROUP BY
     O.IdOrdenTrabajo,O.NumeroOT,O.IdOrdenCompraInterna,OCI.NumeroOci,OCI.OrdenCompraCliente,
     O.IdCliente,O.NombreCliente,O.FechaEmision,O.Estado,O.IdUsuarioCreacion,U.NombreUsuario,
@@ -90,6 +113,7 @@ ORDER BY O.IdOrdenTrabajo DESC;";
                 FechaAnulacion = dr["FechaAnulacion"] is DBNull ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
                 CantidadProductos = Convert.ToInt32(dr["CantidadProductos"]), TotalPlanificado = Decimal(dr, "TotalPlanificado"), TotalLanzado = Decimal(dr, "TotalLanzado"),
                 TotalProducido = Decimal(dr, "TotalProducido"), TotalPendiente = Decimal(dr, "TotalPendiente"),
+                TotalPendienteDisponibleProceso = Decimal(dr, "TotalPendienteDisponibleProceso"),
                 TieneRegularizacionTerminada = Convert.ToBoolean(dr["TieneRegularizacionTerminada"])
             });
             return lista;
@@ -150,15 +174,64 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
             };
             if (dr.NextResult()) while (dr.Read()) ot.Detalles.Add(MapearDetalle(dr));
             if (dr.NextResult()) while (dr.Read()) ot.Areas.Add(MapearArea(dr));
+            dr.Close();
+            CargarReservasProceso(cn, ot);
             ot.TotalProducido = ot.Detalles.Sum(x => x.CantidadProducida);
             ot.TotalPendiente = ot.Detalles.Sum(x => x.CantidadPendiente);
+            ot.TotalPendienteDisponibleProceso = ot.Areas
+                .Where(x => x.Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA"))
+                .Sum(x => x.CantidadPendienteDisponible);
             ot.TieneRegularizacionTerminada = TieneRegularizacionTerminada(id);
             if (ot.TotalPendiente > 0
+                && ot.TotalProducido > 0
+                && (ot.TotalPendienteDisponibleProceso ?? ot.TotalPendiente) <= 0)
+                ot.Estado = "PARCIAL";
+            else if (ot.TotalPendiente > 0
                 && ot.TotalProducido > 0
                 && !ot.Estado.Equals("EN_PROCESO", StringComparison.OrdinalIgnoreCase)
                 && !ot.Estado.Equals("PROCESO", StringComparison.OrdinalIgnoreCase))
                 ot.Estado = "PARCIAL";
             return ot;
+        }
+
+        private static void CargarReservasProceso(SqlConnection cn, OrdenTrabajo ot)
+        {
+            if (ot.Areas.Count == 0)
+                return;
+
+            foreach (OrdenTrabajoDetalleArea area in ot.Areas)
+                area.CantidadPendiente = Math.Max(0, area.CantidadRecibida - area.CantidadEnviada - area.CantidadMerma);
+
+            string ids = string.Join(",", ot.Areas.Select(a => a.IdDetalleArea));
+            using SqlCommand cmd = new(
+                """
+                SELECT
+                    R.IdDetalleArea,
+                    CONVERT(DECIMAL(18,2), SUM(R.Cantidad - R.CantidadAplicada)) AS CantidadReservada
+                FROM dbo.StockProcesoReserva R
+                INNER JOIN STRING_SPLIT(@Ids, ',') I ON TRY_CONVERT(BIGINT, I.value) = R.IdDetalleArea
+                WHERE R.Estado IN ('DISPONIBLE','RESERVADO')
+                  AND R.Cantidad - R.CantidadAplicada > 0
+                GROUP BY R.IdDetalleArea;
+                """,
+                cn);
+            cmd.Parameters.Add("@Ids", SqlDbType.VarChar, -1).Value = ids;
+
+            Dictionary<long, OrdenTrabajoDetalleArea> areas = ot.Areas.ToDictionary(a => a.IdDetalleArea);
+            try
+            {
+                using SqlDataReader reservaReader = cmd.ExecuteReader();
+                while (reservaReader.Read())
+                {
+                    long idDetalleArea = Convert.ToInt64(reservaReader["IdDetalleArea"]);
+                    if (areas.TryGetValue(idDetalleArea, out OrdenTrabajoDetalleArea? area))
+                        area.CantidadReservada = Convert.ToDecimal(reservaReader["CantidadReservada"]);
+                }
+            }
+            catch (SqlException ex) when (ex.Number == 208 || ex.Number == 207)
+            {
+                // Compatibilidad con bases anteriores al modulo de reserva de stock en proceso.
+            }
         }
 
         private bool TieneRegularizacionTerminada(int idOrdenTrabajo)
@@ -472,11 +545,147 @@ WHERE IdOrdenTrabajoRelacionada = @IdOrdenTrabajoOrigen
             cmd.Parameters.AddWithValue("@IdUsuarioAutoriza", idAutoriza);
             cn.Open();
             cmd.ExecuteNonQuery();
+            ActualizarEstadoPorReservasProceso(cn, idDetalleArea);
+        }
+
+        private static void ActualizarEstadoPorReservasProceso(SqlConnection cn, long idDetalleArea)
+        {
+            using SqlCommand cmd = new(
+                """
+                DECLARE @IdOrdenTrabajo INT =
+                (
+                    SELECT TOP(1) IdOrdenTrabajo
+                    FROM dbo.OrdenTrabajoDetalleArea
+                    WHERE IdDetalleArea = @IdDetalleArea
+                );
+
+                IF @IdOrdenTrabajo IS NULL RETURN;
+
+                ;WITH Detalle AS
+                (
+                    SELECT
+                        SUM(ISNULL(CantidadProducida, 0)) AS TotalProducido,
+                        SUM(ISNULL(CantidadPendiente, 0)) AS TotalPendiente
+                    FROM dbo.OrdenTrabajoDetalle
+                    WHERE IdOrdenTrabajo = @IdOrdenTrabajo
+                      AND Estado <> 'ANULADO'
+                ),
+                AreaPendiente AS
+                (
+                    SELECT SUM
+                    (
+                        CASE
+                            WHEN DA.Estado IN ('FINALIZADA','BLOQUEADA','ANULADA') THEN 0
+                            WHEN DA.CantidadPendiente - ISNULL(R.CantidadReservada, 0) > 0
+                                THEN DA.CantidadPendiente - ISNULL(R.CantidadReservada, 0)
+                            ELSE 0
+                        END
+                    ) AS TotalPendienteDisponible
+                    FROM dbo.OrdenTrabajoDetalleArea DA
+                    OUTER APPLY
+                    (
+                        SELECT SUM(SPR.Cantidad - SPR.CantidadAplicada) AS CantidadReservada
+                        FROM dbo.StockProcesoReserva SPR
+                        WHERE SPR.IdDetalleArea = DA.IdDetalleArea
+                          AND SPR.Estado IN ('DISPONIBLE','RESERVADO')
+                          AND SPR.Cantidad - SPR.CantidadAplicada > 0
+                    ) R
+                    WHERE DA.IdOrdenTrabajo = @IdOrdenTrabajo
+                )
+                UPDATE O
+                SET Estado = CASE
+                    WHEN ISNULL(D.TotalPendiente, 0) <= 0 AND ISNULL(D.TotalProducido, 0) > 0 THEN 'TERMINADA'
+                    WHEN ISNULL(D.TotalPendiente, 0) > 0
+                         AND ISNULL(D.TotalProducido, 0) > 0
+                         AND ISNULL(A.TotalPendienteDisponible, 0) <= 0 THEN 'PARCIAL'
+                    ELSE O.Estado
+                END
+                FROM dbo.OrdenTrabajo O
+                CROSS JOIN Detalle D
+                CROSS JOIN AreaPendiente A
+                WHERE O.IdOrdenTrabajo = @IdOrdenTrabajo
+                  AND UPPER(REPLACE(O.Estado, ' ', '_')) NOT IN ('ANULADA','ANULADO','TERMINADA');
+                """,
+                cn);
+            cmd.Parameters.Add("@IdDetalleArea", SqlDbType.BigInt).Value = idDetalleArea;
+            cmd.ExecuteNonQuery();
         }
 
         public List<OrdenTrabajoValidacionProducto> ValidarInsumos(int idOci)
         {
-            List<OrdenTrabajoValidacionProducto> lista=[];using SqlConnection cn=Conexion.ObtenerConexion();using SqlCommand cmd=new("USP_PRO_OT_VALIDAR_INSUMOS",cn){CommandType=CommandType.StoredProcedure};cmd.Parameters.AddWithValue("@IdOrdenCompraInterna",idOci);cn.Open();using SqlDataReader dr=cmd.ExecuteReader();while(dr.Read())lista.Add(new OrdenTrabajoValidacionProducto{IdOrdenCompraInternaDetalle=Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),Observacion=Texto(dr,"Observacion"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),IdFichaTecnica=dr["IdFichaTecnica"]is DBNull?null:Convert.ToInt32(dr["IdFichaTecnica"]),StockAlmacen=Decimal(dr,"StockAlmacen"),StockCorte=Decimal(dr,"StockCorte"),StockConfeccion=Decimal(dr,"StockConfeccion"),StockAcabado=Decimal(dr,"StockAcabado"),StockTotal=Decimal(dr,"StockTotal"),Deficit=Decimal(dr,"Deficit"),EstadoInsumos=Texto(dr,"EstadoInsumos")});return lista;
+            List<OrdenTrabajoValidacionProducto> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_VALIDAR_INSUMOS", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci);
+            cn.Open();
+            using (SqlDataReader dr = cmd.ExecuteReader())
+            {
+                while (dr.Read())
+                {
+                    decimal stockProceso = DecimalOpcional(dr, "StockProceso");
+                    if (stockProceso <= 0)
+                        stockProceso = DecimalOpcional(dr, "StockProcesoReservado");
+
+                    lista.Add(new OrdenTrabajoValidacionProducto
+                    {
+                        IdOrdenCompraInternaDetalle = Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),
+                        IdProducto = Convert.ToInt32(dr["IdProducto"]),
+                        CodigoProducto = Texto(dr, "CodigoProducto"),
+                        NombreProducto = Texto(dr, "NombreProducto"),
+                        Observacion = Texto(dr, "Observacion"),
+                        CantidadRequerida = Decimal(dr, "CantidadRequerida"),
+                        IdFichaTecnica = dr["IdFichaTecnica"] is DBNull ? null : Convert.ToInt32(dr["IdFichaTecnica"]),
+                        StockAlmacen = Decimal(dr, "StockAlmacen"),
+                        StockCorte = Decimal(dr, "StockCorte"),
+                        StockConfeccion = Decimal(dr, "StockConfeccion"),
+                        StockAcabado = Decimal(dr, "StockAcabado"),
+                        StockTotal = Decimal(dr, "StockTotal"),
+                        StockProcesoReservado = stockProceso,
+                        Deficit = Decimal(dr, "Deficit"),
+                        EstadoInsumos = Texto(dr, "EstadoInsumos")
+                    });
+                }
+            }
+
+            CargarReservasProcesoPorProducto(cn, lista);
+            return lista;
+        }
+
+        private static void CargarReservasProcesoPorProducto(SqlConnection cn, List<OrdenTrabajoValidacionProducto> productos)
+        {
+            if (productos.Count == 0)
+                return;
+
+            string ids = string.Join(",", productos.Select(p => p.IdProducto).Distinct());
+            using SqlCommand cmd = new(
+                """
+                SELECT
+                    R.IdProducto,
+                    CONVERT(DECIMAL(18,3), SUM(R.Cantidad - R.CantidadAplicada)) AS CantidadReservada
+                FROM dbo.StockProcesoReserva R
+                INNER JOIN STRING_SPLIT(@Ids, ',') I ON TRY_CONVERT(INT, I.value) = R.IdProducto
+                WHERE R.Estado IN ('DISPONIBLE','RESERVADO')
+                  AND R.Cantidad - R.CantidadAplicada > 0
+                GROUP BY R.IdProducto;
+                """,
+                cn);
+            cmd.Parameters.Add("@Ids", SqlDbType.VarChar, -1).Value = ids;
+
+            try
+            {
+                Dictionary<int, decimal> reservas = [];
+                using SqlDataReader dr = cmd.ExecuteReader();
+                while (dr.Read())
+                    reservas[Convert.ToInt32(dr["IdProducto"])] = Convert.ToDecimal(dr["CantidadReservada"]);
+
+                foreach (OrdenTrabajoValidacionProducto producto in productos)
+                    if (reservas.TryGetValue(producto.IdProducto, out decimal reservado))
+                        producto.StockProcesoReservado = reservado;
+            }
+            catch (SqlException ex) when (ex.Number == 208 || ex.Number == 207)
+            {
+                // Compatibilidad con bases anteriores al modulo de reserva de stock en proceso.
+            }
         }
 
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)

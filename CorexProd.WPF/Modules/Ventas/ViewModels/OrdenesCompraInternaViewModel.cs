@@ -226,12 +226,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         }
 
         private static bool PuedeEditar(object? parametro) =>
-            parametro is OrdenCompraInterna orden
-            && orden.Estado.Trim().ToUpperInvariant() is "PENDIENTE" or "EMITIDA" or "EMITIDO"
-            && !orden.TieneOrdenTrabajo
-            && !orden.TieneGuiaSalida
-            && string.IsNullOrWhiteSpace(orden.MotivoAnulacion)
-            && !orden.FechaAnulacion.HasValue;
+            parametro is OrdenCompraInterna orden && orden.PuedeEditar;
 
         private void Editar(object? parametro)
         {
@@ -240,7 +235,7 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
 
             if (!orden.PuedeEditar)
             {
-                NotificationService.Warning("Solo se puede editar una OC pendiente sin OT, guias, anulacion ni acciones realizadas.");
+                NotificationService.Warning("Solo se puede editar una OC pendiente/emitida sin OT, sin despachos ni anulacion.");
                 return;
             }
 
@@ -299,7 +294,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         private static bool PuedeGenerarGuiaSalida(object? parametro) =>
             PermissionService.PuedeGenerarGuiaInterna
             && parametro is OrdenCompraInterna orden
-            && orden.PuedeGenerarGuiaSalida;
+            && orden.PuedeGenerarGuiaSalida
+            && orden.TieneStockDisponibleDespacho;
 
         private void GenerarGuiaSalida(object? parametro)
         {

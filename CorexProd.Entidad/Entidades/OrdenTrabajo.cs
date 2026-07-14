@@ -23,8 +23,10 @@ namespace CorexProd.Entidad.Entidades
             get
             {
                 string estado = Estado.Trim().ToUpperInvariant();
+                decimal pendienteDisponible = TotalPendienteDisponibleProceso ?? TotalPendiente;
                 if (estado is "ANULADA" or "ANULADO") return "Anulado";
                 if (TotalPendiente <= 0 && TotalProducido > 0) return "Terminado";
+                if (TotalPendiente > 0 && TotalProducido > 0 && pendienteDisponible <= 0) return "Terminado Parcial";
                 if (TotalPendiente > 0 && TotalProducido > 0 && estado is not ("EN_PROCESO" or "PROCESO")) return "Terminado Parcial";
                 if (estado is "EN_PROCESO" or "PROCESO" || TotalLanzado > 0) return "En Proceso";
                 return "Pendiente";
@@ -47,6 +49,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal TotalLanzado { get; set; }
         public decimal TotalProducido { get; set; }
         public decimal TotalPendiente { get; set; }
+        public decimal? TotalPendienteDisponibleProceso { get; set; }
         public bool TieneRegularizacionTerminada { get; set; }
         public List<OrdenTrabajoDetalle> Detalles { get; } = [];
         public List<OrdenTrabajoDetalleArea> Areas { get; } = [];
@@ -145,8 +148,10 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockConfeccion { get; set; }
         public decimal StockAcabado { get; set; }
         public decimal StockTotal { get; set; }
+        public decimal StockProcesoReservado { get; set; }
         public decimal Deficit { get; set; }
-        public decimal StockProcesoDisponible => Math.Max(0, StockTotal - StockAlmacen);
+        public decimal DeficitContraStockActual => Math.Max(0, CantidadRequerida - StockAlmacen);
+        public decimal StockProcesoDisponible => Math.Max(0, StockProcesoReservado > 0 ? StockProcesoReservado : StockTotal - StockAlmacen);
         public decimal CantidadReservaNecesaria => Math.Min(CantidadRequerida, StockProcesoDisponible);
         public decimal CantidadReservaExcedente => Math.Max(0, StockProcesoDisponible - CantidadReservaNecesaria);
         public bool TieneStockProcesoReservado => StockProcesoDisponible > 0;

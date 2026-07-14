@@ -46,14 +46,23 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockDisponibleDespacho => Detalles.Sum(d => d.CantidadDisponibleParaEnviar);
         public bool EstaAnulada => Estado.Trim().ToUpperInvariant() is "ANULADO" or "ANULADA";
         public bool EstaDespachadaCompleta => Detalles.Count > 0 && CantidadPendienteDespacho <= 0;
+        public bool TieneStockDisponibleDespacho => Detalles.Any(d => d.CantidadDisponibleParaEnviar > 0);
         public bool TieneStockDespachoCompleto => CantidadPendienteDespacho > 0 && StockDisponibleDespacho >= CantidadPendienteDespacho;
         public bool TieneStockDespachoParcial => CantidadPendienteDespacho > 0 && StockDisponibleDespacho > 0 && StockDisponibleDespacho < CantidadPendienteDespacho;
-        public string GuiaSalidaEstadoTexto => EstaAnulada ? string.Empty : EstaDespachadaCompleta ? "Despachado" : TieneStockDespachoCompleto ? "Completo" : "Parcial";
+        public string GuiaSalidaEstadoTexto => EstaAnulada
+            ? string.Empty
+            : EstaDespachadaCompleta
+                ? "Despachado"
+                : TieneStockDespachoCompleto
+                    ? "Completo"
+                    : TieneStockDespachoParcial
+                        ? "Parcial"
+                        : "Sin Stock";
         public string GuiaSalidaTexto => EstaAnulada ? "Guia Interna" : $"Guia Interna\n({GuiaSalidaEstadoTexto})";
-        public string GuiaSalidaFondo => EstaAnulada ? "#94A3B8" : EstaDespachadaCompleta ? "#8B95A1" : TieneStockDespachoCompleto ? "#0F766E" : "#F97316";
-        public string GuiaSalidaBorde => EstaAnulada ? "#94A3B8" : EstaDespachadaCompleta ? "#8B95A1" : TieneStockDespachoCompleto ? "#0F766E" : "#F97316";
-        public string GuiaSalidaHoverFondo => EstaAnulada ? "#94A3B8" : EstaDespachadaCompleta ? "#8B95A1" : TieneStockDespachoCompleto ? "#0D9488" : "#EA580C";
-        public string GuiaSalidaPressedFondo => EstaAnulada ? "#94A3B8" : EstaDespachadaCompleta ? "#8B95A1" : TieneStockDespachoCompleto ? "#115E59" : "#C2410C";
+        public string GuiaSalidaFondo => EstaAnulada || EstaDespachadaCompleta || !TieneStockDisponibleDespacho ? "#8B95A1" : TieneStockDespachoCompleto ? "#0F766E" : "#F97316";
+        public string GuiaSalidaBorde => EstaAnulada || EstaDespachadaCompleta || !TieneStockDisponibleDespacho ? "#8B95A1" : TieneStockDespachoCompleto ? "#0F766E" : "#F97316";
+        public string GuiaSalidaHoverFondo => EstaAnulada || EstaDespachadaCompleta || !TieneStockDisponibleDespacho ? "#8B95A1" : TieneStockDespachoCompleto ? "#0D9488" : "#EA580C";
+        public string GuiaSalidaPressedFondo => EstaAnulada || EstaDespachadaCompleta || !TieneStockDisponibleDespacho ? "#8B95A1" : TieneStockDespachoCompleto ? "#115E59" : "#C2410C";
         public string GuiaSalidaToolTip => EstaAnulada ? "Guia Interna" : $"Guia Interna ({GuiaSalidaEstadoTexto})";
         public string EstadoListadoTexto => EstaAnulada
             ? "Anulado"
@@ -79,7 +88,6 @@ namespace CorexProd.Entidad.Entidades
             _ => "#1D4ED8"
         };
         public bool PuedeEditar => Estado.Trim().ToUpperInvariant() is "PENDIENTE" or "EMITIDA" or "EMITIDO"
-            && !TieneGuiaSalida
             && !TieneOrdenTrabajo
             && string.IsNullOrWhiteSpace(MotivoAnulacion)
             && !FechaAnulacion.HasValue

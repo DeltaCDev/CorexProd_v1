@@ -457,8 +457,8 @@ namespace CorexProd.WPF.Modules.Ventas.ViewModels
         {
             IdOrdenCompraInterna = copiar ? 0 : orden.IdOrdenCompraInterna;
             SerieNumero = copiar ? _ordenCompraNegocio.ObtenerSiguienteNumero() : orden.NumeroOci;
-            FechaEmision = DateTime.Today;
-            FechaVencimiento = DateTime.Today;
+            FechaEmision = copiar ? DateTime.Today : orden.FechaEmision;
+            FechaVencimiento = orden.FechaEntrega == default ? FechaEmision.AddDays(1) : orden.FechaEntrega;
             OrdenCompraCliente = orden.OrdenCompraCliente;
             ClienteSeleccionado = _todosLosClientes.FirstOrDefault(c => c.IdCliente == orden.IdCliente);
             TextoBusquedaCliente = ClienteSeleccionado?.ClienteBusqueda ?? string.Empty;

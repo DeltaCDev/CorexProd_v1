@@ -86,6 +86,7 @@ namespace CorexProd.Datos.Datos
             dr.Close();
             oci.Observacion = ObtenerObservacionGeneral(conexion, oci.IdOrdenCompraInterna);
             TryAjustarStockDisponibleReservado(conexion, oci);
+            ActualizarDisponibilidadGuiaSalida(oci);
 
             return oci;
         }
@@ -148,7 +149,17 @@ namespace CorexProd.Datos.Datos
             }
 
             foreach (OrdenCompraInterna orden in ordenes)
+            {
                 TryAjustarStockDisponibleReservado(conexion, orden);
+                ActualizarDisponibilidadGuiaSalida(orden);
+            }
+        }
+
+        private static void ActualizarDisponibilidadGuiaSalida(OrdenCompraInterna orden)
+        {
+            orden.PuedeGenerarGuiaSalida = !orden.EstaAnulada
+                && !orden.EstaDespachadaCompleta
+                && orden.TieneStockDisponibleDespacho;
         }
 
         private static void TryAjustarStockDisponibleReservado(SqlConnection conexion, OrdenCompraInterna oci)
@@ -289,7 +300,6 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                     """
                     SELECT TOP (1)
                         Estado,
-                        ISNULL(TieneGuiaSalida, 0) AS TieneGuiaSalida,
                         ISNULL(TieneOrdenTrabajo, 0) AS TieneOrdenTrabajo,
                         ISNULL(MotivoAnulacion, '') AS MotivoAnulacion,
                         FechaAnulacion
@@ -305,13 +315,12 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                         return "No se encontro la orden de compra.";
 
                     string estado = dr["Estado"]?.ToString()?.Trim().ToUpperInvariant() ?? string.Empty;
-                    bool tieneAccion = Convert.ToBoolean(dr["TieneGuiaSalida"])
-                        || Convert.ToBoolean(dr["TieneOrdenTrabajo"])
+                    bool tieneAccion = Convert.ToBoolean(dr["TieneOrdenTrabajo"])
                         || !string.IsNullOrWhiteSpace(dr["MotivoAnulacion"]?.ToString())
                         || dr["FechaAnulacion"] != DBNull.Value;
 
                     if (estado is not ("PENDIENTE" or "EMITIDA" or "EMITIDO") || tieneAccion)
-                        return "Solo se puede editar una OC pendiente sin acciones realizadas.";
+                        return "Solo se puede editar una OC pendiente/emitida sin OT ni anulacion.";
                 }
 
                 using (SqlCommand validarDetalle = new(

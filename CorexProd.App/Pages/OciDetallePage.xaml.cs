@@ -10,6 +10,7 @@ public partial class OciDetallePage : ContentPage
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
     private readonly ObservableCollection<OciDetalleProductoItem> _productos = [];
+    private readonly ObservableCollection<OtRelacionadaItem> _otsRelacionadas = [];
     private int _idOrdenCompra;
     private string _numeroOci = string.Empty;
     private string _observacionGeneral = string.Empty;
@@ -23,6 +24,7 @@ public partial class OciDetallePage : ContentPage
     }
 
     public ObservableCollection<OciDetalleProductoItem> Productos => _productos;
+    public ObservableCollection<OtRelacionadaItem> OtsRelacionadas => _otsRelacionadas;
 
     public string IdOrdenCompra
     {
@@ -54,12 +56,13 @@ public partial class OciDetallePage : ContentPage
             string ocCliente = TextoVacio(cabecera.OrdenCompraCliente);
             _observacionGeneral = "Sin observaciones generales.";
 
-            Title = string.IsNullOrWhiteSpace(cabecera.OrdenCompraCliente) ? _numeroOci : ocCliente;
+            Title = _numeroOci;
             OcClienteDestacadoLabel.Text = ocCliente;
             NumeroLabel.Text = _numeroOci;
             ClienteLabel.Text = TextoVacio(cabecera.NombreCliente);
             FechaEmisionLabel.Text = cabecera.FechaEmision.ToString("dd/MM/yyyy");
             FechaEntregaLabel.Text = cabecera.FechaEntrega.ToString("dd/MM/yyyy");
+            AplicarTiempoRestante(cabecera.FechaEntrega, cabecera.Estado);
             SubtotalLabel.Text = Moneda(cabecera.Subtotal);
             IgvLabel.Text = Moneda(cabecera.Igv);
             DescuentoLabel.Text = Moneda(cabecera.Descuento);
@@ -73,11 +76,60 @@ public partial class OciDetallePage : ContentPage
             _productos.Clear();
             foreach (DocumentoDetalle item in detalle.Detalles)
                 _productos.Add(OciDetalleProductoItem.FromDetalle(item, mostrarDisponibilidad));
+
+            await CargarOtsRelacionadasAsync();
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("Orden de Compra", ex.Message, "OK");
         }
+    }
+
+    private async Task CargarOtsRelacionadasAsync()
+    {
+        IReadOnlyList<OrdenTrabajoResumen> ordenes = _session.EsDemo
+            ? DemoData.OrdenesTrabajo
+            : (await _apiClient.GetOrdenesTrabajoAsync(_numeroOci)).Items;
+
+        string numeroNormalizado = NormalizarNumeroDocumento(_numeroOci);
+        List<OrdenTrabajoResumen> relacionadas = ordenes
+            .Where(x => NormalizarNumeroDocumento(x.NumeroOci) == numeroNormalizado)
+            .OrderByDescending(x => x.FechaEmision)
+            .ThenByDescending(x => x.IdOrdenTrabajo)
+            .ToList();
+
+        _otsRelacionadas.Clear();
+        foreach (OrdenTrabajoResumen item in relacionadas)
+            _otsRelacionadas.Add(OtRelacionadaItem.FromResumen(item));
+
+        OtsTituloLabel.Text = $"OT relacionadas ({_otsRelacionadas.Count})";
+        OtsVacioLabel.IsVisible = _otsRelacionadas.Count == 0;
+    }
+
+    private void OnProductosTabClicked(object? sender, EventArgs e) => MostrarTab(mostrarOts: false);
+
+    private void OnOtsTabClicked(object? sender, EventArgs e) => MostrarTab(mostrarOts: true);
+
+    private void MostrarTab(bool mostrarOts)
+    {
+        ProductosSection.IsVisible = !mostrarOts;
+        OtsSection.IsVisible = mostrarOts;
+
+        ProductosTabButton.BackgroundColor = mostrarOts ? Colors.White : Color.FromArgb("#3F1D95");
+        ProductosTabButton.BorderColor = mostrarOts ? Color.FromArgb("#D9E0E6") : Color.FromArgb("#3F1D95");
+        ProductosTabButton.TextColor = mostrarOts ? Color.FromArgb("#344054") : Colors.White;
+
+        OtsTabButton.BackgroundColor = mostrarOts ? Color.FromArgb("#3F1D95") : Colors.White;
+        OtsTabButton.BorderColor = mostrarOts ? Color.FromArgb("#3F1D95") : Color.FromArgb("#D9E0E6");
+        OtsTabButton.TextColor = mostrarOts ? Colors.White : Color.FromArgb("#344054");
+    }
+
+    private async void OnVerOtClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not OtRelacionadaItem item)
+            return;
+
+        await Shell.Current.GoToAsync($"{nameof(OrdenTrabajoDetallePage)}?id={item.IdOrdenTrabajo}");
     }
 
     private async void OnDescargarPdfClicked(object? sender, EventArgs e)
@@ -137,6 +189,51 @@ public partial class OciDetallePage : ContentPage
         EstadoBadge.Stroke = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke);
     }
 
+    private void AplicarTiempoRestante(DateTime fechaEntrega, string estado)
+    {
+        string normalizado = DocumentoFiltroHelper.Normalizar(estado);
+        int dias = (fechaEntrega.Date - DateTime.Today).Days;
+
+        if (normalizado is "ENTREGADO" or "ENTREGADA")
+        {
+            TiempoRestanteLabel.Text = "Entregada";
+            AplicarTiempoRestanteColor("#DCFCE7", "#16A34A", "#166534");
+            return;
+        }
+
+        if (normalizado is "ANULADO" or "ANULADA")
+        {
+            TiempoRestanteLabel.Text = "Anulada";
+            AplicarTiempoRestanteColor("#FEE2E2", "#DC2626", "#991B1B");
+            return;
+        }
+
+        if (dias < 0)
+        {
+            int vencidos = Math.Abs(dias);
+            TiempoRestanteLabel.Text = vencidos == 1 ? "Vencida hace 1 dia" : $"Vencida hace {vencidos} dias";
+            AplicarTiempoRestanteColor("#FEE2E2", "#DC2626", "#991B1B");
+            return;
+        }
+
+        if (dias == 0)
+        {
+            TiempoRestanteLabel.Text = "Entrega hoy";
+            AplicarTiempoRestanteColor("#FEF3C7", "#F59E0B", "#92400E");
+            return;
+        }
+
+        TiempoRestanteLabel.Text = dias == 1 ? "1 dia restante" : $"{dias} dias restantes";
+        AplicarTiempoRestanteColor("#DCFCE7", "#16A34A", "#166534");
+    }
+
+    private void AplicarTiempoRestanteColor(string background, string stroke, string text)
+    {
+        TiempoRestanteBadge.BackgroundColor = Color.FromArgb(background);
+        TiempoRestanteBadge.Stroke = Color.FromArgb(stroke);
+        TiempoRestanteLabel.TextColor = Color.FromArgb(text);
+    }
+
     private static bool EstadoPermiteDisponibilidad(string estado)
     {
         string normalizado = DocumentoFiltroHelper.Normalizar(estado);
@@ -147,6 +244,14 @@ public partial class OciDetallePage : ContentPage
         numero.StartsWith("OCI-", StringComparison.OrdinalIgnoreCase)
             ? "OC-" + numero[4..]
             : numero;
+
+    private static string NormalizarNumeroDocumento(string? numero)
+    {
+        string valor = (numero ?? string.Empty).Trim().ToUpperInvariant();
+        return valor.StartsWith("OCI-", StringComparison.Ordinal)
+            ? "OC-" + valor[4..]
+            : valor;
+    }
 
     private static string TextoVacio(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor.Trim();
@@ -261,5 +366,35 @@ public partial class OciDetallePage : ContentPage
             cantidad == decimal.Truncate(cantidad)
                 ? cantidad.ToString("N0")
                 : cantidad.ToString("N2");
+    }
+
+    public sealed class OtRelacionadaItem
+    {
+        public int IdOrdenTrabajo { get; init; }
+        public string NumeroOT { get; init; } = string.Empty;
+        public string TipoOT { get; init; } = string.Empty;
+        public string Estado { get; init; } = string.Empty;
+        public string AvanceTexto { get; init; } = string.Empty;
+        public string ProductosTexto { get; init; } = string.Empty;
+        public Color EstadoBackgroundColor { get; init; } = Color.FromArgb("#F1F5F9");
+        public Color EstadoStrokeColor { get; init; } = Color.FromArgb("#94A3B8");
+        public Color EstadoTextColor { get; init; } = Color.FromArgb("#334155");
+
+        public static OtRelacionadaItem FromResumen(OrdenTrabajoResumen resumen)
+        {
+            string estado = TextoVacio(resumen.Estado);
+            return new OtRelacionadaItem
+            {
+                IdOrdenTrabajo = resumen.IdOrdenTrabajo,
+                NumeroOT = TextoVacio(resumen.NumeroOT),
+                TipoOT = TextoVacio(resumen.TipoOT),
+                Estado = estado,
+                AvanceTexto = $"{resumen.Avance:N0}% | {resumen.TotalProducido:N2} prod.",
+                ProductosTexto = $"{resumen.CantidadProductos} item(s)",
+                EstadoBackgroundColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Background),
+                EstadoStrokeColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke),
+                EstadoTextColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Text)
+            };
+        }
     }
 }

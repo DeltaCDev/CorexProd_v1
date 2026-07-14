@@ -51,10 +51,19 @@ BEGIN
 
     SELECT
         A.*,
+        CONVERT(DECIMAL(18,2), ISNULL(R.CantidadReservada, 0)) AS CantidadReservada,
         D.CodigoProducto,
         D.NombreProducto
     FROM dbo.OrdenTrabajoDetalleArea A
     INNER JOIN dbo.OrdenTrabajoDetalle D ON D.IdDetalleOT = A.IdDetalleOT
+    OUTER APPLY
+    (
+        SELECT SUM(SPR.Cantidad - SPR.CantidadAplicada) AS CantidadReservada
+        FROM dbo.StockProcesoReserva SPR
+        WHERE SPR.IdDetalleArea = A.IdDetalleArea
+          AND SPR.Estado IN ('DISPONIBLE','RESERVADO')
+          AND SPR.Cantidad - SPR.CantidadAplicada > 0
+    ) R
     WHERE A.IdOrdenTrabajo = @IdOrdenTrabajo
     ORDER BY A.IdDetalleArea;
 END;

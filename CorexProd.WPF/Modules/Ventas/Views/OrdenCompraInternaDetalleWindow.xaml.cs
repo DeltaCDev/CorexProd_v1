@@ -17,8 +17,9 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 {
     public partial class OrdenCompraInternaDetalleWindow : Window
     {
-        private readonly OrdenCompraInterna _orden;
+        private OrdenCompraInterna _orden;
         private readonly EmpresaNegocio _empresaNegocio = new();
+        private readonly OrdenCompraInternaNegocio _ordenCompraNegocio = new();
         private readonly OrdenTrabajoNegocio _ordenTrabajoNegocio = new();
         private readonly GuiaInternaNegocio _guiaInternaNegocio = new();
         private readonly DispatcherTimer _tiempoTimer = new() { Interval = TimeSpan.FromMinutes(1) };
@@ -38,11 +39,52 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         private void OrdenCompraInternaDetalleWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= OrdenCompraInternaDetalleWindow_Loaded;
+            RefrescarOrden();
             ConfigurarCodigosProducto(this);
             CargarOrdenesTrabajoAsociadas();
             CargarGuiasInternasAsociadas();
+            ActualizarAcciones();
             ActualizarIndicadoresTiempo();
             _tiempoTimer.Start();
+        }
+
+        private void RefrescarOrden()
+        {
+            OrdenCompraInterna? actualizada = _ordenCompraNegocio.Obtener(_orden.IdOrdenCompraInterna);
+            if (actualizada == null)
+                return;
+
+            _orden = actualizada;
+            DataContext = _orden;
+        }
+
+        private void ActualizarAcciones()
+        {
+            bool puedeGenerarOt = false;
+            try
+            {
+                puedeGenerarOt = PermissionService.PuedeGenerarOrdenTrabajo
+                    && _ordenCompraNegocio.RequiereOrdenTrabajo(_orden.IdOrdenCompraInterna);
+            }
+            catch
+            {
+                puedeGenerarOt = false;
+            }
+
+            GenerarOtButton.Visibility = puedeGenerarOt ? Visibility.Visible : Visibility.Collapsed;
+            GenerarOtButton.IsEnabled = puedeGenerarOt;
+
+            string estadoGuia = _orden.GuiaSalidaEstadoTexto.Equals("Completo", StringComparison.OrdinalIgnoreCase)
+                ? "Completa"
+                : _orden.GuiaSalidaEstadoTexto;
+            GenerarGuiaButton.Content = $"Guia Interna ({estadoGuia})";
+            GenerarGuiaButton.ToolTip = _orden.GuiaSalidaToolTip;
+            GenerarGuiaButton.IsEnabled = PermissionService.PuedeGenerarGuiaInterna
+                && _orden.PuedeGenerarGuiaSalida
+                && _orden.TieneStockDisponibleDespacho;
+            GenerarGuiaButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_orden.GuiaSalidaFondo));
+            GenerarGuiaButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_orden.GuiaSalidaBorde));
+            GenerarGuiaButton.Foreground = Brushes.White;
         }
 
         private void CargarOrdenesTrabajoAsociadas()
@@ -347,6 +389,78 @@ namespace CorexProd.WPF.Modules.Ventas.Views
 
                 ConfigurarCodigosProducto(hijo);
             }
+        }
+
+        private void GenerarOt_Click(object sender, RoutedEventArgs e)
+        {
+            if (!PermissionService.PuedeGenerarOrdenTrabajo)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
+            RefrescarOrden();
+            if (!_ordenCompraNegocio.RequiereOrdenTrabajo(_orden.IdOrdenCompraInterna))
+            {
+                NotificationService.Warning("La OC ya no requiere una orden de trabajo.");
+                RefrescarPanelesAsociados();
+                return;
+            }
+
+            List<OrdenTrabajoValidacionProducto> validacion = _ordenTrabajoNegocio.ValidarInsumos(_orden.IdOrdenCompraInterna);
+            if (validacion.Count == 0)
+            {
+                NotificationService.Warning("La OC no tiene productos pendientes para generar una OT.");
+                RefrescarPanelesAsociados();
+                return;
+            }
+
+            ValidacionInsumosWindow validacionWindow = new(_orden, validacion) { Owner = this };
+            if (validacionWindow.ShowDialog() != true)
+                return;
+
+            OrdenTrabajoCrearWindow crear = new(_orden, validacion) { Owner = this };
+            if (crear.ShowDialog() == true)
+                RefrescarPanelesAsociados();
+        }
+
+        private void GenerarGuiaInterna_Click(object sender, RoutedEventArgs e)
+        {
+            if (!PermissionService.PuedeGenerarGuiaInterna)
+            {
+                PermissionService.MostrarSinPermiso();
+                return;
+            }
+
+            RefrescarOrden();
+            if (!_ordenCompraNegocio.PuedeGenerarGuiaSalida(_orden.IdOrdenCompraInterna)
+                || !_orden.TieneStockDisponibleDespacho)
+            {
+                NotificationService.Warning("La OC no tiene productos pendientes con stock disponible.");
+                RefrescarPanelesAsociados();
+                return;
+            }
+
+            GuiaInterna? guia = _guiaInternaNegocio.Preparar(_orden.IdOrdenCompraInterna);
+            if (guia == null || guia.Detalles.Count == 0)
+            {
+                NotificationService.Warning("No se encontraron productos pendientes para preparar la Guia Interna.");
+                RefrescarPanelesAsociados();
+                return;
+            }
+
+            GuiaInternaPreviaWindow previa = new(guia) { Owner = this };
+            if (previa.ShowDialog() == true)
+                RefrescarPanelesAsociados();
+        }
+
+        private void RefrescarPanelesAsociados()
+        {
+            RefrescarOrden();
+            CargarOrdenesTrabajoAsociadas();
+            CargarGuiasInternasAsociadas();
+            ActualizarAcciones();
+            ActualizarIndicadoresTiempo();
         }
 
         private void Cerrar_Click(object sender, RoutedEventArgs e) => Close();

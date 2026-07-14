@@ -13,7 +13,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
     {
         private readonly OrdenTrabajoNegocio _otNegocio = new();
         private readonly OrdenCompraInternaNegocio _ociNegocio = new();
-        private readonly List<OrdenTrabajo> _ordenes;
+        private List<OrdenTrabajo> _ordenes;
         private List<OrdenTrabajo> _regularizacionItems = [];
         private List<OrdenTrabajoValidacionProducto> _productos = [];
 
@@ -26,6 +26,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void CargarRegularizacion()
         {
+            _ordenes = _otNegocio.Listar();
             string texto = BuscarTextBox.Text.Trim();
             IEnumerable<OrdenTrabajo> candidatas = _ordenes
                 .Where(x => x.IdOrdenCompraInterna > 0

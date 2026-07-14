@@ -305,11 +305,50 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
-                                <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="85"/>
-                                <DataGridTextColumn Header="Dscto." Binding="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="65"/>
+                                <DataGridTemplateColumn Header="Cant." Width="65">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox Height="28"
+                                                     Padding="6,0"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Right"
+                                                     Text="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="P. Unitario" Width="85">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox Height="28"
+                                                     Padding="6,0"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Right"
+                                                     Text="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Dscto." Width="65">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox Height="28"
+                                                     Padding="6,0"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Right"
+                                                     Text="{Binding Descuento, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" IsReadOnly="True" Width="75"/>
-                                <DataGridTextColumn Header="Observación" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                                <DataGridTemplateColumn Header="Observación" Width="150">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox Height="28"
+                                                     Padding="6,0"
+                                                     VerticalContentAlignment="Center"
+                                                     Text="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTemplateColumn Header="" Width="82">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>

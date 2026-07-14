@@ -30,7 +30,7 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="DeficitTexto" TargetType="TextBlock">
-            <Setter Property="Text" Value="{Binding Deficit, StringFormat=N3}"/>
+            <Setter Property="Text" Value="{Binding DeficitContraStockActual, StringFormat=N3}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="#DC2626"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -109,14 +109,19 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Binding="{Binding CantidadRequerida, StringFormat=N3}" Width="85">
+                <DataGridTextColumn Binding="{Binding CantidadRequerida, StringFormat=N3}" Width="75">
                     <DataGridTextColumn.Header>
-                        <TextBlock Text="Cantidad&#x0a;Requerida" TextAlignment="Center"/>
+                        <TextBlock Text="Req.&#x0a;OC" TextAlignment="Center"/>
                     </DataGridTextColumn.Header>
                 </DataGridTextColumn>
                 <DataGridTextColumn Binding="{Binding StockAlmacen, StringFormat=N3}" Width="75">
                     <DataGridTextColumn.Header>
                         <TextBlock Text="Stock&#x0a;Actual" TextAlignment="Center"/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding StockProcesoReservado, StringFormat=N3}" Width="95">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="Reservado -&#x0a;En proceso" TextAlignment="Center"/>
                     </DataGridTextColumn.Header>
                 </DataGridTextColumn>
                 <DataGridTemplateColumn Header="Déficit" Width="80">
