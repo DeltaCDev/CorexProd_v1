@@ -14,6 +14,8 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
     private readonly ObservableCollection<ProformaLineaItem> _detalles = [];
     private List<ClienteApi> _clientes = [];
     private List<ProductoProformaApi> _productos = [];
+    private List<ProductoProformaApi> _productosFiltrados = [];
+    private ProductoProformaApi? _productoSeleccionado;
     private bool _guardando;
     private int _idOrdenCompraInterna;
     private string _modo = "nuevo";
@@ -140,12 +142,12 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
     {
         string filtro = (e.NewTextValue ?? string.Empty).Trim();
 
-        if (filtro.Length < 4)
+        if (filtro.Length < 3)
         {
             ClientePicker.SelectedItem = null;
             ClientePicker.ItemsSource = Array.Empty<ClienteApi>();
             ClientePicker.IsVisible = false;
-            ClienteAyudaLabel.Text = "Escriba mínimo 4 caracteres para buscar.";
+            ClienteAyudaLabel.Text = "Escriba mínimo 3 caracteres para buscar.";
             ClienteAyudaLabel.IsVisible = true;
             return;
         }
@@ -194,12 +196,143 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
                 || x.EtiquetaCliente.Contains(filtro, StringComparison.OrdinalIgnoreCase));
         }
 
-        ProductoPicker.ItemsSource = productos.Take(80).ToList();
+        _productosFiltrados = productos.Take(80).ToList();
+        if (_productoSeleccionado != null && !_productosFiltrados.Any(x => x.IdProducto == _productoSeleccionado.IdProducto))
+            SeleccionarProducto(null);
+
+        ProductoPickerButton.Text = _productoSeleccionado?.Codigo
+            ?? (_productosFiltrados.Count == 0 ? "Sin productos encontrados" : $"Seleccione producto ({_productosFiltrados.Count})");
+        ProductoPickerButton.IsEnabled = _productosFiltrados.Count > 0;
+    }
+
+    private async void OnSeleccionarProductoClicked(object? sender, EventArgs e)
+    {
+        if (_productosFiltrados.Count == 0)
+        {
+            await DisplayAlertAsync("OC", "No hay productos para seleccionar.", "OK");
+            return;
+        }
+
+        await Navigation.PushModalAsync(CrearSelectorProductoPage());
+    }
+
+    private ContentPage CrearSelectorProductoPage()
+    {
+        CollectionView productosView = new()
+        {
+            SelectionMode = SelectionMode.Single,
+            ItemsSource = _productosFiltrados,
+            SelectedItem = _productoSeleccionado,
+            ItemTemplate = new DataTemplate(() =>
+            {
+                Label codigo = new()
+                {
+                    FontFamily = "OpenSansSemibold",
+                    FontSize = 14,
+                    TextColor = Color.FromArgb("#4A26A8")
+                };
+                codigo.SetBinding(Label.TextProperty, nameof(ProductoProformaApi.Codigo));
+
+                Label nombre = new()
+                {
+                    FontSize = 13,
+                    TextColor = Color.FromArgb("#1D2939"),
+                    LineBreakMode = LineBreakMode.WordWrap
+                };
+                nombre.SetBinding(Label.TextProperty, nameof(ProductoProformaApi.NombreProducto));
+
+                Label etiqueta = new()
+                {
+                    FontSize = 11,
+                    TextColor = Color.FromArgb("#667085"),
+                    LineBreakMode = LineBreakMode.WordWrap
+                };
+                etiqueta.SetBinding(Label.TextProperty, nameof(ProductoProformaApi.EtiquetaCliente));
+
+                Grid fila = new()
+                {
+                    Padding = new Thickness(16, 12, 16, 0),
+                    RowDefinitions =
+                    {
+                        new RowDefinition(GridLength.Auto),
+                        new RowDefinition(GridLength.Auto),
+                        new RowDefinition(GridLength.Auto),
+                        new RowDefinition(GridLength.Auto)
+                    },
+                    RowSpacing = 3
+                };
+                fila.Add(codigo, 0, 0);
+                fila.Add(nombre, 0, 1);
+                fila.Add(etiqueta, 0, 2);
+                fila.Add(new BoxView
+                {
+                    HeightRequest = 1,
+                    BackgroundColor = Color.FromArgb("#E4E7EC"),
+                    Margin = new Thickness(0, 10, 0, 0)
+                }, 0, 3);
+                return fila;
+            })
+        };
+
+        productosView.SelectionChanged += async (_, args) =>
+        {
+            if (args.CurrentSelection.FirstOrDefault() is ProductoProformaApi producto)
+            {
+                SeleccionarProducto(producto);
+                await Navigation.PopModalAsync();
+            }
+        };
+
+        Button cancelar = new()
+        {
+            Text = "Cancelar",
+            BackgroundColor = Colors.Transparent,
+            TextColor = Color.FromArgb("#344054"),
+            FontFamily = "OpenSansSemibold"
+        };
+        cancelar.Clicked += async (_, _) => await Navigation.PopModalAsync();
+
+        Label titulo = new()
+        {
+            Text = "Seleccione producto",
+            FontFamily = "OpenSansSemibold",
+            FontSize = 20,
+            TextColor = Color.FromArgb("#101828"),
+            Padding = new Thickness(18, 18, 18, 10)
+        };
+
+        Grid contenido = new()
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(GridLength.Auto)
+            }
+        };
+        contenido.Add(titulo, 0, 0);
+        contenido.Add(productosView, 0, 1);
+        contenido.Add(cancelar, 0, 2);
+
+        return new ContentPage
+        {
+            Title = "Seleccione producto",
+            BackgroundColor = Colors.White,
+            Content = contenido
+        };
+    }
+
+    private void SeleccionarProducto(ProductoProformaApi? producto)
+    {
+        _productoSeleccionado = producto;
+        ProductoSeleccionadoLabel.Text = producto?.Display ?? "Sin producto seleccionado.";
+        ProductoPickerButton.Text = producto?.Codigo
+            ?? (_productosFiltrados.Count == 0 ? "Sin productos encontrados" : $"Seleccione producto ({_productosFiltrados.Count})");
     }
 
     private async void OnAgregarProductoClicked(object? sender, EventArgs e)
     {
-        if (ProductoPicker.SelectedItem is not ProductoProformaApi producto)
+        if (_productoSeleccionado is not ProductoProformaApi producto)
         {
             await DisplayAlertAsync("OC", "Seleccione un producto.", "OK");
             return;
@@ -230,6 +363,7 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
         PrecioEntry.Text = string.Empty;
         DescuentoEntry.Text = string.Empty;
         DetalleObservacionEntry.Text = string.Empty;
+        SeleccionarProducto(null);
         ActualizarTotales();
     }
 

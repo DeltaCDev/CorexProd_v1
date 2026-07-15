@@ -15,7 +15,7 @@
                                    Placeholder="Nombre o documento del cliente"
                                    TextChanged="OnClienteSearchChanged" />
                         <Label x:Name="ClienteAyudaLabel"
-                               Text="Escriba mínimo 4 caracteres para buscar."
+                               Text="Escriba mínimo 3 caracteres para buscar."
                                FontSize="11"
                                TextColor="#667085" />
                         <Picker x:Name="ClientePicker"
@@ -35,7 +35,19 @@
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Producto" FontFamily="OpenSansSemibold" TextColor="#10324A" />
                         <SearchBar x:Name="ProductoSearch" Placeholder="Codigo, producto o etiqueta" TextChanged="OnProductoSearchChanged" />
-                        <Picker x:Name="ProductoPicker" Title="Seleccione producto" ItemDisplayBinding="{Binding Display}" />
+                        <Button x:Name="ProductoPickerButton"
+                                Text="Seleccione producto"
+                                BackgroundColor="#F8FAFC"
+                                BorderColor="#D9E0E6"
+                                BorderWidth="1"
+                                TextColor="#344054"
+                                HorizontalOptions="Fill"
+                                Clicked="OnSeleccionarProductoClicked" />
+                        <Label x:Name="ProductoSeleccionadoLabel"
+                               Text="Sin producto seleccionado."
+                               FontSize="11"
+                               TextColor="#667085"
+                               LineBreakMode="WordWrap" />
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                             <Entry x:Name="CantidadEntry" Placeholder="Cant." Keyboard="Numeric" />
                             <Entry x:Name="PrecioEntry" Grid.Column="1" Placeholder="Precio" Keyboard="Numeric" />

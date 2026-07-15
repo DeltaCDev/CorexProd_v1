@@ -56,13 +56,14 @@ public partial class OciDetallePage : ContentPage
             string ocCliente = TextoVacio(cabecera.OrdenCompraCliente);
             _observacionGeneral = "Sin observaciones generales.";
 
-            Title = _numeroOci;
-            OcClienteDestacadoLabel.Text = ocCliente;
+            Title = $"OC Cliente: {ocCliente}";
+            TituloOcClienteLabel.Text = $"OC Cliente: {ocCliente}";
             NumeroLabel.Text = _numeroOci;
             ClienteLabel.Text = TextoVacio(cabecera.NombreCliente);
             FechaEmisionLabel.Text = cabecera.FechaEmision.ToString("dd/MM/yyyy");
             FechaEntregaLabel.Text = cabecera.FechaEntrega.ToString("dd/MM/yyyy");
-            AplicarTiempoRestante(cabecera.FechaEntrega, cabecera.Estado);
+            EntregaFechaLabel.Text = cabecera.FechaEntrega.ToString("dd/MM/yyyy");
+            AplicarTiempoEntrega(cabecera, cabecera.Estado);
             SubtotalLabel.Text = Moneda(cabecera.Subtotal);
             IgvLabel.Text = Moneda(cabecera.Igv);
             DescuentoLabel.Text = Moneda(cabecera.Descuento);
@@ -114,6 +115,9 @@ public partial class OciDetallePage : ContentPage
     {
         ProductosSection.IsVisible = !mostrarOts;
         OtsSection.IsVisible = mostrarOts;
+        ObservacionSection.IsVisible = !mostrarOts;
+        ResumenSection.IsVisible = !mostrarOts;
+        PdfActionsSection.IsVisible = !mostrarOts;
 
         ProductosTabButton.BackgroundColor = mostrarOts ? Colors.White : Color.FromArgb("#3F1D95");
         ProductosTabButton.BorderColor = mostrarOts ? Color.FromArgb("#D9E0E6") : Color.FromArgb("#3F1D95");
@@ -130,6 +134,11 @@ public partial class OciDetallePage : ContentPage
             return;
 
         await Shell.Current.GoToAsync($"{nameof(OrdenTrabajoDetallePage)}?id={item.IdOrdenTrabajo}");
+    }
+
+    private async void OnBackTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("..");
     }
 
     private async void OnDescargarPdfClicked(object? sender, EventArgs e)
@@ -183,28 +192,40 @@ public partial class OciDetallePage : ContentPage
 
     private void AplicarEstado(string estado)
     {
-        EstadoLabel.Text = TextoVacio(estado);
-        EstadoLabel.TextColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Text);
-        EstadoBadge.BackgroundColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Background);
-        EstadoBadge.Stroke = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke);
+        HeaderEstadoLabel.Text = TextoVacio(estado);
+        HeaderEstadoLabel.TextColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Text);
+        HeaderEstadoBadge.BackgroundColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Background);
+        HeaderEstadoBadge.Stroke = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke);
     }
 
-    private void AplicarTiempoRestante(DateTime fechaEntrega, string estado)
+    private void AplicarTiempoEntrega(OciCabecera cabecera, string estado)
     {
         string normalizado = DocumentoFiltroHelper.Normalizar(estado);
-        int dias = (fechaEntrega.Date - DateTime.Today).Days;
+        DateTime fechaInicio = cabecera.FechaRegistro ?? cabecera.FechaEmision;
+        bool cerrada = normalizado is "ENTREGADO" or "ENTREGADA" or "ANULADO" or "ANULADA";
+        DateTime corte = cerrada && cabecera.FechaCierre.HasValue ? cabecera.FechaCierre.Value : DateTime.Now;
+        TimeSpan transcurrido = corte - fechaInicio;
+        if (transcurrido < TimeSpan.Zero)
+            transcurrido = TimeSpan.Zero;
+
+        TiempoTranscurridoMetaLabel.Text = $"F. Emision: {fechaInicio:dd/MM/yyyy HH:mm}\nF. Corte: {(cerrada ? corte.ToString("dd/MM/yyyy HH:mm") : "En proceso")}";
+        TiempoTranscurridoLabel.Text = FormatearDuracion(transcurrido);
+
+        int dias = (cabecera.FechaEntrega.Date - DateTime.Today).Days;
 
         if (normalizado is "ENTREGADO" or "ENTREGADA")
         {
-            TiempoRestanteLabel.Text = "Entregada";
-            AplicarTiempoRestanteColor("#DCFCE7", "#16A34A", "#166534");
+            TiempoRestanteLabel.Text = dias > 0
+                ? dias == 1 ? "Entregado 1 dia antes" : $"Entregado {dias} dias antes"
+                : "Entregado";
+            AplicarTiempoEntregaColor("#ECFDF3", "#6CE9A6", "#047857");
             return;
         }
 
         if (normalizado is "ANULADO" or "ANULADA")
         {
             TiempoRestanteLabel.Text = "Anulada";
-            AplicarTiempoRestanteColor("#FEE2E2", "#DC2626", "#991B1B");
+            AplicarTiempoEntregaColor("#FEE2E2", "#DC2626", "#991B1B");
             return;
         }
 
@@ -212,26 +233,40 @@ public partial class OciDetallePage : ContentPage
         {
             int vencidos = Math.Abs(dias);
             TiempoRestanteLabel.Text = vencidos == 1 ? "Vencida hace 1 dia" : $"Vencida hace {vencidos} dias";
-            AplicarTiempoRestanteColor("#FEE2E2", "#DC2626", "#991B1B");
+            AplicarTiempoEntregaColor("#FEE2E2", "#DC2626", "#991B1B");
             return;
         }
 
         if (dias == 0)
         {
             TiempoRestanteLabel.Text = "Entrega hoy";
-            AplicarTiempoRestanteColor("#FEF3C7", "#F59E0B", "#92400E");
+            AplicarTiempoEntregaColor("#FEF3C7", "#F59E0B", "#92400E");
             return;
         }
 
         TiempoRestanteLabel.Text = dias == 1 ? "1 dia restante" : $"{dias} dias restantes";
-        AplicarTiempoRestanteColor("#DCFCE7", "#16A34A", "#166534");
+        AplicarTiempoEntregaColor("#ECFDF3", "#6CE9A6", "#047857");
     }
 
-    private void AplicarTiempoRestanteColor(string background, string stroke, string text)
+    private void AplicarTiempoEntregaColor(string background, string stroke, string text)
     {
         TiempoRestanteBadge.BackgroundColor = Color.FromArgb(background);
         TiempoRestanteBadge.Stroke = Color.FromArgb(stroke);
         TiempoRestanteLabel.TextColor = Color.FromArgb(text);
+        EntregaFechaLabel.TextColor = Color.FromArgb(text);
+    }
+
+    private static string FormatearDuracion(TimeSpan duracion)
+    {
+        int dias = Math.Max(0, duracion.Days);
+        int horas = Math.Max(0, duracion.Hours);
+        int minutos = Math.Max(0, duracion.Minutes);
+
+        if (dias > 0)
+            return $"{dias} d {horas} h {minutos} min";
+        if (horas > 0)
+            return $"{horas} h {minutos} min";
+        return $"{minutos} min";
     }
 
     private static bool EstadoPermiteDisponibilidad(string estado)

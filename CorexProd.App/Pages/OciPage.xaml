@@ -110,7 +110,10 @@
 
                                 <VerticalStackLayout Grid.Column="1" Padding="12" Spacing="10">
                                     <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
-                                        <Label Text="{Binding NumeroOci}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="#10324A" />
+                                        <Label Text="{Binding OrdenCompraCliente}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="19"
+                                               TextColor="#10324A" />
 
                                         <Border Grid.Column="1"
                                                 Padding="10,4"
@@ -163,7 +166,11 @@
                                                 Clicked="OnAnulacionInfoClicked" />
 
                                         <Label Grid.Row="1" Grid.ColumnSpan="4" Text="{Binding NombreCliente}" LineBreakMode="WordWrap" TextColor="#344054" FontSize="14" />
-                                        <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding OrdenCompraCliente, StringFormat='OC Cliente: {0}'}" FontSize="12" TextColor="#475467" />
+                                        <Label Grid.Row="2"
+                                               Grid.ColumnSpan="3"
+                                               Text="{Binding NumeroOci}"
+                                               FontSize="11"
+                                               TextColor="#667085" />
                                         <HorizontalStackLayout Grid.Row="2" Grid.Column="3" Spacing="4" HorizontalOptions="End">
                                             <Label Text="📅" FontSize="12" TextColor="#667085" />
                                             <Label Text="{Binding FechaEmision, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#667085" />

@@ -1,4 +1,5 @@
 ﻿using HandyControl.Tools;
+using CorexProd.WPF.Helpers;
 using System.Globalization;
 using System.Threading;
 using System.Windows;
@@ -27,6 +28,40 @@ namespace CorexProd.WPF
                 UIElement.PreviewMouseWheelEvent,
                 new MouseWheelEventHandler(DesplazarContenidoBajoCursor),
                 true);
+
+            EventManager.RegisterClassHandler(
+                typeof(Window),
+                FrameworkElement.LoadedEvent,
+                new RoutedEventHandler(AplicarEscalaResponsive),
+                true);
+
+            EventManager.RegisterClassHandler(
+                typeof(TextBlock),
+                FrameworkElement.LoadedEvent,
+                new RoutedEventHandler(AplicarTextoLegible),
+                true);
+
+            EventManager.RegisterClassHandler(
+                typeof(Control),
+                FrameworkElement.LoadedEvent,
+                new RoutedEventHandler(AplicarTextoLegible),
+                true);
+        }
+
+        private static void AplicarEscalaResponsive(object sender, RoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                ResponsiveScaleHelper.Apply(window);
+            }
+        }
+
+        private static void AplicarTextoLegible(object sender, RoutedEventArgs e)
+        {
+            if (sender is DependencyObject element)
+            {
+                ReadableTextHelper.Apply(element);
+            }
         }
 
         private static void DesplazarContenidoBajoCursor(object sender, MouseWheelEventArgs e)

@@ -9,6 +9,7 @@ namespace CorexProd.WPF.Views
         public LoginView()
         {
             InitializeComponent();
+            Title = CorexProd.WPF.Helpers.AppVersionHelper.Title;
             DataContext = new LoginViewModel();
             Loaded += (_, _) =>
             {

@@ -173,7 +173,9 @@ public sealed record OciCabecera(
     bool TieneGuiaSalida = false,
     bool TieneOrdenTrabajo = false,
     string MotivoAnulacion = "",
-    DateTime? FechaAnulacion = null);
+    DateTime? FechaAnulacion = null,
+    DateTime? FechaRegistro = null,
+    DateTime? FechaCierre = null);
 
 public sealed record DocumentoDetalle(
     int IdOrdenCompraInternaDetalle,
@@ -671,6 +673,7 @@ public sealed record OrdenTrabajoMovimientoItem(
     string Usuario,
     string Observacion)
 {
+    [JsonIgnore]
     public string Accion => FormatearAccion(AccionTecnica);
 
     private static string FormatearAccion(string accion)

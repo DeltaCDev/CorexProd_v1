@@ -929,8 +929,17 @@ SELECT TOP (1)
     O.Descuento,
     O.Igv,
     O.Total,
-    O.Estado
+    O.Estado,
+    O.FechaRegistro,
+    COALESCE(O.FechaAnulacion, GUIA.FechaCierre) AS FechaCierre
 FROM dbo.OrdenesCompraInterna O
+OUTER APPLY
+(
+    SELECT MAX(G.FechaRegistro) AS FechaCierre
+    FROM dbo.GuiasInternas G
+    WHERE G.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+      AND UPPER(G.Estado) <> 'ANULADA'
+) GUIA
 WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
     const string detalleSql = @"
@@ -1001,7 +1010,9 @@ ORDER BY D.IdOrdenCompraInternaDetalle;";
         descuento = Convert.ToDecimal(dr["Descuento"]),
         igv = Convert.ToDecimal(dr["Igv"]),
         total = Convert.ToDecimal(dr["Total"]),
-        estado = dr["Estado"]?.ToString() ?? string.Empty
+        estado = dr["Estado"]?.ToString() ?? string.Empty,
+        fechaRegistro = dr["FechaRegistro"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaRegistro"]),
+        fechaCierre = dr["FechaCierre"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(dr["FechaCierre"])
     };
     await dr.CloseAsync();
 

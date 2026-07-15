@@ -24,6 +24,7 @@ namespace CorexProd.WPF
         public MainWindow()
         {
             InitializeComponent();
+            Title = AppVersionHelper.Title;
             DataContext = new MainViewModel();
 
             ((INotifyPropertyChanged)DataContext).PropertyChanged += MainViewModel_PropertyChanged;
