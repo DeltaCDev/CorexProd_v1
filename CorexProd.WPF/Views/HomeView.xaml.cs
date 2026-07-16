@@ -167,8 +167,8 @@ namespace CorexProd.WPF.Views
 
             CargarAlertasEntrega(datos.Alertas, datos.EntregadasATiempo);
             CargarIndicadoresGenerales(ocMes, otMes, guiasMes, datos.Productos, datos.Insumos);
-            CargarResumenOrdenesCompra(ocMes);
-            CargarResumenOrdenesTrabajo(otMes);
+            CargarResumenOrdenesCompraCompacto(ocMes);
+            CargarResumenOrdenesTrabajoCompacto(otMes);
             CargarResumenGuias(guiasMes);
             CargarRankings(ocMes, datos.TopProductos);
             CargarUsuarios(ocMes, otMes);
@@ -288,6 +288,25 @@ namespace CorexProd.WPF.Views
             IndicadoresGenerales.Add(new("Guias Emitidas", guiasMes.Count.ToString("N0", _cultura), "#7C3AED", "\uE7C0", "#F3E8FF", "Este mes", "+5%"));
             IndicadoresGenerales.Add(new("Productos con stock bajo", stockCritico.ToString("N0", _cultura), stockCritico > 0 ? "#F97316" : "#16A34A", "\uE7B8", stockCritico > 0 ? "#FFF1E7" : "#EAF8EF", "Atencion requerida", "+15%"));
             IndicadoresGenerales.Add(new("Entregas vencidas hoy", VencenHoy.ToString("N0", _cultura), VencenHoy > 0 ? "#DC2626" : "#16A34A", "\uE814", VencenHoy > 0 ? "#FDECEF" : "#EAF8EF", "Atencion inmediata", string.Empty));
+        }
+
+        private void CargarResumenOrdenesCompraCompacto(List<OrdenCompraInterna> items)
+        {
+            OrdenesCompraResumen.Clear();
+            OrdenesCompraResumen.Add(new("Generadas", items.Count.ToString("N0", _cultura), "#2563EB"));
+            OrdenesCompraResumen.Add(new("Entregadas", ContarEstados(items, "ENTREGADO", "ENTREGADA").ToString("N0", _cultura), "#16A34A"));
+            OrdenesCompraResumen.Add(new("Pendiente / Produccion", ContarEstados(items, "PENDIENTE", "EMITIDA", "EMITIDO", "PROCESO", "EN_PROCESO", "PARCIAL").ToString("N0", _cultura), "#D97706"));
+            OrdenesCompraResumen.Add(new("Anuladas", ContarEstados(items, "ANULADO", "ANULADA").ToString("N0", _cultura), "#DC2626"));
+        }
+
+        private void CargarResumenOrdenesTrabajoCompacto(List<OrdenTrabajo> items)
+        {
+            OtAnuladasMes = items.Count(x => x.EstadoOperativo == "Anulado");
+            OrdenesTrabajoResumen.Clear();
+            OrdenesTrabajoResumen.Add(new("Generadas", items.Count.ToString("N0", _cultura), "#2563EB"));
+            OrdenesTrabajoResumen.Add(new("Terminadas", items.Count(x => x.EstadoOperativo == "Terminado").ToString("N0", _cultura), "#16A34A"));
+            OrdenesTrabajoResumen.Add(new("Pendientes / En Proceso", ContarOtActivas(items).ToString("N0", _cultura), "#D97706"));
+            OrdenesTrabajoResumen.Add(new("Anuladas", OtAnuladasMes.ToString("N0", _cultura), "#DC2626", "\uE711", "#FDECEF"));
         }
 
         private void CargarResumenOrdenesCompra(List<OrdenCompraInterna> items)

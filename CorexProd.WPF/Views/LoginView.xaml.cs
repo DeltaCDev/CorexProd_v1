@@ -11,10 +11,11 @@ namespace CorexProd.WPF.Views
             InitializeComponent();
             Title = CorexProd.WPF.Helpers.AppVersionHelper.Title;
             DataContext = new LoginViewModel();
-            Loaded += (_, _) =>
+            Loaded += async (_, _) =>
             {
                 TxtUsuario.Focus();
                 Keyboard.Focus(TxtUsuario);
+                await CorexProd.WPF.Helpers.AppUpdateService.CheckForUpdatesAsync(this);
             };
         }
     }

@@ -9,6 +9,7 @@ namespace CorexProd.Entidad.Entidades
         public string NombreProducto { get; set; } = string.Empty;
         public decimal Cantidad { get; set; }
         public decimal StockActual { get; set; }
+        public decimal StockDisponibleReal { get; set; }
         public decimal StockProcesoReservado { get; set; }
         public string StockProcesoReservadoDetalle { get; set; } = string.Empty;
         public decimal CantidadDespachada { get; set; }
@@ -29,14 +30,18 @@ namespace CorexProd.Entidad.Entidades
             ? $"Reservado en proceso: {StockProcesoReservado:N2}\n{StockProcesoReservadoDetalle}"
             : "Sin stock en proceso reservado";
 
-        public string DisponibilidadTexto => $"{FormatearCantidad(StockActual)} / {FormatearCantidad(Cantidad)} disponibles";
-        public string StockDisponibleTexto => $"Stock disponible: {FormatearCantidad(StockActual)} Und";
-        public string StockDisponibleCantidadTexto => $"{FormatearCantidad(StockActual)} Und";
+        public string DisponibilidadTexto => $"{FormatearCantidad(StockDisponibleReal)} / {FormatearCantidad(Cantidad)} disponibles";
+        public string StockDisponibleTexto => $"Stock disponible: {FormatearCantidad(StockDisponibleReal)} Und";
+        public string StockDisponibleCantidadTexto => $"{FormatearCantidad(StockDisponibleReal)} Und";
         public string FaltanteVisualTexto => $"Faltan producir/despachar: {FormatearCantidad(CantidadFaltanteParaEnviar)} Und";
         public string FaltanteCantidadTexto => $"{FormatearCantidad(CantidadFaltanteParaEnviar)} Und";
         public string CantidadVisualTexto => $"{FormatearCantidad(Cantidad)} Und";
         public string StockProcesoVisualTexto => $"{FormatearCantidad(StockProcesoReservado)} Und";
         public string CantidadDespachadaVisualTexto => $"{FormatearCantidad(CantidadDespachada)} Und";
+        public string StockDisponibleColor => StockDisponibleReal > 0 ? "#16A34A" : "#000000";
+        public string FaltanteColor => CantidadFaltanteParaEnviar > 0 ? "#E11D48" : "#000000";
+        public string StockProcesoColor => StockProcesoReservado > 0 ? "#2563EB" : "#000000";
+        public string CantidadDespachadaColor => CantidadDespachada > 0 ? "#7C3AED" : "#000000";
         public string ObservacionVisual => string.IsNullOrWhiteSpace(Observacion) ? "Sin observaciones." : Observacion.Trim();
 
         public string EstadoEnvioStock

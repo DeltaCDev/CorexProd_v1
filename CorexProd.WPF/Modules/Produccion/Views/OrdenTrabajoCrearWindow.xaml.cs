@@ -169,7 +169,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     {
                         Codigo = producto.CodigoProducto,
                         Producto = producto.NombreProducto,
-                        Cantidad = producto.CantidadRequerida
+                        Cantidad = producto.Deficit
                     }))
                 {
                     Owner = this

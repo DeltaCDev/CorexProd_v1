@@ -150,6 +150,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockTotal { get; set; }
         public decimal StockProcesoReservado { get; set; }
         public decimal Deficit { get; set; }
+        public decimal CantidadRequeridaOc => CantidadRequerida + StockAlmacen;
         public decimal DeficitContraStockActual => Math.Max(0, CantidadRequerida - StockAlmacen);
         public decimal StockProcesoDisponible => Math.Max(0, StockProcesoReservado > 0 ? StockProcesoReservado : StockTotal - StockAlmacen);
         public decimal CantidadReservaNecesaria => Math.Min(CantidadRequerida, StockProcesoDisponible);

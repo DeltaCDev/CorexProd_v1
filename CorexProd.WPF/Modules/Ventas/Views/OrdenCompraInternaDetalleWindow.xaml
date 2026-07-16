@@ -171,7 +171,7 @@
                                                            Margin="12,1,12,0"/>
                                                 <TextBlock Grid.Column="2"
                                                            Text="{Binding CantidadVisualTexto}"
-                                                           FontSize="12"
+                                                           FontSize="15"
                                                            FontWeight="SemiBold"
                                                            Foreground="#4C1D95"
                                                            VerticalAlignment="Top"/>
@@ -194,7 +194,7 @@
                                                     </Border>
                                                     <StackPanel Margin="6,0,0,0" VerticalAlignment="Center">
                                                         <TextBlock Text="Stock disponible" FontSize="8.8" Foreground="#64748B"/>
-                                                        <TextBlock Text="{Binding StockDisponibleCantidadTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="#16A34A"/>
+                                                        <TextBlock Text="{Binding StockDisponibleCantidadTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="{Binding StockDisponibleColor}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 
@@ -204,7 +204,7 @@
                                                     </Border>
                                                     <StackPanel Margin="6,0,0,0" VerticalAlignment="Center">
                                                         <TextBlock Text="Faltan producir /" FontSize="8.8" Foreground="#64748B"/>
-                                                        <TextBlock Text="{Binding FaltanteCantidadTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="#E11D48"/>
+                                                        <TextBlock Text="{Binding FaltanteCantidadTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="{Binding FaltanteColor}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 
@@ -214,7 +214,7 @@
                                                     </Border>
                                                     <StackPanel Margin="6,0,0,0" VerticalAlignment="Center">
                                                         <TextBlock Text="En proceso" FontSize="8.8" Foreground="#64748B"/>
-                                                        <TextBlock Text="{Binding StockProcesoVisualTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="#2563EB"/>
+                                                        <TextBlock Text="{Binding StockProcesoVisualTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="{Binding StockProcesoColor}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 
@@ -224,7 +224,7 @@
                                                     </Border>
                                                     <StackPanel Margin="6,0,0,0" VerticalAlignment="Center">
                                                         <TextBlock Text="Despachado" FontSize="8.8" Foreground="#64748B"/>
-                                                        <TextBlock Text="{Binding CantidadDespachadaVisualTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="#7C3AED"/>
+                                                        <TextBlock Text="{Binding CantidadDespachadaVisualTexto}" FontSize="10.5" FontWeight="SemiBold" Foreground="{Binding CantidadDespachadaColor}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 

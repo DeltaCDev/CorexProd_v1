@@ -219,8 +219,8 @@ namespace CorexProd.WPF.Views
             };
 
             string ordenCompraCliente = string.IsNullOrWhiteSpace(alerta.NumeroOci)
-                ? "Sin OC cliente"
-                : alerta.NumeroOci;
+                ? "OC Cliente: Sin dato"
+                : $"OC Cliente: {alerta.NumeroOci}";
             string cliente = string.IsNullOrWhiteSpace(alerta.NombreCliente)
                 ? "Cliente no especificado"
                 : alerta.NombreCliente;

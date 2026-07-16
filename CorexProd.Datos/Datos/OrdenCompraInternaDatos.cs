@@ -72,6 +72,7 @@ namespace CorexProd.Datos.Datos
                         NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
                         Cantidad = Convert.ToDecimal(dr["Cantidad"]),
                         StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        StockDisponibleReal = Convert.ToDecimal(dr["StockActual"]),
                         StockProcesoReservado = DecimalOpcional(dr, "StockProcesoReservado"),
                         StockProcesoReservadoDetalle = TextoOpcional(dr, "StockProcesoReservadoDetalle"),
                         CantidadDespachada = Convert.ToDecimal(dr["CantidadDespachada"]),
@@ -139,6 +140,7 @@ namespace CorexProd.Datos.Datos
                         NombreProducto = dr["NombreProducto"]?.ToString() ?? string.Empty,
                         Cantidad = Convert.ToDecimal(dr["Cantidad"]),
                         StockActual = Convert.ToDecimal(dr["StockActual"]),
+                        StockDisponibleReal = Convert.ToDecimal(dr["StockActual"]),
                         CantidadDespachada = Convert.ToDecimal(dr["CantidadDespachada"]),
                         PrecioUnitario = Convert.ToDecimal(dr["PrecioUnitario"]),
                         Descuento = Convert.ToDecimal(dr["Descuento"]),
@@ -221,6 +223,9 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
                 decimal reservaOci = Convert.ToDecimal(stockReader["ReservaOci"]);
                 decimal reservaTotal = Convert.ToDecimal(stockReader["ReservaTotal"]);
                 decimal stockLibre = Math.Max(0, stockFisico - reservaTotal);
+                decimal stockDisponibleReal = Math.Max(0, reservaOci + stockLibre);
+
+                detalle.StockDisponibleReal = stockDisponibleReal;
                 detalle.StockActual = Math.Min(detalle.CantidadPendiente, reservaOci + stockLibre);
             }
         }

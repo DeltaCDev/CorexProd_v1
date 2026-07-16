@@ -30,13 +30,13 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="DeficitTexto" TargetType="TextBlock">
-            <Setter Property="Text" Value="{Binding DeficitContraStockActual, StringFormat=N3}"/>
+            <Setter Property="Text" Value="{Binding Deficit, StringFormat=N3}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="#DC2626"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Deficit}" Value="0">
-                    <Setter Property="Foreground" Value="#15803D"/>
+                    <Setter Property="Foreground" Value="#000000"/>
                     <Setter Property="FontWeight" Value="Normal"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -109,7 +109,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Binding="{Binding CantidadRequerida, StringFormat=N3}" Width="75">
+                <DataGridTextColumn Binding="{Binding CantidadRequeridaOc, StringFormat=N3}" Width="75">
                     <DataGridTextColumn.Header>
                         <TextBlock Text="Req.&#x0a;OC" TextAlignment="Center"/>
                     </DataGridTextColumn.Header>

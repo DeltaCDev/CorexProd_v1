@@ -9,6 +9,7 @@ public partial class HomePage : ContentPage
     private readonly CorexProdApiClient _apiClient;
     private readonly SessionState _session;
     private readonly CultureInfo _culture = new("es-PE");
+    private DateTime _periodoSeleccionado = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool _isLoading;
     private IReadOnlyList<EntregaAlertItem> _alertasEntrega = [];
 
@@ -34,7 +35,7 @@ public partial class HomePage : ContentPage
         }
 
         DrawerUserLabel.Text = $"{_session.Usuario?.NombreCompleto} | {_session.Usuario?.NombreRol}";
-        PeriodoLabel.Text = Capitalizar(DateTime.Today.ToString("MMMM yyyy", _culture));
+        ActualizarPeriodoVisual();
         ModuleMenuView.ItemsSource = CrearMenuModulos();
         await CargarInicioAsync();
     }
@@ -104,7 +105,7 @@ public partial class HomePage : ContentPage
         IReadOnlyList<InsumoStock> insumos)
     {
         DateTime hoy = DateTime.Today;
-        DateTime inicioMes = new(hoy.Year, hoy.Month, 1);
+        DateTime inicioMes = _periodoSeleccionado;
         DateTime inicioMesSiguiente = inicioMes.AddMonths(1);
         DateTime inicioMesAnterior = inicioMes.AddMonths(-1);
         string mesAnterior = Capitalizar(inicioMesAnterior.ToString("MMMM", _culture));
@@ -116,7 +117,6 @@ public partial class HomePage : ContentPage
         List<GuiaInternaResumen> guiasMes = FiltrarMes(guias, inicioMes, inicioMesSiguiente).ToList();
         List<GuiaInternaResumen> guiasMesAnterior = FiltrarMes(guias, inicioMesAnterior, inicioMes).ToList();
 
-        int alertasStock = productos.Count(x => x.StockActual <= 0) + insumos.Count(x => x.StockActual <= 0);
         List<EntregaAlertItem> alertas = CrearAlertasEntrega(ocis, hoy).ToList();
 
         int vencidas = alertas.Count(x => x.DiasRestantes < 0);
@@ -130,8 +130,7 @@ public partial class HomePage : ContentPage
             [
                 new("OC", ocisMes.Count.ToString(), "OC del mes", CrearComparacion(ocisMes.Count, ocisMesAnterior.Count, mesAnterior), "#135DFF", "#EEF2FF"),
                 new("OT", otsMes.Count.ToString(), "OT del mes", CrearComparacion(otsMes.Count, otsMesAnterior.Count, mesAnterior), "#16A34A", "#EAF7EF"),
-                new("GI", guiasMes.Count.ToString(), "Guias internas", CrearComparacion(guiasMes.Count, guiasMesAnterior.Count, mesAnterior), "#F97316", "#FFF1E7"),
-                new("!", alertasStock.ToString(), "Alertas de stock", "Stock bajo o cero", "#E11D48", "#FDECEF")
+                new("GI", guiasMes.Count.ToString(), "Guias internas", CrearComparacion(guiasMes.Count, guiasMesAnterior.Count, mesAnterior), "#F97316", "#FFF1E7")
             ],
             EntregaResumen:
             [
@@ -147,8 +146,6 @@ public partial class HomePage : ContentPage
             [
                 new("Generadas", ocisMes.Count.ToString(), "#135DFF"),
                 new("Pendiente / Produccion", ocisMes.Count(x => EsPendienteProduccion(x.Estado) || EsEnProceso(x.Estado) || EsParcial(x.Estado)).ToString(), "#F97316"),
-                new("Con OT activa", ocisMes.Count(x => x.TieneOtActiva || x.TieneOrdenTrabajo).ToString(), "#7C3AED"),
-                new("Con guia", ocisMes.Count(x => x.TieneGuiaSalida).ToString(), "#0EA5E9"),
                 new("Entregadas", ocisMes.Count(x => EsEntregadoOTerminado(x.Estado)).ToString(), "#16A34A"),
                 new("Anuladas", ocisMes.Count(x => EsAnulado(x.Estado)).ToString(), "#E11D48")
             ],
@@ -157,8 +154,6 @@ public partial class HomePage : ContentPage
                 new("Generadas", otsMes.Count.ToString(), "#135DFF"),
                 new("Pendientes / En proceso", otsMes.Count(x => EsOtActiva(x.Estado)).ToString(), "#F97316"),
                 new("Terminadas", otsMes.Count(x => EsEntregadoOTerminado(x.Estado)).ToString(), "#16A34A"),
-                new("Manuales", otsMes.Count(x => DocumentoFiltroHelper.Normalizar(x.TipoOT).Contains("MANUAL")).ToString(), "#7C3AED"),
-                new("Por OCI", otsMes.Count(x => !string.IsNullOrWhiteSpace(x.NumeroOci)).ToString(), "#0EA5E9"),
                 new("Anuladas", otsMes.Count(x => EsAnulado(x.Estado)).ToString(), "#E11D48")
             ],
             TopProductos: await ObtenerTopProductosElaboradosAsync(otsMes));
@@ -214,6 +209,7 @@ public partial class HomePage : ContentPage
         return new EntregaAlertItem(
             oci.IdOrdenCompraInterna,
             FormatearNumeroOc(oci.NumeroOci),
+            string.IsNullOrWhiteSpace(oci.OrdenCompraCliente) ? "OC Cliente: Sin dato" : $"OC Cliente: {oci.OrdenCompraCliente.Trim()}",
             TextoVacio(oci.NombreCliente),
             TextoVacio(oci.Estado),
             fechaEntrega,
@@ -343,6 +339,45 @@ public partial class HomePage : ContentPage
     private static string Plural(int cantidad) => cantidad == 1 ? string.Empty : "s";
 
     private static string TextoVacio(string? value) => string.IsNullOrWhiteSpace(value) ? "Sin dato" : value.Trim();
+
+    private void ActualizarPeriodoVisual()
+    {
+        string texto = Capitalizar(_periodoSeleccionado.ToString("MMMM yyyy", _culture));
+        PeriodoSeleccionadoLabel.Text = texto;
+        PeriodoLabel.Text = texto;
+        PeriodoPicker.Date = _periodoSeleccionado;
+    }
+
+    private async void OnPeriodoAnteriorClicked(object? sender, EventArgs e)
+    {
+        _periodoSeleccionado = _periodoSeleccionado.AddMonths(-1);
+        ActualizarPeriodoVisual();
+        await CargarInicioAsync();
+    }
+
+    private async void OnPeriodoSiguienteClicked(object? sender, EventArgs e)
+    {
+        _periodoSeleccionado = _periodoSeleccionado.AddMonths(1);
+        ActualizarPeriodoVisual();
+        await CargarInicioAsync();
+    }
+
+    private void OnSeleccionarPeriodoClicked(object? sender, EventArgs e)
+    {
+        PeriodoPicker.Focus();
+    }
+
+    private async void OnPeriodoDateSelected(object? sender, DateChangedEventArgs e)
+    {
+        DateTime fecha = e.NewDate ?? DateTime.Today;
+        DateTime seleccionado = new(fecha.Year, fecha.Month, 1);
+        if (seleccionado == _periodoSeleccionado)
+            return;
+
+        _periodoSeleccionado = seleccionado;
+        ActualizarPeriodoVisual();
+        await CargarInicioAsync();
+    }
 
     private void OnToggleMenuClicked(object? sender, EventArgs e)
     {
@@ -498,6 +533,7 @@ public partial class HomePage : ContentPage
     private sealed record EntregaAlertItem(
         int IdOrdenCompraInterna,
         string NumeroOci,
+        string OcClienteTexto,
         string Cliente,
         string EstadoTexto,
         DateTime FechaEntrega,
