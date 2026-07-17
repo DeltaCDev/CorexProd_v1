@@ -2,6 +2,7 @@
 using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Servicios;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CorexProd.Negocio.Negocio
 {
@@ -87,9 +88,33 @@ namespace CorexProd.Negocio.Negocio
             if (usuario.IdRol <= 0)
                 return "Debe seleccionar un rol";
 
+            string claveAprobacionLimpia = usuario.ClaveAprobacionOs?.Trim() ?? string.Empty;
+            if (usuario.AprobacionOs)
+            {
+                if (usuario.IdUsuario == 0 && string.IsNullOrWhiteSpace(claveAprobacionLimpia))
+                    return "Debe ingresar la clave de aprobacion OS.";
+
+                if (!string.IsNullOrWhiteSpace(claveAprobacionLimpia) && !EsClaveAprobacionValida(claveAprobacionLimpia))
+                    return "La clave de aprobacion OS debe tener 4 digitos numericos.";
+
+                if (usuario.IdUsuario > 0 && string.IsNullOrWhiteSpace(claveAprobacionLimpia))
+                {
+                    Usuario? existente = _usuarioDatos.ObtenerPorId(usuario.IdUsuario);
+                    if (existente == null || string.IsNullOrWhiteSpace(existente.ClaveAprobacionOs))
+                        return "Debe ingresar la clave de aprobacion OS.";
+                }
+            }
+            else
+            {
+                claveAprobacionLimpia = string.Empty;
+            }
+
             if (usuario.IdUsuario == 0)
             {
                 usuario.Clave = PasswordService.HashPassword(usuario.Clave);
+                usuario.ClaveAprobacionOs = string.IsNullOrWhiteSpace(claveAprobacionLimpia)
+                    ? string.Empty
+                    : PasswordService.HashPassword(claveAprobacionLimpia);
 
                 string mensajeRegistro = _usuarioDatos.Registrar(usuario);
 
@@ -109,6 +134,9 @@ namespace CorexProd.Negocio.Negocio
             {
                 usuario.Clave = PasswordService.HashPassword(usuario.Clave);
             }
+            usuario.ClaveAprobacionOs = string.IsNullOrWhiteSpace(claveAprobacionLimpia)
+                ? string.Empty
+                : PasswordService.HashPassword(claveAprobacionLimpia);
 
             string mensajeEdicion = _usuarioDatos.Editar(usuario);
 
@@ -122,6 +150,35 @@ namespace CorexProd.Negocio.Negocio
             }
 
             return mensajeEdicion;
+        }
+
+        public string ValidarAprobacionOs(string nombreUsuario, string claveAprobacion)
+        {
+            nombreUsuario = nombreUsuario?.Trim() ?? string.Empty;
+            claveAprobacion = claveAprobacion?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(nombreUsuario))
+                return "Debe ingresar el usuario aprobador.";
+
+            if (!EsClaveAprobacionValida(claveAprobacion))
+                return "La clave de aprobacion debe tener 4 digitos numericos.";
+
+            Usuario? usuario = _usuarioDatos.ObtenerPorNombreUsuario(nombreUsuario);
+            if (usuario == null)
+                return "No se encontro el usuario aprobador.";
+
+            if (!usuario.Estado)
+                return "El usuario aprobador esta inactivo.";
+
+            if (!usuario.AprobacionOs)
+                return "El usuario no tiene permiso para aprobar ordenes de servicio.";
+
+            if (string.IsNullOrWhiteSpace(usuario.ClaveAprobacionOs))
+                return "El usuario no tiene clave de aprobacion OS configurada.";
+
+            return PasswordService.VerifyPassword(claveAprobacion, usuario.ClaveAprobacionOs)
+                ? "OK"
+                : "Clave de aprobacion incorrecta.";
         }
 
         public string Eliminar(int idUsuario)
@@ -182,5 +239,8 @@ namespace CorexProd.Negocio.Negocio
 
             return _usuarioDatos.CambiarClave(idUsuario, usuarioDB.Clave, claveNuevaHash);
         }
+
+        private static bool EsClaveAprobacionValida(string clave) =>
+            clave.Length == 4 && clave.All(char.IsDigit);
     }
 }

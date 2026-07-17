@@ -1,0 +1,492 @@
+<UserControl x:Class="CorexProd.WPF.Modules.OrdenesServicio.Views.OrdenesServicioView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <Style x:Key="Boton" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="92"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource Boton}">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="BotonAccion" TargetType="Button">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="Icono" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Etiqueta" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="CampoTexto" TargetType="TextBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CampoCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CampoBusquedaCombo" TargetType="ComboBox" BasedOn="{StaticResource CampoCombo}">
+            <Setter Property="IsEditable" Value="True"/>
+            <Setter Property="IsTextSearchEnabled" Value="False"/>
+            <Setter Property="StaysOpenOnEdit" Value="True"/>
+        </Style>
+        <Style x:Key="Celda" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="EstadoOsBadge" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="MinWidth" Value="132"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#F1F5F9"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Borrador">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                    <Setter Property="BorderBrush" Value="#F59E0B"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Aprobada">
+                    <Setter Property="Background" Value="#DCFCE7"/>
+                    <Setter Property="BorderBrush" Value="#22C55E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Recepcion Parcial">
+                    <Setter Property="Background" Value="#FFEDD5"/>
+                    <Setter Property="BorderBrush" Value="#F97316"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Recibida">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="BorderBrush" Value="#3B82F6"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Pagada">
+                    <Setter Property="Background" Value="#F3E8FF"/>
+                    <Setter Property="BorderBrush" Value="#A855F7"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Anulada">
+                    <Setter Property="Background" Value="#FEE2E2"/>
+                    <Setter Property="BorderBrush" Value="#EF4444"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoOsTexto" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Borrador">
+                    <Setter Property="Foreground" Value="#92400E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Aprobada">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Recepcion Parcial">
+                    <Setter Property="Foreground" Value="#9A3412"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Recibida">
+                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Pagada">
+                    <Setter Property="Foreground" Value="#7E22CE"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstadoOrden}" Value="Anulada">
+                    <Setter Property="Foreground" Value="#B91C1C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="18">
+        <TabControl>
+            <TabItem Header="Lista de Ordenes de Servicio">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="Ordenes de Servicio" FontSize="21" FontWeight="Bold" Foreground="#0F172A"/>
+                                <TextBlock Text="{Binding Resumen}" Foreground="#64748B" Margin="0,3,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Style="{StaticResource BotonPrimario}" Command="{Binding NuevoCommand}" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                                        <TextBlock Text="Nueva Orden"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Boton}" Command="{Binding ActualizarCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                                        <TextBlock Text="Actualizar"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,16,0,0">
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Buscar" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="260" Style="{StaticResource CampoTexto}" Text="{Binding TextoBusqueda, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Width="170" Style="{StaticResource CampoCombo}" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Importe" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="105" Style="{StaticResource CampoTexto}" Text="{Binding PagoImporte, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Medio de pago" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="135" Style="{StaticResource CampoTexto}" Text="{Binding PagoMedio, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Operacion" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="135" Style="{StaticResource CampoTexto}" Text="{Binding PagoOperacion, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <Button Style="{StaticResource Boton}" Command="{Binding RegistrarPagoCommand}" VerticalAlignment="Bottom" IsEnabled="{Binding PuedeRegistrarPago}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8C7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                                        <TextBlock Text="Registrar Pago"/>
+                                    </StackPanel>
+                                </Button>
+                                <StackPanel Margin="14,0,12,0">
+                                    <TextBlock Text="Titulo foto" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="150" Style="{StaticResource CampoTexto}" Text="{Binding FotoTitulo, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Descripcion foto" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Width="180" Style="{StaticResource CampoTexto}" Text="{Binding FotoDescripcion, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Ubicacion PDF" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Width="135" Style="{StaticResource CampoCombo}" ItemsSource="{Binding UbicacionesFotoPdf}" SelectedItem="{Binding FotoUbicacionPdf}"/>
+                                </StackPanel>
+                                <Button Style="{StaticResource Boton}" Command="{Binding AgregarFotoCommand}" VerticalAlignment="Bottom" Content="Agregar Foto"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="{Binding TituloFormulario}" FontSize="18" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,12"/>
+
+                            <UniformGrid Grid.Row="1" Columns="4">
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="Fecha" Style="{StaticResource Etiqueta}"/>
+                                    <DatePicker Height="30" SelectedDate="{Binding Fecha}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="Fecha comprometida" Style="{StaticResource Etiqueta}"/>
+                                    <DatePicker Height="30" SelectedDate="{Binding FechaComprometida}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="Proveedor" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding Proveedores}" DisplayMemberPath="NombreRazonSocial" SelectedItem="{Binding ProveedorSeleccionado}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Text="Tipo de servicio" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding TiposServicio}" DisplayMemberPath="Nombre" SelectedItem="{Binding TipoServicioSeleccionado}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="Cliente" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Style="{StaticResource CampoBusquedaCombo}"
+                                              ItemsSource="{Binding ClientesCoincidencias}"
+                                              DisplayMemberPath="ClienteBusqueda"
+                                              Text="{Binding Cliente, UpdateSourceTrigger=PropertyChanged}"
+                                              IsDropDownOpen="{Binding MostrarCoincidenciasCliente, Mode=OneWay}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="OCI relacionada" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Style="{StaticResource CampoTexto}" Text="{Binding OciRelacionada, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,10">
+                                    <TextBlock Text="OT relacionada" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Style="{StaticResource CampoTexto}" Text="{Binding OtRelacionada, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Text="Responsable" Style="{StaticResource Etiqueta}"/>
+                                    <TextBox Style="{StaticResource CampoTexto}" Text="{Binding Responsable, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </UniformGrid>
+
+                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="95"/>
+                                    <ColumnDefinition Width="75"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Style="{StaticResource CampoTexto}" Text="{Binding DetalleProducto, UpdateSourceTrigger=PropertyChanged}" ToolTip="Producto"/>
+                                <TextBox Grid.Column="1" Style="{StaticResource CampoTexto}" Margin="8,0" Text="{Binding DetalleCantidad, UpdateSourceTrigger=PropertyChanged}" ToolTip="Cantidad"/>
+                                <TextBox Grid.Column="2" Style="{StaticResource CampoTexto}" Text="{Binding DetalleUnidad, UpdateSourceTrigger=PropertyChanged}" ToolTip="Unidad"/>
+                                <TextBox Grid.Column="3" Style="{StaticResource CampoTexto}" Margin="8,0" Text="{Binding DetallePrecioUnitario, UpdateSourceTrigger=PropertyChanged}" ToolTip="Precio unitario"/>
+                                <Button Grid.Column="4" Style="{StaticResource Boton}" Command="{Binding AgregarDetalleCommand}" Content="Agregar" Margin="8,0,0,0"/>
+                            </Grid>
+
+                            <Grid Grid.Row="3" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="260"/>
+                                </Grid.ColumnDefinitions>
+                                <DataGrid ItemsSource="{Binding DetallesFormulario}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="32" MaxHeight="150">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Header="" Width="42">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource BotonAccion}" Command="{Binding DataContext.QuitarDetalleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                                        <TextBlock Text="&#xE711;" Style="{StaticResource Icono}" Foreground="#DC2626"/>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="*"/>
+                                        <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat=N2}" Width="80"/>
+                                        <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="70"/>
+                                        <DataGridTextColumn Header="P. Unit." Binding="{Binding PrecioUnitario, StringFormat=S/ {0:N2}}" Width="95"/>
+                                        <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="95"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                                    <TextBlock Text="Forma de pago" Style="{StaticResource Etiqueta}"/>
+                                    <ComboBox Style="{StaticResource CampoCombo}" ItemsSource="{Binding FormasPago}" SelectedItem="{Binding FormaPagoTipo}"/>
+                                    <TextBox Style="{StaticResource CampoTexto}" Margin="0,8,0,0" Visibility="{Binding CreditoDetalleVisibility}" Text="{Binding DetalleCredito, UpdateSourceTrigger=PropertyChanged}" ToolTip="Detalle del credito"/>
+                                    <TextBlock Text="A cuenta" Style="{StaticResource Etiqueta}" Margin="0,9,0,5"/>
+                                    <TextBox Style="{StaticResource CampoTexto}" Text="{Binding ACuenta, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                    <TextBlock Text="Observaciones" Style="{StaticResource Etiqueta}" Margin="0,9,0,5"/>
+                                    <TextBox Height="50" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Text="{Binding TotalFormulario, StringFormat=Total: S/ {0:N2}}" FontSize="16" FontWeight="Bold" Foreground="#0F766E" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SaldoPendienteFormulario, StringFormat=Saldo pendiente: S/ {0:N2}}" FontSize="15" FontWeight="Bold" Foreground="#B45309"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                        <Button Style="{StaticResource BotonPrimario}" Command="{Binding GuardarCommand}" Content="Guardar" Margin="0,0,8,0"/>
+                                        <Button Style="{StaticResource Boton}" Command="{Binding CancelarCommand}" Content="Cancelar"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <DataGrid Grid.Row="2"
+                              ItemsSource="{Binding OrdenesVista}"
+                              SelectedItem="{Binding OrdenSeleccionada}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              RowHeight="42"
+                              Background="White"
+                              BorderBrush="#CBD5E1"
+                              BorderThickness="1"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Acciones" Width="210">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Ver" Command="{Binding DataContext.VerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarVer, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE890;" Style="{StaticResource Icono}" Foreground="#475569"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Editar" Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarEditar, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE70F;" Style="{StaticResource Icono}" Foreground="#0F766E"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Imprimir PDF" Command="{Binding DataContext.ImprimirCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarImprimir, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE749;" Style="{StaticResource Icono}" Foreground="#0369A1"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Aprobar" Command="{Binding DataContext.AprobarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarAprobar, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE73E;" Style="{StaticResource Icono}" Foreground="#2563EB"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Registrar Entrega" Command="{Binding DataContext.PrepararEntregaCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarEntrega, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE7C3;" Style="{StaticResource Icono}" Foreground="#B45309"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Registrar Recepcion" Command="{Binding DataContext.PrepararRecepcionCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarRecepcion, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE8FB;" Style="{StaticResource Icono}" Foreground="#16A34A"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Registrar Pago" Command="{Binding DataContext.RegistrarPagoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarPago, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE8C7;" Style="{StaticResource Icono}" Foreground="#7C3AED"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Historial" Command="{Binding DataContext.HistorialCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarHistorial, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE81C;" Style="{StaticResource Icono}" Foreground="#64748B"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Copiar" Command="{Binding DataContext.CopiarCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarCopiar, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE8C8;" Style="{StaticResource Icono}" Foreground="#475569"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Anular" Command="{Binding DataContext.AnularCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Visibility="{Binding MostrarAnular, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="&#xE711;" Style="{StaticResource Icono}" Foreground="#DC2626"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Orden" Binding="{Binding NumeroOrden}" Width="100" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="104" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="210" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Tipo de Servicio" Binding="{Binding TipoServicioNombre}" Width="310" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Compromiso" Binding="{Binding FechaComprometidaVisual}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTemplateColumn Header="ESTADO" Width="170">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource EstadoOsBadge}">
+                                            <TextBlock Text="{Binding EstadoVisual}" Style="{StaticResource EstadoOsTexto}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Pagado" Binding="{Binding TotalPagado, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoPendiente, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Cliente" Binding="{Binding Cliente}" Width="250" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="OCI" Binding="{Binding OciRelacionada}" Width="90" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="OT" Binding="{Binding OtRelacionada}" Width="90" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Responsable" Binding="{Binding Responsable}" Width="215" ElementStyle="{StaticResource Celda}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="1" Background="White" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10" Visibility="{Binding MovimientosVisibility}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="150"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{Binding TituloMovimientos}" FontSize="16" FontWeight="Bold" Foreground="#92400E" Margin="0,0,0,8"/>
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding MovimientosFormulario}" AutoGenerateColumns="False" CanUserAddRows="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="*"/>
+                                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Anterior" Binding="{Binding CantidadAnterior, StringFormat=N2}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Ahora" Binding="{Binding CantidadMovimiento, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                                    <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="70"/>
+                                    <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="190"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <Button Style="{StaticResource BotonPrimario}" Command="{Binding ConfirmarMovimientoCommand}" Content="Confirmar" Margin="0,0,8,0"/>
+                                <Button Style="{StaticResource Boton}" Command="{Binding CancelarMovimientoCommand}" Content="Cancelar"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Fotografias">
+                <Grid Margin="0,12,0,0">
+                    <DataGrid ItemsSource="{Binding FotosOrdenSeleccionada}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="38" Background="White">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Acciones" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Ver" Command="{Binding DataContext.VerFotoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                                <TextBlock Text="&#xE890;" Style="{StaticResource Icono}" Foreground="#0369A1"/>
+                                            </Button>
+                                            <Button Style="{StaticResource BotonAccion}" ToolTip="Eliminar" Command="{Binding DataContext.EliminarFotoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}">
+                                                <TextBlock Text="&#xE711;" Style="{StaticResource Icono}" Foreground="#DC2626"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Nivel" Binding="{Binding Nivel}" Width="90"/>
+                            <DataGridTextColumn Header="Archivo" Binding="{Binding NombreArchivo}" Width="260"/>
+                            <DataGridTextColumn Header="Titulo" Binding="{Binding Titulo}" Width="150"/>
+                            <DataGridTextColumn Header="Ubicacion PDF" Binding="{Binding UbicacionPdf}" Width="130"/>
+                            <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>
+                            <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioRegistro}" Width="160"/>
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Tipos de Servicio">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="360"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,12,0">
+                        <StackPanel>
+                            <TextBlock Text="Tipo de servicio" FontSize="18" FontWeight="Bold" Margin="0,0,0,14"/>
+                            <TextBlock Text="Codigo" Style="{StaticResource Etiqueta}"/>
+                            <TextBox Style="{StaticResource CampoTexto}" Text="{Binding TipoCodigo, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Text="Nombre" Style="{StaticResource Etiqueta}" Margin="0,10,0,5"/>
+                            <TextBox Style="{StaticResource CampoTexto}" Text="{Binding TipoNombre, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Text="Descripcion" Style="{StaticResource Etiqueta}" Margin="0,10,0,5"/>
+                            <TextBox Height="70" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding TipoDescripcion, UpdateSourceTrigger=PropertyChanged}"/>
+                            <CheckBox Content="Requiere entregar productos al proveedor" IsChecked="{Binding TipoRequiereEntrega}" Margin="0,12,0,0"/>
+                            <CheckBox Content="Activo" IsChecked="{Binding TipoEstado}" Margin="0,8,0,0"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                                <Button Style="{StaticResource Boton}" Command="{Binding NuevoTipoCommand}" Content="Nuevo" Margin="0,0,8,0"/>
+                                <Button Style="{StaticResource BotonPrimario}" Command="{Binding GuardarTipoCommand}" Content="Guardar"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid Grid.Column="1"
+                              ItemsSource="{Binding TiposListado}"
+                              SelectedItem="{Binding TipoSeleccionado}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              RowHeight="38"
+                              Background="White">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="170"/>
+                            <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>
+                            <DataGridTextColumn Header="Entrega" Binding="{Binding RequiereEntregaTexto}" Width="90"/>
+                            <DataGridTextColumn Header="Estado" Binding="{Binding EstadoTexto}" Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -114,6 +114,8 @@
                             <DataGridTextColumn Header="Empleado" Binding="{Binding NombreEmpleado}" Width="240" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Usuario" Binding="{Binding NombreUsuario}" Width="150" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Rol" Binding="{Binding NombreRol}" Width="160" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Aprobacion OS" Binding="{Binding AprobacionOsTexto}" Width="135" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Clave aprobacion" Binding="{Binding ClaveAprobacionOsTexto}" Width="150" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Fecha Registro" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="170" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTemplateColumn Header="Estado" Width="120">
                                 <DataGridTemplateColumn.CellTemplate>

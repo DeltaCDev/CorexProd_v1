@@ -25,6 +25,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private string _clave = string.Empty;
         private int _idRol;
         private bool _estado = true;
+        private bool _aprobacionOs;
+        private string _claveAprobacionOs = string.Empty;
         private bool _puedeGenerarOtRol;
         private bool _puedeGenerarGuiaRol;
         private bool _puedeTransferirOtRol;
@@ -75,6 +77,18 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             set { _estado = value; OnPropertyChanged(); }
         }
 
+        public bool AprobacionOs
+        {
+            get => _aprobacionOs;
+            set { _aprobacionOs = value; OnPropertyChanged(); }
+        }
+
+        public string ClaveAprobacionOs
+        {
+            get => _claveAprobacionOs;
+            set { _claveAprobacionOs = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
         public bool PuedeGenerarOtRol
         {
             get => _puedeGenerarOtRol;
@@ -109,6 +123,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     Clave = string.Empty;
                     IdRol = _usuarioSeleccionado.IdRol;
                     Estado = _usuarioSeleccionado.Estado;
+                    AprobacionOs = _usuarioSeleccionado.AprobacionOs;
+                    ClaveAprobacionOs = string.Empty;
                 }
             }
         }
@@ -208,7 +224,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 NombreUsuario = NombreUsuario,
                 Clave = Clave,
                 IdRol = IdRol,
-                Estado = Estado
+                Estado = Estado,
+                AprobacionOs = AprobacionOs,
+                ClaveAprobacionOs = ClaveAprobacionOs
             };
 
             string usuarioAuditoria = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
@@ -298,6 +316,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             Clave = string.Empty;
             IdRol = 0;
             Estado = true;
+            AprobacionOs = false;
+            ClaveAprobacionOs = string.Empty;
             UsuarioSeleccionado = null;
             OnPropertyChanged(nameof(TituloEditor));
         }
@@ -323,6 +343,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     viewModel.Clave = string.Empty;
                     viewModel.IdRol = usuario.IdRol;
                     viewModel.Estado = usuario.Estado;
+                    viewModel.AprobacionOs = usuario.AprobacionOs;
+                    viewModel.ClaveAprobacionOs = string.Empty;
                     viewModel.OnPropertyChanged(nameof(TituloEditor));
                 }
 

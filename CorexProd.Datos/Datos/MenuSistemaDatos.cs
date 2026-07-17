@@ -109,8 +109,9 @@ namespace CorexProd.Datos.Datos
                     (N'Reportes', NULL, 4, 1),
                     (N'Almacén', NULL, 5, 1),
                     (N'Productos', NULL, 6, 1),
-                    (N'Destajo y Pagos', NULL, 7, 0),
-                    (N'Seguridad', NULL, 8, 1),
+                    (N'Órdenes de Servicio', NULL, 7, 1),
+                    (N'Destajo y Pagos', NULL, 8, 0),
+                    (N'Seguridad', NULL, 9, 1),
                     (N'Orden de Compra', N'Ventas', 1, 1),
                     (N'Orden de Trabajo', N'Ventas', 2, 1),
                     (N'Guía de Salida', N'Ventas', 3, 1),
@@ -131,6 +132,10 @@ namespace CorexProd.Datos.Datos
                     (N'Kardex Productos', N'Reportes', 4, 1),
                     (N'Kardex Insumos', N'Reportes', 5, 1),
                     (N'Estadísticas', N'Reportes', 6, 1),
+                    (N'Lista de Órdenes de Servicio', N'Órdenes de Servicio', 1, 1),
+                    (N'Proveedores OS', N'Órdenes de Servicio', 2, 1),
+                    (N'Tipos de Servicio', N'Órdenes de Servicio', 3, 1),
+                    (N'Reportes OS', N'Órdenes de Servicio', 4, 1),
                     (N'Panel de Destajo', N'Destajo y Pagos', 1, 0),
                     (N'Periodos de Pago', N'Destajo y Pagos', 2, 0),
                     (N'Movimientos Operativos', N'Destajo y Pagos', 3, 0),
@@ -147,7 +152,8 @@ namespace CorexProd.Datos.Datos
                     (N'Clientes', N'Seguridad', 7, 1),
                     (N'Proveedores', N'Seguridad', 8, 1),
                     (N'Series y Correlativos', N'Seguridad', 9, 1),
-                    (N'Menú', N'Seguridad', 10, 1);
+                    (N'Menú', N'Seguridad', 10, 1),
+                    (N'Formas de pago OS', N'Seguridad', 11, 1);
 
                 DECLARE @IdVentas INT = (SELECT TOP (1) IdMenu FROM dbo.Menu WHERE NombreMenu = N'Ventas' AND IdMenuPadre IS NULL ORDER BY IdMenu);
                 IF @IdVentas IS NOT NULL

@@ -12,6 +12,10 @@ namespace CorexProd.Entidad.Entidades
 
         public string NombreUsuario { get; set; } = string.Empty;
         public string Clave { get; set; } = string.Empty;
+        public bool AprobacionOs { get; set; }
+        public string ClaveAprobacionOs { get; set; } = string.Empty;
+        public string AprobacionOsTexto => AprobacionOs ? "Si" : "No";
+        public string ClaveAprobacionOsTexto => string.IsNullOrWhiteSpace(ClaveAprobacionOs) ? "No configurada" : "Configurada";
 
         public int IdRol { get; set; }
         public string NombreRol { get; set; } = string.Empty;

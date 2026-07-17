@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Media.Imaging;
 
 namespace CorexProd.WPF.Helpers
 {
@@ -252,16 +253,27 @@ namespace CorexProd.WPF.Helpers
             public void Save(string path)
             {
                 int pageCount = _pages.Count;
-                int objectCount = 4 + (pageCount * 2);
+                int imageCount = _pages.Sum(p => p.Images.Count);
+                int objectCount = 4 + (pageCount * 2) + imageCount;
                 byte[][] objects = new byte[objectCount + 1][];
                 int[] pageObjectIds = new int[pageCount];
                 int[] contentObjectIds = new int[pageCount];
+                Dictionary<PdfImage, int> imageObjectIds = [];
                 int nextId = 5;
 
                 for (int i = 0; i < pageCount; i++)
                 {
                     pageObjectIds[i] = nextId++;
                     contentObjectIds[i] = nextId++;
+                }
+
+                foreach (PdfCanvas page in _pages)
+                {
+                    foreach (PdfImage image in page.Images)
+                    {
+                        if (!imageObjectIds.ContainsKey(image))
+                            imageObjectIds[image] = nextId++;
+                    }
                 }
 
                 string kids = string.Join(" ", pageObjectIds.Select(id => $"{id} 0 R"));
@@ -273,9 +285,15 @@ namespace CorexProd.WPF.Helpers
                 for (int i = 0; i < pageCount; i++)
                 {
                     PdfCanvas page = _pages[i];
-                    objects[pageObjectIds[i]] = AsciiObject(pageObjectIds[i], $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectIds[i]} 0 R >>");
+                    string xObjects = page.Images.Count == 0
+                        ? string.Empty
+                        : " /XObject << " + string.Join(" ", page.Images.Select(img => $"/{img.Name} {imageObjectIds[img]} 0 R")) + " >>";
+                    objects[pageObjectIds[i]] = AsciiObject(pageObjectIds[i], $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xObjects} >> /Contents {contentObjectIds[i]} 0 R >>");
                     objects[contentObjectIds[i]] = StreamObject(contentObjectIds[i], page.Content);
                 }
+
+                foreach (KeyValuePair<PdfImage, int> item in imageObjectIds)
+                    objects[item.Value] = ImageObject(item.Value, item.Key);
 
                 using FileStream stream = File.Create(path);
                 WriteAscii(stream, "%PDF-1.4\n");
@@ -304,15 +322,29 @@ namespace CorexProd.WPF.Helpers
                 return Encoding.ASCII.GetBytes($"{id} 0 obj\n<< /Length {contentBytes.Length} >>\nstream\n{content}endstream\nendobj\n");
             }
             private static void WriteAscii(Stream stream, string value) => stream.Write(Encoding.ASCII.GetBytes(value));
+
+            private static byte[] ImageObject(int id, PdfImage image)
+            {
+                byte[] header = Encoding.ASCII.GetBytes(
+                    $"{id} 0 obj\n<< /Type /XObject /Subtype /Image /Width {image.Width} /Height {image.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {image.Bytes.Length} >>\nstream\n");
+                byte[] footer = Encoding.ASCII.GetBytes("\nendstream\nendobj\n");
+                byte[] result = new byte[header.Length + image.Bytes.Length + footer.Length];
+                Buffer.BlockCopy(header, 0, result, 0, header.Length);
+                Buffer.BlockCopy(image.Bytes, 0, result, header.Length, image.Bytes.Length);
+                Buffer.BlockCopy(footer, 0, result, header.Length + image.Bytes.Length, footer.Length);
+                return result;
+            }
         }
 
         internal sealed class PdfCanvas
         {
             private readonly StringBuilder _content = new();
+            private int _imageCounter;
             public PdfCanvas(double width, double height) { Width = width; Height = height; }
             public double Width { get; }
             public double Height { get; }
             public string Content => _content.ToString();
+            internal List<PdfImage> Images { get; } = [];
 
             public void Text(string text, double x, double y, double size, bool bold = false) => Text(text, x, y, size, bold, 0, 0, 0);
             public void Text(string text, double x, double y, double size, bool bold, byte red, byte green, byte blue)
@@ -334,8 +366,69 @@ namespace CorexProd.WPF.Helpers
             public double MeasureText(string text, double size, bool bold = false) => ApproximateWidth(text, size, bold);
             public void CenterText(string text, double centerX, double y, double size, bool bold = false) => CenterText(text, centerX, y, size, bold, 0, 0, 0);
             public void CenterText(string text, double centerX, double y, double size, bool bold, byte red, byte green, byte blue) => Text(text, centerX - (ApproximateWidth(text, size, bold) / 2), y, size, bold, red, green, blue);
+            public void RotatedCenterText(string text, double centerX, double centerY, double size, double angleDegrees, bool bold, byte red, byte green, byte blue)
+            {
+                double radians = angleDegrees * Math.PI / 180d;
+                double cos = Math.Cos(radians);
+                double sin = Math.Sin(radians);
+                double textWidth = ApproximateWidth(text, size, bold);
+                double x = centerX - (textWidth / 2 * cos);
+                double y = centerY - (textWidth / 2 * sin);
+                _content.Append("q ");
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg BT /");
+                _content.Append(bold ? "F2" : "F1");
+                _content.Append(' ');
+                _content.Append(N(size));
+                _content.Append(" Tf ");
+                _content.Append($"{N(cos)} {N(sin)} {N(-sin)} {N(cos)} {N(x)} {N(y)} Tm ");
+                _content.Append(PdfString(text));
+                _content.Append(" Tj ET Q\n");
+            }
             public void Line(double x1, double y1, double x2, double y2) => _content.Append($"0 0 0 RG {N(x1)} {N(y1)} m {N(x2)} {N(y2)} l S\n");
             public void Rectangle(double x, double y, double width, double height) => _content.Append($"0 0 0 RG {N(x)} {N(y)} {N(width)} {N(height)} re S\n");
+            public void FilledRectangle(double x, double y, double width, double height, byte red, byte green, byte blue)
+            {
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg {N(x)} {N(y)} {N(width)} {N(height)} re f\n");
+                _content.Append($"0 0 0 RG {N(x)} {N(y)} {N(width)} {N(height)} re S\n");
+            }
+            public bool Image(string path, double x, double y, double maxWidth, double maxHeight)
+            {
+                if (!File.Exists(path))
+                    return false;
+
+                try
+                {
+                    PdfImage image = PdfImage.FromFile(path, $"Im{++_imageCounter}");
+                    Images.Add(image);
+                    double scale = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
+                    double width = image.Width * scale;
+                    double height = image.Height * scale;
+                    _content.Append($"q {N(width)} 0 0 {N(height)} {N(x)} {N(y)} cm /{image.Name} Do Q\n");
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            public bool Image(byte[] bytes, double x, double y, double maxWidth, double maxHeight)
+            {
+                try
+                {
+                    PdfImage image = PdfImage.FromBytes(bytes, $"Im{++_imageCounter}");
+                    Images.Add(image);
+                    double scale = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
+                    double width = image.Width * scale;
+                    double height = image.Height * scale;
+                    _content.Append($"q {N(width)} 0 0 {N(height)} {N(x)} {N(y)} cm /{image.Name} Do Q\n");
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
 
             private static double ApproximateWidth(string text, double size, bool bold)
             {
@@ -352,6 +445,39 @@ namespace CorexProd.WPF.Helpers
                 return bold ? width * 1.05 : width;
             }
             private static string ColorValue(byte value) => (value / 255d).ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        internal sealed class PdfImage
+        {
+            public required string Name { get; init; }
+            public required byte[] Bytes { get; init; }
+            public required int Width { get; init; }
+            public required int Height { get; init; }
+
+            public static PdfImage FromFile(string path, string name) => FromBytes(File.ReadAllBytes(path), name);
+
+            public static PdfImage FromBytes(byte[] bytes, string name)
+            {
+                using MemoryStream input = new(bytes);
+                BitmapDecoder decoder = BitmapDecoder.Create(input, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                BitmapFrame frame = decoder.Frames[0];
+                byte[] jpgBytes;
+                using (MemoryStream output = new())
+                {
+                    JpegBitmapEncoder encoder = new() { QualityLevel = 88 };
+                    encoder.Frames.Add(BitmapFrame.Create(frame));
+                    encoder.Save(output);
+                    jpgBytes = output.ToArray();
+                }
+
+                return new PdfImage
+                {
+                    Name = name,
+                    Bytes = jpgBytes,
+                    Width = frame.PixelWidth,
+                    Height = frame.PixelHeight
+                };
+            }
         }
 
         private static string PdfString(string text)

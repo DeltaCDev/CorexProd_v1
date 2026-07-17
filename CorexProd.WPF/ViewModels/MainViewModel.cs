@@ -3,6 +3,7 @@ using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
 using CorexProd.WPF.Modules.Almacen.Views;
 using CorexProd.WPF.Modules.DestajoPagos.Views;
+using CorexProd.WPF.Modules.OrdenesServicio.Views;
 using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.Modules.Produccion.Views;
 using CorexProd.WPF.Modules.Reportes.Views;
@@ -477,6 +478,45 @@ namespace CorexProd.WPF.ViewModels
                 menusConstruidos.Add(destajoPagos);
             }
 
+            // ÓRDENES DE SERVICIO
+            MenuItemSistema ordenesServicio = new()
+            {
+                Titulo = "Órdenes de Servicio",
+                EsPadre = true
+            };
+
+            if (menusPermitidos.Contains("Lista de Órdenes de Servicio") || menusPermitidos.Contains("Órdenes de Servicio"))
+            {
+                ordenesServicio.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Lista de Órdenes de Servicio",
+                    Vista = "OrdenesServicio"
+                });
+            }
+
+            if (menusPermitidos.Contains("Tipos de Servicio") || menusPermitidos.Contains("Órdenes de Servicio"))
+            {
+                ordenesServicio.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Tipos de Servicio",
+                    Vista = "OrdenesServicio"
+                });
+            }
+
+            if (menusPermitidos.Contains("Reportes OS") || menusPermitidos.Contains("Órdenes de Servicio"))
+            {
+                ordenesServicio.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Reportes",
+                    Vista = "OrdenesServicio"
+                });
+            }
+
+            if (menusPermitidos.Contains("Órdenes de Servicio") && ordenesServicio.Hijos.Count > 0)
+            {
+                menusConstruidos.Add(ordenesServicio);
+            }
+
             // REPORTES
             MenuItemSistema reportes = new()
             {
@@ -640,6 +680,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Formas de pago OS"))
+            {
+                seguridad.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Formas de pago OS",
+                    Vista = "FormasPagoOs"
+                });
+            }
+
             if (menusPermitidos.Contains("Seguridad") && seguridad.Hijos.Count > 0)
             {
                 menusConstruidos.Add(seguridad);
@@ -689,8 +738,9 @@ namespace CorexProd.WPF.ViewModels
                     [LlaveMenu(null, "Reportes")] = 4,
                     [LlaveMenu(null, "Almacén")] = 5,
                     [LlaveMenu(null, "Productos")] = 6,
-                    [LlaveMenu(null, "Destajo y Pagos")] = 7,
-                    [LlaveMenu(null, "Seguridad")] = 8
+                    [LlaveMenu(null, "Órdenes de Servicio")] = 7,
+                    [LlaveMenu(null, "Destajo y Pagos")] = 8,
+                    [LlaveMenu(null, "Seguridad")] = 9
                 };
             }
         }
@@ -788,6 +838,11 @@ namespace CorexProd.WPF.ViewModels
                 case "Menus":
                     Titulo = "Menú";
                     VistaActual = new MenusView();
+                    break;
+
+                case "FormasPagoOs":
+                    Titulo = "Formas de pago OS";
+                    VistaActual = new FormasPagoOsView();
                     break;
 
                 // VENTAS
@@ -918,6 +973,12 @@ namespace CorexProd.WPF.ViewModels
                 case "DestajoPagos":
                     Titulo = "Control de Destajo y Pagos Operativos";
                     VistaActual = new DestajoPagosView();
+                    break;
+
+                // ÓRDENES DE SERVICIO
+                case "OrdenesServicio":
+                    Titulo = "Órdenes de Servicio";
+                    VistaActual = new OrdenesServicioView();
                     break;
 
                 // REPORTES

@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding TituloEditor}"
         Width="680"
-        Height="520"
-        MinHeight="520"
+        Height="590"
+        MinHeight="590"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -89,6 +89,35 @@
                     </StackPanel>
                     <CheckBox Grid.Column="2" Content="Activo" IsChecked="{Binding Estado}" FontWeight="SemiBold" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
                 </Grid>
+
+                <Border Background="#FFF7ED"
+                        BorderBrush="#FDBA74"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12"
+                        Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Grid.Column="0"
+                                  Content="Aprobacion OS"
+                                  IsChecked="{Binding AprobacionOs}"
+                                  FontWeight="SemiBold"
+                                  VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Style="{StaticResource LabelCampo}" Text="Clave aprobacion OS"/>
+                            <TextBox Style="{StaticResource CampoTexto}"
+                                     MaxLength="4"
+                                     Text="{Binding ClaveAprobacionOs, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Text="Ingrese 4 digitos numericos. Es diferente a la clave de ingreso al sistema."
+                                       Foreground="#9A3412"
+                                       FontSize="12"
+                                       Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
                 <Border Background="#F8FAFC"
                         BorderBrush="#CBD5E1"
