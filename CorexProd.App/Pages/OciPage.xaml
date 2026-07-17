@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:CorexProd.App.Pages"
              x:Class="CorexProd.App.Pages.OciPage"
              Title="OC"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="#F4F6F8">
     <ContentPage.Resources>
         <pages:OciEditarVisibleConverter x:Key="OciEditarVisibleConverter" />
@@ -29,11 +30,19 @@
     <Grid RowDefinitions="Auto,*" BackgroundColor="#F4F6F8">
         <VerticalStackLayout Padding="14" Spacing="12" BackgroundColor="White">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="0,2,0,4">
-                <Label Text="←" FontSize="28" TextColor="#101828" VerticalOptions="Center" />
+                <Button Text="←"
+                        FontSize="28"
+                        TextColor="#101828"
+                        BackgroundColor="White"
+                        Padding="0"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        Clicked="OnBackClicked" />
+                <Label Text="←" FontSize="28" TextColor="#101828" VerticalOptions="Center" IsVisible="False" />
                 <Label Grid.Column="1" Text="Órdenes de Compra" FontSize="22" FontFamily="OpenSansSemibold" TextColor="#101828" VerticalOptions="Center" />
             </Grid>
 
-            <Border Padding="14" BackgroundColor="White" Stroke="#E4E7EC">
+            <Border Padding="10" BackgroundColor="White" Stroke="#E4E7EC">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="16" />
                 </Border.StrokeShape>
@@ -41,21 +50,21 @@
                     <Shadow Brush="#22000000" Offset="0,4" Radius="12" Opacity="0.18" />
                 </Border.Shadow>
 
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                        <VerticalStackLayout Spacing="3">
-                            <Label Text="Desde" FontSize="11" TextColor="#4F46E5" />
-                            <DatePicker x:Name="FechaDesde" DateSelected="OnFilterChanged" TextColor="#101828" />
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="120,120,*" ColumnSpacing="8">
+                        <VerticalStackLayout Spacing="0">
+                            <Label Text="Desde" FontSize="10" TextColor="#4F46E5" />
+                            <DatePicker x:Name="FechaDesde" DateSelected="OnFilterChanged" TextColor="#101828" FontSize="13" HeightRequest="36" />
                         </VerticalStackLayout>
-                        <VerticalStackLayout Grid.Column="1" Spacing="3">
-                            <Label Text="Hasta" FontSize="11" TextColor="#4F46E5" />
-                            <DatePicker x:Name="FechaHasta" DateSelected="OnFilterChanged" TextColor="#101828" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="0">
+                            <Label Text="Hasta" FontSize="10" TextColor="#4F46E5" />
+                            <DatePicker x:Name="FechaHasta" DateSelected="OnFilterChanged" TextColor="#101828" FontSize="13" HeightRequest="36" />
                         </VerticalStackLayout>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                        <Picker x:Name="EstadoPicker" Title="Estado" SelectedIndexChanged="OnFilterChanged" TextColor="#101828" />
-                        <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged" TextColor="#101828" PlaceholderColor="#98A2B3" />
+                    <Grid ColumnDefinitions="120,*" ColumnSpacing="8">
+                        <Picker x:Name="EstadoPicker" Title="Estado" SelectedIndexChanged="OnFilterChanged" TextColor="#101828" FontSize="13" HeightRequest="40" />
+                        <Entry Grid.Column="1" x:Name="ClienteFilter" Placeholder="Cliente" TextChanged="OnFilterTextChanged" TextColor="#101828" PlaceholderColor="#98A2B3" IsVisible="False" />
                     </Grid>
 
                     <SearchBar x:Name="Search"
@@ -64,7 +73,10 @@
                                TextChanged="OnSearchTextChanged"
                                BackgroundColor="#FFFFFF"
                                TextColor="#101828"
-                               PlaceholderColor="#667085" />
+                               PlaceholderColor="#667085"
+                               FontSize="13"
+                               HeightRequest="42"
+                               Margin="128,-48,0,-2" />
                 </VerticalStackLayout>
             </Border>
 

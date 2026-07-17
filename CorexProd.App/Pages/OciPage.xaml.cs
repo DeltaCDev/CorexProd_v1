@@ -53,6 +53,14 @@ public partial class OciPage : ContentPage
 
     private async void OnBuscarClicked(object? sender, EventArgs e) => await LoadAsync();
     private async void OnNuevaOcClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProformaEditorPage));
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        if (Shell.Current.Navigation.NavigationStack.Count > 1)
+            await Shell.Current.GoToAsync("..");
+        else
+            await Shell.Current.GoToAsync(nameof(HomePage));
+    }
+
     private async void OnSearchPressed(object? sender, EventArgs e) => await LoadAsync();
     private async void OnRefreshing(object? sender, EventArgs e) => await LoadAsync();
 
