@@ -9,6 +9,7 @@ namespace CorexProd.Negocio.Negocio
     public class OrdenServicioNegocio
     {
         private readonly OrdenServicioDatos _datos = new();
+        private readonly UsuarioNegocio _usuarioNegocio = new();
 
         public List<OrdenServicio> Listar(string? buscar = null, string? estado = null) => _datos.Listar(buscar, estado);
         public OrdenServicio? Obtener(int idOrdenServicio) => idOrdenServicio <= 0 ? null : _datos.Obtener(idOrdenServicio);
@@ -36,7 +37,9 @@ namespace CorexProd.Negocio.Negocio
             orden.OtRelacionada = orden.OtRelacionada.Trim();
             orden.Responsable = orden.Responsable.Trim();
             orden.FormaPago = orden.FormaPago.Trim();
+            orden.ObservacionesInternas = orden.ObservacionesInternas.Trim();
             orden.Observaciones = orden.Observaciones.Trim();
+            orden.DistribucionFotosPdf = NormalizarDistribucionFotos(orden.DistribucionFotosPdf);
 
             if (orden.IdProveedor <= 0)
                 return "Debe seleccionar un proveedor.";
@@ -70,10 +73,15 @@ namespace CorexProd.Negocio.Negocio
             return _datos.Guardar(orden);
         }
 
-        public string Aprobar(int idOrdenServicio, string usuario)
+        public string Aprobar(int idOrdenServicio, string usuario, string claveAprobacion)
         {
             if (idOrdenServicio <= 0)
                 return "Debe seleccionar una orden de servicio.";
+
+            string validacion = _usuarioNegocio.ValidarAprobacionOs(usuario, claveAprobacion);
+            if (!validacion.Equals("OK", StringComparison.OrdinalIgnoreCase))
+                return validacion;
+
             return _datos.Aprobar(idOrdenServicio, Usuario(usuario));
         }
 
@@ -167,6 +175,14 @@ namespace CorexProd.Negocio.Negocio
             return _datos.RegistrarFoto(foto);
         }
 
+        public string ActualizarOrdenFotos(int idOrdenServicio, IEnumerable<OrdenServicioFoto> fotos, string usuario)
+        {
+            if (idOrdenServicio <= 0)
+                return "Debe seleccionar una orden de servicio.";
+
+            return _datos.ActualizarOrdenFotos(idOrdenServicio, fotos, Usuario(usuario));
+        }
+
         public string EliminarFoto(int idFoto, string usuario)
         {
             if (idFoto <= 0)
@@ -175,5 +191,13 @@ namespace CorexProd.Negocio.Negocio
         }
 
         private static string Usuario(string usuario) => string.IsNullOrWhiteSpace(usuario) ? "Sistema" : usuario.Trim();
+
+        private static string NormalizarDistribucionFotos(string distribucion)
+        {
+            distribucion = (distribucion ?? string.Empty).Trim();
+            if (distribucion.Equals("2 x 4", StringComparison.OrdinalIgnoreCase))
+                return "2 x 4";
+            return distribucion.Equals("2 x 2", StringComparison.OrdinalIgnoreCase) ? "2 x 2" : "1 x 2";
+        }
     }
 }

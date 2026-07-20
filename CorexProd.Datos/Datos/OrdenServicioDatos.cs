@@ -84,7 +84,7 @@ namespace CorexProd.Datos.Datos
                     ISNULL(P.NumeroDocumento, '') AS RucProveedor,
                     O.IdTipoServicio, T.Nombre AS TipoServicioNombre, T.RequiereEntrega,
                     O.Cliente, O.OciRelacionada, O.OtRelacionada, O.Responsable, O.FormaPago,
-                    O.Observaciones, O.Subtotal, O.Igv, O.Total,
+                    O.ObservacionesInternas, O.Observaciones, O.DistribucionFotosPdf, O.Subtotal, O.Igv, O.Total,
                     ISNULL(PG.TotalPagado, 0) AS TotalPagado,
                     O.Estado, O.EstadoServicio, O.EstadoPago, O.UsuarioRegistro, O.FechaRegistro, O.MotivoAnulacion
                 FROM dbo.OrdenesServicio O
@@ -133,7 +133,7 @@ namespace CorexProd.Datos.Datos
                     ISNULL(P.NumeroDocumento, '') AS RucProveedor,
                     O.IdTipoServicio, T.Nombre AS TipoServicioNombre, T.RequiereEntrega,
                     O.Cliente, O.OciRelacionada, O.OtRelacionada, O.Responsable, O.FormaPago,
-                    O.Observaciones, O.Subtotal, O.Igv, O.Total,
+                    O.ObservacionesInternas, O.Observaciones, O.DistribucionFotosPdf, O.Subtotal, O.Igv, O.Total,
                     ISNULL(PG.TotalPagado, 0) AS TotalPagado,
                     O.Estado, O.EstadoServicio, O.EstadoPago, O.UsuarioRegistro, O.FechaRegistro, O.MotivoAnulacion
                 FROM dbo.OrdenesServicio O
@@ -218,12 +218,12 @@ namespace CorexProd.Datos.Datos
                     using SqlCommand cmd = new("""
                         INSERT INTO dbo.OrdenesServicio
                         (NumeroOrden, Fecha, FechaComprometida, IdProveedor, IdTipoServicio, Cliente,
-                         OciRelacionada, OtRelacionada, Responsable, FormaPago, Observaciones,
+                         OciRelacionada, OtRelacionada, Responsable, FormaPago, ObservacionesInternas, Observaciones, DistribucionFotosPdf,
                          Subtotal, Igv, Total, Estado, EstadoServicio, EstadoPago, UsuarioRegistro)
                         OUTPUT INSERTED.IdOrdenServicio
                         VALUES
                         (@NumeroOrden, @Fecha, @FechaComprometida, @IdProveedor, @IdTipoServicio, @Cliente,
-                         @OciRelacionada, @OtRelacionada, @Responsable, @FormaPago, @Observaciones,
+                         @OciRelacionada, @OtRelacionada, @Responsable, @FormaPago, @ObservacionesInternas, @Observaciones, @DistribucionFotosPdf,
                          @Subtotal, @Igv, @Total, 'Borrador', 'Borrador', @EstadoPago, @UsuarioRegistro);
                         """, cn, tx);
                     AgregarParametrosOrden(cmd, orden);
@@ -258,7 +258,9 @@ namespace CorexProd.Datos.Datos
                             OtRelacionada = @OtRelacionada,
                             Responsable = @Responsable,
                             FormaPago = @FormaPago,
+                            ObservacionesInternas = @ObservacionesInternas,
                             Observaciones = @Observaciones,
+                            DistribucionFotosPdf = @DistribucionFotosPdf,
                             Subtotal = @Subtotal,
                             Igv = @Igv,
                             Total = @Total,
@@ -572,8 +574,8 @@ namespace CorexProd.Datos.Datos
             AsegurarEsquema(cn);
             using SqlCommand cmd = new("""
                 INSERT INTO dbo.OrdenServicioFotos
-                (IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo, Titulo, UbicacionPdf, Descripcion, UsuarioRegistro)
-                VALUES (@IdOrdenServicio, @IdOrdenServicioDetalle, @RutaArchivo, @NombreArchivo, @Titulo, @UbicacionPdf, @Descripcion, @UsuarioRegistro);
+                (IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo, Titulo, UbicacionPdf, Descripcion, Orden, UsuarioRegistro)
+                VALUES (@IdOrdenServicio, @IdOrdenServicioDetalle, @RutaArchivo, @NombreArchivo, @Titulo, @UbicacionPdf, @Descripcion, @Orden, @UsuarioRegistro);
                 """, cn);
             cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = foto.IdOrdenServicio;
             cmd.Parameters.Add("@IdOrdenServicioDetalle", SqlDbType.Int).Value = (object?)foto.IdOrdenServicioDetalle ?? DBNull.Value;
@@ -582,10 +584,44 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.Add("@Titulo", SqlDbType.VarChar, 160).Value = foto.Titulo;
             cmd.Parameters.Add("@UbicacionPdf", SqlDbType.VarChar, 40).Value = foto.UbicacionPdf;
             cmd.Parameters.Add("@Descripcion", SqlDbType.VarChar, 500).Value = foto.Descripcion;
+            cmd.Parameters.Add("@Orden", SqlDbType.Int).Value = foto.Orden;
             cmd.Parameters.Add("@UsuarioRegistro", SqlDbType.VarChar, 80).Value = foto.UsuarioRegistro;
             cmd.ExecuteNonQuery();
             RegistrarHistorial(cn, null, foto.IdOrdenServicio, foto.UsuarioRegistro, "Registro de fotografia");
             return "Fotografia registrada correctamente.";
+        }
+
+        public string ActualizarOrdenFotos(int idOrdenServicio, IEnumerable<OrdenServicioFoto> fotos, string usuario)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            cn.Open();
+            AsegurarEsquema(cn);
+            using SqlTransaction tx = cn.BeginTransaction();
+            try
+            {
+                int orden = 1;
+                foreach (OrdenServicioFoto foto in fotos.Where(x => x.IdOrdenServicioFoto > 0))
+                {
+                    using SqlCommand cmd = new("""
+                        UPDATE dbo.OrdenServicioFotos
+                        SET Orden = @Orden
+                        WHERE IdOrdenServicioFoto = @IdFoto AND IdOrdenServicio = @IdOrdenServicio;
+                        """, cn, tx);
+                    cmd.Parameters.Add("@Orden", SqlDbType.Int).Value = orden++;
+                    cmd.Parameters.Add("@IdFoto", SqlDbType.Int).Value = foto.IdOrdenServicioFoto;
+                    cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = idOrdenServicio;
+                    cmd.ExecuteNonQuery();
+                }
+
+                RegistrarHistorial(cn, tx, idOrdenServicio, usuario, "Actualizacion de orden de fotografias");
+                tx.Commit();
+                return "Orden de fotografias actualizado correctamente.";
+            }
+            catch (Exception ex)
+            {
+                tx.Rollback();
+                return ex.Message;
+            }
         }
 
         public string EliminarFoto(int idFoto, string usuario)
@@ -655,7 +691,9 @@ namespace CorexProd.Datos.Datos
             cmd.Parameters.Add("@OtRelacionada", SqlDbType.VarChar, 60).Value = orden.OtRelacionada;
             cmd.Parameters.Add("@Responsable", SqlDbType.VarChar, 100).Value = orden.Responsable;
             cmd.Parameters.Add("@FormaPago", SqlDbType.VarChar, 80).Value = orden.FormaPago;
+            cmd.Parameters.Add("@ObservacionesInternas", SqlDbType.VarChar, 1000).Value = orden.ObservacionesInternas;
             cmd.Parameters.Add("@Observaciones", SqlDbType.VarChar, 1000).Value = orden.Observaciones;
+            cmd.Parameters.Add("@DistribucionFotosPdf", SqlDbType.VarChar, 20).Value = string.IsNullOrWhiteSpace(orden.DistribucionFotosPdf) ? "1 x 2" : orden.DistribucionFotosPdf;
             cmd.Parameters.Add("@Subtotal", SqlDbType.Decimal).Value = orden.Subtotal;
             cmd.Parameters.Add("@Igv", SqlDbType.Decimal).Value = orden.Igv;
             cmd.Parameters.Add("@Total", SqlDbType.Decimal).Value = orden.Total;
@@ -714,7 +752,9 @@ namespace CorexProd.Datos.Datos
             OtRelacionada = dr["OtRelacionada"]?.ToString() ?? string.Empty,
             Responsable = dr["Responsable"]?.ToString() ?? string.Empty,
             FormaPago = dr["FormaPago"]?.ToString() ?? string.Empty,
+            ObservacionesInternas = dr["ObservacionesInternas"]?.ToString() ?? string.Empty,
             Observaciones = dr["Observaciones"]?.ToString() ?? string.Empty,
+            DistribucionFotosPdf = dr["DistribucionFotosPdf"]?.ToString() ?? "1 x 2",
             Subtotal = Convert.ToDecimal(dr["Subtotal"]),
             Igv = Convert.ToDecimal(dr["Igv"]),
             Total = Convert.ToDecimal(dr["Total"]),
@@ -752,10 +792,10 @@ namespace CorexProd.Datos.Datos
         {
             using SqlCommand cmd = new("""
                 SELECT IdOrdenServicioFoto, IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo,
-                       Titulo, UbicacionPdf, Descripcion, UsuarioRegistro, FechaRegistro
+                       Titulo, UbicacionPdf, Descripcion, Orden, UsuarioRegistro, FechaRegistro
                 FROM dbo.OrdenServicioFotos
                 WHERE IdOrdenServicio = @IdOrdenServicio
-                ORDER BY IdOrdenServicioDetalle, IdOrdenServicioFoto;
+                ORDER BY IdOrdenServicioDetalle, CASE WHEN Orden <= 0 THEN 999999 ELSE Orden END, IdOrdenServicioFoto;
                 """, cn);
             cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = orden.IdOrdenServicio;
             using SqlDataReader dr = cmd.ExecuteReader();
@@ -833,6 +873,7 @@ namespace CorexProd.Datos.Datos
             Titulo = dr["Titulo"]?.ToString() ?? string.Empty,
             UbicacionPdf = dr["UbicacionPdf"]?.ToString() ?? string.Empty,
             Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
+            Orden = dr["Orden"] == DBNull.Value ? 0 : Convert.ToInt32(dr["Orden"]),
             UsuarioRegistro = dr["UsuarioRegistro"]?.ToString() ?? string.Empty,
             FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
         };
@@ -955,7 +996,9 @@ namespace CorexProd.Datos.Datos
                         OtRelacionada VARCHAR(60) NOT NULL CONSTRAINT DF_OrdenesServicio_Ot DEFAULT(''),
                         Responsable VARCHAR(100) NOT NULL CONSTRAINT DF_OrdenesServicio_Responsable DEFAULT(''),
                         FormaPago VARCHAR(80) NOT NULL CONSTRAINT DF_OrdenesServicio_FormaPago DEFAULT(''),
+                        ObservacionesInternas VARCHAR(1000) NOT NULL CONSTRAINT DF_OrdenesServicio_ObservacionesInternas DEFAULT(''),
                         Observaciones VARCHAR(1000) NOT NULL CONSTRAINT DF_OrdenesServicio_Observaciones DEFAULT(''),
+                        DistribucionFotosPdf VARCHAR(20) NOT NULL CONSTRAINT DF_OrdenesServicio_DistribucionFotosPdf DEFAULT('1 x 2'),
                         Subtotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_OrdenesServicio_Subtotal DEFAULT(0),
                         Igv DECIMAL(18,2) NOT NULL CONSTRAINT DF_OrdenesServicio_Igv DEFAULT(0),
                         Total DECIMAL(18,2) NOT NULL CONSTRAINT DF_OrdenesServicio_Total DEFAULT(0),
@@ -974,6 +1017,12 @@ namespace CorexProd.Datos.Datos
 
                 IF COL_LENGTH('dbo.OrdenesServicio', 'EstadoPago') IS NULL
                     ALTER TABLE dbo.OrdenesServicio ADD EstadoPago VARCHAR(40) NOT NULL CONSTRAINT DF_OrdenesServicio_EstadoPago_Legacy DEFAULT('Pendiente');
+
+                IF COL_LENGTH('dbo.OrdenesServicio', 'ObservacionesInternas') IS NULL
+                    ALTER TABLE dbo.OrdenesServicio ADD ObservacionesInternas VARCHAR(1000) NOT NULL CONSTRAINT DF_OrdenesServicio_ObservacionesInternas_Legacy DEFAULT('');
+
+                IF COL_LENGTH('dbo.OrdenesServicio', 'DistribucionFotosPdf') IS NULL
+                    ALTER TABLE dbo.OrdenesServicio ADD DistribucionFotosPdf VARCHAR(20) NOT NULL CONSTRAINT DF_OrdenesServicio_DistribucionFotosPdf_Legacy DEFAULT('1 x 2');
 
                 IF OBJECT_ID('dbo.OrdenServicioDetalle', 'U') IS NULL
                 BEGIN
@@ -1060,6 +1109,7 @@ namespace CorexProd.Datos.Datos
                         Titulo VARCHAR(160) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Titulo DEFAULT(''),
                         UbicacionPdf VARCHAR(40) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Ubicacion DEFAULT('Abajo'),
                         Descripcion VARCHAR(500) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Descripcion DEFAULT(''),
+                        Orden INT NOT NULL CONSTRAINT DF_OrdenServicioFotos_Orden DEFAULT(0),
                         UsuarioRegistro VARCHAR(80) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Usuario DEFAULT('Sistema'),
                         FechaRegistro DATETIME NOT NULL CONSTRAINT DF_OrdenServicioFotos_Fecha DEFAULT(GETDATE()),
                         CONSTRAINT FK_OrdenServicioFotos_Orden FOREIGN KEY (IdOrdenServicio) REFERENCES dbo.OrdenesServicio(IdOrdenServicio)
@@ -1071,6 +1121,9 @@ namespace CorexProd.Datos.Datos
 
                 IF COL_LENGTH('dbo.OrdenServicioFotos', 'UbicacionPdf') IS NULL
                     ALTER TABLE dbo.OrdenServicioFotos ADD UbicacionPdf VARCHAR(40) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Ubicacion_Legacy DEFAULT('Abajo');
+
+                IF COL_LENGTH('dbo.OrdenServicioFotos', 'Orden') IS NULL
+                    ALTER TABLE dbo.OrdenServicioFotos ADD Orden INT NOT NULL CONSTRAINT DF_OrdenServicioFotos_Orden_Legacy DEFAULT(0);
                 """, cn);
             cmd.ExecuteNonQuery();
         }

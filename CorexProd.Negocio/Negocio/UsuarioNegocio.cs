@@ -176,6 +176,9 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(usuario.ClaveAprobacionOs))
                 return "El usuario no tiene clave de aprobacion OS configurada.";
 
+            if (!EsHashBcrypt(usuario.ClaveAprobacionOs))
+                return "La clave de aprobacion OS del usuario debe volver a configurarse.";
+
             return PasswordService.VerifyPassword(claveAprobacion, usuario.ClaveAprobacionOs)
                 ? "OK"
                 : "Clave de aprobacion incorrecta.";
@@ -242,5 +245,16 @@ namespace CorexProd.Negocio.Negocio
 
         private static bool EsClaveAprobacionValida(string clave) =>
             clave.Length == 4 && clave.All(char.IsDigit);
+
+        private static bool EsHashBcrypt(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+                return false;
+
+            return valor.StartsWith("$2a$", StringComparison.Ordinal)
+                || valor.StartsWith("$2b$", StringComparison.Ordinal)
+                || valor.StartsWith("$2x$", StringComparison.Ordinal)
+                || valor.StartsWith("$2y$", StringComparison.Ordinal);
+        }
     }
 }

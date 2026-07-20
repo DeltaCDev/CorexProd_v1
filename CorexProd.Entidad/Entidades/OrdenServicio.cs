@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CorexProd.Entidad.Entidades
@@ -43,7 +44,9 @@ namespace CorexProd.Entidad.Entidades
         public string OtRelacionada { get; set; } = string.Empty;
         public string Responsable { get; set; } = string.Empty;
         public string FormaPago { get; set; } = string.Empty;
+        public string ObservacionesInternas { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
+        public string DistribucionFotosPdf { get; set; } = "1 x 2";
         public decimal Subtotal { get; set; }
         public decimal Igv { get; set; }
         public decimal Total { get; set; }
@@ -117,6 +120,14 @@ namespace CorexProd.Entidad.Entidades
         public decimal PrecioUnitario { get; set; }
         public decimal Total { get; set; }
         public string Observaciones { get; set; } = string.Empty;
+        public bool EsFilaRelleno { get; set; }
+        public string NumeroVisual => EsFilaRelleno ? string.Empty : (IdOrdenServicioDetalle > 0 ? IdOrdenServicioDetalle.ToString() : string.Empty);
+        public string ProductoVisual => EsFilaRelleno ? string.Empty : Producto;
+        public string DescripcionVisual => EsFilaRelleno ? string.Empty : Descripcion;
+        public string CantidadVisual => EsFilaRelleno ? string.Empty : Cantidad.ToString("N2");
+        public string UnidadVisual => EsFilaRelleno ? string.Empty : Unidad;
+        public string PrecioUnitarioVisual => EsFilaRelleno ? string.Empty : PrecioUnitario.ToString("N2");
+        public string TotalVisual => EsFilaRelleno ? string.Empty : Total.ToString("N2");
     }
 
     public class OrdenServicioPago
@@ -161,9 +172,11 @@ namespace CorexProd.Entidad.Entidades
         public string Titulo { get; set; } = string.Empty;
         public string UbicacionPdf { get; set; } = "Abajo";
         public string Descripcion { get; set; } = string.Empty;
+        public int Orden { get; set; }
         public string UsuarioRegistro { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
         public string Nivel => IdOrdenServicioDetalle.HasValue ? "Detalle" : "General";
+        public Uri? RutaArchivoUri => string.IsNullOrWhiteSpace(RutaArchivo) || !File.Exists(RutaArchivo) ? null : new Uri(RutaArchivo, UriKind.Absolute);
     }
 
     public class OrdenServicioHistorial

@@ -122,7 +122,12 @@
     </UserControl.Resources>
 
     <Grid Margin="18">
-        <TabControl>
+        <TabControl x:Name="TabsOrdenesServicio" BorderThickness="0" Padding="0">
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </Style>
+            </TabControl.ItemContainerStyle>
             <TabItem Header="Lista de Ordenes de Servicio">
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>
@@ -171,37 +176,6 @@
                                     <TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/>
                                     <ComboBox Width="170" Style="{StaticResource CampoCombo}" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/>
                                 </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Importe" Style="{StaticResource Etiqueta}"/>
-                                    <TextBox Width="105" Style="{StaticResource CampoTexto}" Text="{Binding PagoImporte, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Medio de pago" Style="{StaticResource Etiqueta}"/>
-                                    <TextBox Width="135" Style="{StaticResource CampoTexto}" Text="{Binding PagoMedio, UpdateSourceTrigger=PropertyChanged}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Operacion" Style="{StaticResource Etiqueta}"/>
-                                    <TextBox Width="135" Style="{StaticResource CampoTexto}" Text="{Binding PagoOperacion, UpdateSourceTrigger=PropertyChanged}"/>
-                                </StackPanel>
-                                <Button Style="{StaticResource Boton}" Command="{Binding RegistrarPagoCommand}" VerticalAlignment="Bottom" IsEnabled="{Binding PuedeRegistrarPago}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8C7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
-                                        <TextBlock Text="Registrar Pago"/>
-                                    </StackPanel>
-                                </Button>
-                                <StackPanel Margin="14,0,12,0">
-                                    <TextBlock Text="Titulo foto" Style="{StaticResource Etiqueta}"/>
-                                    <TextBox Width="150" Style="{StaticResource CampoTexto}" Text="{Binding FotoTitulo, UpdateSourceTrigger=PropertyChanged}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Descripcion foto" Style="{StaticResource Etiqueta}"/>
-                                    <TextBox Width="180" Style="{StaticResource CampoTexto}" Text="{Binding FotoDescripcion, UpdateSourceTrigger=PropertyChanged}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Ubicacion PDF" Style="{StaticResource Etiqueta}"/>
-                                    <ComboBox Width="135" Style="{StaticResource CampoCombo}" ItemsSource="{Binding UbicacionesFotoPdf}" SelectedItem="{Binding FotoUbicacionPdf}"/>
-                                </StackPanel>
-                                <Button Style="{StaticResource Boton}" Command="{Binding AgregarFotoCommand}" VerticalAlignment="Bottom" Content="Agregar Foto"/>
                             </WrapPanel>
                         </Grid>
                     </Border>
@@ -325,7 +299,7 @@
                               BorderThickness="1"
                               GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Acciones" Width="210">
+                            <DataGridTemplateColumn Header="Acciones" Width="269">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -364,10 +338,10 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Orden" Binding="{Binding NumeroOrden}" Width="100" ElementStyle="{StaticResource Celda}"/>
-                            <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="104" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="F. Emision" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="104" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="210" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="Tipo de Servicio" Binding="{Binding TipoServicioNombre}" Width="310" ElementStyle="{StaticResource Celda}"/>
-                            <DataGridTextColumn Header="Compromiso" Binding="{Binding FechaComprometidaVisual}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="F. Entrega" Binding="{Binding FechaComprometidaVisual}" Width="105" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTemplateColumn Header="ESTADO" Width="170">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>

@@ -47,6 +47,7 @@
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <UniformGrid Columns="4" Margin="0,0,0,12">
@@ -84,7 +85,24 @@
                         </StackPanel>
                     </UniformGrid>
 
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding Orden.Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
+                    <Border Grid.Row="1" Background="White" BorderBrush="#D7E0EE" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Observaciones internas (resumen)" Style="{StaticResource Etiqueta}"/>
+                                <TextBlock Text="{Binding Orden.ObservacionesInternas}" Style="{StaticResource Valor}" MinHeight="34"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                <TextBlock Text="Observaciones para proveedor (PDF)" Style="{StaticResource Etiqueta}"/>
+                                <TextBlock Text="{Binding Orden.Observaciones}" Style="{StaticResource Valor}" MinHeight="34"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <DataGrid Grid.Row="2" ItemsSource="{Binding Orden.Detalles}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="180"/>
                             <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>

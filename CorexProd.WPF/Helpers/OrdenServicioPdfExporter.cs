@@ -27,6 +27,7 @@ namespace CorexProd.WPF.Helpers
             DibujarTitulo(canvas, orden, ref y);
             DibujarResumen(canvas, orden, ref y);
             DibujarACuenta(canvas, orden, ref y);
+            DibujarObservacionesProveedor(canvas, orden, ref y);
             DibujarFotosEnPaginasSiguientes(document, orden, incluirFotos);
 
             document.Save(ruta);
@@ -137,64 +138,103 @@ namespace CorexProd.WPF.Helpers
             }
         }
 
+        private static void DibujarObservacionesProveedor(ProformaPdfExporter.PdfCanvas c, OrdenServicio orden, ref double y)
+        {
+            string observaciones = Limpiar(orden.Observaciones);
+            if (string.IsNullOrWhiteSpace(observaciones))
+                return;
+
+            y -= 4;
+            c.Text("OBSERVACIONES:", Margin, y, 11, true);
+            c.Line(Margin, y - 3, Margin + 96, y - 3);
+            y -= 18;
+
+            foreach (string linea in DividirLineas(observaciones, 72).Take(8))
+            {
+                c.Text(linea, Margin, y, 9);
+                y -= 12;
+            }
+
+            y -= 8;
+        }
+
         private static void DibujarFotosEnPaginasSiguientes(ProformaPdfExporter.SimplePdfDocument document, OrdenServicio orden, bool incluirFotos)
         {
             if (!incluirFotos)
                 return;
 
             List<OrdenServicioFoto> fotos = orden.Fotos
-                .OrderBy(f => OrdenUbicacion(f.UbicacionPdf))
+                .OrderBy(f => f.Orden <= 0 ? int.MaxValue : f.Orden)
                 .ThenBy(f => f.IdOrdenServicioFoto)
                 .ToList();
             if (fotos.Count == 0)
                 return;
 
+            (int columnas, int filas) = ObtenerDistribucionFotos(orden.DistribucionFotosPdf);
+            int fotosPorPagina = columnas * filas;
+            double headerY = PageHeight - 60;
+            double contenidoTop = headerY - 28;
+            double contenidoBottom = Margin;
+            double gapX = 16;
+            double gapY = 20;
+            double celdaW = (ContentWidth - (columnas - 1) * gapX) / columnas;
+            double celdaH = (contenidoTop - contenidoBottom - (filas - 1) * gapY) / filas;
+
+            ProformaPdfExporter.PdfCanvas? c = null;
+            for (int i = 0; i < fotos.Count; i++)
+            {
+                if (i % fotosPorPagina == 0)
+                    c = NuevaPaginaFotos(document, orden, headerY);
+
+                int indicePagina = i % fotosPorPagina;
+                int fila = indicePagina / columnas;
+                int columna = indicePagina % columnas;
+                double x = Margin + columna * (celdaW + gapX);
+                double top = contenidoTop - fila * (celdaH + gapY);
+                DibujarFotoEnCelda(c!, fotos[i], x, top, celdaW, celdaH);
+            }
+        }
+
+        private static ProformaPdfExporter.PdfCanvas NuevaPaginaFotos(ProformaPdfExporter.SimplePdfDocument document, OrdenServicio orden, double headerY)
+        {
             ProformaPdfExporter.PdfCanvas c = document.AddPage(PageWidth, PageHeight);
             DibujarMarcaAnulada(c, orden);
-            double y = PageHeight - 60;
-            c.Text("FOTOS / REFERENCIAS", Margin, y, 11, true);
-            c.Line(Margin, y - 4, PageWidth - Margin, y - 4);
-            y -= 26;
+            c.Text("FOTOS / REFERENCIAS", Margin, headerY, 11, true);
+            c.Line(Margin, headerY - 4, PageWidth - Margin, headerY - 4);
+            return c;
+        }
 
-            foreach (OrdenServicioFoto foto in fotos)
+        private static void DibujarFotoEnCelda(ProformaPdfExporter.PdfCanvas c, OrdenServicioFoto foto, double x, double top, double width, double height)
+        {
+            string titulo = string.IsNullOrWhiteSpace(foto.Titulo) ? "REFERENCIA" : Limpiar(foto.Titulo).ToUpperInvariant();
+            c.Text(titulo, x, top, 9, true);
+
+            double imageTop = top - 16;
+            double imageH = height - 18;
+            if (imageH < 40)
+                imageH = 40;
+
+            bool dibujo = c.Image(foto.RutaArchivo, x, imageTop - imageH, width, imageH);
+            if (!dibujo)
+                c.Text($"Archivo: {Limpiar(foto.NombreArchivo)}", x, imageTop - 12, 8);
+        }
+
+        private static (int Columnas, int Filas) ObtenerDistribucionFotos(string distribucion)
+        {
+            string[] partes = (distribucion ?? string.Empty)
+                .Replace("*", "x", StringComparison.OrdinalIgnoreCase)
+                .Split('x', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (partes.Length == 2
+                && int.TryParse(partes[0], out int columnas)
+                && int.TryParse(partes[1], out int filas)
+                && columnas > 0
+                && filas > 0)
             {
-                double bloqueAlto = 245;
-                if (y < Margin + bloqueAlto)
-                {
-                    c = document.AddPage(PageWidth, PageHeight);
-                    DibujarMarcaAnulada(c, orden);
-                    y = PageHeight - 60;
-                    c.Text("FOTOS / REFERENCIAS", Margin, y, 11, true);
-                    c.Line(Margin, y - 4, PageWidth - Margin, y - 4);
-                    y -= 26;
-                }
-
-                string titulo = string.IsNullOrWhiteSpace(foto.Titulo) ? "Referencia" : foto.Titulo;
-                c.Text(Limpiar(titulo).ToUpperInvariant(), Margin, y, 10, true);
-                y -= 14;
-
-                double imageW = 300;
-                double imageH = 190;
-                bool dibujo = c.Image(foto.RutaArchivo, Margin, y - imageH, imageW, imageH);
-                if (dibujo)
-                {
-                    if (!string.IsNullOrWhiteSpace(foto.Descripcion))
-                    {
-                        double descY = y - 14;
-                        foreach (string linea in DividirLineas(Limpiar(foto.Descripcion), 32).Take(8))
-                        {
-                            c.Text(linea, Margin + imageW + 16, descY, 8);
-                            descY -= 11;
-                        }
-                    }
-                    y -= imageH + 28;
-                }
-                else
-                {
-                    c.Text($"Archivo: {Limpiar(foto.NombreArchivo)}", Margin + 10, y - 12, 8);
-                    y -= 26;
-                }
+                return (Math.Min(columnas, 3), Math.Min(filas, 4));
             }
+
+            return (1, 2);
         }
 
         private static byte[]? ObtenerLogo(Empresa empresa)
@@ -217,17 +257,6 @@ namespace CorexProd.WPF.Helpers
                 return;
 
             c.RotatedCenterText("ANULADA", PageWidth / 2, PageHeight / 2, 78, 35, true, 220, 220, 220);
-        }
-
-        private static bool EsUbicacion(OrdenServicioFoto foto, string ubicacion) =>
-            string.Equals(foto.UbicacionPdf, ubicacion, StringComparison.OrdinalIgnoreCase);
-
-        private static int OrdenUbicacion(string ubicacion)
-        {
-            if (ubicacion.Equals("Antes del resumen", StringComparison.OrdinalIgnoreCase)) return 1;
-            if (ubicacion.Equals("Abajo", StringComparison.OrdinalIgnoreCase)) return 2;
-            if (ubicacion.Equals("Pagina final", StringComparison.OrdinalIgnoreCase)) return 3;
-            return 4;
         }
 
         private static string FechaLarga(DateTime fecha)
@@ -260,7 +289,7 @@ namespace CorexProd.WPF.Helpers
                 return [];
 
             List<string> lineas = [];
-            foreach (string parte in descripcion.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            foreach (string parte in descripcion.Split(['|', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 foreach (string linea in DividirLineas(parte, 34))
                     lineas.Add($"- {linea}");

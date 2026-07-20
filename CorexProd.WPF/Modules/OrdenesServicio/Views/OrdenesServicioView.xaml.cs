@@ -7,10 +7,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.Views
     public partial class OrdenesServicioView : UserControl
     {
         public OrdenesServicioView()
+            : this(0)
+        {
+        }
+
+        public OrdenesServicioView(int tabIndex)
         {
             InitializeComponent();
             if (!DesignerProperties.GetIsInDesignMode(this))
                 DataContext = new OrdenesServicioViewModel();
+            TabsOrdenesServicio.SelectedIndex = tabIndex;
         }
     }
 }

@@ -499,7 +499,7 @@ namespace CorexProd.WPF.ViewModels
                 ordenesServicio.Hijos.Add(new MenuItemSistema
                 {
                     Titulo = "Tipos de Servicio",
-                    Vista = "OrdenesServicio"
+                    Vista = "OrdenesServicioTipos"
                 });
             }
 
@@ -978,7 +978,12 @@ namespace CorexProd.WPF.ViewModels
                 // ÓRDENES DE SERVICIO
                 case "OrdenesServicio":
                     Titulo = "Órdenes de Servicio";
-                    VistaActual = new OrdenesServicioView();
+                    VistaActual = new OrdenesServicioView(0);
+                    break;
+
+                case "OrdenesServicioTipos":
+                    Titulo = "Tipos de Servicio";
+                    VistaActual = new OrdenesServicioView(2);
                     break;
 
                 // REPORTES

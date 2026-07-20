@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Aprobar orden de servicio"
         Width="420"
-        Height="280"
+        Height="340"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -47,7 +47,7 @@
             <TextBlock Text="Ingrese un usuario autorizado y su clave de aprobacion OS." Foreground="#64748B" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14">
+        <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14" MinHeight="150">
             <StackPanel>
                 <TextBlock Text="Usuario aprobador" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="UsuarioTextBox" Style="{StaticResource CampoTexto}" Margin="0,0,0,12"/>

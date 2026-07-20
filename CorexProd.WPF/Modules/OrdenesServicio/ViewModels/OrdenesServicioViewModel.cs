@@ -40,12 +40,14 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private string _formaPago = "Contado";
         private string _formaPagoTipo = "Contado";
         private string _detalleCredito = string.Empty;
+        private string _observacionesInternas = string.Empty;
         private string _observaciones = string.Empty;
         private string _detalleProducto = string.Empty;
         private string _detalleDescripcion = string.Empty;
         private decimal _detalleCantidad = 1;
         private string _detalleUnidad = "UND";
         private decimal _detallePrecioUnitario;
+        private OrdenServicioDetalle? _detalleEnEdicion;
         private decimal _aCuenta;
         private decimal _pagoImporte;
         private string _pagoMedio = "Transferencia";
@@ -57,6 +59,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private string _fotoTitulo = string.Empty;
         private string _fotoDescripcion = string.Empty;
         private string _fotoUbicacionPdf = "Abajo";
+        private string _distribucionFotosPdf = "1 x 2";
         private TipoServicio? _tipoSeleccionado;
         private int _tipoId;
         private string _tipoCodigo = string.Empty;
@@ -83,6 +86,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public ObservableCollection<Cliente> ClientesCoincidencias { get; } = [];
         public ObservableCollection<TipoServicio> TiposServicio { get; } = [];
         public ObservableCollection<OrdenServicioDetalle> DetallesFormulario { get; } = [];
+        public ObservableCollection<OrdenServicioDetalle> DetallesFormularioVista { get; } = [];
         public ObservableCollection<OrdenServicioMovimiento> MovimientosFormulario { get; } = [];
         public ObservableCollection<OrdenServicioFoto> FotosOrdenSeleccionada { get; } = [];
         public ObservableCollection<TipoServicio> TiposListado { get; } = [];
@@ -90,6 +94,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public string[] Estados { get; } = ["Todos", "Borrador", "Aprobada", "Enviada al proveedor", "Recepcion Parcial", "Recibida", "Pendiente de Pago", "Pagada", "Anulada"];
         public string[] FormasPago { get; } = ["Contado", "Credito"];
         public string[] UbicacionesFotoPdf { get; } = ["Abajo", "Antes del resumen", "Pagina final"];
+        public string[] DistribucionesFotosPdf { get; } = ["1 x 2", "2 x 2", "2 x 4"];
 
         public string TextoBusqueda
         {
@@ -179,6 +184,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             {
                 _formaPagoTipo = string.IsNullOrWhiteSpace(value) ? "Contado" : value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(EsContado));
                 OnPropertyChanged(nameof(EsCredito));
                 OnPropertyChanged(nameof(CreditoDetalleVisibility));
                 ActualizarFormaPago();
@@ -194,12 +200,15 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 ActualizarFormaPago();
             }
         }
+        public string ObservacionesInternas { get => _observacionesInternas; set { _observacionesInternas = value ?? string.Empty; OnPropertyChanged(); } }
         public string Observaciones { get => _observaciones; set { _observaciones = value ?? string.Empty; OnPropertyChanged(); } }
         public string DetalleProducto { get => _detalleProducto; set { _detalleProducto = value ?? string.Empty; OnPropertyChanged(); } }
         public string DetalleDescripcion { get => _detalleDescripcion; set { _detalleDescripcion = value ?? string.Empty; OnPropertyChanged(); } }
-        public decimal DetalleCantidad { get => _detalleCantidad; set { _detalleCantidad = value; OnPropertyChanged(); } }
+        public decimal DetalleCantidad { get => _detalleCantidad; set { _detalleCantidad = value; OnPropertyChanged(); OnPropertyChanged(nameof(DetalleTotal)); } }
         public string DetalleUnidad { get => _detalleUnidad; set { _detalleUnidad = value ?? "UND"; OnPropertyChanged(); } }
-        public decimal DetallePrecioUnitario { get => _detallePrecioUnitario; set { _detallePrecioUnitario = value; OnPropertyChanged(); } }
+        public decimal DetallePrecioUnitario { get => _detallePrecioUnitario; set { _detallePrecioUnitario = value; OnPropertyChanged(); OnPropertyChanged(nameof(DetalleTotal)); } }
+        public decimal DetalleTotal => Math.Round(DetalleCantidad * DetallePrecioUnitario, 2);
+        public string DetalleBotonTexto => _detalleEnEdicion == null ? "+  Agregar" : "Actualizar";
         public decimal ACuenta
         {
             get => _aCuenta;
@@ -217,6 +226,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public string FotoTitulo { get => _fotoTitulo; set { _fotoTitulo = value ?? string.Empty; OnPropertyChanged(); } }
         public string FotoDescripcion { get => _fotoDescripcion; set { _fotoDescripcion = value ?? string.Empty; OnPropertyChanged(); } }
         public string FotoUbicacionPdf { get => _fotoUbicacionPdf; set { _fotoUbicacionPdf = value ?? "Abajo"; OnPropertyChanged(); } }
+        public string DistribucionFotosPdf { get => _distribucionFotosPdf; set { _distribucionFotosPdf = string.IsNullOrWhiteSpace(value) ? "1 x 2" : value; OnPropertyChanged(); } }
 
         public TipoServicio? TipoSeleccionado
         {
@@ -252,7 +262,24 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public string NuevoTipoDescripcion { get => _nuevoTipoDescripcion; set { _nuevoTipoDescripcion = value ?? string.Empty; OnPropertyChanged(); } }
         public bool NuevoTipoRequiereEntrega { get => _nuevoTipoRequiereEntrega; set { _nuevoTipoRequiereEntrega = value; OnPropertyChanged(); } }
 
-        public bool EsCredito => FormaPagoTipo.Equals("Credito", StringComparison.OrdinalIgnoreCase);
+        public bool EsContado
+        {
+            get => FormaPagoTipo.Equals("Contado", StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                    FormaPagoTipo = "Contado";
+            }
+        }
+        public bool EsCredito
+        {
+            get => FormaPagoTipo.Equals("Credito", StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                    FormaPagoTipo = "Credito";
+            }
+        }
         public Visibility CreditoDetalleVisibility => EsCredito ? Visibility.Visible : Visibility.Collapsed;
         public bool MostrarCoincidenciasCliente => ClienteSeleccionado == null && Cliente.Trim().Length >= 3 && ClientesCoincidencias.Count > 0;
         public Visibility FotoOrdenNuevaVisibility => _idOrdenServicio == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -270,6 +297,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public ICommand AnularCommand { get; }
         public ICommand ActualizarCommand { get; }
         public ICommand AgregarDetalleCommand { get; }
+        public ICommand EditarDetalleCommand { get; }
         public ICommand QuitarDetalleCommand { get; }
         public ICommand RegistrarPagoCommand { get; }
         public ICommand HistorialCommand { get; }
@@ -281,6 +309,8 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public ICommand AgregarFotoCommand { get; }
         public ICommand VerFotoCommand { get; }
         public ICommand EliminarFotoCommand { get; }
+        public ICommand SubirFotoCommand { get; }
+        public ICommand BajarFotoCommand { get; }
         public ICommand MostrarNuevoProveedorCommand { get; }
         public ICommand GuardarNuevoProveedorCommand { get; }
         public ICommand CancelarNuevoProveedorCommand { get; }
@@ -303,6 +333,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             AnularCommand = new RelayCommand(x => Anular(x as OrdenServicio));
             ActualizarCommand = new RelayCommand(_ => CargarTodo());
             AgregarDetalleCommand = new RelayCommand(_ => AgregarDetalle());
+            EditarDetalleCommand = new RelayCommand(x => EditarDetalle(x as OrdenServicioDetalle));
             QuitarDetalleCommand = new RelayCommand(x => QuitarDetalle(x as OrdenServicioDetalle));
             RegistrarPagoCommand = new RelayCommand(x => RegistrarPago(x as OrdenServicio));
             HistorialCommand = new RelayCommand(x => VerHistorial(x as OrdenServicio));
@@ -314,6 +345,8 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             AgregarFotoCommand = new RelayCommand(_ => AgregarFoto());
             VerFotoCommand = new RelayCommand(x => VerFoto(x as OrdenServicioFoto));
             EliminarFotoCommand = new RelayCommand(x => EliminarFoto(x as OrdenServicioFoto));
+            SubirFotoCommand = new RelayCommand(x => MoverFoto(x as OrdenServicioFoto, -1));
+            BajarFotoCommand = new RelayCommand(x => MoverFoto(x as OrdenServicioFoto, 1));
             MostrarNuevoProveedorCommand = new RelayCommand(_ => MostrarNuevoProveedor = true);
             GuardarNuevoProveedorCommand = new RelayCommand(_ => GuardarNuevoProveedor());
             CancelarNuevoProveedorCommand = new RelayCommand(_ => LimpiarNuevoProveedor());
@@ -322,7 +355,12 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             CancelarNuevoTipoServicioCommand = new RelayCommand(_ => LimpiarNuevoTipoServicio());
             NuevoTipoCommand = new RelayCommand(_ => LimpiarTipo());
             GuardarTipoCommand = new RelayCommand(_ => GuardarTipo());
-            DetallesFormulario.CollectionChanged += (_, _) => NotificarTotales();
+            DetallesFormulario.CollectionChanged += (_, _) =>
+            {
+                NotificarTotales();
+                RefrescarDetallesVista();
+            };
+            RefrescarDetallesVista();
             CargarTodo();
         }
 
@@ -377,9 +415,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             FormaPagoTipo = "Contado";
             DetalleCredito = string.Empty;
             ACuenta = 0;
+            ObservacionesInternas = string.Empty;
             Observaciones = string.Empty;
+            DistribucionFotosPdf = "1 x 2";
             DetalleProducto = string.Empty;
             DetalleDescripcion = string.Empty;
+            DetalleCantidad = 1;
+            DetalleUnidad = "UND";
+            DetallePrecioUnitario = 0;
+            _detalleEnEdicion = null;
+            OnPropertyChanged(nameof(DetalleBotonTexto));
             DetallesFormulario.Clear();
             LimpiarNuevoProveedor();
             LimpiarNuevoTipoServicio();
@@ -421,7 +466,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             Responsable = completa.Responsable;
             CargarFormaPago(completa.FormaPago);
             ACuenta = 0;
+            ObservacionesInternas = completa.ObservacionesInternas;
             Observaciones = completa.Observaciones;
+            DistribucionFotosPdf = completa.DistribucionFotosPdf;
+            DetalleProducto = string.Empty;
+            DetalleDescripcion = string.Empty;
+            DetalleCantidad = 1;
+            DetalleUnidad = "UND";
+            DetallePrecioUnitario = 0;
+            _detalleEnEdicion = null;
+            OnPropertyChanged(nameof(DetalleBotonTexto));
             DetallesFormulario.Clear();
             foreach (OrdenServicioDetalle detalle in completa.Detalles)
                 DetallesFormulario.Add(detalle);
@@ -447,6 +501,8 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 OtRelacionada = OtRelacionada,
                 Responsable = Responsable,
                 FormaPago = FormaPago,
+                ObservacionesInternas = ObservacionesInternas,
+                DistribucionFotosPdf = DistribucionFotosPdf,
                 ACuenta = ACuenta,
                 Observaciones = Observaciones,
                 UsuarioRegistro = SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema",
@@ -467,12 +523,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         {
             OrdenServicioDetalle detalle = new()
             {
+                IdOrdenServicioDetalle = _detalleEnEdicion?.IdOrdenServicioDetalle ?? 0,
+                IdOrdenServicio = _detalleEnEdicion?.IdOrdenServicio ?? 0,
+                IdProducto = _detalleEnEdicion?.IdProducto,
                 Producto = DetalleProducto,
                 Descripcion = string.IsNullOrWhiteSpace(DetalleDescripcion) ? DetalleProducto : DetalleDescripcion.Trim(),
                 Cantidad = DetalleCantidad,
                 Unidad = DetalleUnidad,
                 PrecioUnitario = DetallePrecioUnitario,
-                Total = Math.Round(DetalleCantidad * DetallePrecioUnitario, 2)
+                Total = Math.Round(DetalleCantidad * DetallePrecioUnitario, 2),
+                Observaciones = _detalleEnEdicion?.Observaciones ?? string.Empty
             };
 
             if (string.IsNullOrWhiteSpace(detalle.Producto) || detalle.Cantidad <= 0)
@@ -481,18 +541,58 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 return;
             }
 
-            DetallesFormulario.Add(detalle);
+            if (_detalleEnEdicion == null)
+            {
+                DetallesFormulario.Add(detalle);
+            }
+            else
+            {
+                int index = DetallesFormulario.IndexOf(_detalleEnEdicion);
+                if (index >= 0)
+                {
+                    DetallesFormulario.RemoveAt(index);
+                    DetallesFormulario.Insert(index, detalle);
+                }
+                _detalleEnEdicion = null;
+            }
             DetalleProducto = string.Empty;
             DetalleDescripcion = string.Empty;
             DetalleCantidad = 1;
             DetalleUnidad = "UND";
             DetallePrecioUnitario = 0;
+            OnPropertyChanged(nameof(DetalleBotonTexto));
+        }
+
+        private void EditarDetalle(OrdenServicioDetalle? detalle)
+        {
+            if (detalle == null || detalle.EsFilaRelleno)
+                return;
+
+            _detalleEnEdicion = detalle;
+            DetalleProducto = detalle.Producto;
+            DetalleDescripcion = detalle.Descripcion;
+            DetalleCantidad = detalle.Cantidad;
+            DetalleUnidad = detalle.Unidad;
+            DetallePrecioUnitario = detalle.PrecioUnitario;
+            OnPropertyChanged(nameof(DetalleBotonTexto));
         }
 
         private void QuitarDetalle(OrdenServicioDetalle? detalle)
         {
-            if (detalle != null)
+            if (detalle != null && !detalle.EsFilaRelleno)
+            {
+                if (ReferenceEquals(_detalleEnEdicion, detalle))
+                {
+                    _detalleEnEdicion = null;
+                    DetalleProducto = string.Empty;
+                    DetalleDescripcion = string.Empty;
+                    DetalleCantidad = 1;
+                    DetalleUnidad = "UND";
+                    DetallePrecioUnitario = 0;
+                    OnPropertyChanged(nameof(DetalleBotonTexto));
+                }
                 DetallesFormulario.Remove(detalle);
+            }
         }
 
         private void Aprobar(OrdenServicio? orden)
@@ -515,7 +615,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 return;
             }
 
-            string mensaje = _negocio.Aprobar(orden.IdOrdenServicio, ventana.UsuarioAprobador);
+            string mensaje = _negocio.Aprobar(orden.IdOrdenServicio, ventana.UsuarioAprobador, ventana.ClaveAprobacion);
             MostrarResultado(mensaje);
             CargarOrdenes();
         }
@@ -545,9 +645,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             Responsable = SessionManager.UsuarioActual?.NombreCompleto ?? completa.Responsable;
             CargarFormaPago(completa.FormaPago);
             ACuenta = 0;
+            ObservacionesInternas = completa.ObservacionesInternas;
             Observaciones = completa.Observaciones;
+            DistribucionFotosPdf = completa.DistribucionFotosPdf;
             DetalleProducto = string.Empty;
             DetalleDescripcion = string.Empty;
+            DetalleCantidad = 1;
+            DetalleUnidad = "UND";
+            DetallePrecioUnitario = 0;
+            _detalleEnEdicion = null;
+            OnPropertyChanged(nameof(DetalleBotonTexto));
             DetallesFormulario.Clear();
             foreach (OrdenServicioDetalle detalle in completa.Detalles)
             {
@@ -564,6 +671,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             }
 
             FotosOrdenSeleccionada.Clear();
+            CopiarFotosParaNuevaOrden(completa);
             MostrarFormulario = true;
             OnPropertyChanged(nameof(TituloFormulario));
             OnPropertyChanged(nameof(FotoOrdenNuevaVisibility));
@@ -807,6 +915,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                     Titulo = FotoTitulo,
                     UbicacionPdf = FotoUbicacionPdf,
                     Descripcion = FotoDescripcion,
+                    Orden = FotosOrdenSeleccionada.Count + 1,
                     UsuarioRegistro = SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema"
                 };
 
@@ -866,6 +975,83 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             RefrescarOrdenSeleccionada();
         }
 
+        private void MoverFoto(OrdenServicioFoto? foto, int direccion)
+        {
+            if (foto == null)
+                return;
+
+            int indiceActual = FotosOrdenSeleccionada.IndexOf(foto);
+            int indiceNuevo = indiceActual + direccion;
+            if (indiceActual < 0 || indiceNuevo < 0 || indiceNuevo >= FotosOrdenSeleccionada.Count)
+                return;
+
+            FotosOrdenSeleccionada.Move(indiceActual, indiceNuevo);
+            ActualizarOrdenFotosLocales();
+            if (_idOrdenServicio > 0 && FotosOrdenSeleccionada.All(x => x.IdOrdenServicioFoto > 0))
+            {
+                string mensaje = _negocio.ActualizarOrdenFotos(_idOrdenServicio, FotosOrdenSeleccionada, SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema");
+                if (!mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
+                    NotificationService.Warning(mensaje);
+            }
+        }
+
+        private void ActualizarOrdenFotosLocales()
+        {
+            for (int i = 0; i < FotosOrdenSeleccionada.Count; i++)
+                FotosOrdenSeleccionada[i].Orden = i + 1;
+        }
+
+        private void CopiarFotosParaNuevaOrden(OrdenServicio origen)
+        {
+            if (origen.Fotos.Count == 0)
+                return;
+
+            string carpetaPendientes = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "OrdenesServicioFotos", "Pendientes");
+            Directory.CreateDirectory(carpetaPendientes);
+            int omitidas = 0;
+
+            foreach (OrdenServicioFoto fotoOrigen in origen.Fotos
+                         .OrderBy(x => x.Orden <= 0 ? int.MaxValue : x.Orden)
+                         .ThenBy(x => x.IdOrdenServicioFoto))
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(fotoOrigen.RutaArchivo) || !File.Exists(fotoOrigen.RutaArchivo))
+                    {
+                        omitidas++;
+                        continue;
+                    }
+
+                    string extension = Path.GetExtension(fotoOrigen.RutaArchivo);
+                    string nombreBase = Path.GetFileNameWithoutExtension(fotoOrigen.NombreArchivo);
+                    if (string.IsNullOrWhiteSpace(nombreBase))
+                        nombreBase = Path.GetFileNameWithoutExtension(fotoOrigen.RutaArchivo);
+                    string nombre = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}_{nombreBase}{extension}";
+                    string destino = Path.Combine(carpetaPendientes, nombre);
+                    File.Copy(fotoOrigen.RutaArchivo, destino, overwrite: false);
+
+                    FotosOrdenSeleccionada.Add(new OrdenServicioFoto
+                    {
+                        IdOrdenServicio = 0,
+                        RutaArchivo = destino,
+                        NombreArchivo = nombre,
+                        Titulo = fotoOrigen.Titulo,
+                        UbicacionPdf = string.IsNullOrWhiteSpace(fotoOrigen.UbicacionPdf) ? "Abajo" : fotoOrigen.UbicacionPdf,
+                        Descripcion = fotoOrigen.Descripcion,
+                        Orden = FotosOrdenSeleccionada.Count + 1,
+                        UsuarioRegistro = SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema"
+                    });
+                }
+                catch
+                {
+                    omitidas++;
+                }
+            }
+
+            if (omitidas > 0)
+                NotificationService.Warning($"Se copio la OS, pero {omitidas} foto(s) no se encontraron o no se pudieron copiar.");
+        }
+
         private void RefrescarOrdenSeleccionada()
         {
             if (OrdenSeleccionada == null)
@@ -892,6 +1078,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             if (orden.IdOrdenServicio <= 0)
                 return;
 
+            ActualizarOrdenFotosLocales();
             foreach (OrdenServicioFoto foto in FotosOrdenSeleccionada.Where(x => x.IdOrdenServicioFoto == 0).ToList())
             {
                 try
@@ -934,11 +1121,19 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 
         private void AbrirEditor()
         {
-            OrdenServicioEditorWindow ventana = new(this)
+            try
             {
-                Owner = Application.Current.MainWindow
-            };
-            ventana.ShowDialog();
+                OrdenServicioEditorWindow ventana = new(this)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+                ventana.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MostrarFormulario = false;
+                NotificationService.Error($"No se pudo abrir la orden de servicio: {ex.Message}");
+            }
         }
 
         private void CargarTipoEnFormulario(TipoServicio? tipo)
@@ -1069,11 +1264,23 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             OnPropertyChanged(nameof(SaldoPendienteFormulario));
         }
 
+        private void RefrescarDetallesVista()
+        {
+            DetallesFormularioVista.Clear();
+            foreach (OrdenServicioDetalle detalle in DetallesFormulario)
+                DetallesFormularioVista.Add(detalle);
+
+            int filasRelleno = Math.Max(0, 4 - DetallesFormularioVista.Count);
+            for (int i = 0; i < filasRelleno; i++)
+                DetallesFormularioVista.Add(new OrdenServicioDetalle { EsFilaRelleno = true });
+        }
+
         public void RecalcularDetallesFormulario()
         {
             foreach (OrdenServicioDetalle detalle in DetallesFormulario)
                 detalle.Total = Math.Round(detalle.Cantidad * detalle.PrecioUnitario, 2);
             NotificarTotales();
+            RefrescarDetallesVista();
         }
 
         private void ActualizarCoincidenciasCliente()
