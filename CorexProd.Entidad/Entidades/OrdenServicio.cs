@@ -51,6 +51,10 @@ namespace CorexProd.Entidad.Entidades
         public decimal Igv { get; set; }
         public decimal Total { get; set; }
         public decimal ACuenta { get; set; }
+        public string PagoInicialMedio { get; set; } = string.Empty;
+        public string PagoInicialDestino { get; set; } = string.Empty;
+        public string PagoInicialNumeroOperacion { get; set; } = string.Empty;
+        public string PagoInicialObservacion { get; set; } = string.Empty;
         public decimal TotalPagado { get; set; }
         public string Estado { get; set; } = "Borrador";
         public string EstadoServicio { get; set; } = "Borrador";
@@ -77,8 +81,8 @@ namespace CorexProd.Entidad.Entidades
             get
             {
                 if (EstaAnulada) return "Anulada";
-                if (EstadoPago.Equals("Pagada", StringComparison.OrdinalIgnoreCase) || Estado.Equals("Pagada", StringComparison.OrdinalIgnoreCase)) return "Pagada";
-                if (EstadoServicio.Equals("Recibida", StringComparison.OrdinalIgnoreCase)) return "Recibida";
+                if (EstadoServicio.Equals("Recibida", StringComparison.OrdinalIgnoreCase))
+                    return EstadoPago.Equals("Pagada", StringComparison.OrdinalIgnoreCase) ? "Pagada" : "Recibida";
                 if (EstadoServicio.Equals("Recepcion Parcial", StringComparison.OrdinalIgnoreCase)) return "Recepcion Parcial";
                 if (Estado.Equals("Aprobada", StringComparison.OrdinalIgnoreCase) || EstadoServicio.Equals("Aprobada", StringComparison.OrdinalIgnoreCase) || EstadoServicio.Equals("Enviada al proveedor", StringComparison.OrdinalIgnoreCase)) return "Aprobada";
                 return "Borrador";
@@ -97,7 +101,7 @@ namespace CorexProd.Entidad.Entidades
         public bool MostrarVer => true;
         public bool MostrarEditar => EstadoOrden == "Borrador";
         public bool MostrarAprobar => EstadoOrden == "Borrador";
-        public bool MostrarImprimir => EstadoOrden != "Borrador";
+        public bool MostrarImprimir => IdOrdenServicio > 0;
         public bool MostrarEntrega => EstadoOrden == "Aprobada" && PuedeRegistrarEntrega;
         public bool MostrarRecepcion => (EstadoOrden == "Aprobada" || EstadoOrden == "Recepcion Parcial") && PuedeRegistrarRecepcion;
         public bool MostrarPago => (EstadoOrden == "Aprobada" || EstadoOrden == "Recepcion Parcial" || EstadoOrden == "Recibida") && PuedePagar;
@@ -121,7 +125,8 @@ namespace CorexProd.Entidad.Entidades
         public decimal Total { get; set; }
         public string Observaciones { get; set; } = string.Empty;
         public bool EsFilaRelleno { get; set; }
-        public string NumeroVisual => EsFilaRelleno ? string.Empty : (IdOrdenServicioDetalle > 0 ? IdOrdenServicioDetalle.ToString() : string.Empty);
+        public int NumeroFila { get; set; }
+        public string NumeroVisual => EsFilaRelleno ? string.Empty : (NumeroFila > 0 ? NumeroFila.ToString() : string.Empty);
         public string ProductoVisual => EsFilaRelleno ? string.Empty : Producto;
         public string DescripcionVisual => EsFilaRelleno ? string.Empty : Descripcion;
         public string CantidadVisual => EsFilaRelleno ? string.Empty : Cantidad.ToString("N2");
@@ -141,6 +146,43 @@ namespace CorexProd.Entidad.Entidades
         public string NumeroOperacion { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
         public string UsuarioRegistro { get; set; } = string.Empty;
+        public string DestinoPagoVisual => ExtraerValorPrefijado(Observacion, "Numero Yape")
+            ?? ExtraerValorPrefijado(Observacion, "Numero Plin")
+            ?? ExtraerValorPrefijado(Observacion, "Numero")
+            ?? ExtraerValorPrefijado(Observacion, "Cuenta")
+            ?? string.Empty;
+        public string ObservacionUsuarioVisual
+        {
+            get
+            {
+                string texto = Observacion?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(texto))
+                    return string.Empty;
+
+                string[] partes = texto.Split('|', 2, StringSplitOptions.TrimEntries);
+                if (partes.Length == 2 && EsPrefijoDestino(partes[0]))
+                    return partes[1];
+                return EsPrefijoDestino(texto) ? string.Empty : texto;
+            }
+        }
+
+        private static bool EsPrefijoDestino(string texto) =>
+            texto.StartsWith("Numero Yape:", StringComparison.OrdinalIgnoreCase)
+            || texto.StartsWith("Numero Plin:", StringComparison.OrdinalIgnoreCase)
+            || texto.StartsWith("Numero:", StringComparison.OrdinalIgnoreCase)
+            || texto.StartsWith("Cuenta:", StringComparison.OrdinalIgnoreCase);
+
+        private static string? ExtraerValorPrefijado(string texto, string prefijo)
+        {
+            texto = texto?.Trim() ?? string.Empty;
+            string etiqueta = $"{prefijo}:";
+            if (!texto.StartsWith(etiqueta, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            string valor = texto[etiqueta.Length..].Trim();
+            int separador = valor.IndexOf('|');
+            return separador >= 0 ? valor[..separador].Trim() : valor;
+        }
     }
 
     public class OrdenServicioMovimiento
@@ -169,6 +211,7 @@ namespace CorexProd.Entidad.Entidades
         public int? IdOrdenServicioDetalle { get; set; }
         public string RutaArchivo { get; set; } = string.Empty;
         public string NombreArchivo { get; set; } = string.Empty;
+        public byte[]? Imagen { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string UbicacionPdf { get; set; } = "Abajo";
         public string Descripcion { get; set; } = string.Empty;
@@ -176,7 +219,46 @@ namespace CorexProd.Entidad.Entidades
         public string UsuarioRegistro { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
         public string Nivel => IdOrdenServicioDetalle.HasValue ? "Detalle" : "General";
-        public Uri? RutaArchivoUri => string.IsNullOrWhiteSpace(RutaArchivo) || !File.Exists(RutaArchivo) ? null : new Uri(RutaArchivo, UriKind.Absolute);
+        public Uri? RutaArchivoUri
+        {
+            get
+            {
+                string ruta = ObtenerRutaLocal();
+                return string.IsNullOrWhiteSpace(ruta) ? null : new Uri(ruta, UriKind.Absolute);
+            }
+        }
+
+        public string ObtenerRutaLocal()
+        {
+            if (!string.IsNullOrWhiteSpace(RutaArchivo) && File.Exists(RutaArchivo))
+                return RutaArchivo;
+
+            if (Imagen == null || Imagen.Length == 0)
+                return string.Empty;
+
+            try
+            {
+                string extension = Path.GetExtension(NombreArchivo);
+                if (string.IsNullOrWhiteSpace(extension))
+                    extension = ".jpg";
+
+                string carpeta = Path.Combine(Path.GetTempPath(), "CorexProd", "OrdenServicioFotos");
+                Directory.CreateDirectory(carpeta);
+                string nombre = string.IsNullOrWhiteSpace(NombreArchivo)
+                    ? $"{IdOrdenServicioFoto}_{Orden}{extension}"
+                    : Path.GetFileName(NombreArchivo);
+                string rutaTemporal = Path.Combine(carpeta, $"{IdOrdenServicioFoto}_{nombre}");
+
+                if (!File.Exists(rutaTemporal) || new FileInfo(rutaTemporal).Length != Imagen.Length)
+                    File.WriteAllBytes(rutaTemporal, Imagen);
+
+                return rutaTemporal;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
     }
 
     public class OrdenServicioHistorial

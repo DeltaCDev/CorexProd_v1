@@ -355,8 +355,8 @@ namespace CorexProd.Datos.Datos
                     UPDATE O
                     SET EstadoPago = CASE WHEN O.Total <= ISNULL(P.TotalPagado, 0) THEN 'Pagada' ELSE 'Pendiente' END,
                         Estado = CASE
-                            WHEN O.Total <= ISNULL(P.TotalPagado, 0) THEN 'Pagada'
-                            WHEN O.Estado IN ('Aprobada', 'Pendiente de Pago') THEN 'Pendiente de Pago'
+                            WHEN O.EstadoServicio = 'Recibida' AND O.Total <= ISNULL(P.TotalPagado, 0) THEN 'Pagada'
+                            WHEN O.Estado IN ('Pagada', 'Pendiente de Pago') THEN O.EstadoServicio
                             ELSE O.Estado
                         END
                     FROM dbo.OrdenesServicio O
@@ -544,7 +544,10 @@ namespace CorexProd.Datos.Datos
                 using SqlCommand estadoCmd = new("""
                     UPDATE dbo.OrdenesServicio
                     SET EstadoServicio = @EstadoServicio,
-                        Estado = CASE WHEN Estado NOT IN ('Pagada', 'Pendiente de Pago') THEN @EstadoServicio ELSE Estado END
+                        Estado = CASE
+                            WHEN @EstadoServicio = 'Recibida' AND EstadoPago = 'Pagada' THEN 'Pagada'
+                            ELSE @EstadoServicio
+                        END
                     WHERE IdOrdenServicio = @IdOrdenServicio;
                     """, cn, tx);
                 estadoCmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = idOrdenServicio;
@@ -574,13 +577,14 @@ namespace CorexProd.Datos.Datos
             AsegurarEsquema(cn);
             using SqlCommand cmd = new("""
                 INSERT INTO dbo.OrdenServicioFotos
-                (IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo, Titulo, UbicacionPdf, Descripcion, Orden, UsuarioRegistro)
-                VALUES (@IdOrdenServicio, @IdOrdenServicioDetalle, @RutaArchivo, @NombreArchivo, @Titulo, @UbicacionPdf, @Descripcion, @Orden, @UsuarioRegistro);
+                (IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo, Imagen, Titulo, UbicacionPdf, Descripcion, Orden, UsuarioRegistro)
+                VALUES (@IdOrdenServicio, @IdOrdenServicioDetalle, @RutaArchivo, @NombreArchivo, @Imagen, @Titulo, @UbicacionPdf, @Descripcion, @Orden, @UsuarioRegistro);
                 """, cn);
             cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = foto.IdOrdenServicio;
             cmd.Parameters.Add("@IdOrdenServicioDetalle", SqlDbType.Int).Value = (object?)foto.IdOrdenServicioDetalle ?? DBNull.Value;
             cmd.Parameters.Add("@RutaArchivo", SqlDbType.VarChar, 500).Value = foto.RutaArchivo;
             cmd.Parameters.Add("@NombreArchivo", SqlDbType.VarChar, 260).Value = foto.NombreArchivo;
+            cmd.Parameters.Add("@Imagen", SqlDbType.VarBinary, -1).Value = ObtenerImagenFoto(foto);
             cmd.Parameters.Add("@Titulo", SqlDbType.VarChar, 160).Value = foto.Titulo;
             cmd.Parameters.Add("@UbicacionPdf", SqlDbType.VarChar, 40).Value = foto.UbicacionPdf;
             cmd.Parameters.Add("@Descripcion", SqlDbType.VarChar, 500).Value = foto.Descripcion;
@@ -604,10 +608,16 @@ namespace CorexProd.Datos.Datos
                 {
                     using SqlCommand cmd = new("""
                         UPDATE dbo.OrdenServicioFotos
-                        SET Orden = @Orden
+                        SET Orden = @Orden,
+                            Titulo = @Titulo,
+                            UbicacionPdf = @UbicacionPdf,
+                            Descripcion = @Descripcion
                         WHERE IdOrdenServicioFoto = @IdFoto AND IdOrdenServicio = @IdOrdenServicio;
                         """, cn, tx);
                     cmd.Parameters.Add("@Orden", SqlDbType.Int).Value = orden++;
+                    cmd.Parameters.Add("@Titulo", SqlDbType.VarChar, 160).Value = foto.Titulo;
+                    cmd.Parameters.Add("@UbicacionPdf", SqlDbType.VarChar, 40).Value = foto.UbicacionPdf;
+                    cmd.Parameters.Add("@Descripcion", SqlDbType.VarChar, 500).Value = foto.Descripcion;
                     cmd.Parameters.Add("@IdFoto", SqlDbType.Int).Value = foto.IdOrdenServicioFoto;
                     cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = idOrdenServicio;
                     cmd.ExecuteNonQuery();
@@ -666,18 +676,42 @@ namespace CorexProd.Datos.Datos
 
         private static void InsertarPagoInicial(SqlConnection cn, SqlTransaction tx, int idOrdenServicio, OrdenServicio orden)
         {
+            string observacion = PrepararObservacionPagoInicial(orden);
             using SqlCommand cmd = new("""
                 INSERT INTO dbo.OrdenServicioPagos
                 (IdOrdenServicio, Fecha, TipoPago, Importe, MedioPago, NumeroOperacion, Observacion, UsuarioRegistro)
-                VALUES (@IdOrdenServicio, @Fecha, @TipoPago, @Importe, @MedioPago, '', 'Pago registrado al crear la orden', @UsuarioRegistro);
+                VALUES (@IdOrdenServicio, @Fecha, @TipoPago, @Importe, @MedioPago, @NumeroOperacion, @Observacion, @UsuarioRegistro);
                 """, cn, tx);
             cmd.Parameters.Add("@IdOrdenServicio", SqlDbType.Int).Value = idOrdenServicio;
             cmd.Parameters.Add("@Fecha", SqlDbType.Date).Value = orden.Fecha.Date;
             cmd.Parameters.Add("@TipoPago", SqlDbType.VarChar, 40).Value = orden.ACuenta >= orden.Total ? "Pago final" : "Adelanto";
             cmd.Parameters.Add("@Importe", SqlDbType.Decimal).Value = orden.ACuenta;
-            cmd.Parameters.Add("@MedioPago", SqlDbType.VarChar, 60).Value = orden.FormaPago;
+            cmd.Parameters.Add("@MedioPago", SqlDbType.VarChar, 60).Value = orden.PagoInicialMedio;
+            cmd.Parameters.Add("@NumeroOperacion", SqlDbType.VarChar, 80).Value = orden.PagoInicialNumeroOperacion;
+            cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = observacion;
             cmd.Parameters.Add("@UsuarioRegistro", SqlDbType.VarChar, 80).Value = orden.UsuarioRegistro;
             cmd.ExecuteNonQuery();
+        }
+
+        private static string PrepararObservacionPagoInicial(OrdenServicio orden)
+        {
+            string medio = orden.PagoInicialMedio.Trim();
+            string destino = orden.PagoInicialDestino.Trim();
+            string observacion = orden.PagoInicialObservacion.Trim();
+            if (medio.Equals("EFECTIVO", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(destino))
+                return observacion;
+
+            string etiqueta = medio.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase)
+                ? "Cuenta"
+                : medio.Equals("YAPE", StringComparison.OrdinalIgnoreCase)
+                    ? "Numero Yape"
+                    : medio.Equals("PLIN", StringComparison.OrdinalIgnoreCase)
+                        ? "Numero Plin"
+                        : "Numero";
+
+            return string.IsNullOrWhiteSpace(observacion)
+                ? $"{etiqueta}: {destino}"
+                : $"{etiqueta}: {destino} | {observacion}";
         }
 
         private static void AgregarParametrosOrden(SqlCommand cmd, OrdenServicio orden)
@@ -791,7 +825,7 @@ namespace CorexProd.Datos.Datos
         private static void CargarFotos(SqlConnection cn, OrdenServicio orden)
         {
             using SqlCommand cmd = new("""
-                SELECT IdOrdenServicioFoto, IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo,
+                SELECT IdOrdenServicioFoto, IdOrdenServicio, IdOrdenServicioDetalle, RutaArchivo, NombreArchivo, Imagen,
                        Titulo, UbicacionPdf, Descripcion, Orden, UsuarioRegistro, FechaRegistro
                 FROM dbo.OrdenServicioFotos
                 WHERE IdOrdenServicio = @IdOrdenServicio
@@ -870,6 +904,7 @@ namespace CorexProd.Datos.Datos
             IdOrdenServicioDetalle = dr["IdOrdenServicioDetalle"] == DBNull.Value ? null : Convert.ToInt32(dr["IdOrdenServicioDetalle"]),
             RutaArchivo = dr["RutaArchivo"]?.ToString() ?? string.Empty,
             NombreArchivo = dr["NombreArchivo"]?.ToString() ?? string.Empty,
+            Imagen = dr["Imagen"] == DBNull.Value ? null : (byte[])dr["Imagen"],
             Titulo = dr["Titulo"]?.ToString() ?? string.Empty,
             UbicacionPdf = dr["UbicacionPdf"]?.ToString() ?? string.Empty,
             Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
@@ -1106,6 +1141,7 @@ namespace CorexProd.Datos.Datos
                         IdOrdenServicioDetalle INT NULL,
                         RutaArchivo VARCHAR(500) NOT NULL,
                         NombreArchivo VARCHAR(260) NOT NULL,
+                        Imagen VARBINARY(MAX) NULL,
                         Titulo VARCHAR(160) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Titulo DEFAULT(''),
                         UbicacionPdf VARCHAR(40) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Ubicacion DEFAULT('Abajo'),
                         Descripcion VARCHAR(500) NOT NULL CONSTRAINT DF_OrdenServicioFotos_Descripcion DEFAULT(''),
@@ -1124,8 +1160,22 @@ namespace CorexProd.Datos.Datos
 
                 IF COL_LENGTH('dbo.OrdenServicioFotos', 'Orden') IS NULL
                     ALTER TABLE dbo.OrdenServicioFotos ADD Orden INT NOT NULL CONSTRAINT DF_OrdenServicioFotos_Orden_Legacy DEFAULT(0);
+
+                IF COL_LENGTH('dbo.OrdenServicioFotos', 'Imagen') IS NULL
+                    ALTER TABLE dbo.OrdenServicioFotos ADD Imagen VARBINARY(MAX) NULL;
                 """, cn);
             cmd.ExecuteNonQuery();
+        }
+
+        private static object ObtenerImagenFoto(OrdenServicioFoto foto)
+        {
+            if (foto.Imagen is { Length: > 0 })
+                return foto.Imagen;
+
+            if (!string.IsNullOrWhiteSpace(foto.RutaArchivo) && System.IO.File.Exists(foto.RutaArchivo))
+                return System.IO.File.ReadAllBytes(foto.RutaArchivo);
+
+            return DBNull.Value;
         }
     }
 }

@@ -110,7 +110,7 @@ namespace CorexProd.Datos.Datos
                     (N'Almacén', NULL, 5, 1),
                     (N'Productos', NULL, 6, 1),
                     (N'Órdenes de Servicio', NULL, 7, 1),
-                    (N'Destajo y Pagos', NULL, 8, 0),
+                    (N'Destajo y Pagos', NULL, 8, 1),
                     (N'Seguridad', NULL, 9, 1),
                     (N'Orden de Compra', N'Ventas', 1, 1),
                     (N'Orden de Trabajo', N'Ventas', 2, 1),
@@ -136,13 +136,13 @@ namespace CorexProd.Datos.Datos
                     (N'Proveedores OS', N'Órdenes de Servicio', 2, 1),
                     (N'Tipos de Servicio', N'Órdenes de Servicio', 3, 1),
                     (N'Reportes OS', N'Órdenes de Servicio', 4, 1),
-                    (N'Panel de Destajo', N'Destajo y Pagos', 1, 0),
-                    (N'Periodos de Pago', N'Destajo y Pagos', 2, 0),
-                    (N'Movimientos Operativos', N'Destajo y Pagos', 3, 0),
-                    (N'Prestamos y Cuotas', N'Destajo y Pagos', 4, 0),
-                    (N'Lotes de Pago', N'Destajo y Pagos', 5, 0),
-                    (N'Reportes de Pagos', N'Destajo y Pagos', 6, 0),
-                    (N'Configuración', N'Destajo y Pagos', 7, 0),
+                    (N'Panel de Destajo', N'Destajo y Pagos', 1, 1),
+                    (N'Periodos de Pago', N'Destajo y Pagos', 2, 1),
+                    (N'Movimientos Operativos', N'Destajo y Pagos', 3, 1),
+                    (N'Prestamos y Cuotas', N'Destajo y Pagos', 4, 1),
+                    (N'Lotes de Pago', N'Destajo y Pagos', 5, 1),
+                    (N'Reportes de Pagos', N'Destajo y Pagos', 6, 1),
+                    (N'Configuración', N'Destajo y Pagos', 7, 1),
                     (N'Roles', N'Seguridad', 1, 1),
                     (N'Cargos', N'Seguridad', 2, 1),
                     (N'Usuarios', N'Seguridad', 3, 1),
@@ -200,6 +200,13 @@ namespace CorexProd.Datos.Datos
                           AND m.IdMenuPadre = p.IdMenu
                   );
 
+                UPDATE m
+                SET m.Estado = 1
+                FROM dbo.Menu m
+                LEFT JOIN dbo.Menu p ON p.IdMenu = m.IdMenuPadre
+                WHERE m.NombreMenu = N'Destajo y Pagos'
+                   OR p.NombreMenu = N'Destajo y Pagos';
+
                 INSERT INTO dbo.PermisosMenu (IdRol, IdMenu, PuedeVer)
                 SELECT
                     r.IdRol,
@@ -234,6 +241,18 @@ namespace CorexProd.Datos.Datos
                     WHERE px.IdRol = r.IdRol
                       AND px.IdMenu = m.IdMenu
                 );
+
+                UPDATE pm
+                SET pm.PuedeVer = 1
+                FROM dbo.PermisosMenu pm
+                INNER JOIN dbo.Roles r
+                    ON r.IdRol = pm.IdRol
+                INNER JOIN dbo.Menu m
+                    ON m.IdMenu = pm.IdMenu
+                LEFT JOIN dbo.Menu p
+                    ON p.IdMenu = m.IdMenuPadre
+                WHERE r.NombreRol IN (N'Administrador', N'SuperAdmin')
+                  AND (m.NombreMenu = N'Destajo y Pagos' OR p.NombreMenu = N'Destajo y Pagos');
                 """, cn);
 
             cmd.ExecuteNonQuery();

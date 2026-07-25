@@ -141,18 +141,27 @@
 
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <TextBlock Text="Empleado" Style="{StaticResource LabelCampo}"/>
-                                <ComboBox Style="{StaticResource CampoCombo}"
-                                          ItemsSource="{Binding Empleados}"
-                                          DisplayMemberPath="NombreCompleto"
-                                          SelectedValuePath="IdEmpleado"
-                                          SelectedValue="{Binding IdEmpleadoTrabajador}"/>
+                                <DockPanel LastChildFill="True">
+                                    <Button DockPanel.Dock="Right"
+                                            Content="Nuevo"
+                                            Height="30"
+                                            MinWidth="68"
+                                            Margin="8,0,0,0"
+                                            Command="{Binding NuevoEmpleadoCommand}"/>
+                                    <ComboBox Style="{StaticResource CampoCombo}"
+                                              ItemsSource="{Binding Empleados}"
+                                              DisplayMemberPath="NombreCompleto"
+                                              SelectedValuePath="IdEmpleado"
+                                              SelectedValue="{Binding IdEmpleadoTrabajador}"/>
+                                </DockPanel>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                <TextBlock Text="Tipo" Style="{StaticResource LabelCampo}"/>
+                                <TextBlock Text="Tipo de empleado" Style="{StaticResource LabelCampo}"/>
                                 <ComboBox Style="{StaticResource CampoCombo}"
+                                          IsEditable="True"
                                           ItemsSource="{Binding TiposTrabajador}"
-                                          SelectedItem="{Binding TipoTrabajador}"/>
+                                          Text="{Binding TipoTrabajador, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Margin="0,0,10,0">
@@ -210,7 +219,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="230"/>
                             <DataGridTextColumn Header="Documento" Binding="{Binding Documento}" Width="110"/>
-                            <DataGridTextColumn Header="Tipo" Binding="{Binding TipoTrabajador}" Width="145"/>
+                            <DataGridTextColumn Header="Tipo de empleado" Binding="{Binding TipoTrabajador}" Width="155"/>
                             <DataGridTextColumn Header="Medio" Binding="{Binding MedioPagoPreferido}" Width="110"/>
                             <DataGridTextColumn Header="Cuenta" Binding="{Binding NumeroCuenta}" Width="160"/>
                             <DataGridTextColumn Header="Teléfono" Binding="{Binding TelefonoPago}" Width="120"/>

@@ -232,6 +232,52 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
             {
                 // Compatibilidad con bases anteriores al modulo de reserva de stock en proceso.
             }
+
+            CargarReservasStockFisico(cn, ot);
+        }
+
+        private static void CargarReservasStockFisico(SqlConnection cn, OrdenTrabajo ot)
+        {
+            if (ot.Areas.Count == 0)
+                return;
+
+            using SqlCommand cmd = new(
+                """
+                SELECT
+                    R.IdDetalleOT,
+                    CONVERT(DECIMAL(18,2), SUM(R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada)) AS CantidadReservada
+                FROM dbo.StockReserva R
+                WHERE R.IdOrdenTrabajo = @IdOrdenTrabajo
+                  AND R.IdDetalleOT IS NOT NULL
+                  AND R.Estado = 'ACTIVA'
+                  AND R.CantidadReservada - R.CantidadConsumida - R.CantidadLiberada > 0
+                GROUP BY R.IdDetalleOT;
+                """,
+                cn);
+            cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = ot.IdOrdenTrabajo;
+
+            Dictionary<int, decimal> reservasPorDetalle = [];
+            try
+            {
+                using SqlDataReader reservaReader = cmd.ExecuteReader();
+                while (reservaReader.Read())
+                    reservasPorDetalle[Convert.ToInt32(reservaReader["IdDetalleOT"])] = Convert.ToDecimal(reservaReader["CantidadReservada"]);
+            }
+            catch (SqlException ex) when (ex.Number == 208 || ex.Number == 207)
+            {
+                return;
+            }
+
+            foreach (var reserva in reservasPorDetalle)
+            {
+                OrdenTrabajoDetalleArea? primeraArea = ot.Areas
+                    .Where(a => a.IdDetalleOT == reserva.Key && a.Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA"))
+                    .OrderBy(a => a.OrdenSecuencia)
+                    .FirstOrDefault();
+
+                if (primeraArea != null)
+                    primeraArea.CantidadReservada += reserva.Value;
+            }
         }
 
         private bool TieneRegularizacionTerminada(int idOrdenTrabajo)

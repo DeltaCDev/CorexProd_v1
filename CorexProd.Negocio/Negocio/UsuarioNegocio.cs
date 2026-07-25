@@ -71,6 +71,27 @@ namespace CorexProd.Negocio.Negocio
             return _usuarioDatos.Listar();
         }
 
+        public string ObtenerNombrePersona(string nombreUsuario)
+        {
+            nombreUsuario = nombreUsuario?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(nombreUsuario))
+                return string.Empty;
+
+            Usuario? usuario = Listar()
+                .FirstOrDefault(u => u.NombreUsuario.Equals(nombreUsuario, StringComparison.OrdinalIgnoreCase));
+
+            if (usuario == null)
+                return nombreUsuario;
+
+            if (!string.IsNullOrWhiteSpace(usuario.NombreCompleto))
+                return usuario.NombreCompleto.Trim();
+
+            if (!string.IsNullOrWhiteSpace(usuario.NombreEmpleado))
+                return usuario.NombreEmpleado.Trim();
+
+            return usuario.NombreUsuario.Trim();
+        }
+
         public string Guardar(Usuario usuario, string usuarioAuditoria)
         {
             usuario.NombreUsuario = usuario.NombreUsuario.Trim();
@@ -154,34 +175,58 @@ namespace CorexProd.Negocio.Negocio
 
         public string ValidarAprobacionOs(string nombreUsuario, string claveAprobacion)
         {
+            return ResolverAprobadorOs(nombreUsuario, claveAprobacion).Mensaje;
+        }
+
+        public (string Mensaje, string UsuarioAprobador) ResolverAprobadorOs(string nombreUsuario, string claveAprobacion)
+        {
             nombreUsuario = nombreUsuario?.Trim() ?? string.Empty;
             claveAprobacion = claveAprobacion?.Trim() ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(nombreUsuario))
-                return "Debe ingresar el usuario aprobador.";
+                return ("Debe ingresar el usuario aprobador.", string.Empty);
 
             if (!EsClaveAprobacionValida(claveAprobacion))
-                return "La clave de aprobacion debe tener 4 digitos numericos.";
+                return ("La clave de aprobacion debe tener 4 digitos numericos.", string.Empty);
 
-            Usuario? usuario = _usuarioDatos.ObtenerPorNombreUsuario(nombreUsuario);
+            Usuario? usuario = _usuarioDatos.ObtenerPorNombreUsuario(nombreUsuario)
+                ?? Listar().FirstOrDefault(u =>
+                    u.NombreUsuario.Equals(nombreUsuario, StringComparison.OrdinalIgnoreCase)
+                    || u.NombreCompleto.Equals(nombreUsuario, StringComparison.OrdinalIgnoreCase)
+                    || u.NombreEmpleado.Equals(nombreUsuario, StringComparison.OrdinalIgnoreCase));
+
+            if (usuario != null
+                && usuario.Estado
+                && usuario.AprobacionOs
+                && EsHashBcrypt(usuario.ClaveAprobacionOs)
+                && PasswordService.VerifyPassword(claveAprobacion, usuario.ClaveAprobacionOs))
+            {
+                return ("OK", usuario.NombreUsuario);
+            }
+
+            Usuario? aprobadorPorClave = Listar()
+                .Where(u => u.Estado && u.AprobacionOs && EsHashBcrypt(u.ClaveAprobacionOs))
+                .FirstOrDefault(u => PasswordService.VerifyPassword(claveAprobacion, u.ClaveAprobacionOs));
+
+            if (aprobadorPorClave != null)
+                return ("OK", aprobadorPorClave.NombreUsuario);
+
             if (usuario == null)
-                return "No se encontro el usuario aprobador.";
+                return ("No se encontro el usuario aprobador o la clave no pertenece a un aprobador OS activo.", string.Empty);
 
             if (!usuario.Estado)
-                return "El usuario aprobador esta inactivo.";
+                return ("El usuario aprobador esta inactivo.", string.Empty);
 
             if (!usuario.AprobacionOs)
-                return "El usuario no tiene permiso para aprobar ordenes de servicio.";
+                return ("El usuario no tiene permiso para aprobar ordenes de servicio.", string.Empty);
 
             if (string.IsNullOrWhiteSpace(usuario.ClaveAprobacionOs))
-                return "El usuario no tiene clave de aprobacion OS configurada.";
+                return ("El usuario no tiene clave de aprobacion OS configurada.", string.Empty);
 
             if (!EsHashBcrypt(usuario.ClaveAprobacionOs))
-                return "La clave de aprobacion OS del usuario debe volver a configurarse.";
+                return ("La clave de aprobacion OS del usuario debe volver a configurarse.", string.Empty);
 
-            return PasswordService.VerifyPassword(claveAprobacion, usuario.ClaveAprobacionOs)
-                ? "OK"
-                : "Clave de aprobacion incorrecta.";
+            return ("Clave de aprobacion incorrecta.", string.Empty);
         }
 
         public string Eliminar(int idUsuario)

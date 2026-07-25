@@ -315,8 +315,8 @@
                                 <ColumnDefinition Width="38"/>
                             </Grid.ColumnDefinitions>
                             <Button Grid.Column="0" Content="Cambiar clave" Command="{Binding CambiarClaveCommand}" Height="31" Margin="0,0,7,0" Background="#3B82F6" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="SemiBold" Cursor="Hand"/>
-                            <Button Grid.Column="1" Command="{Binding CerrarSesionCommand}" Width="36" Height="31" Background="#EF4444" Foreground="White" BorderThickness="0" Cursor="Hand" ToolTip="Cerrar sesión">
-                                <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Command="{Binding CerrarSesionCommand}" Width="36" Height="31" Background="White" BorderBrush="#DCE3EE" BorderThickness="1" Cursor="Hand" ToolTip="Cerrar sesión">
+                                <Image Source="/Images/logout_icon.png" Width="19" Height="19" Stretch="Uniform"/>
                             </Button>
                         </Grid>
                     </StackPanel>

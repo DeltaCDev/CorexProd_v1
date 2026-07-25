@@ -28,9 +28,10 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid Margin="28,18,18,18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -44,7 +45,7 @@
 
         <TabControl Grid.Row="1" SelectedIndex="{Binding TabSeleccionado}">
             <TabItem Header="Detalle">
-                <Grid Margin="0,12,0,0">
+                <Grid Margin="18,12,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -116,46 +117,121 @@
             </TabItem>
 
             <TabItem Header="Movimientos">
-                <DataGrid Margin="0,12,0,0" ItemsSource="{Binding Movimientos}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
+                <DataGrid Margin="18,12,0,0" ItemsSource="{Binding Movimientos}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="100"/>
                         <DataGridTextColumn Header="Tipo" Binding="{Binding TipoMovimiento}" Width="100"/>
                         <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="180"/>
-                        <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>
                         <DataGridTextColumn Header="Cantidad" Binding="{Binding CantidadMovimiento, StringFormat=N2}" Width="90"/>
                         <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="90"/>
-                        <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioRegistro}" Width="160"/>
+                        <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioRegistro}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
 
             <TabItem Header="Pagos">
-                <DataGrid Margin="0,12,0,0" ItemsSource="{Binding Orden.Pagos}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="100"/>
-                        <DataGridTextColumn Header="Tipo" Binding="{Binding TipoPago}" Width="130"/>
-                        <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" Width="120"/>
-                        <DataGridTextColumn Header="Medio" Binding="{Binding MedioPago}" Width="150"/>
-                        <DataGridTextColumn Header="Operacion" Binding="{Binding NumeroOperacion}" Width="160"/>
-                        <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid Margin="18,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <UniformGrid Columns="3" Margin="0,0,0,12">
+                        <Border Background="#ECFDF5" BorderBrush="#10B981" BorderThickness="1" Padding="12" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Monto" Foreground="#047857"/>
+                                <TextBlock Text="{Binding Orden.Total, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#047857"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#ECFDF5" BorderBrush="#10B981" BorderThickness="1" Padding="12" Margin="4,0">
+                            <StackPanel>
+                                <TextBlock Text="Pagado" Foreground="#047857"/>
+                                <TextBlock Text="{Binding Orden.TotalPagado, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#047857"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FEF2F2" BorderBrush="#EF4444" BorderThickness="1" Padding="12" Margin="8,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Pendiente" Foreground="#B91C1C"/>
+                                <TextBlock Text="{Binding Orden.SaldoPendiente, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#B91C1C"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Orden.Pagos}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="100"/>
+                            <DataGridTextColumn Header="Tipo" Binding="{Binding TipoPago}" Width="130"/>
+                            <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat=S/ {0:N2}}" Width="120"/>
+                            <DataGridTextColumn Header="Medio" Binding="{Binding MedioPago}" Width="150"/>
+                            <DataGridTextColumn Header="Destino" Binding="{Binding DestinoPagoVisual}" Width="150"/>
+                            <DataGridTextColumn Header="Operacion" Binding="{Binding NumeroOperacion}" Width="160"/>
+                            <DataGridTextColumn Header="Observacion" Binding="{Binding ObservacionUsuarioVisual}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
             </TabItem>
 
             <TabItem Header="Fotos">
-                <DataGrid Margin="0,12,0,0" ItemsSource="{Binding Orden.Fotos}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Titulo" Binding="{Binding Titulo}" Width="180"/>
-                        <DataGridTextColumn Header="Ubicacion PDF" Binding="{Binding UbicacionPdf}" Width="140"/>
-                        <DataGridTextColumn Header="Archivo" Binding="{Binding NombreArchivo}" Width="260"/>
-                        <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>
-                        <DataGridTextColumn Header="Fecha" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="140"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid Margin="18,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DataGrid Grid.Column="0"
+                              ItemsSource="{Binding Orden.Fotos}"
+                              SelectedItem="{Binding FotoSeleccionada, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              RowHeight="34">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Ver" Width="70">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Ver" Style="{StaticResource Boton}" MinWidth="54" Height="26" Padding="8,0" Click="VerFotoFila_Click"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Titulo" Binding="{Binding Titulo}" Width="180"/>
+                            <DataGridTextColumn Header="Ubicacion PDF" Binding="{Binding UbicacionPdf}" Width="130"/>
+                            <DataGridTextColumn Header="Archivo" Binding="{Binding NombreArchivo}" Width="*"/>
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Column="2" Background="White" BorderBrush="#D7E0EE" BorderThickness="1" CornerRadius="6" Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                <TextBlock Text="{Binding FotoActualTexto}" FontWeight="SemiBold" Foreground="#334155" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Style="{StaticResource Boton}" Click="AbrirFoto_Click" Visibility="{Binding HayFotos, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </DockPanel>
+                            <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1">
+                                <Grid>
+                                    <Image Source="{Binding FotoSeleccionada.RutaArchivoUri}" Stretch="Uniform" Margin="8"/>
+                                    <TextBlock Text="Sin fotos registradas"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Foreground="#64748B"
+                                               Visibility="{Binding SinFotos, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                <Button Content="Anterior" Style="{StaticResource Boton}" Click="FotoAnterior_Click" Margin="0,0,8,0" Visibility="{Binding HayFotos, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <Button Content="Siguiente" Style="{StaticResource Boton}" Click="FotoSiguiente_Click" Visibility="{Binding HayFotos, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </TabItem>
 
             <TabItem Header="Historial">
-                <DataGrid Margin="0,12,0,0" ItemsSource="{Binding Orden.Historial}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
+                <DataGrid Margin="18,12,0,0" ItemsSource="{Binding Orden.Historial}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" RowHeight="34">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Fecha" Binding="{Binding FechaHoraVisual}" Width="150"/>
                         <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="180"/>

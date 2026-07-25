@@ -68,6 +68,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             OrdenCompraText.Text = $"Orden de compra: {_ot.OrdenCompraCliente}";
             ClienteText.Text = $"Cliente: {_ot.NombreCliente}";
             EstadoText.Text = $"Estado: {_ot.EstadoOperativo}";
+            ObservacionGeneralButton.Visibility = string.IsNullOrWhiteSpace(_ot.Observacion)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
             CargarResumen();
 
             List<OrdenTrabajoDetalleArea> areas = _ot.Areas.GroupBy(x => x.IdAreaProduccion).Select(g => g.First()).OrderBy(x => x.OrdenSecuencia).ToList();
@@ -192,10 +195,85 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 detalle.CodigoProducto,
                 detalle.NombreProducto,
                 observacion,
+                _ot.Observacion,
                 ObtenerRutaFichaTecnica(detalle.CodigoProducto))
             {
                 Owner = this
             }.ShowDialog();
+        }
+
+        private void ObservacionGeneral_Click(object sender, RoutedEventArgs e)
+        {
+            string observacion = string.IsNullOrWhiteSpace(_ot?.Observacion)
+                ? "La OT no tiene observacion general registrada."
+                : _ot.Observacion.Trim();
+
+            Window ventana = new()
+            {
+                Title = "Observacion general de la OT",
+                Width = 520,
+                Height = 300,
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ResizeMode = ResizeMode.NoResize,
+                Background = Brushes.White,
+                Content = new Grid
+                {
+                    Margin = new Thickness(16),
+                    RowDefinitions =
+                    {
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
+                        new RowDefinition { Height = GridLength.Auto }
+                    },
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "Observacion general",
+                            FontSize = 16,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = new SolidColorBrush(Color.FromRgb(15, 23, 42)),
+                            Margin = new Thickness(0, 0, 0, 10)
+                        },
+                        CrearObservacionGeneralScroll(observacion),
+                        CrearBotonCerrarObservacion()
+                    }
+                }
+            };
+
+            ventana.ShowDialog();
+        }
+
+        private static ScrollViewer CrearObservacionGeneralScroll(string observacion)
+        {
+            ScrollViewer scroll = new()
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Content = new TextBlock
+                {
+                    Text = observacion,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = new SolidColorBrush(Color.FromRgb(15, 23, 42))
+                }
+            };
+            Grid.SetRow(scroll, 1);
+            return scroll;
+        }
+
+        private static Button CrearBotonCerrarObservacion()
+        {
+            Button boton = new()
+            {
+                Content = "Cerrar",
+                Width = 96,
+                Height = 34,
+                Margin = new Thickness(0, 14, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                IsCancel = true
+            };
+            Grid.SetRow(boton, 2);
+            return boton;
         }
 
         private string? ObtenerRutaFichaTecnica(string codigoProducto)

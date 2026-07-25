@@ -2,6 +2,8 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Negocio.Negocio;
 using CorexProd.WPF.Commands;
 using CorexProd.WPF.Helpers;
+using CorexProd.WPF.Modules.Seguridad.ViewModels;
+using CorexProd.WPF.Modules.Seguridad.Views;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
 using System;
@@ -11,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
@@ -876,6 +879,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ICommand GuardarTrabajadorCommand { get; }
         public ICommand LimpiarTrabajadorCommand { get; }
         public ICommand EliminarTrabajadorCommand { get; }
+        public ICommand NuevoEmpleadoCommand { get; }
         public ICommand GuardarPeriodoCommand { get; }
         public ICommand LimpiarPeriodoCommand { get; }
         public ICommand CambiarEstadoPeriodoCommand { get; }
@@ -912,6 +916,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             GuardarTrabajadorCommand = new RelayCommand(_ => GuardarTrabajador());
             LimpiarTrabajadorCommand = new RelayCommand(_ => LimpiarTrabajador());
             EliminarTrabajadorCommand = new RelayCommand(_ => EliminarTrabajador());
+            NuevoEmpleadoCommand = new RelayCommand(_ => AbrirNuevoEmpleado());
             GuardarPeriodoCommand = new RelayCommand(_ => GuardarPeriodo());
             LimpiarPeriodoCommand = new RelayCommand(_ => LimpiarPeriodo());
             CambiarEstadoPeriodoCommand = new RelayCommand(parametro => CambiarEstadoPeriodo(parametro?.ToString() ?? string.Empty));
@@ -1271,6 +1276,35 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 CargarTrabajadores();
                 LimpiarTrabajador();
             });
+        }
+
+        private void AbrirNuevoEmpleado()
+        {
+            int[] empleadosActuales = Empleados.Select(e => e.IdEmpleado).ToArray();
+            EmpleadosViewModel viewModel = new();
+            EmpleadoEditorWindow ventana = new()
+            {
+                DataContext = viewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            viewModel.CerrarVentana = ventana.Close;
+            ventana.ShowDialog();
+
+            if (!viewModel.Guardado)
+                return;
+
+            CargarEmpleados();
+
+            Empleado? empleadoCreado = Empleados
+                .Where(e => !empleadosActuales.Contains(e.IdEmpleado))
+                .OrderByDescending(e => e.IdEmpleado)
+                .FirstOrDefault();
+
+            if (empleadoCreado != null)
+            {
+                IdEmpleadoTrabajador = empleadoCreado.IdEmpleado;
+            }
         }
 
         private void EliminarTrabajador()

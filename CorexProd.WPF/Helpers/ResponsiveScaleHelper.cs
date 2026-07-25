@@ -49,7 +49,7 @@ namespace CorexProd.WPF.Helpers
 
             if (width >= 1800 || height >= 1000)
             {
-                return 1.35;
+                return 1.28;
             }
 
             if (width >= 1600 || height >= 920)

@@ -51,9 +51,12 @@
                 <Label Text="Resumen operativo" FontSize="14" TextColor="#ECE9FF" />
             </VerticalStackLayout>
 
-            <Grid Grid.Column="2" WidthRequest="48" HeightRequest="48">
-                <Button Text="♧" FontSize="29" TextColor="White" BackgroundColor="Transparent" Padding="0" Clicked="OnBellClicked" />
-                <Button Text="&#x1F514;" FontSize="24" TextColor="White" BackgroundColor="#3F24C5" Padding="0" Clicked="OnBellClicked" />
+            <Border Grid.Column="2" WidthRequest="46" HeightRequest="46" BackgroundColor="White" StrokeThickness="0" Padding="8">
+                <Border.StrokeShape><RoundRectangle CornerRadius="23" /></Border.StrokeShape>
+                <ImageButton Source="notification_bell_icon.png" Aspect="AspectFit" BackgroundColor="Transparent"
+                             Padding="0" Clicked="OnBellClicked" />
+            </Border>
+            <Grid Grid.Column="2" WidthRequest="46" HeightRequest="46">
                 <Border x:Name="AlertBadge" BackgroundColor="#EF3340" StrokeThickness="0" Padding="5,1"
                         HorizontalOptions="End" VerticalOptions="Start">
                     <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
@@ -61,10 +64,11 @@
                 </Border>
             </Grid>
 
-            <Button Grid.Column="3" Text="◎" FontSize="34" TextColor="White" BackgroundColor="Transparent"
-                    Padding="0" WidthRequest="44" Clicked="OnLogoutClicked" />
-            <Button Grid.Column="3" Text="&#x1F6AA;" FontSize="24" TextColor="White" BackgroundColor="#3F24C5"
-                    Padding="0" WidthRequest="44" Clicked="OnLogoutClicked" />
+            <Border Grid.Column="3" WidthRequest="46" HeightRequest="46" BackgroundColor="White" StrokeThickness="0" Padding="7">
+                <Border.StrokeShape><RoundRectangle CornerRadius="23" /></Border.StrokeShape>
+                <ImageButton Source="logout_icon.png" Aspect="AspectFit" BackgroundColor="Transparent"
+                             Padding="0" Clicked="OnLogoutClicked" />
+            </Border>
         </Grid>
 
         <!-- CONTENIDO -->
@@ -375,7 +379,9 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Button Grid.Row="2" Margin="18,12,18,20" Text="Cerrar sesión" TextColor="White" BackgroundColor="#EF4444" CornerRadius="10" Clicked="OnLogoutClicked" />
+                    <Button Grid.Row="2" Margin="18,12,18,20" Text="Cerrar sesión" ImageSource="logout_icon.png"
+                            ContentLayout="Left,10" TextColor="#0B3B92" BackgroundColor="White" CornerRadius="10"
+                            Clicked="OnLogoutClicked" />
                 </Grid>
             </Border>
             <Button Grid.Column="1" BackgroundColor="Transparent" Clicked="OnCloseMenuClicked" />

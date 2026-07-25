@@ -40,6 +40,10 @@ namespace CorexProd.Negocio.Negocio
             orden.ObservacionesInternas = orden.ObservacionesInternas.Trim();
             orden.Observaciones = orden.Observaciones.Trim();
             orden.DistribucionFotosPdf = NormalizarDistribucionFotos(orden.DistribucionFotosPdf);
+            orden.PagoInicialMedio = orden.PagoInicialMedio.Trim();
+            orden.PagoInicialDestino = orden.PagoInicialDestino.Trim();
+            orden.PagoInicialNumeroOperacion = orden.PagoInicialNumeroOperacion.Trim();
+            orden.PagoInicialObservacion = orden.PagoInicialObservacion.Trim();
 
             if (orden.IdProveedor <= 0)
                 return "Debe seleccionar un proveedor.";
@@ -67,6 +71,15 @@ namespace CorexProd.Negocio.Negocio
             orden.ACuenta = Math.Round(orden.ACuenta, 2);
             if (orden.ACuenta < 0 || orden.ACuenta > orden.Total)
                 return "El importe a cuenta no puede ser menor a cero ni mayor al total.";
+            if (orden.ACuenta > 0)
+            {
+                if (string.IsNullOrWhiteSpace(orden.PagoInicialMedio))
+                    return "Debe seleccionar el medio de pago del importe a cuenta.";
+                if (!orden.PagoInicialMedio.Equals("EFECTIVO", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(orden.PagoInicialDestino))
+                    return orden.PagoInicialMedio.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase)
+                        ? "Debe ingresar la cuenta del pago a cuenta."
+                        : "Debe ingresar el numero del pago a cuenta.";
+            }
             if (string.IsNullOrWhiteSpace(orden.UsuarioRegistro))
                 orden.UsuarioRegistro = "Sistema";
 
@@ -78,11 +91,12 @@ namespace CorexProd.Negocio.Negocio
             if (idOrdenServicio <= 0)
                 return "Debe seleccionar una orden de servicio.";
 
-            string validacion = _usuarioNegocio.ValidarAprobacionOs(usuario, claveAprobacion);
-            if (!validacion.Equals("OK", StringComparison.OrdinalIgnoreCase))
-                return validacion;
+            var aprobacion = _usuarioNegocio.ResolverAprobadorOs(usuario, claveAprobacion);
+            if (!aprobacion.Mensaje.Equals("OK", StringComparison.OrdinalIgnoreCase))
+                return aprobacion.Mensaje;
 
-            return _datos.Aprobar(idOrdenServicio, Usuario(usuario));
+            string aprobador = _usuarioNegocio.ObtenerNombrePersona(aprobacion.UsuarioAprobador);
+            return _datos.Aprobar(idOrdenServicio, Usuario(aprobador));
         }
 
         public string Anular(int idOrdenServicio, string usuario, string motivo)
@@ -166,7 +180,7 @@ namespace CorexProd.Negocio.Negocio
         {
             if (foto.IdOrdenServicio <= 0)
                 return "Debe seleccionar una orden de servicio.";
-            if (string.IsNullOrWhiteSpace(foto.RutaArchivo) || string.IsNullOrWhiteSpace(foto.NombreArchivo))
+            if ((string.IsNullOrWhiteSpace(foto.RutaArchivo) && foto.Imagen is not { Length: > 0 }) || string.IsNullOrWhiteSpace(foto.NombreArchivo))
                 return "Debe seleccionar una imagen valida.";
             foto.Titulo = foto.Titulo.Trim();
             foto.UbicacionPdf = string.IsNullOrWhiteSpace(foto.UbicacionPdf) ? "Abajo" : foto.UbicacionPdf.Trim();

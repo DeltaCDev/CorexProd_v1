@@ -11,6 +11,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             string codigoProducto,
             string nombreProducto,
             string observacion,
+            string observacionGeneral,
             string? rutaPdf)
         {
             InitializeComponent();
@@ -20,6 +21,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             ObservacionText.Text = string.IsNullOrWhiteSpace(observacion)
                 ? "El producto no tiene observaciones registradas."
                 : observacion.Trim();
+            ObservacionGeneralText.Text = string.IsNullOrWhiteSpace(observacionGeneral)
+                ? "La OT no tiene observacion general registrada."
+                : observacionGeneral.Trim();
 
             Loaded += async (_, _) =>
             {

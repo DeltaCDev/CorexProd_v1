@@ -40,7 +40,18 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.Views
 
         public bool EsEfectivo => FormaSeleccionada?.Nombre.Equals("EFECTIVO", StringComparison.OrdinalIgnoreCase) == true;
         public bool EsTransferencia => FormaSeleccionada?.Nombre.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase) == true;
-        public string DestinoLabel => EsTransferencia ? "Cuenta" : "Numero";
+        public string DestinoLabel
+        {
+            get
+            {
+                string nombre = FormaSeleccionada?.Nombre ?? string.Empty;
+                if (nombre.Equals("YAPE", StringComparison.OrdinalIgnoreCase))
+                    return "Numero Yape";
+                if (nombre.Equals("PLIN", StringComparison.OrdinalIgnoreCase))
+                    return "Numero Plin";
+                return EsTransferencia ? "Cuenta" : "Numero";
+            }
+        }
         public Visibility DestinoVisibility => EsEfectivo ? Visibility.Collapsed : Visibility.Visible;
         public Visibility OperacionVisibility => EsEfectivo ? Visibility.Collapsed : Visibility.Visible;
 
@@ -83,7 +94,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.Views
             string observacion = Observacion.Trim();
             if (!EsEfectivo)
             {
-                string etiqueta = EsTransferencia ? "Cuenta" : "Numero";
+                string etiqueta = DestinoLabel;
                 observacion = string.IsNullOrWhiteSpace(observacion)
                     ? $"{etiqueta}: {destino}"
                     : $"{etiqueta}: {destino} | {observacion}";

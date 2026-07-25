@@ -212,10 +212,10 @@
                                     Style="{StaticResource HeaderIconButton}"
                                     Click="Campana_Click"
                                     ToolTip="Notificaciones">
-                                <TextBlock Text="&#xE7F4;"
-                                           FontFamily="Segoe MDL2 Assets"
-                                           FontSize="19"
-                                           Foreground="#1747A6"/>
+                                <Image Source="/Images/notification_bell_icon.png"
+                                       Width="23"
+                                       Height="23"
+                                       Stretch="Uniform"/>
                             </Button>
                             <Border Background="#E53945"
                                     CornerRadius="9"
@@ -278,10 +278,10 @@
                                 Command="{Binding DataContext.CerrarSesionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 ToolTip="Cerrar sesión"
                                 Margin="0">
-                            <TextBlock Text="&#xE8AC;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="18"
-                                       Foreground="#DC2626"/>
+                            <Image Source="/Images/logout_icon.png"
+                                   Width="23"
+                                   Height="23"
+                                   Stretch="Uniform"/>
                         </Button>
 
                     </StackPanel>

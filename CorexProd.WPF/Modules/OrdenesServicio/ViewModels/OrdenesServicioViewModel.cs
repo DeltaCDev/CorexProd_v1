@@ -6,12 +6,19 @@ using CorexProd.WPF.Modules.OrdenesServicio.Views;
 using CorexProd.WPF.ViewModels;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
+using System.Configuration;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 
@@ -19,6 +26,14 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 {
     public class OrdenesServicioViewModel : BaseViewModel
     {
+        private const string ApiUrlPredeterminada = "https://ruc.com.pe/api/v1/consultas";
+        private const string ApiTokenPredeterminado = "0a682fbe-009d-4758-aad1-2ff1092ab7c2-838d6cd5-620a-4add-9632-a3b37c5ae216";
+
+        private static readonly HttpClient HttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
         private readonly OrdenServicioNegocio _negocio = new();
         private readonly UsuarioNegocio _usuarioNegocio = new();
         private readonly ProveedorNegocio _proveedorNegocio = new();
@@ -31,6 +46,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private DateTime _fecha = DateTime.Today;
         private DateTime? _fechaComprometida;
         private ProveedorStock? _proveedorSeleccionado;
+        private string _proveedorBusqueda = string.Empty;
         private TipoServicio? _tipoServicioSeleccionado;
         private Cliente? _clienteSeleccionado;
         private string _cliente = string.Empty;
@@ -53,6 +69,10 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private string _pagoMedio = "Transferencia";
         private string _pagoOperacion = string.Empty;
         private string _pagoObservacion = string.Empty;
+        private FormaPagoOs? _pagoInicialFormaSeleccionada;
+        private string _pagoInicialDestino = string.Empty;
+        private string _pagoInicialNumeroOperacion = string.Empty;
+        private string _pagoInicialObservacion = string.Empty;
         private bool _mostrarMovimientos;
         private string _tituloMovimientos = string.Empty;
         private string _tipoMovimientoActual = string.Empty;
@@ -74,6 +94,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private string _nuevoProveedorDireccion = string.Empty;
         private string _nuevoProveedorTelefono = string.Empty;
         private string _nuevoProveedorCorreo = string.Empty;
+        private bool _isConsultandoNuevoProveedorDocumento;
         private bool _mostrarNuevoTipoServicio;
         private string _nuevoTipoCodigo = string.Empty;
         private string _nuevoTipoNombre = string.Empty;
@@ -82,9 +103,11 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 
         public ObservableCollection<OrdenServicio> Ordenes { get; } = [];
         public ObservableCollection<ProveedorStock> Proveedores { get; } = [];
+        public ObservableCollection<ProveedorStock> ProveedoresCoincidencias { get; } = [];
         public ObservableCollection<Cliente> Clientes { get; } = [];
         public ObservableCollection<Cliente> ClientesCoincidencias { get; } = [];
         public ObservableCollection<TipoServicio> TiposServicio { get; } = [];
+        public ObservableCollection<FormaPagoOs> FormasPagoInicial { get; } = [];
         public ObservableCollection<OrdenServicioDetalle> DetallesFormulario { get; } = [];
         public ObservableCollection<OrdenServicioDetalle> DetallesFormularioVista { get; } = [];
         public ObservableCollection<OrdenServicioMovimiento> MovimientosFormulario { get; } = [];
@@ -95,6 +118,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public string[] FormasPago { get; } = ["Contado", "Credito"];
         public string[] UbicacionesFotoPdf { get; } = ["Abajo", "Antes del resumen", "Pagina final"];
         public string[] DistribucionesFotosPdf { get; } = ["1 x 2", "2 x 2", "2 x 4"];
+        public string[] TiposDocumentoProveedor { get; } = ["DNI", "RUC", "S/N"];
 
         public string TextoBusqueda
         {
@@ -139,7 +163,38 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 
         public DateTime Fecha { get => _fecha; set { _fecha = value; OnPropertyChanged(); } }
         public DateTime? FechaComprometida { get => _fechaComprometida; set { _fechaComprometida = value; OnPropertyChanged(); } }
-        public ProveedorStock? ProveedorSeleccionado { get => _proveedorSeleccionado; set { _proveedorSeleccionado = value; OnPropertyChanged(); } }
+        public ProveedorStock? ProveedorSeleccionado
+        {
+            get => _proveedorSeleccionado;
+            set
+            {
+                _proveedorSeleccionado = value;
+                OnPropertyChanged();
+                if (value != null)
+                {
+                    _proveedorBusqueda = value.ProveedorBusqueda;
+                    OnPropertyChanged(nameof(ProveedorBusqueda));
+                    OnPropertyChanged(nameof(MostrarCoincidenciasProveedor));
+                }
+            }
+        }
+        public string ProveedorBusqueda
+        {
+            get => _proveedorBusqueda;
+            set
+            {
+                _proveedorBusqueda = value ?? string.Empty;
+                if (_proveedorSeleccionado?.ProveedorBusqueda != _proveedorBusqueda)
+                {
+                    _proveedorSeleccionado = null;
+                    OnPropertyChanged(nameof(ProveedorSeleccionado));
+                }
+                OnPropertyChanged();
+                if (_proveedorSeleccionado == null)
+                    ActualizarCoincidenciasProveedor();
+                OnPropertyChanged(nameof(MostrarCoincidenciasProveedor));
+            }
+        }
         public TipoServicio? TipoServicioSeleccionado { get => _tipoServicioSeleccionado; set { _tipoServicioSeleccionado = value; OnPropertyChanged(); } }
         public Cliente? ClienteSeleccionado
         {
@@ -217,12 +272,31 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 _aCuenta = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SaldoPendienteFormulario));
+                OnPropertyChanged(nameof(MostrarPagoInicialDetalle));
+                OnPropertyChanged(nameof(PagoInicialDetalleVisibility));
             }
         }
         public decimal PagoImporte { get => _pagoImporte; set { _pagoImporte = value; OnPropertyChanged(); } }
         public string PagoMedio { get => _pagoMedio; set { _pagoMedio = value ?? string.Empty; OnPropertyChanged(); } }
         public string PagoOperacion { get => _pagoOperacion; set { _pagoOperacion = value ?? string.Empty; OnPropertyChanged(); } }
         public string PagoObservacion { get => _pagoObservacion; set { _pagoObservacion = value ?? string.Empty; OnPropertyChanged(); } }
+        public FormaPagoOs? PagoInicialFormaSeleccionada
+        {
+            get => _pagoInicialFormaSeleccionada;
+            set
+            {
+                _pagoInicialFormaSeleccionada = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PagoInicialEsEfectivo));
+                OnPropertyChanged(nameof(PagoInicialEsTransferencia));
+                OnPropertyChanged(nameof(PagoInicialDestinoLabel));
+                OnPropertyChanged(nameof(PagoInicialDestinoVisibility));
+                OnPropertyChanged(nameof(PagoInicialOperacionVisibility));
+            }
+        }
+        public string PagoInicialDestino { get => _pagoInicialDestino; set { _pagoInicialDestino = value ?? string.Empty; OnPropertyChanged(); } }
+        public string PagoInicialNumeroOperacion { get => _pagoInicialNumeroOperacion; set { _pagoInicialNumeroOperacion = value ?? string.Empty; OnPropertyChanged(); } }
+        public string PagoInicialObservacion { get => _pagoInicialObservacion; set { _pagoInicialObservacion = value ?? string.Empty; OnPropertyChanged(); } }
         public string FotoTitulo { get => _fotoTitulo; set { _fotoTitulo = value ?? string.Empty; OnPropertyChanged(); } }
         public string FotoDescripcion { get => _fotoDescripcion; set { _fotoDescripcion = value ?? string.Empty; OnPropertyChanged(); } }
         public string FotoUbicacionPdf { get => _fotoUbicacionPdf; set { _fotoUbicacionPdf = value ?? "Abajo"; OnPropertyChanged(); } }
@@ -251,6 +325,16 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public string NuevoProveedorDireccion { get => _nuevoProveedorDireccion; set { _nuevoProveedorDireccion = value ?? string.Empty; OnPropertyChanged(); } }
         public string NuevoProveedorTelefono { get => _nuevoProveedorTelefono; set { _nuevoProveedorTelefono = value ?? string.Empty; OnPropertyChanged(); } }
         public string NuevoProveedorCorreo { get => _nuevoProveedorCorreo; set { _nuevoProveedorCorreo = value ?? string.Empty; OnPropertyChanged(); } }
+        public bool IsConsultandoNuevoProveedorDocumento
+        {
+            get => _isConsultandoNuevoProveedorDocumento;
+            set
+            {
+                _isConsultandoNuevoProveedorDocumento = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
         public bool MostrarNuevoTipoServicio
         {
             get => _mostrarNuevoTipoServicio;
@@ -281,10 +365,30 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             }
         }
         public Visibility CreditoDetalleVisibility => EsCredito ? Visibility.Visible : Visibility.Collapsed;
+        public bool MostrarPagoInicialDetalle => ACuenta > 0;
+        public Visibility PagoInicialDetalleVisibility => MostrarPagoInicialDetalle ? Visibility.Visible : Visibility.Collapsed;
+        public bool PagoInicialEsEfectivo => PagoInicialFormaSeleccionada?.Nombre.Equals("EFECTIVO", StringComparison.OrdinalIgnoreCase) == true;
+        public bool PagoInicialEsTransferencia => PagoInicialFormaSeleccionada?.Nombre.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase) == true;
+        public string PagoInicialDestinoLabel
+        {
+            get
+            {
+                string nombre = PagoInicialFormaSeleccionada?.Nombre ?? string.Empty;
+                if (nombre.Equals("YAPE", StringComparison.OrdinalIgnoreCase))
+                    return "Numero Yape";
+                if (nombre.Equals("PLIN", StringComparison.OrdinalIgnoreCase))
+                    return "Numero Plin";
+                return PagoInicialEsTransferencia ? "Cuenta" : "Numero";
+            }
+        }
+        public Visibility PagoInicialDestinoVisibility => PagoInicialEsEfectivo ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility PagoInicialOperacionVisibility => PagoInicialEsEfectivo ? Visibility.Collapsed : Visibility.Visible;
         public bool MostrarCoincidenciasCliente => ClienteSeleccionado == null && Cliente.Trim().Length >= 3 && ClientesCoincidencias.Count > 0;
+        public bool MostrarCoincidenciasProveedor => ProveedorSeleccionado == null && ProveedorBusqueda.Trim().Length >= 3 && ProveedoresCoincidencias.Count > 0;
         public Visibility FotoOrdenNuevaVisibility => _idOrdenServicio == 0 ? Visibility.Visible : Visibility.Collapsed;
         public decimal TotalFormulario => DetallesFormulario.Sum(x => x.Total);
         public decimal SaldoPendienteFormulario => Math.Max(0, TotalFormulario - ACuenta);
+        public ScrollBarVisibility DetallesScrollBarVisibility => DetallesFormulario.Count > 4 ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
         public string Resumen => $"{Ordenes.Count} ordenes listadas";
 
         public ICommand NuevoCommand { get; }
@@ -314,6 +418,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         public ICommand MostrarNuevoProveedorCommand { get; }
         public ICommand GuardarNuevoProveedorCommand { get; }
         public ICommand CancelarNuevoProveedorCommand { get; }
+        public ICommand ConsultarNuevoProveedorDocumentoCommand { get; }
         public ICommand MostrarNuevoTipoServicioCommand { get; }
         public ICommand GuardarNuevoTipoServicioCommand { get; }
         public ICommand CancelarNuevoTipoServicioCommand { get; }
@@ -350,6 +455,9 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             MostrarNuevoProveedorCommand = new RelayCommand(_ => MostrarNuevoProveedor = true);
             GuardarNuevoProveedorCommand = new RelayCommand(_ => GuardarNuevoProveedor());
             CancelarNuevoProveedorCommand = new RelayCommand(_ => LimpiarNuevoProveedor());
+            ConsultarNuevoProveedorDocumentoCommand = new RelayCommand(
+                async _ => await ConsultarNuevoProveedorDocumentoAsync(),
+                _ => !IsConsultandoNuevoProveedorDocumento);
             MostrarNuevoTipoServicioCommand = new RelayCommand(_ => MostrarNuevoTipoServicio = true);
             GuardarNuevoTipoServicioCommand = new RelayCommand(_ => GuardarNuevoTipoServicio());
             CancelarNuevoTipoServicioCommand = new RelayCommand(_ => LimpiarNuevoTipoServicio());
@@ -358,6 +466,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             DetallesFormulario.CollectionChanged += (_, _) =>
             {
                 NotificarTotales();
+                OnPropertyChanged(nameof(DetallesScrollBarVisibility));
                 RefrescarDetallesVista();
             };
             RefrescarDetallesVista();
@@ -388,6 +497,23 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 if (tipo.Estado)
                     TiposServicio.Add(tipo);
             }
+
+            FormasPagoInicial.Clear();
+            try
+            {
+                foreach (FormaPagoOs forma in new FormaPagoOsNegocio().Listar(soloActivos: true))
+                    FormasPagoInicial.Add(forma);
+            }
+            catch
+            {
+                FormasPagoInicial.Add(new FormaPagoOs { Nombre = "YAPE", Estado = true });
+                FormasPagoInicial.Add(new FormaPagoOs { Nombre = "PLIN", Estado = true });
+                FormasPagoInicial.Add(new FormaPagoOs { Nombre = "TRANSFERENCIA", Estado = true });
+                FormasPagoInicial.Add(new FormaPagoOs { Nombre = "EFECTIVO", Estado = true });
+            }
+
+            PagoInicialFormaSeleccionada ??= FormasPagoInicial.FirstOrDefault(x => x.Nombre.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase))
+                ?? FormasPagoInicial.FirstOrDefault();
         }
 
         private void CargarOrdenes()
@@ -406,6 +532,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             Fecha = DateTime.Today;
             FechaComprometida = null;
             ProveedorSeleccionado = null;
+            ProveedorBusqueda = string.Empty;
             TipoServicioSeleccionado = null;
             ClienteSeleccionado = null;
             Cliente = string.Empty;
@@ -415,6 +542,9 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             FormaPagoTipo = "Contado";
             DetalleCredito = string.Empty;
             ACuenta = 0;
+            LimpiarPagoInicial();
+            PagoInicialFormaSeleccionada = FormasPagoInicial.FirstOrDefault(x => x.Nombre.Equals("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase))
+                ?? FormasPagoInicial.FirstOrDefault();
             ObservacionesInternas = string.Empty;
             Observaciones = string.Empty;
             DistribucionFotosPdf = "1 x 2";
@@ -426,6 +556,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             _detalleEnEdicion = null;
             OnPropertyChanged(nameof(DetalleBotonTexto));
             DetallesFormulario.Clear();
+            FotosOrdenSeleccionada.Clear();
             LimpiarNuevoProveedor();
             LimpiarNuevoTipoServicio();
             MostrarFormulario = true;
@@ -458,6 +589,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             Fecha = completa.Fecha;
             FechaComprometida = completa.FechaComprometida;
             ProveedorSeleccionado = Proveedores.FirstOrDefault(x => x.IdProveedor == completa.IdProveedor);
+            ProveedorBusqueda = ProveedorSeleccionado?.ProveedorBusqueda ?? completa.NombreProveedor;
             TipoServicioSeleccionado = TiposServicio.FirstOrDefault(x => x.IdTipoServicio == completa.IdTipoServicio);
             ClienteSeleccionado = null;
             Cliente = completa.Cliente;
@@ -489,6 +621,10 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 
         private void Guardar()
         {
+            List<OrdenServicioFoto> fotosPendientes = FotosOrdenSeleccionada
+                .Where(x => x.IdOrdenServicioFoto == 0)
+                .ToList();
+
             OrdenServicio orden = new()
             {
                 IdOrdenServicio = _idOrdenServicio,
@@ -504,6 +640,10 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 ObservacionesInternas = ObservacionesInternas,
                 DistribucionFotosPdf = DistribucionFotosPdf,
                 ACuenta = ACuenta,
+                PagoInicialMedio = ACuenta > 0 ? PagoInicialFormaSeleccionada?.Nombre ?? string.Empty : string.Empty,
+                PagoInicialDestino = ACuenta > 0 ? PagoInicialDestino : string.Empty,
+                PagoInicialNumeroOperacion = ACuenta > 0 ? PagoInicialNumeroOperacion : string.Empty,
+                PagoInicialObservacion = ACuenta > 0 ? PagoInicialObservacion : string.Empty,
                 Observaciones = Observaciones,
                 UsuarioRegistro = SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema",
                 Detalles = DetallesFormulario.ToList()
@@ -513,9 +653,22 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             MostrarResultado(mensaje);
             if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
             {
-                RegistrarFotosPendientes(orden);
-                Cancelar();
+                bool fotosOk = RegistrarFotosPendientes(orden, fotosPendientes);
+                if (fotosOk)
+                    fotosOk = ActualizarFotosRegistradas(orden);
                 CargarOrdenes();
+                if (fotosOk)
+                {
+                    Cancelar();
+                }
+                else
+                {
+                    _idOrdenServicio = orden.IdOrdenServicio;
+                    OrdenSeleccionada = _negocio.Obtener(orden.IdOrdenServicio) ?? orden;
+                    RefrescarFotosSeleccionadas();
+                    OnPropertyChanged(nameof(TituloFormulario));
+                    OnPropertyChanged(nameof(FotoOrdenNuevaVisibility));
+                }
             }
         }
 
@@ -600,7 +753,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             if (orden == null)
                 return;
 
-            OrdenServicioAprobacionWindow ventana = new(SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty)
+            OrdenServicioAprobacionWindow ventana = new(ObtenerUsuarioAprobadorSugerido())
             {
                 Owner = Application.Current.MainWindow
             };
@@ -608,16 +761,29 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             if (ventana.ShowDialog() != true || !ventana.Confirmado)
                 return;
 
-            string validacion = _usuarioNegocio.ValidarAprobacionOs(ventana.UsuarioAprobador, ventana.ClaveAprobacion);
-            if (!validacion.Equals("OK", StringComparison.OrdinalIgnoreCase))
+            var aprobacion = _usuarioNegocio.ResolverAprobadorOs(ventana.UsuarioAprobador, ventana.ClaveAprobacion);
+            if (!aprobacion.Mensaje.Equals("OK", StringComparison.OrdinalIgnoreCase))
             {
-                NotificationService.Warning(validacion);
+                NotificationService.Warning(aprobacion.Mensaje);
                 return;
             }
 
-            string mensaje = _negocio.Aprobar(orden.IdOrdenServicio, ventana.UsuarioAprobador, ventana.ClaveAprobacion);
+            string mensaje = _negocio.Aprobar(orden.IdOrdenServicio, aprobacion.UsuarioAprobador, ventana.ClaveAprobacion);
             MostrarResultado(mensaje);
             CargarOrdenes();
+        }
+
+        private string ObtenerUsuarioAprobadorSugerido()
+        {
+            string usuarioSesion = SessionManager.UsuarioActual?.NombreUsuario?.Trim() ?? string.Empty;
+            List<Usuario> usuarios = _usuarioNegocio.Listar()
+                .Where(u => u.Estado && u.AprobacionOs && !string.IsNullOrWhiteSpace(u.ClaveAprobacionOs))
+                .ToList();
+
+            Usuario? usuarioActual = usuarios.FirstOrDefault(u =>
+                u.NombreUsuario.Equals(usuarioSesion, StringComparison.OrdinalIgnoreCase));
+
+            return (usuarioActual ?? usuarios.FirstOrDefault())?.NombreUsuario ?? usuarioSesion;
         }
 
         private void Copiar(OrdenServicio? orden)
@@ -637,6 +803,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             Fecha = DateTime.Today;
             FechaComprometida = completa.FechaComprometida;
             ProveedorSeleccionado = Proveedores.FirstOrDefault(x => x.IdProveedor == completa.IdProveedor);
+            ProveedorBusqueda = ProveedorSeleccionado?.ProveedorBusqueda ?? completa.NombreProveedor;
             TipoServicioSeleccionado = TiposServicio.FirstOrDefault(x => x.IdTipoServicio == completa.IdTipoServicio);
             ClienteSeleccionado = null;
             Cliente = completa.Cliente;
@@ -819,6 +986,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 Empresa empresa = new EmpresaNegocio().ObtenerPredeterminada() ?? new Empresa { Nombre = "Delta Confecciones" };
                 OrdenServicioPdfExporter.Exportar(dialog.FileName, empresa, completa, incluirFotos: true);
                 NotificationService.Success("PDF generado correctamente.");
+                Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -912,6 +1080,7 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                     IdOrdenServicio = esPendiente ? 0 : OrdenSeleccionada!.IdOrdenServicio,
                     RutaArchivo = destino,
                     NombreArchivo = nombre,
+                    Imagen = File.ReadAllBytes(dialog.FileName),
                     Titulo = FotoTitulo,
                     UbicacionPdf = FotoUbicacionPdf,
                     Descripcion = FotoDescripcion,
@@ -943,13 +1112,14 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
 
         private static void VerFoto(OrdenServicioFoto? foto)
         {
-            if (foto == null || !File.Exists(foto.RutaArchivo))
+            string ruta = foto?.ObtenerRutaLocal() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta))
             {
                 NotificationService.Warning("No se encontro la imagen.");
                 return;
             }
 
-            Process.Start(new ProcessStartInfo(foto.RutaArchivo) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(ruta) { UseShellExecute = true });
         }
 
         private void EliminarFoto(OrdenServicioFoto? foto)
@@ -1016,25 +1186,27 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             {
                 try
                 {
-                    if (string.IsNullOrWhiteSpace(fotoOrigen.RutaArchivo) || !File.Exists(fotoOrigen.RutaArchivo))
+                    string rutaOrigen = fotoOrigen.ObtenerRutaLocal();
+                    if (string.IsNullOrWhiteSpace(rutaOrigen) || !File.Exists(rutaOrigen))
                     {
                         omitidas++;
                         continue;
                     }
 
-                    string extension = Path.GetExtension(fotoOrigen.RutaArchivo);
+                    string extension = Path.GetExtension(rutaOrigen);
                     string nombreBase = Path.GetFileNameWithoutExtension(fotoOrigen.NombreArchivo);
                     if (string.IsNullOrWhiteSpace(nombreBase))
-                        nombreBase = Path.GetFileNameWithoutExtension(fotoOrigen.RutaArchivo);
-                    string nombre = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}_{nombreBase}{extension}";
+                        nombreBase = Path.GetFileNameWithoutExtension(rutaOrigen);
+                    string nombre = NombreFotoSeguro($"{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}_{nombreBase}", extension);
                     string destino = Path.Combine(carpetaPendientes, nombre);
-                    File.Copy(fotoOrigen.RutaArchivo, destino, overwrite: false);
+                    File.Copy(rutaOrigen, destino, overwrite: false);
 
                     FotosOrdenSeleccionada.Add(new OrdenServicioFoto
                     {
                         IdOrdenServicio = 0,
                         RutaArchivo = destino,
                         NombreArchivo = nombre,
+                        Imagen = fotoOrigen.Imagen is { Length: > 0 } ? fotoOrigen.Imagen.ToArray() : File.ReadAllBytes(destino),
                         Titulo = fotoOrigen.Titulo,
                         UbicacionPdf = string.IsNullOrWhiteSpace(fotoOrigen.UbicacionPdf) ? "Abajo" : fotoOrigen.UbicacionPdf,
                         Descripcion = fotoOrigen.Descripcion,
@@ -1073,42 +1245,99 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                 FotosOrdenSeleccionada.Add(foto);
         }
 
-        private void RegistrarFotosPendientes(OrdenServicio orden)
+        private bool RegistrarFotosPendientes(OrdenServicio orden, List<OrdenServicioFoto> fotosPendientes)
         {
-            if (orden.IdOrdenServicio <= 0)
-                return;
+            if (fotosPendientes.Count == 0)
+                return true;
 
-            ActualizarOrdenFotosLocales();
-            foreach (OrdenServicioFoto foto in FotosOrdenSeleccionada.Where(x => x.IdOrdenServicioFoto == 0).ToList())
+            if (orden.IdOrdenServicio <= 0)
+            {
+                NotificationService.Warning("La orden se guardo, pero no se pudo registrar las fotos porque no se obtuvo el Id de la OS.");
+                return false;
+            }
+
+            for (int i = 0; i < fotosPendientes.Count; i++)
+                fotosPendientes[i].Orden = i + 1;
+
+            int registradas = 0;
+            foreach (OrdenServicioFoto foto in fotosPendientes)
             {
                 try
                 {
                     string carpeta = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "OrdenesServicioFotos", orden.NumeroOrden);
                     Directory.CreateDirectory(carpeta);
-                    string nombre = string.IsNullOrWhiteSpace(foto.NombreArchivo)
-                        ? $"{DateTime.Now:yyyyMMddHHmmssfff}_{Path.GetFileName(foto.RutaArchivo)}"
-                        : foto.NombreArchivo;
+                    string extension = Path.GetExtension(foto.RutaArchivo);
+                    string nombreBase = string.IsNullOrWhiteSpace(foto.NombreArchivo)
+                        ? $"{DateTime.Now:yyyyMMddHHmmssfff}_{Path.GetFileNameWithoutExtension(foto.RutaArchivo)}"
+                        : Path.GetFileNameWithoutExtension(foto.NombreArchivo);
+                    string nombre = NombreFotoSeguro(nombreBase, extension);
                     string destino = Path.Combine(carpeta, nombre);
                     if (!foto.RutaArchivo.Equals(destino, StringComparison.OrdinalIgnoreCase))
                     {
                         if (File.Exists(destino))
-                            destino = Path.Combine(carpeta, $"{DateTime.Now:yyyyMMddHHmmssfff}_{nombre}");
-                        File.Move(foto.RutaArchivo, destino);
+                            destino = Path.Combine(carpeta, NombreFotoSeguro($"{DateTime.Now:yyyyMMddHHmmssfff}_{Path.GetFileNameWithoutExtension(nombre)}", Path.GetExtension(nombre)));
+                        File.Copy(foto.RutaArchivo, destino, overwrite: false);
                     }
 
                     foto.IdOrdenServicio = orden.IdOrdenServicio;
                     foto.RutaArchivo = destino;
                     foto.NombreArchivo = Path.GetFileName(destino);
+                    if (foto.Imagen == null || foto.Imagen.Length == 0)
+                        foto.Imagen = File.ReadAllBytes(destino);
                     foto.UsuarioRegistro = SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema";
                     string mensajeFoto = _negocio.RegistrarFoto(foto);
                     if (!mensajeFoto.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
+                    {
                         NotificationService.Warning(mensajeFoto);
+                        continue;
+                    }
+
+                    registradas++;
                 }
                 catch (Exception ex)
                 {
                     NotificationService.Warning($"La orden se guardo, pero no se pudo registrar una foto: {ex.Message}");
                 }
             }
+
+            if (registradas > 0)
+                NotificationService.Success($"{registradas} foto(s) registrada(s) correctamente.");
+
+            return registradas == fotosPendientes.Count;
+        }
+
+        private bool ActualizarFotosRegistradas(OrdenServicio orden)
+        {
+            List<OrdenServicioFoto> fotosRegistradas = FotosOrdenSeleccionada
+                .Where(x => x.IdOrdenServicioFoto > 0)
+                .ToList();
+            if (orden.IdOrdenServicio <= 0 || fotosRegistradas.Count == 0)
+                return true;
+
+            ActualizarOrdenFotosLocales();
+            string mensaje = _negocio.ActualizarOrdenFotos(orden.IdOrdenServicio, fotosRegistradas, SessionManager.UsuarioActual?.NombreCompleto ?? "Sistema");
+            if (mensaje.Contains("correctamente", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            NotificationService.Warning(mensaje);
+            return false;
+        }
+
+        private static string NombreFotoSeguro(string nombreBase, string extension)
+        {
+            extension = string.IsNullOrWhiteSpace(extension) ? ".jpg" : extension;
+            if (!extension.StartsWith(".", StringComparison.Ordinal))
+                extension = "." + extension;
+
+            foreach (char invalid in Path.GetInvalidFileNameChars())
+                nombreBase = nombreBase.Replace(invalid, '_');
+
+            nombreBase = string.IsNullOrWhiteSpace(nombreBase) ? DateTime.Now.ToString("yyyyMMddHHmmssfff") : nombreBase.Trim();
+            int maxBaseLength = Math.Max(1, 240 - extension.Length);
+            if (nombreBase.Length > maxBaseLength)
+                nombreBase = nombreBase[..maxBaseLength];
+
+            return $"{nombreBase}{extension}";
         }
 
         private void Cancelar()
@@ -1200,7 +1429,119 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             ProveedorSeleccionado = Proveedores.FirstOrDefault(x =>
                 (!string.IsNullOrWhiteSpace(numero) && x.NumeroDocumento.Equals(numero, StringComparison.OrdinalIgnoreCase)) ||
                 x.NombreRazonSocial.Equals(nombre, StringComparison.OrdinalIgnoreCase));
+            ProveedorBusqueda = ProveedorSeleccionado?.ProveedorBusqueda ?? nombre;
             LimpiarNuevoProveedor();
+        }
+
+        private async Task ConsultarNuevoProveedorDocumentoAsync()
+        {
+            string tipoDocumento = NuevoProveedorTipoDocumento.Trim().ToUpperInvariant();
+            string numeroDocumento = NuevoProveedorNumeroDocumento.Trim();
+
+            if (tipoDocumento != "DNI" && tipoDocumento != "RUC")
+            {
+                NotificationService.Warning("La consulta solo esta disponible para DNI y RUC");
+                return;
+            }
+
+            int longitudEsperada = tipoDocumento == "DNI" ? 8 : 11;
+
+            if (numeroDocumento.Length != longitudEsperada || !numeroDocumento.All(char.IsDigit))
+            {
+                NotificationService.Warning($"Ingrese un {tipoDocumento} valido de {longitudEsperada} digitos");
+                return;
+            }
+
+            try
+            {
+                IsConsultandoNuevoProveedorDocumento = true;
+
+                using JsonDocument respuesta = await ConsultarApiDocumentoAsync(tipoDocumento, numeroDocumento);
+                JsonElement raiz = respuesta.RootElement;
+
+                if (!ObtenerBooleano(raiz, "success"))
+                {
+                    NotificationService.Warning(ObtenerTexto(raiz, "message", "mensaje", "error") ?? "No se encontro informacion para el documento");
+                    return;
+                }
+
+                string? nombre = ObtenerTexto(raiz, "nombre_completo", "nombre_o_razon_social", "razon_social", "nombre");
+                string? direccion = ObtenerTexto(raiz, "direccion", "domicilio_fiscal");
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    NotificationService.Warning("La API respondio correctamente, pero no envio nombre o razon social");
+                    return;
+                }
+
+                NuevoProveedorNombre = nombre;
+
+                if (!string.IsNullOrWhiteSpace(direccion))
+                    NuevoProveedorDireccion = direccion;
+
+                NotificationService.Success("Datos consultados correctamente");
+            }
+            catch (TaskCanceledException)
+            {
+                NotificationService.Error("La consulta demoro demasiado. Intente nuevamente");
+            }
+            catch (HttpRequestException)
+            {
+                NotificationService.Error("No se pudo conectar con la API de consulta");
+            }
+            catch (JsonException)
+            {
+                NotificationService.Error("La API devolvio una respuesta no valida");
+            }
+            finally
+            {
+                IsConsultandoNuevoProveedorDocumento = false;
+            }
+        }
+
+        private static async Task<JsonDocument> ConsultarApiDocumentoAsync(string tipoDocumento, string numeroDocumento)
+        {
+            string apiUrl = ConfigurationManager.AppSettings["RucComPeApiUrl"] ?? ApiUrlPredeterminada;
+            string token = ConfigurationManager.AppSettings["RucComPeApiToken"] ?? ApiTokenPredeterminado;
+            string campoDocumento = tipoDocumento == "RUC" ? "ruc" : "dni";
+
+            var payload = new Dictionary<string, string>
+            {
+                ["token"] = token,
+                [campoDocumento] = numeroDocumento
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            using StringContent contenido = new(json, Encoding.UTF8, "application/json");
+            using HttpResponseMessage response = await HttpClient.PostAsync(apiUrl, contenido);
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            return await JsonDocument.ParseAsync(stream);
+        }
+
+        private static bool ObtenerBooleano(JsonElement elemento, string propiedad)
+        {
+            if (!elemento.TryGetProperty(propiedad, out JsonElement valor))
+                return false;
+
+            return valor.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(valor.GetString(), out bool resultado) && resultado,
+                _ => false
+            };
+        }
+
+        private static string? ObtenerTexto(JsonElement elemento, params string[] propiedades)
+        {
+            foreach (string propiedad in propiedades)
+            {
+                if (elemento.TryGetProperty(propiedad, out JsonElement valor) && valor.ValueKind == JsonValueKind.String)
+                    return valor.GetString();
+            }
+
+            return null;
         }
 
         private void LimpiarNuevoProveedor()
@@ -1212,6 +1553,13 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
             NuevoProveedorDireccion = string.Empty;
             NuevoProveedorTelefono = string.Empty;
             NuevoProveedorCorreo = string.Empty;
+        }
+
+        private void LimpiarPagoInicial()
+        {
+            PagoInicialDestino = string.Empty;
+            PagoInicialNumeroOperacion = string.Empty;
+            PagoInicialObservacion = string.Empty;
         }
 
         private void GuardarNuevoTipoServicio()
@@ -1267,8 +1615,12 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
         private void RefrescarDetallesVista()
         {
             DetallesFormularioVista.Clear();
+            int numero = 1;
             foreach (OrdenServicioDetalle detalle in DetallesFormulario)
+            {
+                detalle.NumeroFila = numero++;
                 DetallesFormularioVista.Add(detalle);
+            }
 
             int filasRelleno = Math.Max(0, 4 - DetallesFormularioVista.Count);
             for (int i = 0; i < filasRelleno; i++)
@@ -1295,6 +1647,23 @@ namespace CorexProd.WPF.Modules.OrdenesServicio.ViewModels
                          .Take(20))
             {
                 ClientesCoincidencias.Add(cliente);
+            }
+        }
+
+        private void ActualizarCoincidenciasProveedor()
+        {
+            ProveedoresCoincidencias.Clear();
+            string filtro = ProveedorBusqueda.Trim();
+            if (filtro.Length < 3)
+                return;
+
+            foreach (ProveedorStock proveedor in Proveedores
+                         .Where(x => Contiene(x.NombreRazonSocial, filtro)
+                                  || Contiene(x.NumeroDocumento, filtro)
+                                  || Contiene(x.TipoDocumento, filtro))
+                         .Take(20))
+            {
+                ProveedoresCoincidencias.Add(proveedor);
             }
         }
 

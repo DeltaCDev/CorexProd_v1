@@ -164,8 +164,9 @@
         <!-- CERRAR SESIÓN -->
         <VerticalStackLayout Grid.Row="2" Padding="20,8,20,22" Spacing="10">
             <BoxView HeightRequest="1" Color="#24445C" />
-            <Button Text="↪   Cerrar sesión" FontSize="16" FontFamily="OpenSansSemibold"
-                    TextColor="#FF5364" BackgroundColor="Transparent"
+            <Button Text="Cerrar sesión" ImageSource="logout_icon.png" ContentLayout="Left,10"
+                    FontSize="16" FontFamily="OpenSansSemibold"
+                    TextColor="#0B3B92" BackgroundColor="White" CornerRadius="10"
                     Padding="10,12" Clicked="OnLogoutClicked" />
         </VerticalStackLayout>
     </Grid>

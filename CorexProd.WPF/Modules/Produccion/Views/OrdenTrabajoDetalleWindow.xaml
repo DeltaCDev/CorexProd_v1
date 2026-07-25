@@ -108,7 +108,19 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Productos y Detalles de Produccion" FontSize="17" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Productos y Detalles de Produccion"
+                                       FontSize="17"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="ObservacionGeneralButton"
+                                    Content="Obs. general"
+                                    Padding="10,4"
+                                    Margin="14,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Click="ObservacionGeneral_Click"
+                                    Visibility="Collapsed"/>
+                        </StackPanel>
                         <TextBlock Text="P: Pendiente | E: Enviado | R: Reservado | M: Merma" Foreground="#64748B" Margin="0,4,0,10"/>
                     </StackPanel>
                     <DataGrid x:Name="ResumenGrid"

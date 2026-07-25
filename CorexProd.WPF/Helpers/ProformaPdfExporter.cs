@@ -363,6 +363,8 @@ namespace CorexProd.WPF.Helpers
             }
 
             public void RightText(string text, double rightX, double y, double size, bool bold = false) => Text(text, rightX - ApproximateWidth(text, size, bold), y, size, bold);
+            public void RightText(string text, double rightX, double y, double size, bool bold, byte red, byte green, byte blue) =>
+                Text(text, rightX - ApproximateWidth(text, size, bold), y, size, bold, red, green, blue);
             public double MeasureText(string text, double size, bool bold = false) => ApproximateWidth(text, size, bold);
             public void CenterText(string text, double centerX, double y, double size, bool bold = false) => CenterText(text, centerX, y, size, bold, 0, 0, 0);
             public void CenterText(string text, double centerX, double y, double size, bool bold, byte red, byte green, byte blue) => Text(text, centerX - (ApproximateWidth(text, size, bold) / 2), y, size, bold, red, green, blue);
@@ -385,11 +387,68 @@ namespace CorexProd.WPF.Helpers
                 _content.Append(" Tj ET Q\n");
             }
             public void Line(double x1, double y1, double x2, double y2) => _content.Append($"0 0 0 RG {N(x1)} {N(y1)} m {N(x2)} {N(y2)} l S\n");
+            public void Line(double x1, double y1, double x2, double y2, byte red, byte green, byte blue) =>
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} RG {N(x1)} {N(y1)} m {N(x2)} {N(y2)} l S\n");
             public void Rectangle(double x, double y, double width, double height) => _content.Append($"0 0 0 RG {N(x)} {N(y)} {N(width)} {N(height)} re S\n");
+            public void Rectangle(double x, double y, double width, double height, byte red, byte green, byte blue) =>
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} RG {N(x)} {N(y)} {N(width)} {N(height)} re S\n");
             public void FilledRectangle(double x, double y, double width, double height, byte red, byte green, byte blue)
             {
                 _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg {N(x)} {N(y)} {N(width)} {N(height)} re f\n");
                 _content.Append($"0 0 0 RG {N(x)} {N(y)} {N(width)} {N(height)} re S\n");
+            }
+
+            public void RoundedRectangle(double x, double y, double width, double height, double radius, byte red, byte green, byte blue)
+            {
+                AppendRoundedRectanglePath(x, y, width, height, radius);
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} RG S\n");
+            }
+
+            public void FilledRoundedRectangle(double x, double y, double width, double height, double radius, byte red, byte green, byte blue)
+            {
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg ");
+                AppendRoundedRectanglePath(x, y, width, height, radius);
+                _content.Append("f\n");
+            }
+
+            public void Circle(double centerX, double centerY, double radius, byte red, byte green, byte blue)
+            {
+                double c = radius * 0.5522847498;
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} RG ");
+                _content.Append($"{N(centerX + radius)} {N(centerY)} m ");
+                _content.Append($"{N(centerX + radius)} {N(centerY + c)} {N(centerX + c)} {N(centerY + radius)} {N(centerX)} {N(centerY + radius)} c ");
+                _content.Append($"{N(centerX - c)} {N(centerY + radius)} {N(centerX - radius)} {N(centerY + c)} {N(centerX - radius)} {N(centerY)} c ");
+                _content.Append($"{N(centerX - radius)} {N(centerY - c)} {N(centerX - c)} {N(centerY - radius)} {N(centerX)} {N(centerY - radius)} c ");
+                _content.Append($"{N(centerX + c)} {N(centerY - radius)} {N(centerX + radius)} {N(centerY - c)} {N(centerX + radius)} {N(centerY)} c S\n");
+            }
+
+            public void FilledCircle(double centerX, double centerY, double radius, byte red, byte green, byte blue)
+            {
+                double c = radius * 0.5522847498;
+                _content.Append($"{ColorValue(red)} {ColorValue(green)} {ColorValue(blue)} rg ");
+                _content.Append($"{N(centerX + radius)} {N(centerY)} m ");
+                _content.Append($"{N(centerX + radius)} {N(centerY + c)} {N(centerX + c)} {N(centerY + radius)} {N(centerX)} {N(centerY + radius)} c ");
+                _content.Append($"{N(centerX - c)} {N(centerY + radius)} {N(centerX - radius)} {N(centerY + c)} {N(centerX - radius)} {N(centerY)} c ");
+                _content.Append($"{N(centerX - radius)} {N(centerY - c)} {N(centerX - c)} {N(centerY - radius)} {N(centerX)} {N(centerY - radius)} c ");
+                _content.Append($"{N(centerX + c)} {N(centerY - radius)} {N(centerX + radius)} {N(centerY - c)} {N(centerX + radius)} {N(centerY)} c f\n");
+            }
+
+            private void AppendRoundedRectanglePath(double x, double y, double width, double height, double radius)
+            {
+                radius = Math.Max(0, Math.Min(radius, Math.Min(width, height) / 2));
+                double c = radius * 0.5522847498;
+                double right = x + width;
+                double top = y + height;
+
+                _content.Append($"{N(x + radius)} {N(y)} m ");
+                _content.Append($"{N(right - radius)} {N(y)} l ");
+                _content.Append($"{N(right - radius + c)} {N(y)} {N(right)} {N(y + radius - c)} {N(right)} {N(y + radius)} c ");
+                _content.Append($"{N(right)} {N(top - radius)} l ");
+                _content.Append($"{N(right)} {N(top - radius + c)} {N(right - radius + c)} {N(top)} {N(right - radius)} {N(top)} c ");
+                _content.Append($"{N(x + radius)} {N(top)} l ");
+                _content.Append($"{N(x + radius - c)} {N(top)} {N(x)} {N(top - radius + c)} {N(x)} {N(top - radius)} c ");
+                _content.Append($"{N(x)} {N(y + radius)} l ");
+                _content.Append($"{N(x)} {N(y + radius - c)} {N(x + radius - c)} {N(y)} {N(x + radius)} {N(y)} c h ");
             }
             public bool Image(string path, double x, double y, double maxWidth, double maxHeight)
             {
@@ -404,6 +463,49 @@ namespace CorexProd.WPF.Helpers
                     double width = image.Width * scale;
                     double height = image.Height * scale;
                     _content.Append($"q {N(width)} 0 0 {N(height)} {N(x)} {N(y)} cm /{image.Name} Do Q\n");
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            public bool CenteredImage(string path, double x, double y, double maxWidth, double maxHeight)
+            {
+                if (!File.Exists(path))
+                    return false;
+
+                try
+                {
+                    PdfImage image = PdfImage.FromFile(path, $"Im{++_imageCounter}");
+                    Images.Add(image);
+                    double scale = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
+                    double width = image.Width * scale;
+                    double height = image.Height * scale;
+                    double centeredX = x + ((maxWidth - width) / 2);
+                    double centeredY = y + ((maxHeight - height) / 2);
+                    _content.Append($"q {N(width)} 0 0 {N(height)} {N(centeredX)} {N(centeredY)} cm /{image.Name} Do Q\n");
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            public bool CenteredImage(byte[] bytes, double x, double y, double maxWidth, double maxHeight)
+            {
+                try
+                {
+                    PdfImage image = PdfImage.FromBytes(bytes, $"Im{++_imageCounter}");
+                    Images.Add(image);
+                    double scale = Math.Min(maxWidth / image.Width, maxHeight / image.Height);
+                    double width = image.Width * scale;
+                    double height = image.Height * scale;
+                    double centeredX = x + ((maxWidth - width) / 2);
+                    double centeredY = y + ((maxHeight - height) / 2);
+                    _content.Append($"q {N(width)} 0 0 {N(height)} {N(centeredX)} {N(centeredY)} cm /{image.Name} Do Q\n");
                     return true;
                 }
                 catch
