@@ -157,7 +157,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,10,10">
-                    <TextBlock Text="Concepto" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Trabajo / concepto" Style="{StaticResource LabelCampo}"/>
                     <ComboBox Style="{StaticResource CampoCombo}"
                               ItemsSource="{Binding Conceptos}"
                               DisplayMemberPath="NombreConcepto"
@@ -166,7 +166,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,10,10">
-                    <TextBlock Text="Tipo" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Tipo movimiento" Style="{StaticResource LabelCampo}"/>
                     <ComboBox Style="{StaticResource CampoCombo}"
                               ItemsSource="{Binding TiposMovimiento}"
                               SelectedItem="{Binding TipoMovimientoForm}"/>
@@ -205,13 +205,13 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,10,0">
-                    <TextBlock Text="Importe" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Importe manual" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding ImporteMovimiento, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Grid.Column="4" Margin="0,0,10,0">
-                    <TextBlock Text="Total" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Importe a registrar" Style="{StaticResource LabelCampo}"/>
                     <TextBlock Text="{Binding TotalMovimientoCalculado, StringFormat={}{0:N2}}"
                                FontSize="18"
                                FontWeight="Bold"
@@ -273,9 +273,12 @@
                     <Button Content="Guardar"
                             Style="{StaticResource BotonAccion}"
                             Command="{Binding GuardarMovimientoCommand}"/>
-                    <Button Content="Eliminar"
+                    <Button Content="Anular"
                             Style="{StaticResource BotonAccion}"
                             Command="{Binding EliminarMovimientoCommand}"/>
+                    <Button Content="Duplicar"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding DuplicarMovimientoCommand}"/>
                     <Button Content="Limpiar"
                             Style="{StaticResource BotonAccion}"
                             Command="{Binding LimpiarMovimientoCommand}"/>
@@ -285,13 +288,29 @@
 
         <Border Grid.Row="2" Style="{StaticResource CajaSeccion}">
             <StackPanel Orientation="Horizontal">
-                <StackPanel Width="300" Margin="0,0,10,0">
+                <StackPanel Width="260" Margin="0,0,10,0">
                     <TextBlock Text="Filtro trabajador" Style="{StaticResource LabelCampo}"/>
                     <ComboBox Style="{StaticResource CampoCombo}"
                               ItemsSource="{Binding Trabajadores}"
                               DisplayMemberPath="NombreTrabajador"
                               SelectedValuePath="IdTrabajadorOperativo"
                               SelectedValue="{Binding IdTrabajadorFiltroMovimientos}"/>
+                </StackPanel>
+                <StackPanel Width="190" Margin="0,0,10,0">
+                    <TextBlock Text="Filtro area" Style="{StaticResource LabelCampo}"/>
+                    <ComboBox Style="{StaticResource CampoCombo}"
+                              ItemsSource="{Binding Areas}"
+                              DisplayMemberPath="NombreArea"
+                              SelectedValuePath="IdAreaOperativa"
+                              SelectedValue="{Binding IdAreaFiltroMovimientos}"/>
+                </StackPanel>
+                <StackPanel Width="210" Margin="0,0,10,0">
+                    <TextBlock Text="Filtro operacion" Style="{StaticResource LabelCampo}"/>
+                    <ComboBox Style="{StaticResource CampoCombo}"
+                              ItemsSource="{Binding Operaciones}"
+                              DisplayMemberPath="NombreOperacion"
+                              SelectedValuePath="IdOperacionTextil"
+                              SelectedValue="{Binding IdOperacionFiltroMovimientos}"/>
                 </StackPanel>
                 <Button Content="Filtrar"
                         Style="{StaticResource BotonAccion}"
@@ -300,6 +319,14 @@
                 <Button Content="Todos"
                         Style="{StaticResource BotonAccion}"
                         Command="{Binding LimpiarFiltroMovimientosCommand}"
+                        VerticalAlignment="Bottom"/>
+                <Button Content="Importar"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding ImportarMovimientosCommand}"
+                        VerticalAlignment="Bottom"/>
+                <Button Content="Excel"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding ExportarMovimientosCommand}"
                         VerticalAlignment="Bottom"/>
             </StackPanel>
         </Border>
@@ -317,8 +344,8 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=d}" Width="95"/>
                 <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="180"/>
-                <DataGridTextColumn Header="Concepto" Binding="{Binding NombreConcepto}" Width="150"/>
-                <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="2.4*"/>
+                <DataGridTextColumn Header="Trabajo / concepto" Binding="{Binding NombreConcepto}" Width="160"/>
+                <DataGridTextColumn Header="Detalle del trabajo" Binding="{Binding Descripcion}" Width="2.4*"/>
                 <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat={}{0:N2}}" Width="80"/>
                 <DataGridTextColumn Header="Tarifa" Binding="{Binding Tarifa, StringFormat={}{0:N2}}" Width="80"/>
                 <DataGridTextColumn Header="Importe" Binding="{Binding Importe, StringFormat={}{0:N2}}" Width="90"/>

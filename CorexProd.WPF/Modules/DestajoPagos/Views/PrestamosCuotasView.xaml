@@ -134,6 +134,7 @@
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1.4*"/>
                     <ColumnDefinition Width="1.6*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -149,30 +150,36 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                    <TextBlock Text="Fecha" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Fecha préstamo" Style="{StaticResource LabelCampo}"/>
                     <DatePicker Height="30"
                                 SelectedDate="{Binding FechaPrestamo}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                    <TextBlock Text="Inicio descuento" Style="{StaticResource LabelCampo}"/>
+                    <DatePicker Height="30"
+                                SelectedDate="{Binding FechaInicioDescuentoPrestamo}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Margin="0,0,10,0">
                     <TextBlock Text="Monto" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding MontoPrestamo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="3" Margin="0,0,10,0">
+                <StackPanel Grid.Column="4" Margin="0,0,10,0">
                     <TextBlock Text="Cuotas" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding NumeroCuotasPrestamo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="4" Margin="0,0,10,0">
+                <StackPanel Grid.Column="5" Margin="0,0,10,0">
                     <TextBlock Text="Monto cuota" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding MontoCuotaPrestamo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="5" Margin="0,0,10,0">
+                <StackPanel Grid.Column="6" Margin="0,0,10,0">
                     <TextBlock Text="Concepto cuota" Style="{StaticResource LabelCampo}"/>
                     <ComboBox Style="{StaticResource CampoCombo}"
                               ItemsSource="{Binding ConceptosDescuento}"
@@ -181,13 +188,13 @@
                               SelectedValue="{Binding IdConceptoCuota}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="6" Margin="0,0,10,0">
+                <StackPanel Grid.Column="7" Margin="0,0,10,0">
                     <TextBlock Text="Observación" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding ObservacionPrestamo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="7"
+                <StackPanel Grid.Column="8"
                             Orientation="Horizontal"
                             VerticalAlignment="Bottom">
                     <Button Content="Registrar"
@@ -223,6 +230,7 @@
 
         <DataGrid Grid.Row="2"
                   ItemsSource="{Binding Prestamos}"
+                  SelectedItem="{Binding PrestamoSeleccionado}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   IsReadOnly="True"
@@ -231,6 +239,8 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="210"/>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaPrestamo, StringFormat=d}" Width="100"/>
+                <DataGridTextColumn Header="Inicio desc." Binding="{Binding FechaInicioDescuento, StringFormat=d}" Width="100"/>
+                <DataGridTextColumn Header="Concepto" Binding="{Binding NombreConcepto}" Width="150"/>
                 <DataGridTextColumn Header="Monto" Binding="{Binding MontoTotal, StringFormat={}{0:N2}}" Width="100"/>
                 <DataGridTextColumn Header="Cuotas" Binding="{Binding NumeroCuotas}" Width="80"/>
                 <DataGridTextColumn Header="Monto cuota" Binding="{Binding MontoCuota, StringFormat={}{0:N2}}" Width="100"/>
@@ -246,9 +256,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0"
-                        Orientation="Horizontal"
-                        Margin="0,0,0,8">
+            <WrapPanel Grid.Row="0"
+                       Margin="0,0,0,8">
                 <ComboBox Width="260"
                           Style="{StaticResource CampoCombo}"
                           ItemsSource="{Binding Trabajadores}"
@@ -262,7 +271,43 @@
                 <Button Content="Aplicar al periodo"
                         Style="{StaticResource BotonAccion}"
                         Command="{Binding AplicarCuotaCommand}"/>
-            </StackPanel>
+                <Button Content="Suspender"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding SuspenderCuotaCommand}"
+                        Margin="8,0,0,0"/>
+                <DatePicker Width="130"
+                            Height="30"
+                            SelectedDate="{Binding FechaReprogramacionCuota}"
+                            Margin="8,0,0,0"/>
+                <TextBox Width="90"
+                         Style="{StaticResource CampoTexto}"
+                         Text="{Binding MontoReprogramacionCuota, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="8,0,0,0"/>
+                <Button Content="Reprogramar"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding ReprogramarCuotaCommand}"
+                        Margin="8,0,0,0"/>
+                <DatePicker Width="130"
+                            Height="30"
+                            SelectedDate="{Binding FechaPagoExtraordinario}"
+                            Margin="8,0,0,0"/>
+                <TextBox Width="90"
+                         Style="{StaticResource CampoTexto}"
+                         Text="{Binding MontoPagoExtraordinario, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="8,0,0,0"/>
+                <Button Content="Pago extra"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding RegistrarPagoExtraordinarioCommand}"
+                        Margin="8,0,0,0"/>
+                <Button Content="Cancelar préstamo"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding CancelarPrestamoCommand}"
+                        Margin="8,0,0,0"/>
+                <TextBox Width="220"
+                         Style="{StaticResource CampoTexto}"
+                         Text="{Binding ObservacionOperacionPrestamo, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="8,0,0,0"/>
+            </WrapPanel>
 
             <DataGrid Grid.Row="1"
                       ItemsSource="{Binding Cuotas}"
@@ -280,6 +325,7 @@
                     <DataGridTextColumn Header="Monto" Binding="{Binding MontoCuota, StringFormat={}{0:N2}}" Width="90"/>
                     <DataGridTextColumn Header="Fecha" Binding="{Binding FechaProgramada, StringFormat=d}" Width="100"/>
                     <DataGridTextColumn Header="Periodo" Binding="{Binding CodigoPeriodoAplicado}" Width="110"/>
+                    <DataGridTextColumn Header="Mov." Binding="{Binding IdMovimientoTrabajador}" Width="70"/>
                     <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="110"/>
                     <DataGridTextColumn Header="Observación" Binding="{Binding Observacion}" Width="*"/>
                 </DataGrid.Columns>

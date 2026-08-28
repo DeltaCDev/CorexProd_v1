@@ -390,11 +390,14 @@
                         <Border Grid.Row="0" Style="{StaticResource CajaSeccion}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.9*"/>
+                                    <ColumnDefinition Width="1.2*"/>
                                     <ColumnDefinition Width="1*"/>
-                                    <ColumnDefinition Width="1.4*"/>
-                                    <ColumnDefinition Width="1.1*"/>
-                                    <ColumnDefinition Width="1.1*"/>
                                     <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="0.9*"/>
+                                    <ColumnDefinition Width="0.9*"/>
+                                    <ColumnDefinition Width="0.9*"/>
+                                    <ColumnDefinition Width="0.9*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
@@ -427,12 +430,32 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="4" Margin="0,0,10,0">
+                                    <TextBlock Text="Unidad" Style="{StaticResource LabelCampo}"/>
+                                    <ComboBox Style="{StaticResource CampoCombo}"
+                                              IsEditable="True"
+                                              ItemsSource="{Binding UnidadesMedidaDestajo}"
+                                              Text="{Binding UnidadOperacion, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="5" Margin="0,0,10,0">
                                     <TextBlock Text="Tarifa" Style="{StaticResource LabelCampo}"/>
                                     <TextBox Style="{StaticResource CampoTexto}"
                                              Text="{Binding TarifaOperacion, UpdateSourceTrigger=LostFocus}"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="5"
+                                <StackPanel Grid.Column="6" Margin="0,0,10,0">
+                                    <TextBlock Text="Vigencia inicio" Style="{StaticResource LabelCampo}"/>
+                                    <DatePicker Height="30"
+                                                SelectedDate="{Binding FechaInicioTarifaOperacion}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="7" Margin="0,0,10,0">
+                                    <TextBlock Text="Vigencia fin" Style="{StaticResource LabelCampo}"/>
+                                    <DatePicker Height="30"
+                                                SelectedDate="{Binding FechaFinTarifaOperacion}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="8"
                                             Orientation="Horizontal"
                                             VerticalAlignment="Bottom">
                                     <CheckBox Content="Activo"
@@ -466,6 +489,8 @@
                                 <DataGridTextColumn Header="Tipo" Binding="{Binding TipoOperacion}" Width="120"/>
                                 <DataGridTextColumn Header="Unidad" Binding="{Binding UnidadMedida}" Width="80"/>
                                 <DataGridTextColumn Header="Tarifa" Binding="{Binding TarifaBase, StringFormat={}{0:N2}}" Width="90"/>
+                                <DataGridTextColumn Header="Vig. inicio" Binding="{Binding FechaInicioVigencia, StringFormat=d}" Width="95"/>
+                                <DataGridTextColumn Header="Vig. fin" Binding="{Binding FechaFinVigencia, StringFormat=d}" Width="95"/>
                                 <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="70"/>
                             </DataGrid.Columns>
                         </DataGrid>

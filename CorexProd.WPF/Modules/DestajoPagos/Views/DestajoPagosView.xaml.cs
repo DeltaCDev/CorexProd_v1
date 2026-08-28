@@ -22,12 +22,13 @@ namespace CorexProd.WPF.Modules.DestajoPagos.Views
         {
             return tabIndex switch
             {
-                1 => new PanelDestajoView(),
-                2 => new PrestamosCuotasView(),
-                3 => new LotesPagoView(),
-                4 => new ReportesPagosView(),
-                5 => new ConfiguracionView(),
-                _ => new PeriodosPagoView()
+                1 => new PeriodosPagoView(),
+                2 => new PanelDestajoView(),
+                3 => new PrestamosCuotasView(),
+                4 => new LotesPagoView(),
+                5 => new ReportesPagosView(),
+                6 => new ConfiguracionView(),
+                _ => new DashboardDestajoView()
             };
         }
     }

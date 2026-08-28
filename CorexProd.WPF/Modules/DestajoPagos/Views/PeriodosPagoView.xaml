@@ -131,6 +131,8 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.1*"/>
+                    <ColumnDefinition Width="0.7*"/>
+                    <ColumnDefinition Width="0.7*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1.1*"/>
@@ -139,39 +141,57 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                    <TextBlock Text="Código" Style="{StaticResource LabelCampo}"/>
+                    <TextBlock Text="Semana" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding CodigoPeriodo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                    <TextBlock Text="Semana" Style="{StaticResource LabelCampo}"/>
+                    <TextBox Style="{StaticResource CampoTexto}"
+                             Text="{Binding NumeroSemanaPeriodo, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                    <TextBlock Text="Año" Style="{StaticResource LabelCampo}"/>
+                    <TextBox Style="{StaticResource CampoTexto}"
+                             Text="{Binding AnioPeriodo, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Margin="0,0,12,0">
                     <TextBlock Text="Inicio" Style="{StaticResource LabelCampo}"/>
                     <DatePicker Height="30"
                                 SelectedDate="{Binding FechaInicioPeriodo}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                <StackPanel Grid.Column="4" Margin="0,0,12,0">
                     <TextBlock Text="Fin" Style="{StaticResource LabelCampo}"/>
                     <DatePicker Height="30"
                                 SelectedDate="{Binding FechaFinPeriodo}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="3" Margin="0,0,12,0">
+                <StackPanel Grid.Column="5" Margin="0,0,12,0">
                     <TextBlock Text="Estado" Style="{StaticResource LabelCampo}"/>
                     <ComboBox Style="{StaticResource CampoCombo}"
                               ItemsSource="{Binding EstadosPeriodo}"
                               SelectedItem="{Binding EstadoPeriodo}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="4" Margin="0,0,12,0">
+                <StackPanel Grid.Column="6" Margin="0,0,12,0">
                     <TextBlock Text="Observación" Style="{StaticResource LabelCampo}"/>
                     <TextBox Style="{StaticResource CampoTexto}"
                              Text="{Binding ObservacionPeriodo, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="5"
+                <StackPanel Grid.Column="7"
                             Orientation="Horizontal"
                             VerticalAlignment="Bottom">
+                    <Button Content="Crear actual"
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding CrearSemanaActualCommand}"/>
+                    <Button Content="Preparar sig."
+                            Style="{StaticResource BotonAccion}"
+                            Command="{Binding PrepararSemanaSiguienteCommand}"/>
                     <Button Content="Guardar"
                             Style="{StaticResource BotonAccion}"
                             Command="{Binding GuardarPeriodoCommand}"/>
@@ -191,18 +211,34 @@
             <StackPanel Grid.Row="0"
                         Orientation="Horizontal"
                         Margin="0,0,0,8">
-                <Button Content="Pendiente"
+                <Button Content="Borrador"
                         Style="{StaticResource BotonAccion}"
                         Command="{Binding CambiarEstadoPeriodoCommand}"
-                        CommandParameter="Pendiente"/>
-                <Button Content="Pago parcial"
+                        CommandParameter="Borrador"/>
+                <Button Content="Abrir"
                         Style="{StaticResource BotonAccion}"
                         Command="{Binding CambiarEstadoPeriodoCommand}"
-                        CommandParameter="Pago Parcial"/>
-                <Button Content="Pagado / Cerrado"
+                        CommandParameter="Abierto"/>
+                <Button Content="En cálculo"
                         Style="{StaticResource BotonAccion}"
                         Command="{Binding CambiarEstadoPeriodoCommand}"
-                        CommandParameter="Pagado / Cerrado"/>
+                        CommandParameter="En calculo"/>
+                <Button Content="Calculado"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding CambiarEstadoPeriodoCommand}"
+                        CommandParameter="Calculado"/>
+                <Button Content="En pago"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding CambiarEstadoPeriodoCommand}"
+                        CommandParameter="En pago"/>
+                <Button Content="Cerrar"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding CambiarEstadoPeriodoCommand}"
+                        CommandParameter="Cerrado"/>
+                <Button Content="Anular"
+                        Style="{StaticResource BotonAccion}"
+                        Command="{Binding CambiarEstadoPeriodoCommand}"
+                        CommandParameter="Anulado"/>
             </StackPanel>
 
             <DataGrid Grid.Row="1"
@@ -214,7 +250,9 @@
                       MinHeight="300"
                       MaxHeight="520">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Periodo" Binding="{Binding CodigoPeriodo}" Width="130"/>
+                    <DataGridTextColumn Header="Semana" Binding="{Binding CodigoPeriodo}" Width="130"/>
+                    <DataGridTextColumn Header="N°" Binding="{Binding NumeroSemana}" Width="60"/>
+                    <DataGridTextColumn Header="Año" Binding="{Binding Anio}" Width="70"/>
                     <DataGridTextColumn Header="Inicio" Binding="{Binding FechaInicio, StringFormat=d}" Width="110"/>
                     <DataGridTextColumn Header="Fin" Binding="{Binding FechaFin, StringFormat=d}" Width="110"/>
                     <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="170"/>

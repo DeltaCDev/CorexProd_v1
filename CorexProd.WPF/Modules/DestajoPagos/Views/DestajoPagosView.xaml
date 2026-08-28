@@ -60,7 +60,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Margin="20,0,20,0">
-                        <TextBlock Text="Periodo" Style="{StaticResource LabelCampo}"/>
+                        <TextBlock Text="Semana de trabajo" Style="{StaticResource LabelCampo}"/>
                         <ComboBox Style="{StaticResource CampoCombo}"
                                   ItemsSource="{Binding Periodos}"
                                   SelectedItem="{Binding PeriodoSeleccionado}"

@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -22,6 +23,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
     {
         private readonly DestajoPagosNegocio _destajoNegocio = new();
         private readonly EmpleadoNegocio _empleadoNegocio = new();
+        private readonly EmpresaNegocio _empresaNegocio = new();
 
         private AreaOperativa? _areaSeleccionada;
         private ConceptoMovimiento? _conceptoSeleccionado;
@@ -29,6 +31,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         private TrabajadorOperativo? _trabajadorSeleccionado;
         private PeriodoPago? _periodoSeleccionado;
         private MovimientoTrabajador? _movimientoSeleccionado;
+        private PrestamoTrabajador? _prestamoSeleccionado;
         private CuotaProgramadaTrabajador? _cuotaSeleccionada;
         private LotePago? _loteSeleccionado;
         private LotePagoDetalle? _loteDetalleSeleccionado;
@@ -55,6 +58,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         private string _tipoOperacion = "Operacion";
         private string _unidadOperacion = "Unidad";
         private decimal _tarifaOperacion;
+        private DateTime? _fechaInicioTarifaOperacion = DateTime.Today;
+        private DateTime? _fechaFinTarifaOperacion;
         private bool _estadoOperacion = true;
 
         private int _idTrabajadorOperativo;
@@ -68,6 +73,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         private int _idPeriodoPago;
         private string _codigoPeriodo = string.Empty;
+        private int _numeroSemanaPeriodo;
+        private int _anioPeriodo;
         private DateTime? _fechaInicioPeriodo = DateTime.Today;
         private DateTime? _fechaFinPeriodo = DateTime.Today;
         private string _estadoPeriodo = "Borrador";
@@ -97,19 +104,35 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         private int _idTrabajadorPrestamo;
         private int _idTrabajadorFiltroMovimientos;
+        private int _idAreaFiltroMovimientos;
+        private int _idOperacionFiltroMovimientos;
         private int _idTrabajadorFiltroPrestamos;
         private DateTime? _fechaPrestamo = DateTime.Today;
+        private DateTime? _fechaInicioDescuentoPrestamo = DateTime.Today;
         private decimal _montoPrestamo;
         private int _numeroCuotasPrestamo = 1;
         private decimal _montoCuotaPrestamo;
         private int _idConceptoCuota;
         private string _observacionPrestamo = string.Empty;
         private int _idTrabajadorFiltroCuotas;
+        private DateTime? _fechaPagoExtraordinario = DateTime.Today;
+        private decimal _montoPagoExtraordinario;
+        private DateTime? _fechaReprogramacionCuota = DateTime.Today;
+        private decimal _montoReprogramacionCuota;
+        private string _observacionOperacionPrestamo = string.Empty;
 
         private string _medioPagoLote = "Efectivo";
+        private string _medioPagoLote2 = string.Empty;
         private string _estadoLote = "Generado";
         private string _observacionLote = string.Empty;
+        private string _numeroOperacionPago = string.Empty;
+        private string _motivoAnulacionPago = string.Empty;
+        private string _autorizadoPorAnulacionPago = string.Empty;
         private decimal _montoPagoLote;
+        private decimal _montoPagoLote2;
+        private DateTime? _fechaPagoLote = DateTime.Today;
+        private PagoTrabajador? _pagoSeleccionado;
+        private DashboardDestajoIndicador _dashboard = new();
 
         public ObservableCollection<AreaOperativa> Areas { get; } = [];
         public ObservableCollection<ConceptoMovimiento> Conceptos { get; } = [];
@@ -119,15 +142,25 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ObservableCollection<PeriodoPago> Periodos { get; } = [];
         public ObservableCollection<MovimientoTrabajador> Movimientos { get; } = [];
         public ObservableCollection<ResumenPagoTrabajador> Resumenes { get; } = [];
+        public ObservableCollection<AlertaCalculoPeriodo> AlertasCalculo { get; } = [];
         public ObservableCollection<PrestamoTrabajador> Prestamos { get; } = [];
         public ObservableCollection<CuotaProgramadaTrabajador> Cuotas { get; } = [];
         public ObservableCollection<LotePago> Lotes { get; } = [];
         public ObservableCollection<LotePagoDetalle> LoteDetalles { get; } = [];
+        public ObservableCollection<PagoTrabajador> Pagos { get; } = [];
         public ObservableCollection<Empleado> Empleados { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> ProduccionDiaria { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> ProduccionPorTrabajador { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> ProduccionPorArea { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> ComparativoSemanal { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> PagosPorMedio { get; } = [];
+        public ObservableCollection<DashboardDestajoSerie> EvolucionSaldos { get; } = [];
+        public ObservableCollection<AuditoriaDestajo> Auditorias { get; } = [];
 
         public ObservableCollection<string> TiposTrabajador { get; } =
         [
             "Destajo",
+            "Horario fijo",
             "Staff",
             "Mixto",
             "Asistente",
@@ -138,17 +171,35 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ObservableCollection<string> MediosPago { get; } =
         [
             "BCP",
+            "Interbank",
             "Yape",
+            "Plin",
             "Efectivo",
             "Transferencia",
+            "Cheque",
             "Mixto"
+        ];
+
+        public ObservableCollection<string> UnidadesMedidaDestajo { get; } =
+        [
+            "Unidad",
+            "Prenda",
+            "Docena",
+            "Hora",
+            "Dia",
+            "Metro",
+            "Kilo"
         ];
 
         public ObservableCollection<string> EstadosPeriodo { get; } =
         [
-            "Pendiente",
-            "Pago Parcial",
-            "Pagado / Cerrado"
+            "Borrador",
+            "Abierto",
+            "En calculo",
+            "Calculado",
+            "En pago",
+            "Cerrado",
+            "Anulado"
         ];
 
         public ObservableCollection<string> TiposMovimiento { get; } =
@@ -161,6 +212,14 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> CategoriasMovimiento { get; } =
         [
+            "Produccion por destajo",
+            "Ingreso adicional",
+            "Bonificacion",
+            "Descuento manual",
+            "Ajuste positivo",
+            "Ajuste negativo",
+            "Horas o jornadas",
+            "Reintegro",
             "Produccion",
             "Basico",
             "Horas",
@@ -186,9 +245,11 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> EstadosMovimiento { get; } =
         [
+            "Borrador",
             "Pendiente",
             "Pago Parcial",
-            "Pagado / Cerrado"
+            "Pagado / Cerrado",
+            "Anulado"
         ];
 
         public ObservableCollection<string> TiposOperacion { get; } =
@@ -202,9 +263,13 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
         public ObservableCollection<string> EstadosLote { get; } =
         [
+            "Generado",
             "Pendiente",
+            "Parcial",
             "Pago Parcial",
-            "Pagado / Cerrado"
+            "Pagado",
+            "Pagado / Cerrado",
+            "Anulado"
         ];
 
         public int IdAreaOperativa
@@ -361,6 +426,18 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _tarifaOperacion = value; OnPropertyChanged(); }
         }
 
+        public DateTime? FechaInicioTarifaOperacion
+        {
+            get => _fechaInicioTarifaOperacion;
+            set { _fechaInicioTarifaOperacion = value; OnPropertyChanged(); }
+        }
+
+        public DateTime? FechaFinTarifaOperacion
+        {
+            get => _fechaFinTarifaOperacion;
+            set { _fechaFinTarifaOperacion = value; OnPropertyChanged(); }
+        }
+
         public bool EstadoOperacion
         {
             get => _estadoOperacion;
@@ -385,6 +462,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 TipoOperacion = value.TipoOperacion;
                 UnidadOperacion = value.UnidadMedida;
                 TarifaOperacion = value.TarifaBase;
+                FechaInicioTarifaOperacion = value.FechaInicioVigencia;
+                FechaFinTarifaOperacion = value.FechaFinVigencia;
                 EstadoOperacion = value.Estado;
             }
         }
@@ -471,10 +550,27 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _codigoPeriodo = value; OnPropertyChanged(); }
         }
 
+        public int NumeroSemanaPeriodo
+        {
+            get => _numeroSemanaPeriodo;
+            set { _numeroSemanaPeriodo = value; OnPropertyChanged(); }
+        }
+
+        public int AnioPeriodo
+        {
+            get => _anioPeriodo;
+            set { _anioPeriodo = value; OnPropertyChanged(); }
+        }
+
         public DateTime? FechaInicioPeriodo
         {
             get => _fechaInicioPeriodo;
-            set { _fechaInicioPeriodo = value; OnPropertyChanged(); }
+            set
+            {
+                _fechaInicioPeriodo = value;
+                OnPropertyChanged();
+                ActualizarSemanaPeriodoDesdeFechas();
+            }
         }
 
         public DateTime? FechaFinPeriodo
@@ -525,6 +621,12 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _saldoPendientePeriodo = value; OnPropertyChanged(); }
         }
 
+        public DashboardDestajoIndicador Dashboard
+        {
+            get => _dashboard;
+            set { _dashboard = value; OnPropertyChanged(); }
+        }
+
         public PeriodoPago? PeriodoSeleccionado
         {
             get => _periodoSeleccionado;
@@ -538,6 +640,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
                 IdPeriodoPago = value.IdPeriodoPago;
                 CodigoPeriodo = value.CodigoPeriodo;
+                NumeroSemanaPeriodo = value.NumeroSemana;
+                AnioPeriodo = value.Anio;
                 FechaInicioPeriodo = value.FechaInicio;
                 FechaFinPeriodo = value.FechaFin;
                 EstadoPeriodo = value.Estado;
@@ -550,7 +654,11 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
                 CargarMovimientos();
                 CargarResumen();
+                CargarAlertasCalculo();
                 CargarLotes();
+                CargarPagos();
+                CargarDashboard();
+                CargarAuditoria();
             }
         }
 
@@ -563,7 +671,12 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public DateTime? FechaMovimiento
         {
             get => _fechaMovimiento;
-            set { _fechaMovimiento = value; OnPropertyChanged(); }
+            set
+            {
+                _fechaMovimiento = value;
+                OnPropertyChanged();
+                AplicarOperacionAlMovimiento();
+            }
         }
 
         public int IdTrabajadorMovimiento
@@ -626,6 +739,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 _cantidadMovimiento = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(TotalMovimientoCalculado));
+                ActualizarImporteMovimiento();
             }
         }
 
@@ -643,6 +757,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 _tarifaMovimiento = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(TotalMovimientoCalculado));
+                ActualizarImporteMovimiento();
             }
         }
 
@@ -728,6 +843,18 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _idTrabajadorFiltroMovimientos = value; OnPropertyChanged(); }
         }
 
+        public int IdAreaFiltroMovimientos
+        {
+            get => _idAreaFiltroMovimientos;
+            set { _idAreaFiltroMovimientos = value; OnPropertyChanged(); }
+        }
+
+        public int IdOperacionFiltroMovimientos
+        {
+            get => _idOperacionFiltroMovimientos;
+            set { _idOperacionFiltroMovimientos = value; OnPropertyChanged(); }
+        }
+
         public int IdTrabajadorFiltroPrestamos
         {
             get => _idTrabajadorFiltroPrestamos;
@@ -738,6 +865,12 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             get => _fechaPrestamo;
             set { _fechaPrestamo = value; OnPropertyChanged(); }
+        }
+
+        public DateTime? FechaInicioDescuentoPrestamo
+        {
+            get => _fechaInicioDescuentoPrestamo;
+            set { _fechaInicioDescuentoPrestamo = value; OnPropertyChanged(); }
         }
 
         public decimal MontoPrestamo
@@ -780,6 +913,36 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             set { _observacionPrestamo = value; OnPropertyChanged(); }
         }
 
+        public DateTime? FechaPagoExtraordinario
+        {
+            get => _fechaPagoExtraordinario;
+            set { _fechaPagoExtraordinario = value; OnPropertyChanged(); }
+        }
+
+        public decimal MontoPagoExtraordinario
+        {
+            get => _montoPagoExtraordinario;
+            set { _montoPagoExtraordinario = value; OnPropertyChanged(); }
+        }
+
+        public DateTime? FechaReprogramacionCuota
+        {
+            get => _fechaReprogramacionCuota;
+            set { _fechaReprogramacionCuota = value; OnPropertyChanged(); }
+        }
+
+        public decimal MontoReprogramacionCuota
+        {
+            get => _montoReprogramacionCuota;
+            set { _montoReprogramacionCuota = value; OnPropertyChanged(); }
+        }
+
+        public string ObservacionOperacionPrestamo
+        {
+            get => _observacionOperacionPrestamo;
+            set { _observacionOperacionPrestamo = value; OnPropertyChanged(); }
+        }
+
         public int IdTrabajadorFiltroCuotas
         {
             get => _idTrabajadorFiltroCuotas;
@@ -789,13 +952,35 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public CuotaProgramadaTrabajador? CuotaSeleccionada
         {
             get => _cuotaSeleccionada;
-            set { _cuotaSeleccionada = value; OnPropertyChanged(); }
+            set
+            {
+                _cuotaSeleccionada = value;
+                OnPropertyChanged();
+
+                if (value == null)
+                    return;
+
+                FechaReprogramacionCuota = value.FechaProgramada;
+                MontoReprogramacionCuota = value.MontoCuota;
+            }
+        }
+
+        public PrestamoTrabajador? PrestamoSeleccionado
+        {
+            get => _prestamoSeleccionado;
+            set { _prestamoSeleccionado = value; OnPropertyChanged(); }
         }
 
         public string MedioPagoLote
         {
             get => _medioPagoLote;
             set { _medioPagoLote = value; OnPropertyChanged(); }
+        }
+
+        public string MedioPagoLote2
+        {
+            get => _medioPagoLote2;
+            set { _medioPagoLote2 = value; OnPropertyChanged(); }
         }
 
         public string EstadoLote
@@ -814,6 +999,42 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             get => _montoPagoLote;
             set { _montoPagoLote = value; OnPropertyChanged(); }
+        }
+
+        public decimal MontoPagoLote2
+        {
+            get => _montoPagoLote2;
+            set { _montoPagoLote2 = value; OnPropertyChanged(); }
+        }
+
+        public DateTime? FechaPagoLote
+        {
+            get => _fechaPagoLote;
+            set { _fechaPagoLote = value; OnPropertyChanged(); }
+        }
+
+        public string NumeroOperacionPago
+        {
+            get => _numeroOperacionPago;
+            set { _numeroOperacionPago = value; OnPropertyChanged(); }
+        }
+
+        public string MotivoAnulacionPago
+        {
+            get => _motivoAnulacionPago;
+            set { _motivoAnulacionPago = value; OnPropertyChanged(); }
+        }
+
+        public string AutorizadoPorAnulacionPago
+        {
+            get => _autorizadoPorAnulacionPago;
+            set { _autorizadoPorAnulacionPago = value; OnPropertyChanged(); }
+        }
+
+        public PagoTrabajador? PagoSeleccionado
+        {
+            get => _pagoSeleccionado;
+            set { _pagoSeleccionado = value; OnPropertyChanged(); }
         }
 
         public LotePago? LoteSeleccionado
@@ -882,10 +1103,15 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ICommand NuevoEmpleadoCommand { get; }
         public ICommand GuardarPeriodoCommand { get; }
         public ICommand LimpiarPeriodoCommand { get; }
+        public ICommand CrearSemanaActualCommand { get; }
+        public ICommand PrepararSemanaSiguienteCommand { get; }
         public ICommand CambiarEstadoPeriodoCommand { get; }
         public ICommand GuardarMovimientoCommand { get; }
         public ICommand LimpiarMovimientoCommand { get; }
         public ICommand EliminarMovimientoCommand { get; }
+        public ICommand DuplicarMovimientoCommand { get; }
+        public ICommand ImportarMovimientosCommand { get; }
+        public ICommand ExportarMovimientosCommand { get; }
         public ICommand RegistrarPrestamoCommand { get; }
         public ICommand LimpiarPrestamoCommand { get; }
         public ICommand FiltrarCuotasCommand { get; }
@@ -894,12 +1120,26 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         public ICommand LimpiarFiltroMovimientosCommand { get; }
         public ICommand LimpiarFiltroPrestamosCommand { get; }
         public ICommand AplicarCuotaCommand { get; }
+        public ICommand RegistrarPagoExtraordinarioCommand { get; }
+        public ICommand SuspenderCuotaCommand { get; }
+        public ICommand ReprogramarCuotaCommand { get; }
+        public ICommand CancelarPrestamoCommand { get; }
         public ICommand GenerarLoteCommand { get; }
         public ICommand CambiarEstadoLoteCommand { get; }
         public ICommand RegistrarPagoCompletoCommand { get; }
         public ICommand RegistrarPagoParcialCommand { get; }
+        public ICommand RegistrarPagosSeleccionadosCommand { get; }
+        public ICommand AnularPagoCommand { get; }
         public ICommand DescargarBoletasSeleccionadasCommand { get; }
         public ICommand DescargarTodasBoletasCommand { get; }
+        public ICommand ExportarResumenPeriodoCommand { get; }
+        public ICommand ExportarReporteOperativoCommand { get; }
+        public ICommand ExportarReportePagosCommand { get; }
+        public ICommand ExportarReportePrestamosCommand { get; }
+        public ICommand CalcularPeriodoCommand { get; }
+        public ICommand RecalcularTrabajadorCommand { get; }
+        public ICommand ConfirmarCalculoPeriodoCommand { get; }
+        public ICommand CerrarPeriodoCommand { get; }
 
         public DestajoPagosViewModel()
         {
@@ -919,10 +1159,15 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             NuevoEmpleadoCommand = new RelayCommand(_ => AbrirNuevoEmpleado());
             GuardarPeriodoCommand = new RelayCommand(_ => GuardarPeriodo());
             LimpiarPeriodoCommand = new RelayCommand(_ => LimpiarPeriodo());
+            CrearSemanaActualCommand = new RelayCommand(_ => CrearSemana(DateTime.Today));
+            PrepararSemanaSiguienteCommand = new RelayCommand(_ => PrepararSemana(DateTime.Today.AddDays(7)));
             CambiarEstadoPeriodoCommand = new RelayCommand(parametro => CambiarEstadoPeriodo(parametro?.ToString() ?? string.Empty));
             GuardarMovimientoCommand = new RelayCommand(_ => GuardarMovimiento());
             LimpiarMovimientoCommand = new RelayCommand(_ => LimpiarMovimiento());
             EliminarMovimientoCommand = new RelayCommand(_ => EliminarMovimiento());
+            DuplicarMovimientoCommand = new RelayCommand(_ => DuplicarMovimiento());
+            ImportarMovimientosCommand = new RelayCommand(_ => ImportarMovimientos());
+            ExportarMovimientosCommand = new RelayCommand(_ => ExportarMovimientos());
             RegistrarPrestamoCommand = new RelayCommand(_ => RegistrarPrestamo());
             LimpiarPrestamoCommand = new RelayCommand(_ => LimpiarPrestamo());
             FiltrarCuotasCommand = new RelayCommand(_ => CargarCuotas());
@@ -931,6 +1176,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             LimpiarFiltroMovimientosCommand = new RelayCommand(_ =>
             {
                 IdTrabajadorFiltroMovimientos = 0;
+                IdAreaFiltroMovimientos = 0;
+                IdOperacionFiltroMovimientos = 0;
                 CargarMovimientos();
             });
             LimpiarFiltroPrestamosCommand = new RelayCommand(_ =>
@@ -941,12 +1188,26 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 CargarCuotas();
             });
             AplicarCuotaCommand = new RelayCommand(_ => AplicarCuota());
+            RegistrarPagoExtraordinarioCommand = new RelayCommand(_ => RegistrarPagoExtraordinario());
+            SuspenderCuotaCommand = new RelayCommand(_ => SuspenderCuota());
+            ReprogramarCuotaCommand = new RelayCommand(_ => ReprogramarCuota());
+            CancelarPrestamoCommand = new RelayCommand(_ => CancelarPrestamo());
             GenerarLoteCommand = new RelayCommand(_ => GenerarLote());
             CambiarEstadoLoteCommand = new RelayCommand(_ => CambiarEstadoLote());
             RegistrarPagoCompletoCommand = new RelayCommand(_ => RegistrarPagoCompleto());
             RegistrarPagoParcialCommand = new RelayCommand(_ => RegistrarPagoParcial());
+            RegistrarPagosSeleccionadosCommand = new RelayCommand(RegistrarPagosSeleccionados);
+            AnularPagoCommand = new RelayCommand(_ => AnularPago());
             DescargarBoletasSeleccionadasCommand = new RelayCommand(DescargarBoletasSeleccionadas);
             DescargarTodasBoletasCommand = new RelayCommand(_ => DescargarTodasBoletas());
+            ExportarResumenPeriodoCommand = new RelayCommand(_ => ExportarResumenPeriodo());
+            ExportarReporteOperativoCommand = new RelayCommand(_ => ExportarReporteOperativo());
+            ExportarReportePagosCommand = new RelayCommand(_ => ExportarReportePagos());
+            ExportarReportePrestamosCommand = new RelayCommand(_ => ExportarReportePrestamos());
+            CalcularPeriodoCommand = new RelayCommand(_ => CalcularPeriodo());
+            RecalcularTrabajadorCommand = new RelayCommand(_ => RecalcularTrabajador());
+            ConfirmarCalculoPeriodoCommand = new RelayCommand(_ => ConfirmarCalculoPeriodo());
+            CerrarPeriodoCommand = new RelayCommand(_ => CerrarPeriodo());
 
             CargarTodo();
         }
@@ -969,6 +1230,9 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                     CargarMovimientos();
                     CargarResumen();
                     CargarLotes();
+                    CargarPagos();
+                    CargarDashboard();
+                    CargarAuditoria();
                 }
             }
             catch (Exception ex)
@@ -1067,6 +1331,16 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 movimientos = movimientos.Where(m => m.IdTrabajadorOperativo == IdTrabajadorFiltroMovimientos);
             }
 
+            if (IdAreaFiltroMovimientos > 0)
+            {
+                movimientos = movimientos.Where(m => m.IdAreaOperativa == IdAreaFiltroMovimientos);
+            }
+
+            if (IdOperacionFiltroMovimientos > 0)
+            {
+                movimientos = movimientos.Where(m => m.IdOperacionTextil == IdOperacionFiltroMovimientos);
+            }
+
             foreach (MovimientoTrabajador movimiento in movimientos)
             {
                 Movimientos.Add(movimiento);
@@ -1087,6 +1361,17 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             NetoPeriodo = Resumenes.Sum(r => r.NetoCalculado);
             TotalPagadoPeriodo = Resumenes.Sum(r => r.TotalPagado);
             SaldoPendientePeriodo = Resumenes.Sum(r => r.SaldoPendiente);
+            CargarDashboard();
+        }
+
+        private void CargarAlertasCalculo()
+        {
+            AlertasCalculo.Clear();
+
+            foreach (AlertaCalculoPeriodo alerta in _destajoNegocio.ListarAlertasCalculoPeriodo(PeriodoSeleccionado?.IdPeriodoPago ?? 0))
+            {
+                AlertasCalculo.Add(alerta);
+            }
         }
 
         private void CargarPrestamos()
@@ -1131,6 +1416,65 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             foreach (LotePago lote in _destajoNegocio.ListarLotes(idPeriodo))
             {
                 Lotes.Add(lote);
+            }
+        }
+
+        private void CargarPagos()
+        {
+            Pagos.Clear();
+
+            foreach (PagoTrabajador pago in _destajoNegocio.ListarPagos(PeriodoSeleccionado?.IdPeriodoPago))
+            {
+                Pagos.Add(pago);
+            }
+
+            CargarAuditoria();
+        }
+
+        private void CargarDashboard()
+        {
+            Dashboard = _destajoNegocio.ObtenerDashboard(PeriodoSeleccionado?.IdPeriodoPago ?? 0);
+
+            ProduccionDiaria.Clear();
+            ProduccionPorTrabajador.Clear();
+            ProduccionPorArea.Clear();
+            ComparativoSemanal.Clear();
+            PagosPorMedio.Clear();
+            EvolucionSaldos.Clear();
+
+            foreach (DashboardDestajoSerie serie in _destajoNegocio.ListarDashboardSeries(PeriodoSeleccionado?.IdPeriodoPago ?? 0))
+            {
+                switch (serie.Categoria)
+                {
+                    case "Produccion diaria":
+                        ProduccionDiaria.Add(serie);
+                        break;
+                    case "Produccion por trabajador":
+                        ProduccionPorTrabajador.Add(serie);
+                        break;
+                    case "Produccion por area":
+                        ProduccionPorArea.Add(serie);
+                        break;
+                    case "Comparativo semanal":
+                        ComparativoSemanal.Add(serie);
+                        break;
+                    case "Pagos por medio":
+                        PagosPorMedio.Add(serie);
+                        break;
+                    case "Evolucion saldos":
+                        EvolucionSaldos.Add(serie);
+                        break;
+                }
+            }
+        }
+
+        private void CargarAuditoria()
+        {
+            Auditorias.Clear();
+
+            foreach (AuditoriaDestajo auditoria in _destajoNegocio.ListarAuditoriaDestajo(PeriodoSeleccionado?.IdPeriodoPago))
+            {
+                Auditorias.Add(auditoria);
             }
         }
 
@@ -1229,6 +1573,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 TipoOperacion = TipoOperacion,
                 UnidadMedida = UnidadOperacion,
                 TarifaBase = TarifaOperacion,
+                FechaInicioVigencia = FechaInicioTarifaOperacion,
+                FechaFinVigencia = FechaFinTarifaOperacion,
                 Estado = EstadoOperacion
             }), () =>
             {
@@ -1255,6 +1601,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             TipoOperacion = "Operacion";
             UnidadOperacion = "Unidad";
             TarifaOperacion = 0;
+            FechaInicioTarifaOperacion = DateTime.Today;
+            FechaFinTarifaOperacion = null;
             EstadoOperacion = true;
             OperacionSeleccionada = null;
         }
@@ -1335,6 +1683,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             {
                 IdPeriodoPago = IdPeriodoPago,
                 CodigoPeriodo = CodigoPeriodo,
+                NumeroSemana = NumeroSemanaPeriodo,
+                Anio = AnioPeriodo,
                 FechaInicio = FechaInicioPeriodo ?? DateTime.Today,
                 FechaFin = FechaFinPeriodo ?? DateTime.Today,
                 Estado = EstadoPeriodo,
@@ -1346,13 +1696,138 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             });
         }
 
+        private void CrearSemana(DateTime fechaReferencia)
+        {
+            PrepararSemana(fechaReferencia);
+            string codigoCreado = CodigoPeriodo;
+
+            Ejecutar(() => _destajoNegocio.GuardarPeriodo(new PeriodoPago
+            {
+                IdPeriodoPago = 0,
+                CodigoPeriodo = CodigoPeriodo,
+                NumeroSemana = NumeroSemanaPeriodo,
+                Anio = AnioPeriodo,
+                FechaInicio = FechaInicioPeriodo ?? DateTime.Today,
+                FechaFin = FechaFinPeriodo ?? DateTime.Today,
+                Estado = "Borrador",
+                Observacion = ObservacionPeriodo
+            }), () =>
+            {
+                CargarPeriodos();
+                PeriodoSeleccionado = Periodos.FirstOrDefault(p => p.CodigoPeriodo == codigoCreado)
+                    ?? PeriodoSeleccionado;
+            });
+        }
+
+        private void PrepararSemana(DateTime fechaReferencia)
+        {
+            DateTime inicio = InicioSemana(fechaReferencia);
+            DateTime fin = inicio.AddDays(6);
+            int semana = ISOWeek.GetWeekOfYear(inicio);
+            int anio = ISOWeek.GetYear(inicio);
+
+            IdPeriodoPago = 0;
+            NumeroSemanaPeriodo = semana;
+            AnioPeriodo = anio;
+            CodigoPeriodo = $"SEM-{anio}-{semana:00}";
+            FechaInicioPeriodo = inicio;
+            FechaFinPeriodo = fin;
+            EstadoPeriodo = "Borrador";
+            ObservacionPeriodo = $"Semana de trabajo del {inicio:dd/MM/yyyy} al {fin:dd/MM/yyyy}";
+            PeriodoSeleccionado = null;
+        }
+
+        private static DateTime InicioSemana(DateTime fecha)
+        {
+            int delta = ((int)fecha.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+            return fecha.Date.AddDays(-delta);
+        }
+
+        private void ActualizarSemanaPeriodoDesdeFechas()
+        {
+            if (!FechaInicioPeriodo.HasValue)
+                return;
+
+            int semana = ISOWeek.GetWeekOfYear(FechaInicioPeriodo.Value);
+            int anio = ISOWeek.GetYear(FechaInicioPeriodo.Value);
+
+            NumeroSemanaPeriodo = semana;
+            AnioPeriodo = anio;
+
+            if (string.IsNullOrWhiteSpace(CodigoPeriodo) || CodigoPeriodo.StartsWith("SEM-", StringComparison.OrdinalIgnoreCase))
+            {
+                CodigoPeriodo = $"SEM-{anio}-{semana:00}";
+            }
+        }
+
         private void CambiarEstadoPeriodo(string estado)
         {
+            if (PeriodoSeleccionado?.Estado is "Cerrado" or "Anulado" or "Calculado"
+                && estado.Equals("Abierto", StringComparison.OrdinalIgnoreCase)
+                && !ConfirmDialogService.Confirmar("Reabrir un periodo requiere autorización. ¿Desea continuar?", "Autorizar reapertura"))
+            {
+                return;
+            }
+
             Ejecutar(() => _destajoNegocio.CambiarEstadoPeriodo(PeriodoSeleccionado?.IdPeriodoPago ?? 0, estado, UsuarioActual()), () =>
             {
                 CargarPeriodos();
                 CargarMovimientos();
                 CargarResumen();
+                CargarAlertasCalculo();
+            });
+        }
+
+        private void CalcularPeriodo()
+        {
+            Ejecutar(() => _destajoNegocio.CalcularPeriodo(PeriodoSeleccionado?.IdPeriodoPago ?? 0, UsuarioActual()), () =>
+            {
+                CargarPeriodos();
+                CargarResumen();
+                CargarAlertasCalculo();
+            });
+        }
+
+        private void RecalcularTrabajador()
+        {
+            Ejecutar(() => _destajoNegocio.RecalcularTrabajador(
+                PeriodoSeleccionado?.IdPeriodoPago ?? 0,
+                ResumenSeleccionado?.IdTrabajadorOperativo ?? 0,
+                UsuarioActual()), () =>
+            {
+                CargarResumen();
+                CargarAlertasCalculo();
+            });
+        }
+
+        private void ConfirmarCalculoPeriodo()
+        {
+            if (!ConfirmDialogService.Confirmar("Al confirmar el calculo se bloquearan los movimientos del periodo. ¿Desea continuar?", "Confirmar calculo"))
+                return;
+
+            Ejecutar(() => _destajoNegocio.ConfirmarCalculoPeriodo(PeriodoSeleccionado?.IdPeriodoPago ?? 0, UsuarioActual()), () =>
+            {
+                CargarPeriodos();
+                CargarMovimientos();
+                CargarResumen();
+                CargarAlertasCalculo();
+            });
+        }
+
+        private void CerrarPeriodo()
+        {
+            if (!ConfirmDialogService.Confirmar("El cierre validara movimientos, calculos, pagos, boletas y saldos pendientes. Al cerrar se bloquearan modificaciones. Desea continuar?", "Cerrar periodo"))
+                return;
+
+            Ejecutar(() => _destajoNegocio.CerrarPeriodo(PeriodoSeleccionado?.IdPeriodoPago ?? 0, UsuarioActual()), () =>
+            {
+                CargarPeriodos();
+                CargarMovimientos();
+                CargarResumen();
+                CargarAlertasCalculo();
+                CargarLotes();
+                CargarPagos();
+                CargarAuditoria();
             });
         }
 
@@ -1360,6 +1835,8 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             IdPeriodoPago = 0;
             CodigoPeriodo = string.Empty;
+            NumeroSemanaPeriodo = 0;
+            AnioPeriodo = 0;
             FechaInicioPeriodo = DateTime.Today;
             FechaFinPeriodo = DateTime.Today;
             EstadoPeriodo = "Borrador";
@@ -1384,7 +1861,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 Cantidad = CantidadMovimiento,
                 UnidadMedida = UnidadMovimiento,
                 Tarifa = TarifaMovimiento,
-                Importe = ImporteMovimiento,
+                Importe = TotalMovimientoCalculado,
                 EsDescuento = EsDescuentoMovimiento,
                 EsAutomatico = false,
                 OrigenMovimiento = "Manual",
@@ -1407,6 +1884,355 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 CargarResumen();
                 LimpiarMovimiento();
             });
+        }
+
+        private void DuplicarMovimiento()
+        {
+            MovimientoTrabajador? movimiento = MovimientoSeleccionado;
+
+            if (movimiento == null)
+            {
+                NotificationService.Warning("Seleccione un movimiento para duplicar.");
+                return;
+            }
+
+            IdMovimientoTrabajador = 0;
+            FechaMovimiento = movimiento.Fecha;
+            IdTrabajadorMovimiento = movimiento.IdTrabajadorOperativo;
+            IdConceptoMovimientoForm = movimiento.IdConceptoMovimiento;
+            IdAreaMovimiento = movimiento.IdAreaOperativa ?? 0;
+            IdOperacionMovimiento = movimiento.IdOperacionTextil ?? 0;
+            TipoMovimientoForm = movimiento.TipoMovimiento;
+            CategoriaMovimientoForm = movimiento.CategoriaMovimiento;
+            DescripcionMovimiento = movimiento.Descripcion;
+            CantidadMovimiento = movimiento.Cantidad;
+            UnidadMovimiento = movimiento.UnidadMedida;
+            TarifaMovimiento = movimiento.Tarifa;
+            ImporteMovimiento = movimiento.Importe;
+            EsDescuentoMovimiento = movimiento.EsDescuento;
+            EstadoMovimiento = "Borrador";
+            ObservacionMovimiento = $"Copia de movimiento {movimiento.IdMovimientoTrabajador}";
+            MovimientoSeleccionado = null;
+
+            NotificationService.Info("Movimiento copiado. Revise los datos y presione Guardar.");
+        }
+
+        private void ImportarMovimientos()
+        {
+            if (PeriodoSeleccionado == null)
+            {
+                NotificationService.Warning("Seleccione un periodo.");
+                return;
+            }
+
+            OpenFileDialog dialog = new()
+            {
+                Title = "Importar movimientos desde Excel",
+                Filter = "CSV de Excel (*.csv)|*.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            int procesados = 0;
+            List<string> errores = [];
+
+            foreach (string linea in File.ReadLines(dialog.FileName).Skip(1))
+            {
+                if (string.IsNullOrWhiteSpace(linea))
+                    continue;
+
+                List<string> columnas = SepararCsv(linea);
+
+                if (columnas.Count < 14)
+                {
+                    errores.Add($"Linea {procesados + errores.Count + 2}: columnas incompletas.");
+                    continue;
+                }
+
+                MovimientoTrabajador? movimiento = CrearMovimientoImportado(columnas, out string error);
+
+                if (movimiento == null)
+                {
+                    errores.Add(error);
+                    continue;
+                }
+
+                string mensaje = _destajoNegocio.GuardarMovimiento(movimiento);
+
+                if (EsMensajeExitoso(mensaje))
+                {
+                    procesados++;
+                    continue;
+                }
+
+                errores.Add($"{movimiento.NombreTrabajador}: {mensaje}");
+            }
+
+            CargarMovimientos();
+            CargarResumen();
+
+            if (errores.Count == 0)
+            {
+                NotificationService.Success($"Movimientos importados correctamente: {procesados}.");
+                return;
+            }
+
+            NotificationService.Warning($"Importados: {procesados}. Observados: {errores.Count}. {string.Join(" | ", errores.Take(3))}");
+        }
+
+        private MovimientoTrabajador? CrearMovimientoImportado(IReadOnlyList<string> columnas, out string error)
+        {
+            error = string.Empty;
+
+            DateTime fecha = ParseFecha(columnas[0], PeriodoSeleccionado?.FechaInicio ?? DateTime.Today);
+            string trabajadorNombre = columnas[1].Trim();
+            string conceptoNombre = columnas[2].Trim();
+            string tipo = string.IsNullOrWhiteSpace(columnas[3]) ? "Ingreso" : columnas[3].Trim();
+            string categoria = string.IsNullOrWhiteSpace(columnas[4]) ? "Produccion por destajo" : columnas[4].Trim();
+            string areaNombre = columnas[5].Trim();
+            string operacionNombre = columnas[6].Trim();
+
+            TrabajadorOperativo? trabajador = Trabajadores.FirstOrDefault(t => EsIgual(t.NombreTrabajador, trabajadorNombre));
+            ConceptoMovimiento? concepto = Conceptos.FirstOrDefault(c => EsIgual(c.NombreConcepto, conceptoNombre));
+            AreaOperativa? area = Areas.FirstOrDefault(a => EsIgual(a.NombreArea, areaNombre));
+            OperacionTextil? operacion = Operaciones.FirstOrDefault(o => EsIgual(o.NombreOperacion, operacionNombre));
+
+            if (trabajador == null)
+            {
+                error = $"Trabajador no encontrado: {trabajadorNombre}.";
+                return null;
+            }
+
+            if (concepto == null)
+            {
+                error = $"Concepto no encontrado: {conceptoNombre}.";
+                return null;
+            }
+
+            return new MovimientoTrabajador
+            {
+                IdPeriodoPago = PeriodoSeleccionado?.IdPeriodoPago ?? 0,
+                IdTrabajadorOperativo = trabajador.IdTrabajadorOperativo,
+                NombreTrabajador = trabajador.NombreTrabajador,
+                Fecha = fecha,
+                TipoMovimiento = tipo,
+                CategoriaMovimiento = categoria,
+                IdConceptoMovimiento = concepto.IdConceptoMovimiento,
+                Descripcion = concepto.NombreConcepto,
+                IdAreaOperativa = area?.IdAreaOperativa,
+                IdOperacionTextil = operacion?.IdOperacionTextil,
+                Cantidad = ParseDecimal(columnas[7]),
+                UnidadMedida = string.IsNullOrWhiteSpace(columnas[8]) ? "Unidad" : columnas[8].Trim(),
+                Tarifa = ParseDecimal(columnas[9]),
+                Importe = ParseDecimal(columnas[10]),
+                EsDescuento = EsVerdadero(columnas[11]),
+                EsAutomatico = false,
+                OrigenMovimiento = "Importacion Excel",
+                Estado = string.IsNullOrWhiteSpace(columnas[12]) ? "Borrador" : columnas[12].Trim(),
+                Observacion = columnas[13].Trim(),
+                ModificadoPor = UsuarioActual()
+            };
+        }
+
+        private void ExportarMovimientos()
+        {
+            if (Movimientos.Count == 0)
+            {
+                NotificationService.Warning("No hay movimientos para exportar.");
+                return;
+            }
+
+            SaveFileDialog dialog = new()
+            {
+                Title = "Exportar movimientos operativos",
+                FileName = $"Movimientos_{PeriodoSeleccionado?.CodigoPeriodo ?? "periodo"}.csv",
+                DefaultExt = ".csv",
+                Filter = "Archivo CSV para Excel (*.csv)|*.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            List<string> lineas =
+            [
+                "Fecha;Trabajador;Concepto;Tipo;Categoria;Area;Operacion;Cantidad;Unidad;Tarifa;Importe;Descuento;Estado;Observacion"
+            ];
+
+            foreach (MovimientoTrabajador movimiento in Movimientos)
+            {
+                lineas.Add(string.Join(";",
+                    Csv(movimiento.Fecha.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
+                    Csv(movimiento.NombreTrabajador),
+                    Csv(movimiento.NombreConcepto),
+                    Csv(movimiento.TipoMovimiento),
+                    Csv(movimiento.CategoriaMovimiento),
+                    Csv(movimiento.NombreArea),
+                    Csv(movimiento.NombreOperacion),
+                    movimiento.Cantidad.ToString("0.###", CultureInfo.InvariantCulture),
+                    Csv(movimiento.UnidadMedida),
+                    movimiento.Tarifa.ToString("0.####", CultureInfo.InvariantCulture),
+                    movimiento.Importe.ToString("0.##", CultureInfo.InvariantCulture),
+                    movimiento.EsDescuento ? "SI" : "NO",
+                    Csv(movimiento.Estado),
+                    Csv(movimiento.Observacion)));
+            }
+
+            File.WriteAllLines(dialog.FileName, lineas, System.Text.Encoding.UTF8);
+            NotificationService.Success("Movimientos exportados correctamente.");
+            AbrirArchivo(dialog.FileName);
+        }
+
+        private void ExportarResumenPeriodo()
+        {
+            if (Resumenes.Count == 0)
+            {
+                NotificationService.Warning("No hay resumen de periodo para exportar.");
+                return;
+            }
+
+            ExportarCsv(
+                $"ResumenPeriodo_{PeriodoSeleccionado?.CodigoPeriodo ?? "periodo"}.csv",
+                "Resumen financiero del periodo",
+                [
+                    "Trabajador;Documento;Tipo;Medio preferido;Saldo anterior;Ingresos;Descuentos;Neto periodo;Total por pagar;Total pagado;Saldo pendiente;Estado pago;Estado calculo"
+                ],
+                Resumenes.Select(r => string.Join(";",
+                    Csv(r.NombreTrabajador),
+                    Csv(r.Documento),
+                    Csv(r.TipoTrabajador),
+                    Csv(r.MedioPagoPreferido),
+                    NumeroCsv(r.SaldoAnterior),
+                    NumeroCsv(r.TotalIngresos),
+                    NumeroCsv(r.TotalDescuentos),
+                    NumeroCsv(r.NetoCalculado),
+                    NumeroCsv(r.TotalPorPagar),
+                    NumeroCsv(r.TotalPagado),
+                    NumeroCsv(r.SaldoPendiente),
+                    Csv(r.EstadoPago),
+                    Csv(r.EstadoCalculo))));
+        }
+
+        private void ExportarReporteOperativo()
+        {
+            if (Movimientos.Count == 0)
+            {
+                NotificationService.Warning("No hay movimientos operativos para exportar.");
+                return;
+            }
+
+            List<string> lineas =
+            [
+                "SECCION;AGRUPACION;CANTIDAD;IMPORTE;DETALLE"
+            ];
+
+            IEnumerable<MovimientoTrabajador> produccion = Movimientos
+                .Where(m => !m.EsDescuento
+                    && !m.TipoMovimiento.Equals("Pago", StringComparison.OrdinalIgnoreCase)
+                    && (m.CategoriaMovimiento.Equals("Produccion", StringComparison.OrdinalIgnoreCase)
+                        || m.CategoriaMovimiento.Equals("Produccion por destajo", StringComparison.OrdinalIgnoreCase)));
+
+            lineas.AddRange(produccion
+                .GroupBy(m => m.NombreTrabajador)
+                .Select(g => string.Join(";", "Produccion por trabajador", Csv(g.Key), NumeroCsv(g.Sum(x => x.Cantidad)), NumeroCsv(g.Sum(x => x.Importe)), Csv(string.Empty))));
+
+            lineas.AddRange(produccion
+                .GroupBy(m => string.IsNullOrWhiteSpace(m.NombreArea) ? "Sin area" : m.NombreArea)
+                .Select(g => string.Join(";", "Produccion por area", Csv(g.Key), NumeroCsv(g.Sum(x => x.Cantidad)), NumeroCsv(g.Sum(x => x.Importe)), Csv(string.Empty))));
+
+            lineas.AddRange(produccion
+                .GroupBy(m => string.IsNullOrWhiteSpace(m.NombreOperacion) ? "Sin operacion" : m.NombreOperacion)
+                .Select(g => string.Join(";", "Produccion por operacion", Csv(g.Key), NumeroCsv(g.Sum(x => x.Cantidad)), NumeroCsv(g.Sum(x => x.Importe)), Csv(TarifasAplicadas(g)))));
+
+            lineas.AddRange(Movimientos
+                .GroupBy(m => m.NombreConcepto)
+                .Select(g => string.Join(";", "Movimientos por concepto", Csv(g.Key), NumeroCsv(g.Sum(x => x.Cantidad)), NumeroCsv(g.Sum(x => x.Importe)), Csv(g.FirstOrDefault()?.TipoMovimiento ?? string.Empty))));
+
+            ExportarCsv($"ReporteOperativo_{PeriodoSeleccionado?.CodigoPeriodo ?? "periodo"}.csv", "Reporte operativo", lineas, []);
+        }
+
+        private void ExportarReportePagos()
+        {
+            if (Resumenes.Count == 0 && Pagos.Count == 0)
+            {
+                NotificationService.Warning("No hay informacion de pagos para exportar.");
+                return;
+            }
+
+            List<string> lineas =
+            [
+                "SECCION;FECHA;TRABAJADOR;MEDIO;OPERACION;IMPORTE;ESTADO;OBSERVACION"
+            ];
+
+            lineas.AddRange(Pagos.Select(p => string.Join(";",
+                "Pagos realizados",
+                Csv(p.FechaPago.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
+                Csv(p.NombreTrabajador),
+                Csv(p.MedioPago),
+                Csv(p.NumeroOperacion),
+                NumeroCsv(p.MontoPagado),
+                Csv(p.Estado),
+                Csv(p.Observacion))));
+
+            lineas.AddRange(Resumenes.Where(r => r.SaldoPendiente > 0 && r.TotalPagado <= 0).Select(r => string.Join(";",
+                "Pagos pendientes",
+                "",
+                Csv(r.NombreTrabajador),
+                Csv(r.MedioPagoPreferido),
+                "",
+                NumeroCsv(r.SaldoPendiente),
+                Csv(r.EstadoPago),
+                "")));
+
+            lineas.AddRange(Resumenes.Where(r => r.SaldoPendiente > 0 && r.TotalPagado > 0).Select(r => string.Join(";",
+                "Pagos parciales",
+                "",
+                Csv(r.NombreTrabajador),
+                Csv(r.MedioPagoPreferido),
+                "",
+                NumeroCsv(r.SaldoPendiente),
+                Csv(r.EstadoPago),
+                "")));
+
+            ExportarCsv($"ReportePagos_{PeriodoSeleccionado?.CodigoPeriodo ?? "periodo"}.csv", "Reporte de pagos", lineas, []);
+        }
+
+        private void ExportarReportePrestamos()
+        {
+            if (Prestamos.Count == 0 && Cuotas.Count == 0)
+            {
+                NotificationService.Warning("No hay prestamos o cuotas para exportar.");
+                return;
+            }
+
+            List<string> lineas =
+            [
+                "SECCION;TRABAJADOR;FECHA;CONCEPTO;CUOTA;MONTO;SALDO;ESTADO;OBSERVACION"
+            ];
+
+            lineas.AddRange(Prestamos.Where(p => !p.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase)).Select(p => string.Join(";",
+                "Prestamos activos",
+                Csv(p.NombreTrabajador),
+                Csv(p.FechaPrestamo.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
+                Csv(p.NombreConcepto),
+                Csv($"{p.NumeroCuotas} cuotas"),
+                NumeroCsv(p.MontoTotal),
+                NumeroCsv(p.SaldoPendiente),
+                Csv(p.Estado),
+                Csv(p.Observacion))));
+
+            lineas.AddRange(Cuotas.Where(c => c.Estado.Equals("Pendiente", StringComparison.OrdinalIgnoreCase)).Select(c => string.Join(";",
+                "Cuotas pendientes",
+                Csv(c.NombreTrabajador),
+                Csv(c.FechaProgramada.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
+                Csv(c.NombreConcepto),
+                Csv($"{c.NumeroCuota}/{c.TotalCuotas}"),
+                NumeroCsv(c.MontoCuota),
+                "",
+                Csv(c.Estado),
+                Csv(c.Observacion))));
+
+            ExportarCsv($"ReportePrestamos_{PeriodoSeleccionado?.CodigoPeriodo ?? "periodo"}.csv", "Reporte de prestamos y cuotas", lineas, []);
         }
 
         private void LimpiarMovimiento()
@@ -1436,6 +2262,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             {
                 IdTrabajadorOperativo = IdTrabajadorPrestamo,
                 FechaPrestamo = FechaPrestamo ?? DateTime.Today,
+                FechaInicioDescuento = FechaInicioDescuentoPrestamo ?? FechaPrestamo ?? DateTime.Today,
                 MontoTotal = MontoPrestamo,
                 NumeroCuotas = NumeroCuotasPrestamo,
                 MontoCuota = MontoCuotaPrestamo,
@@ -1452,6 +2279,7 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             IdTrabajadorPrestamo = 0;
             FechaPrestamo = DateTime.Today;
+            FechaInicioDescuentoPrestamo = DateTime.Today;
             MontoPrestamo = 0;
             NumeroCuotasPrestamo = 1;
             MontoCuotaPrestamo = 0;
@@ -1462,9 +2290,67 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
         {
             Ejecutar(() => _destajoNegocio.AplicarCuota(CuotaSeleccionada?.IdCuotaProgramada ?? 0, PeriodoSeleccionado?.IdPeriodoPago ?? 0, UsuarioActual()), () =>
             {
+                CargarPrestamos();
                 CargarCuotas();
                 CargarMovimientos();
                 CargarResumen();
+            });
+        }
+
+        private void RegistrarPagoExtraordinario()
+        {
+            Ejecutar(() => _destajoNegocio.RegistrarPagoExtraordinarioPrestamo(
+                PrestamoSeleccionado?.IdPrestamoTrabajador ?? 0,
+                FechaPagoExtraordinario ?? DateTime.Today,
+                MontoPagoExtraordinario,
+                ObservacionOperacionPrestamo,
+                UsuarioActual()), () =>
+            {
+                CargarPrestamos();
+                CargarCuotas();
+                MontoPagoExtraordinario = 0;
+                ObservacionOperacionPrestamo = string.Empty;
+            });
+        }
+
+        private void SuspenderCuota()
+        {
+            Ejecutar(() => _destajoNegocio.SuspenderCuota(
+                CuotaSeleccionada?.IdCuotaProgramada ?? 0,
+                ObservacionOperacionPrestamo,
+                UsuarioActual()), () =>
+            {
+                CargarPrestamos();
+                CargarCuotas();
+                ObservacionOperacionPrestamo = string.Empty;
+            });
+        }
+
+        private void ReprogramarCuota()
+        {
+            Ejecutar(() => _destajoNegocio.ReprogramarCuota(
+                CuotaSeleccionada?.IdCuotaProgramada ?? 0,
+                FechaReprogramacionCuota ?? DateTime.Today,
+                MontoReprogramacionCuota,
+                ObservacionOperacionPrestamo,
+                UsuarioActual()), () =>
+            {
+                CargarPrestamos();
+                CargarCuotas();
+                ObservacionOperacionPrestamo = string.Empty;
+            });
+        }
+
+        private void CancelarPrestamo()
+        {
+            Ejecutar(() => _destajoNegocio.CancelarPrestamo(
+                PrestamoSeleccionado?.IdPrestamoTrabajador ?? 0,
+                ObservacionOperacionPrestamo,
+                UsuarioActual()), () =>
+            {
+                CargarPrestamos();
+                CargarCuotas();
+                ObservacionOperacionPrestamo = string.Empty;
             });
         }
 
@@ -1500,6 +2386,63 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             RegistrarPago(MontoPagoLote);
         }
 
+        private void RegistrarPagosSeleccionados(object? parametro)
+        {
+            IReadOnlyList<ResumenPagoTrabajador> seleccionados = ObtenerResumenesSeleccionados(parametro)
+                .Where(r => r.SaldoPendiente > 0)
+                .ToList();
+
+            if (PeriodoSeleccionado == null)
+            {
+                NotificationService.Warning("Seleccione una semana de trabajo.");
+                return;
+            }
+
+            if (seleccionados.Count == 0)
+            {
+                NotificationService.Warning("Seleccione trabajadores con saldo pendiente.");
+                return;
+            }
+
+            int registrados = 0;
+            List<string> errores = [];
+
+            foreach (ResumenPagoTrabajador resumen in seleccionados)
+            {
+                string mensaje = _destajoNegocio.RegistrarPagoTrabajador(
+                    PeriodoSeleccionado.IdPeriodoPago,
+                    resumen.IdTrabajadorOperativo,
+                    null,
+                    MedioPagoLote,
+                    resumen.SaldoPendiente,
+                    FechaPagoLote ?? DateTime.Today,
+                    NumeroOperacionPago,
+                    ObservacionLote,
+                    string.Empty,
+                    0,
+                    UsuarioActual());
+
+                if (EsMensajeExitoso(mensaje))
+                    registrados++;
+                else
+                    errores.Add($"{resumen.NombreTrabajador}: {mensaje}");
+            }
+
+            CargarMovimientos();
+            CargarResumen();
+            CargarLotes();
+            CargarLoteDetalles();
+            CargarPagos();
+
+            if (errores.Count == 0)
+            {
+                NotificationService.Success($"Pagos registrados correctamente: {registrados}.");
+                return;
+            }
+
+            NotificationService.Warning($"Pagos registrados: {registrados}. Pendientes: {errores.Count}. {string.Join(" | ", errores.Take(3))}");
+        }
+
         private void RegistrarPago(decimal monto)
         {
             int idTrabajador = ObtenerIdTrabajadorPagoSeleccionado();
@@ -1510,14 +2453,39 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 LoteDetalleSeleccionado?.IdLotePagoDetalle,
                 MedioPagoLote,
                 monto,
+                FechaPagoLote ?? DateTime.Today,
+                NumeroOperacionPago,
                 ObservacionLote,
+                MedioPagoLote2,
+                MontoPagoLote2,
                 UsuarioActual()), () =>
                 {
                     CargarMovimientos();
                     CargarResumen();
                     CargarLotes();
                     CargarLoteDetalles();
+                    CargarPagos();
                     MontoPagoLote = 0;
+                    MontoPagoLote2 = 0;
+                    NumeroOperacionPago = string.Empty;
+                });
+        }
+
+        private void AnularPago()
+        {
+            Ejecutar(() => _destajoNegocio.AnularPagoTrabajador(
+                PagoSeleccionado?.IdPagoTrabajador ?? 0,
+                MotivoAnulacionPago,
+                AutorizadoPorAnulacionPago,
+                UsuarioActual()), () =>
+                {
+                    CargarMovimientos();
+                    CargarResumen();
+                    CargarLotes();
+                    CargarLoteDetalles();
+                    CargarPagos();
+                    MotivoAnulacionPago = string.Empty;
+                    AutorizadoPorAnulacionPago = string.Empty;
                 });
         }
 
@@ -1578,11 +2546,21 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 // ✅ SE CORRIGIÓ AQUÍ: Se agregó 'true' al final
                 BoletaPagoPdfExporter.Exportar(
                     dialog.FileName,
+                    _empresaNegocio.ObtenerPredeterminada() ?? new Empresa { Nombre = "COREX PROD", NombreComercial = "COREX PROD" },
                     PeriodoSeleccionado,
                     resumenes,
                     Movimientos.ToList(),
+                    Pagos.ToList(),
                     true); // true = Con copia (2 por hoja), false = Sin copia (1 por hoja)
 
+                string mensaje = _destajoNegocio.RegistrarBoletasGeneradas(PeriodoSeleccionado.IdPeriodoPago, resumenes.Count, UsuarioActual());
+                if (!EsMensajeExitoso(mensaje))
+                {
+                    NotificationService.Warning(mensaje);
+                }
+
+                CargarPeriodos();
+                CargarAuditoria();
                 NotificationService.Success("PDF generado correctamente.");
                 AbrirArchivo(dialog.FileName);
             }
@@ -1643,6 +2621,116 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
                 : limpio;
         }
 
+        private void ExportarCsv(string nombreArchivo, string titulo, IReadOnlyList<string> cabecera, IEnumerable<string> filas)
+        {
+            SaveFileDialog dialog = new()
+            {
+                Title = titulo,
+                FileName = nombreArchivo,
+                DefaultExt = ".csv",
+                Filter = "Archivo CSV para Excel (*.csv)|*.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            List<string> lineas = [.. cabecera, .. filas];
+            File.WriteAllLines(dialog.FileName, lineas, System.Text.Encoding.UTF8);
+            NotificationService.Success($"{titulo} exportado correctamente.");
+            AbrirArchivo(dialog.FileName);
+        }
+
+        private static string NumeroCsv(decimal valor)
+        {
+            return valor.ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        private static string TarifasAplicadas(IEnumerable<MovimientoTrabajador> movimientos)
+        {
+            return string.Join(", ", movimientos
+                .Where(m => m.Tarifa > 0)
+                .Select(m => m.Tarifa.ToString("0.####", CultureInfo.InvariantCulture))
+                .Distinct());
+        }
+
+        private static string Csv(string valor)
+        {
+            string limpio = (valor ?? string.Empty)
+                .Replace("\"", "\"\"")
+                .Replace("\r", " ")
+                .Replace("\n", " ");
+
+            return $"\"{limpio}\"";
+        }
+
+        private static List<string> SepararCsv(string linea)
+        {
+            List<string> columnas = [];
+            bool dentroComillas = false;
+            System.Text.StringBuilder actual = new();
+
+            for (int i = 0; i < linea.Length; i++)
+            {
+                char caracter = linea[i];
+
+                if (caracter == '"')
+                {
+                    if (dentroComillas && i + 1 < linea.Length && linea[i + 1] == '"')
+                    {
+                        actual.Append('"');
+                        i++;
+                        continue;
+                    }
+
+                    dentroComillas = !dentroComillas;
+                    continue;
+                }
+
+                if (caracter == ';' && !dentroComillas)
+                {
+                    columnas.Add(actual.ToString());
+                    actual.Clear();
+                    continue;
+                }
+
+                actual.Append(caracter);
+            }
+
+            columnas.Add(actual.ToString());
+            return columnas;
+        }
+
+        private static bool EsIgual(string actual, string esperado)
+        {
+            return actual.Trim().Equals(esperado.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool EsVerdadero(string valor)
+        {
+            return valor.Trim().Equals("SI", StringComparison.OrdinalIgnoreCase)
+                || valor.Trim().Equals("TRUE", StringComparison.OrdinalIgnoreCase)
+                || valor.Trim().Equals("1", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static DateTime ParseFecha(string valor, DateTime predeterminado)
+        {
+            return DateTime.TryParse(valor, CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime fecha)
+                || DateTime.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha)
+                    ? fecha
+                    : predeterminado;
+        }
+
+        private static decimal ParseDecimal(string valor)
+        {
+            if (decimal.TryParse(valor, NumberStyles.Any, CultureInfo.CurrentCulture, out decimal numero))
+                return numero;
+
+            if (decimal.TryParse(valor, NumberStyles.Any, CultureInfo.InvariantCulture, out numero))
+                return numero;
+
+            return 0;
+        }
+
         private static void AbrirArchivo(string ruta)
         {
             try
@@ -1683,6 +2771,16 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
             if (operacion == null)
                 return;
 
+            DateTime fecha = FechaMovimiento ?? DateTime.Today;
+
+            if ((operacion.FechaInicioVigencia.HasValue && fecha.Date < operacion.FechaInicioVigencia.Value.Date)
+                || (operacion.FechaFinVigencia.HasValue && fecha.Date > operacion.FechaFinVigencia.Value.Date))
+            {
+                TarifaMovimiento = 0;
+                NotificationService.Warning("La operacion seleccionada no tiene tarifa vigente para la fecha del trabajo.");
+                return;
+            }
+
             if (operacion.IdAreaOperativa.HasValue)
                 IdAreaMovimiento = operacion.IdAreaOperativa.Value;
 
@@ -1690,6 +2788,21 @@ namespace CorexProd.WPF.Modules.DestajoPagos.ViewModels
 
             if (operacion.TarifaBase > 0)
                 TarifaMovimiento = operacion.TarifaBase;
+        }
+
+        private void ActualizarImporteMovimiento()
+        {
+            if (CantidadMovimiento <= 0 || TarifaMovimiento <= 0)
+                return;
+
+            decimal importe = Math.Round(CantidadMovimiento * TarifaMovimiento, 2);
+
+            if (_importeMovimiento == importe)
+                return;
+
+            _importeMovimiento = importe;
+            OnPropertyChanged(nameof(ImporteMovimiento));
+            OnPropertyChanged(nameof(TotalMovimientoCalculado));
         }
 
         private void RecalcularCuotaPrestamo()

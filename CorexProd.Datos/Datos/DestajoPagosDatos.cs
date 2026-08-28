@@ -132,6 +132,8 @@ namespace CorexProd.Datos.Datos
                     TipoOperacion = Texto(dr["TipoOperacion"]),
                     UnidadMedida = Texto(dr["UnidadMedida"]),
                     TarifaBase = Decimal(dr["TarifaBase"]),
+                    FechaInicioVigencia = FechaNullable(dr["FechaInicioVigencia"]),
+                    FechaFinVigencia = FechaNullable(dr["FechaFinVigencia"]),
                     Estado = Booleano(dr["Estado"]),
                     FechaRegistro = Fecha(dr["FechaRegistro"])
                 });
@@ -151,6 +153,8 @@ namespace CorexProd.Datos.Datos
                 cmd.Parameters.AddWithValue("@TipoOperacion", operacion.TipoOperacion);
                 cmd.Parameters.AddWithValue("@UnidadMedida", operacion.UnidadMedida);
                 cmd.Parameters.AddWithValue("@TarifaBase", operacion.TarifaBase);
+                cmd.Parameters.AddWithValue("@FechaInicioVigencia", ValorDb(operacion.FechaInicioVigencia));
+                cmd.Parameters.AddWithValue("@FechaFinVigencia", ValorDb(operacion.FechaFinVigencia));
                 cmd.Parameters.AddWithValue("@Estado", operacion.Estado);
             });
         }
@@ -237,6 +241,8 @@ namespace CorexProd.Datos.Datos
                 {
                     IdPeriodoPago = Entero(dr["IdPeriodoPago"]),
                     CodigoPeriodo = Texto(dr["CodigoPeriodo"]),
+                    NumeroSemana = Entero(dr["NumeroSemana"]),
+                    Anio = Entero(dr["Anio"]),
                     FechaInicio = Fecha(dr["FechaInicio"]),
                     FechaFin = Fecha(dr["FechaFin"]),
                     Estado = Texto(dr["Estado"]),
@@ -259,6 +265,8 @@ namespace CorexProd.Datos.Datos
             {
                 cmd.Parameters.AddWithValue("@IdPeriodoPago", periodo.IdPeriodoPago);
                 cmd.Parameters.AddWithValue("@CodigoPeriodo", periodo.CodigoPeriodo);
+                cmd.Parameters.AddWithValue("@NumeroSemana", periodo.NumeroSemana);
+                cmd.Parameters.AddWithValue("@Anio", periodo.Anio);
                 cmd.Parameters.AddWithValue("@FechaInicio", periodo.FechaInicio.Date);
                 cmd.Parameters.AddWithValue("@FechaFin", periodo.FechaFin.Date);
                 cmd.Parameters.AddWithValue("@Estado", periodo.Estado);
@@ -385,6 +393,7 @@ namespace CorexProd.Datos.Datos
                     IdPeriodoPago = Entero(dr["IdPeriodoPago"]),
                     IdTrabajadorOperativo = Entero(dr["IdTrabajadorOperativo"]),
                     NombreTrabajador = Texto(dr["NombreTrabajador"]),
+                    Documento = Texto(dr["Documento"]),
                     TipoTrabajador = Texto(dr["TipoTrabajador"]),
                     MedioPagoPreferido = Texto(dr["MedioPagoPreferido"]),
                     SaldoAnterior = Decimal(dr["SaldoAnterior"]),
@@ -392,12 +401,60 @@ namespace CorexProd.Datos.Datos
                     TotalDescuentos = Decimal(dr["TotalDescuentos"]),
                     NetoCalculado = Decimal(dr["NetoCalculado"]),
                     TotalPagado = Decimal(dr["TotalPagado"]),
+                    TotalPorPagar = Decimal(dr["TotalPorPagar"]),
                     SaldoPendiente = Decimal(dr["SaldoPendiente"]),
-                    EstadoPeriodo = Texto(dr["EstadoPeriodo"])
+                    EstadoPeriodo = Texto(dr["EstadoPeriodo"]),
+                    EstadoCalculo = Texto(dr["EstadoCalculo"]),
+                    FechaCalculo = FechaNullable(dr["FechaCalculo"]),
+                    UsuarioCalculo = Texto(dr["UsuarioCalculo"])
                 });
             }
 
             return lista;
+        }
+
+        public List<AlertaCalculoPeriodo> ListarAlertasCalculoPeriodo(int idPeriodoPago)
+        {
+            List<AlertaCalculoPeriodo> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_DES_CALCULO_PERIODO_ALERTAS_LISTAR", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            while (dr.Read())
+            {
+                lista.Add(new AlertaCalculoPeriodo
+                {
+                    IdCalculoPeriodoAlerta = Entero(dr["IdCalculoPeriodoAlerta"]),
+                    IdPeriodoPago = Entero(dr["IdPeriodoPago"]),
+                    IdTrabajadorOperativo = EnteroNullable(dr["IdTrabajadorOperativo"]),
+                    NombreTrabajador = Texto(dr["NombreTrabajador"]),
+                    IdMovimientoTrabajador = EnteroNullable(dr["IdMovimientoTrabajador"]),
+                    IdCuotaProgramada = EnteroNullable(dr["IdCuotaProgramada"]),
+                    TipoAlerta = Texto(dr["TipoAlerta"]),
+                    Severidad = Texto(dr["Severidad"]),
+                    Mensaje = Texto(dr["Mensaje"]),
+                    FechaRegistro = Fecha(dr["FechaRegistro"])
+                });
+            }
+
+            return lista;
+        }
+
+        public string CalcularPeriodo(int idPeriodoPago, int? idTrabajadorOperativo, bool confirmar, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_CALCULO_PERIODO_CALCULAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+                cmd.Parameters.AddWithValue("@IdTrabajadorOperativo", ValorDb(idTrabajadorOperativo));
+                cmd.Parameters.AddWithValue("@Confirmar", confirmar);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
         }
 
         public List<PrestamoTrabajador> ListarPrestamos()
@@ -420,6 +477,9 @@ namespace CorexProd.Datos.Datos
                     IdTrabajadorOperativo = Entero(dr["IdTrabajadorOperativo"]),
                     NombreTrabajador = Texto(dr["NombreTrabajador"]),
                     FechaPrestamo = Fecha(dr["FechaPrestamo"]),
+                    FechaInicioDescuento = Fecha(dr["FechaInicioDescuento"]),
+                    IdConceptoMovimiento = EnteroNullable(dr["IdConceptoMovimiento"]),
+                    NombreConcepto = Texto(dr["NombreConcepto"]),
                     MontoTotal = Decimal(dr["MontoTotal"]),
                     NumeroCuotas = Entero(dr["NumeroCuotas"]),
                     MontoCuota = Decimal(dr["MontoCuota"]),
@@ -439,6 +499,7 @@ namespace CorexProd.Datos.Datos
             {
                 cmd.Parameters.AddWithValue("@IdTrabajadorOperativo", prestamo.IdTrabajadorOperativo);
                 cmd.Parameters.AddWithValue("@FechaPrestamo", prestamo.FechaPrestamo.Date);
+                cmd.Parameters.AddWithValue("@FechaInicioDescuento", prestamo.FechaInicioDescuento.Date);
                 cmd.Parameters.AddWithValue("@MontoTotal", prestamo.MontoTotal);
                 cmd.Parameters.AddWithValue("@NumeroCuotas", prestamo.NumeroCuotas);
                 cmd.Parameters.AddWithValue("@MontoCuota", prestamo.MontoCuota);
@@ -477,6 +538,8 @@ namespace CorexProd.Datos.Datos
                     MontoCuota = Decimal(dr["MontoCuota"]),
                     FechaProgramada = Fecha(dr["FechaProgramada"]),
                     IdPeriodoAplicado = EnteroNullable(dr["IdPeriodoAplicado"]),
+                    IdMovimientoTrabajador = EnteroNullable(dr["IdMovimientoTrabajador"]),
+                    FechaAplicacion = FechaNullable(dr["FechaAplicacion"]),
                     CodigoPeriodoAplicado = Texto(dr["CodigoPeriodoAplicado"]),
                     Estado = Texto(dr["Estado"]),
                     Observacion = Texto(dr["Observacion"])
@@ -492,6 +555,50 @@ namespace CorexProd.Datos.Datos
             {
                 cmd.Parameters.AddWithValue("@IdCuotaProgramada", idCuotaProgramada);
                 cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string RegistrarPagoExtraordinarioPrestamo(int idPrestamoTrabajador, DateTime fechaPago, decimal montoPago, string observacion, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PRESTAMO_PAGO_EXTRA_REGISTRAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPrestamoTrabajador", idPrestamoTrabajador);
+                cmd.Parameters.AddWithValue("@FechaPago", fechaPago.Date);
+                cmd.Parameters.AddWithValue("@MontoPago", montoPago);
+                cmd.Parameters.AddWithValue("@Observacion", observacion);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string SuspenderCuota(int idCuotaProgramada, string observacion, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_CUOTA_SUSPENDER", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdCuotaProgramada", idCuotaProgramada);
+                cmd.Parameters.AddWithValue("@Observacion", observacion);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string ReprogramarCuota(int idCuotaProgramada, DateTime fechaProgramada, decimal montoCuota, string observacion, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_CUOTA_REPROGRAMAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdCuotaProgramada", idCuotaProgramada);
+                cmd.Parameters.AddWithValue("@FechaProgramada", fechaProgramada.Date);
+                cmd.Parameters.AddWithValue("@MontoCuota", montoCuota);
+                cmd.Parameters.AddWithValue("@Observacion", observacion);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string CancelarPrestamo(int idPrestamoTrabajador, string observacion, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PRESTAMO_CANCELAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPrestamoTrabajador", idPrestamoTrabajador);
+                cmd.Parameters.AddWithValue("@Observacion", observacion);
                 cmd.Parameters.AddWithValue("@Usuario", usuario);
             });
         }
@@ -560,6 +667,45 @@ namespace CorexProd.Datos.Datos
             return lista;
         }
 
+        public List<PagoTrabajador> ListarPagos(int? idPeriodoPago)
+        {
+            List<PagoTrabajador> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_DES_PAGO_TRABAJADOR_LISTAR", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@IdPeriodoPago", ValorDb(idPeriodoPago));
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            while (dr.Read())
+            {
+                lista.Add(new PagoTrabajador
+                {
+                    IdPagoTrabajador = Entero(dr["IdPagoTrabajador"]),
+                    IdPeriodoPago = Entero(dr["IdPeriodoPago"]),
+                    CodigoPeriodo = Texto(dr["CodigoPeriodo"]),
+                    IdTrabajadorOperativo = Entero(dr["IdTrabajadorOperativo"]),
+                    NombreTrabajador = Texto(dr["NombreTrabajador"]),
+                    IdLotePagoDetalle = EnteroNullable(dr["IdLotePagoDetalle"]),
+                    FechaPago = Fecha(dr["FechaPago"]),
+                    MedioPago = Texto(dr["MedioPago"]),
+                    NumeroOperacion = Texto(dr["NumeroOperacion"]),
+                    MontoPagado = Decimal(dr["MontoPagado"]),
+                    Estado = Texto(dr["Estado"]),
+                    Observacion = Texto(dr["Observacion"]),
+                    UsuarioRegistro = Texto(dr["UsuarioRegistro"]),
+                    MotivoAnulacion = Texto(dr["MotivoAnulacion"]),
+                    UsuarioAnulacion = Texto(dr["UsuarioAnulacion"]),
+                    AutorizadoPor = Texto(dr["AutorizadoPor"])
+                });
+            }
+
+            return lista;
+        }
+
         public string GenerarLotePago(int idPeriodoPago, string medioPago, string usuario, string observacion)
         {
             return EjecutarConMensaje("USP_DES_LOTE_GENERAR", cmd =>
@@ -587,7 +733,11 @@ namespace CorexProd.Datos.Datos
             int? idLotePagoDetalle,
             string medioPago,
             decimal montoPagado,
+            DateTime fechaPago,
+            string numeroOperacion,
             string observacion,
+            string medioPago2,
+            decimal montoPagado2,
             string usuario)
         {
             return EjecutarConMensaje("USP_DES_PAGO_TRABAJADOR_REGISTRAR", cmd =>
@@ -597,7 +747,132 @@ namespace CorexProd.Datos.Datos
                 cmd.Parameters.AddWithValue("@IdLotePagoDetalle", ValorDb(idLotePagoDetalle));
                 cmd.Parameters.AddWithValue("@MedioPago", medioPago);
                 cmd.Parameters.AddWithValue("@MontoPagado", montoPagado);
+                cmd.Parameters.AddWithValue("@FechaPago", fechaPago);
+                cmd.Parameters.AddWithValue("@NumeroOperacion", numeroOperacion);
                 cmd.Parameters.AddWithValue("@Observacion", observacion);
+                cmd.Parameters.AddWithValue("@MedioPago2", medioPago2);
+                cmd.Parameters.AddWithValue("@MontoPagado2", montoPagado2);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string AnularPagoTrabajador(int idPagoTrabajador, string motivo, string autorizadoPor, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PAGO_TRABAJADOR_ANULAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPagoTrabajador", idPagoTrabajador);
+                cmd.Parameters.AddWithValue("@MotivoAnulacion", motivo);
+                cmd.Parameters.AddWithValue("@AutorizadoPor", autorizadoPor);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public DashboardDestajoIndicador ObtenerDashboard(int idPeriodoPago)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_DES_DASHBOARD_INDICADORES", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            if (!dr.Read())
+                return new DashboardDestajoIndicador();
+
+            return new DashboardDestajoIndicador
+            {
+                TrabajadoresActivos = Entero(dr["TrabajadoresActivos"]),
+                TrabajadoresConMovimientos = Entero(dr["TrabajadoresConMovimientos"]),
+                TotalProducido = Decimal(dr["TotalProducido"]),
+                TotalIngresos = Decimal(dr["TotalIngresos"]),
+                TotalDescuentos = Decimal(dr["TotalDescuentos"]),
+                NetoPeriodo = Decimal(dr["NetoPeriodo"]),
+                TotalPagado = Decimal(dr["TotalPagado"]),
+                SaldoPendiente = Decimal(dr["SaldoPendiente"]),
+                PrestamosActivos = Entero(dr["PrestamosActivos"]),
+                CuotasAplicadas = Entero(dr["CuotasAplicadas"]),
+                PeriodosAbiertos = Entero(dr["PeriodosAbiertos"]),
+                PeriodosPendientesCierre = Entero(dr["PeriodosPendientesCierre"])
+            };
+        }
+
+        public List<DashboardDestajoSerie> ListarDashboardSeries(int idPeriodoPago)
+        {
+            List<DashboardDestajoSerie> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_DES_DASHBOARD_SERIES", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            while (dr.Read())
+            {
+                lista.Add(new DashboardDestajoSerie
+                {
+                    Categoria = Texto(dr["Categoria"]),
+                    Etiqueta = Texto(dr["Etiqueta"]),
+                    Valor = Decimal(dr["Valor"]),
+                    Importe = Decimal(dr["Importe"])
+                });
+            }
+
+            return lista;
+        }
+
+        public List<AuditoriaDestajo> ListarAuditoriaDestajo(int? idPeriodoPago)
+        {
+            List<AuditoriaDestajo> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_DES_AUDITORIA_DESTAJO_LISTAR", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@IdPeriodoPago", ValorDb(idPeriodoPago));
+
+            conexion.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            while (dr.Read())
+            {
+                lista.Add(new AuditoriaDestajo
+                {
+                    IdAuditoria = Entero(dr["IdAuditoria"]),
+                    Usuario = Texto(dr["Usuario"]),
+                    Fecha = Fecha(dr["Fecha"]),
+                    Modulo = Texto(dr["Modulo"]),
+                    Accion = Texto(dr["Accion"]),
+                    RegistroAfectado = Texto(dr["RegistroAfectado"]),
+                    ValorAnterior = Texto(dr["ValorAnterior"]),
+                    ValorNuevo = Texto(dr["ValorNuevo"]),
+                    Motivo = Texto(dr["Motivo"]),
+                    Equipo = Texto(dr["Equipo"])
+                });
+            }
+
+            return lista;
+        }
+
+        public string RegistrarBoletasGeneradas(int idPeriodoPago, int cantidad, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PERIODO_BOLETAS_GENERADAS_REGISTRAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
+                cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+                cmd.Parameters.AddWithValue("@Usuario", usuario);
+            });
+        }
+
+        public string CerrarPeriodo(int idPeriodoPago, string usuario)
+        {
+            return EjecutarConMensaje("USP_DES_PERIODO_CERRAR", cmd =>
+            {
+                cmd.Parameters.AddWithValue("@IdPeriodoPago", idPeriodoPago);
                 cmd.Parameters.AddWithValue("@Usuario", usuario);
             });
         }
@@ -632,6 +907,11 @@ namespace CorexProd.Datos.Datos
         private static object ValorDb(int? valor)
         {
             return valor.HasValue && valor.Value > 0 ? valor.Value : DBNull.Value;
+        }
+
+        private static object ValorDb(DateTime? valor)
+        {
+            return valor.HasValue ? valor.Value.Date : DBNull.Value;
         }
 
         private static int Entero(object valor)

@@ -49,6 +49,8 @@ namespace CorexProd.Entidad.Entidades
         public string TipoOperacion { get; set; } = "Operacion";
         public string UnidadMedida { get; set; } = "Unidad";
         public decimal TarifaBase { get; set; }
+        public DateTime? FechaInicioVigencia { get; set; }
+        public DateTime? FechaFinVigencia { get; set; }
         public bool Estado { get; set; } = true;
         public DateTime FechaRegistro { get; set; }
     }
@@ -57,6 +59,8 @@ namespace CorexProd.Entidad.Entidades
     {
         public int IdPeriodoPago { get; set; }
         public string CodigoPeriodo { get; set; } = string.Empty;
+        public int NumeroSemana { get; set; }
+        public int Anio { get; set; }
         public DateTime FechaInicio { get; set; } = DateTime.Today;
         public DateTime FechaFin { get; set; } = DateTime.Today;
         public string Estado { get; set; } = "Borrador";
@@ -107,6 +111,7 @@ namespace CorexProd.Entidad.Entidades
         public int IdPeriodoPago { get; set; }
         public int IdTrabajadorOperativo { get; set; }
         public string NombreTrabajador { get; set; } = string.Empty;
+        public string Documento { get; set; } = string.Empty;
         public string TipoTrabajador { get; set; } = string.Empty;
         public string MedioPagoPreferido { get; set; } = string.Empty;
         public decimal SaldoAnterior { get; set; }
@@ -114,22 +119,40 @@ namespace CorexProd.Entidad.Entidades
         public decimal TotalDescuentos { get; set; }
         public decimal NetoCalculado { get; set; }
         public decimal TotalPagado { get; set; }
+        public decimal TotalPorPagar { get; set; }
         public decimal SaldoPendiente { get; set; }
         public string EstadoPeriodo { get; set; } = string.Empty;
-        public decimal TotalAPagar => SaldoPendiente;
+        public string EstadoCalculo { get; set; } = "Sin calcular";
+        public DateTime? FechaCalculo { get; set; }
+        public string UsuarioCalculo { get; set; } = string.Empty;
+        public decimal TotalAPagar => TotalPorPagar;
         public string EstadoPago
         {
             get
             {
                 if (SaldoPendiente <= 0 && TotalPagado > 0)
-                    return "Pagado / Cerrado";
+                    return "Pagado";
 
                 if (TotalPagado > 0 && SaldoPendiente > 0)
-                    return "Pago Parcial";
+                    return "Parcial";
 
                 return "Pendiente";
             }
         }
+    }
+
+    public class AlertaCalculoPeriodo
+    {
+        public int IdCalculoPeriodoAlerta { get; set; }
+        public int IdPeriodoPago { get; set; }
+        public int? IdTrabajadorOperativo { get; set; }
+        public string NombreTrabajador { get; set; } = string.Empty;
+        public int? IdMovimientoTrabajador { get; set; }
+        public int? IdCuotaProgramada { get; set; }
+        public string TipoAlerta { get; set; } = string.Empty;
+        public string Severidad { get; set; } = "Advertencia";
+        public string Mensaje { get; set; } = string.Empty;
+        public DateTime FechaRegistro { get; set; }
     }
 
     public class PrestamoTrabajador
@@ -138,11 +161,14 @@ namespace CorexProd.Entidad.Entidades
         public int IdTrabajadorOperativo { get; set; }
         public string NombreTrabajador { get; set; } = string.Empty;
         public DateTime FechaPrestamo { get; set; } = DateTime.Today;
+        public DateTime FechaInicioDescuento { get; set; } = DateTime.Today;
+        public int? IdConceptoMovimiento { get; set; }
+        public string NombreConcepto { get; set; } = string.Empty;
         public decimal MontoTotal { get; set; }
         public int NumeroCuotas { get; set; } = 1;
         public decimal MontoCuota { get; set; }
         public decimal SaldoPendiente { get; set; }
-        public string Estado { get; set; } = "Vigente";
+        public string Estado { get; set; } = "Registrado";
         public string Observacion { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
     }
@@ -161,6 +187,8 @@ namespace CorexProd.Entidad.Entidades
         public decimal MontoCuota { get; set; }
         public DateTime FechaProgramada { get; set; } = DateTime.Today;
         public int? IdPeriodoAplicado { get; set; }
+        public int? IdMovimientoTrabajador { get; set; }
+        public DateTime? FechaAplicacion { get; set; }
         public string CodigoPeriodoAplicado { get; set; } = string.Empty;
         public string Estado { get; set; } = "Pendiente";
         public string Observacion { get; set; } = string.Empty;
@@ -190,5 +218,63 @@ namespace CorexProd.Entidad.Entidades
         public string Estado { get; set; } = "Pendiente";
         public string NumeroCuenta { get; set; } = string.Empty;
         public string TelefonoPago { get; set; } = string.Empty;
+    }
+
+    public class PagoTrabajador
+    {
+        public int IdPagoTrabajador { get; set; }
+        public int IdPeriodoPago { get; set; }
+        public string CodigoPeriodo { get; set; } = string.Empty;
+        public int IdTrabajadorOperativo { get; set; }
+        public string NombreTrabajador { get; set; } = string.Empty;
+        public int? IdLotePagoDetalle { get; set; }
+        public DateTime FechaPago { get; set; } = DateTime.Today;
+        public string MedioPago { get; set; } = string.Empty;
+        public string NumeroOperacion { get; set; } = string.Empty;
+        public decimal MontoPagado { get; set; }
+        public string Estado { get; set; } = "Confirmado";
+        public string Observacion { get; set; } = string.Empty;
+        public string UsuarioRegistro { get; set; } = string.Empty;
+        public string MotivoAnulacion { get; set; } = string.Empty;
+        public string UsuarioAnulacion { get; set; } = string.Empty;
+        public string AutorizadoPor { get; set; } = string.Empty;
+    }
+
+    public class DashboardDestajoIndicador
+    {
+        public int TrabajadoresActivos { get; set; }
+        public int TrabajadoresConMovimientos { get; set; }
+        public decimal TotalProducido { get; set; }
+        public decimal TotalIngresos { get; set; }
+        public decimal TotalDescuentos { get; set; }
+        public decimal NetoPeriodo { get; set; }
+        public decimal TotalPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public int PrestamosActivos { get; set; }
+        public int CuotasAplicadas { get; set; }
+        public int PeriodosAbiertos { get; set; }
+        public int PeriodosPendientesCierre { get; set; }
+    }
+
+    public class DashboardDestajoSerie
+    {
+        public string Categoria { get; set; } = string.Empty;
+        public string Etiqueta { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+        public decimal Importe { get; set; }
+    }
+
+    public class AuditoriaDestajo
+    {
+        public int IdAuditoria { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; }
+        public string Modulo { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+        public string RegistroAfectado { get; set; } = string.Empty;
+        public string ValorAnterior { get; set; } = string.Empty;
+        public string ValorNuevo { get; set; } = string.Empty;
+        public string Motivo { get; set; } = string.Empty;
+        public string Equipo { get; set; } = string.Empty;
     }
 }

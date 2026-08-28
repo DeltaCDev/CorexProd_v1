@@ -136,7 +136,7 @@ namespace CorexProd.Datos.Datos
                     (N'Proveedores OS', N'Órdenes de Servicio', 2, 1),
                     (N'Tipos de Servicio', N'Órdenes de Servicio', 3, 1),
                     (N'Reportes OS', N'Órdenes de Servicio', 4, 1),
-                    (N'Panel de Destajo', N'Destajo y Pagos', 1, 1),
+                    (N'Dashboard', N'Destajo y Pagos', 1, 1),
                     (N'Periodos de Pago', N'Destajo y Pagos', 2, 1),
                     (N'Movimientos Operativos', N'Destajo y Pagos', 3, 1),
                     (N'Prestamos y Cuotas', N'Destajo y Pagos', 4, 1),
@@ -173,6 +173,13 @@ namespace CorexProd.Datos.Datos
 
                     IF NOT EXISTS (SELECT 1 FROM dbo.Menu WHERE NombreMenu = N'Entrada Manual de Insumos' AND IdMenuPadre = @IdAlmacen)
                         UPDATE dbo.Menu SET NombreMenu = N'Entrada Manual de Insumos' WHERE NombreMenu = N'Ingresos de Stock de Insumos' AND IdMenuPadre = @IdAlmacen;
+                END;
+
+                DECLARE @IdDestajoPagos INT = (SELECT TOP (1) IdMenu FROM dbo.Menu WHERE NombreMenu = N'Destajo y Pagos' AND IdMenuPadre IS NULL ORDER BY IdMenu);
+                IF @IdDestajoPagos IS NOT NULL
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM dbo.Menu WHERE NombreMenu = N'Dashboard' AND IdMenuPadre = @IdDestajoPagos)
+                        UPDATE dbo.Menu SET NombreMenu = N'Dashboard' WHERE NombreMenu = N'Panel de Destajo' AND IdMenuPadre = @IdDestajoPagos;
                 END;
 
                 INSERT INTO dbo.Menu (NombreMenu, IdMenuPadre, Orden, Estado)

@@ -16,15 +16,15 @@ namespace CorexProd.WPF.Helpers
         private const double PageMarginX = 14;
         private const double SlotWidth = PageWidth - (PageMarginX * 2);
 
-        // Se aumentÛ el alto a 345 para ganar espacio vital arriba y abajo
+        // Se aument√≥ el alto a 345 para ganar espacio vital arriba y abajo
         private const double SlotHeight = 345;
 
-        // Se ampliÛ la columna de Remuneraciones para que quepa m·s texto
+        // Se ampli√≥ la columna de Remuneraciones para que quepa m√°s texto
         private const double Col1Width = 215;
         private const double Col2Width = 195;
         private const double Col3Width = SlotWidth - Col1Width - Col2Width;
 
-        // Posiciones optimizadas (m·rgenes m·s holgados)
+        // Posiciones optimizadas (m√°rgenes m√°s holgados)
         private static readonly BoletaSlot[] Slots =
         [
             new(PageMarginX, 465, SlotWidth, SlotHeight),
@@ -33,9 +33,11 @@ namespace CorexProd.WPF.Helpers
 
         public static void Exportar(
             string ruta,
+            Empresa empresa,
             PeriodoPago periodo,
             IReadOnlyList<ResumenPagoTrabajador> resumenes,
             IReadOnlyList<MovimientoTrabajador> movimientos,
+            IReadOnlyList<PagoTrabajador> pagos,
             bool imprimirConCopia)
         {
             SimplePdfDocument document = new();
@@ -47,27 +49,33 @@ namespace CorexProd.WPF.Helpers
                     .Where(m => m.IdPeriodoPago == periodo.IdPeriodoPago && m.IdTrabajadorOperativo == resumen.IdTrabajadorOperativo)
                     .OrderBy(m => m.Fecha)
                     .ToList();
+                var pagosTrabajador = pagos
+                    .Where(p => p.IdPeriodoPago == periodo.IdPeriodoPago
+                        && p.IdTrabajadorOperativo == resumen.IdTrabajadorOperativo
+                        && !p.Estado.Equals("Anulado", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(p => p.FechaPago)
+                    .ToList();
 
                 if (imprimirConCopia)
                 {
-                    AgregarBoleta(paginator, periodo, resumen, detalle);
-                    AgregarBoleta(paginator, periodo, resumen, detalle);
+                    AgregarBoleta(paginator, empresa, periodo, resumen, detalle, pagosTrabajador);
+                    AgregarBoleta(paginator, empresa, periodo, resumen, detalle, pagosTrabajador);
                 }
                 else
                 {
-                    AgregarBoleta(paginator, periodo, resumen, detalle);
+                    AgregarBoleta(paginator, empresa, periodo, resumen, detalle, pagosTrabajador);
                 }
             }
             document.Save(ruta);
         }
 
-        private static void AgregarBoleta(BoletaPaginator paginator, PeriodoPago periodo, ResumenPagoTrabajador resumen, IReadOnlyList<MovimientoTrabajador> movimientos)
+        private static void AgregarBoleta(BoletaPaginator paginator, Empresa empresa, PeriodoPago periodo, ResumenPagoTrabajador resumen, IReadOnlyList<MovimientoTrabajador> movimientos, IReadOnlyList<PagoTrabajador> pagos)
         {
             PdfCanvas canvas = paginator.NextSlot(out BoletaSlot slot);
 
-            // Subimos el inicio del cuadro 4 puntos para pegarlo m·s arriba
+            // Subimos el inicio del cuadro 4 puntos para pegarlo m√°s arriba
             double tableTop = slot.Top - 21;
-            double currentY = DibujarCabecera(canvas, slot, periodo, resumen);
+            double currentY = DibujarCabecera(canvas, slot, empresa, periodo, resumen, movimientos, pagos);
             double topLineasVerticales = currentY;
 
             currentY = DibujarTitulosColumnas(canvas, slot, currentY);
@@ -81,19 +89,19 @@ namespace CorexProd.WPF.Helpers
             canvas.Line(slot.X + Col1Width + Col2Width, tableBottom, slot.X + Col1Width + Col2Width, topLineasVerticales);
         }
 
-        private static double DibujarCabecera(PdfCanvas canvas, BoletaSlot slot, PeriodoPago periodo, ResumenPagoTrabajador resumen)
+        private static double DibujarCabecera(PdfCanvas canvas, BoletaSlot slot, Empresa empresa, PeriodoPago periodo, ResumenPagoTrabajador resumen, IReadOnlyList<MovimientoTrabajador> movimientos, IReadOnlyList<PagoTrabajador> pagos)
         {
             double x = slot.X;
             double w = slot.Width;
             double y = slot.Top;
 
-            canvas.Text("DELTA CONFECCIONES S.R.L.", x + 2, y - 9, 7, true);
-            canvas.Text("AV. LOS COSTUREROS NRO. 123 URB. INDUSTRIAL - LIMA LIMA LA VICTORIA", x + 2, y - 18, 6);
+            canvas.Text(LimpiarYTruncar(EmpresaNombre(empresa), 90), x + 2, y - 9, 7, true);
+            canvas.Text(LimpiarYTruncar(EmpresaDireccion(empresa), 110), x + 2, y - 18, 6);
 
-            y -= 21; // Inicio del cuadro m·s pegado a la empresa
+            y -= 21; // Inicio del cuadro m√°s pegado a la empresa
 
             y -= 10;
-            canvas.Text("RUC  20123456789", x + 2, y, 6);
+            canvas.Text($"RUC  {QuitarTildes(empresa.Ruc)}", x + 2, y, 6);
             canvas.Text("BOLETA DE PAGO SEMANAL", x + (w / 2) - 50, y, 8, true);
             canvas.RightText($"Semana {periodo.CodigoPeriodo} - Del {periodo.FechaInicio:dd/MM/yyyy}  Al  {periodo.FechaFin:dd/MM/yyyy}", x + w - 2, y, 6);
 
@@ -101,32 +109,36 @@ namespace CorexProd.WPF.Helpers
 
             y -= 10;
             canvas.Text("Codigo", x + 2, y, 6);
-            canvas.Text("10025", x + 50, y, 7, true);
+            canvas.Text(resumen.IdTrabajadorOperativo.ToString(CultureInfo.InvariantCulture), x + 50, y, 7, true);
             canvas.Text("Nombre", x + 190, y, 6, true);
             canvas.Text(QuitarTildes(resumen.NombreTrabajador), x + 230, y, 7, true);
-            canvas.Text("Afiliacion", x + 400, y, 6);
-            canvas.Text("ONP", x + 440, y, 6);
+            canvas.Text("Tipo", x + 400, y, 6);
+            canvas.Text(LimpiarYTruncar(resumen.TipoTrabajador, 18), x + 440, y, 6);
 
             y -= 10;
             canvas.Text("DNI", x + 2, y, 6);
-            canvas.Text("40123456", x + 50, y, 7, true);
+            canvas.Text(QuitarTildes(resumen.Documento), x + 50, y, 7, true);
             canvas.Text("Ocupacion", x + 190, y, 6);
-            canvas.Text("Costurero / Maquinista", x + 230, y, 6);
-            canvas.Text("F.Ing.", x + 400, y, 6);
-            canvas.Text("10/01/2025", x + 440, y, 6);
+            canvas.Text(LimpiarYTruncar(resumen.TipoTrabajador, 28), x + 230, y, 6);
+            canvas.Text("Medio", x + 400, y, 6);
+            canvas.Text(LimpiarYTruncar(TextoMediosPago(pagos, resumen), 22), x + 440, y, 6);
 
             y -= 10;
-            canvas.Text("Categoria", x + 2, y, 6);
-            canvas.Text("Destajo", x + 50, y, 7, true);
+            canvas.Text("Operacion", x + 2, y, 6);
+            canvas.Text(LimpiarYTruncar(TextoOperacionesPago(pagos), 35), x + 50, y, 6);
+            canvas.Text("Fecha pago", x + 270, y, 6);
+            canvas.Text(TextoFechasPago(pagos), x + 330, y, 6);
+            canvas.Text("Pagado", x + 450, y, 6);
+            canvas.RightText(FormatoNumero(resumen.TotalPagado), x + w - 5, y, 6, true);
 
             y -= 4; canvas.Line(x, y, x + w, y);
 
             y -= 10;
             canvas.Text("PAGO POR PRODUCCION (DESTAJO)", x + 2, y, 6);
             canvas.Text("UNIDADES PRODUCIDAS TOTALES", x + Col1Width + 2, y, 6);
-            canvas.Text("144", x + Col1Width + Col2Width - 15, y, 7, true);
-            canvas.Text("DIAS LABORADOS", x + Col1Width + Col2Width + 2, y, 6);
-            canvas.RightText("6", x + w - 5, y, 7, true);
+            canvas.Text(movimientos.Where(m => EsProduccion(m)).Sum(m => m.Cantidad).ToString("0.##", CultureInfo.InvariantCulture), x + Col1Width + Col2Width - 35, y, 7, true);
+            canvas.Text("SALDO PENDIENTE", x + Col1Width + Col2Width + 2, y, 6);
+            canvas.RightText(FormatoNumero(resumen.SaldoPendiente), x + w - 5, y, 7, true);
 
             y -= 4; canvas.Line(x, y, x + w, y);
 
@@ -208,7 +220,7 @@ namespace CorexProd.WPF.Helpers
                     decimal valor = r.Importe > 0 ? r.Importe : (r.Cantidad * r.Tarifa);
                     string detalle = ObtenerDetalle(r);
 
-                    // Ahora trunca a 50 chars (con detalle) o 65 (sin detalle) = Mucho m·s espacio libre
+                    // Ahora trunca a 50 chars (con detalle) o 65 (sin detalle) = Mucho m√°s espacio libre
                     int limit = string.IsNullOrEmpty(detalle) ? 65 : 50;
 
                     canvas.Text(LimpiarYTruncar(texto, limit), x + 2, y, fontSize);
@@ -288,7 +300,7 @@ namespace CorexProd.WPF.Helpers
             y -= 4; // Fin exacto del recuadro
             double tableBottom = y;
 
-            // Las firmas bajan dr·sticamente (22 puntos de diferencia vs el cuadro inferior)
+            // Las firmas bajan dr√°sticamente (22 puntos de diferencia vs el cuadro inferior)
             double yFirmas = slot.Bottom + 5;
 
             canvas.Line(x + 130, yFirmas + 10, x + 250, yFirmas + 10);
@@ -300,8 +312,48 @@ namespace CorexProd.WPF.Helpers
             return tableBottom;
         }
 
-        // --- M…TODOS DE APOYO Y CLASES ---
+        // --- M√âTODOS DE APOYO Y CLASES ---
 
+        private static bool EsProduccion(MovimientoTrabajador m)
+        {
+            return !m.EsDescuento
+                && !m.TipoMovimiento.Equals("Pago", StringComparison.OrdinalIgnoreCase)
+                && (m.CategoriaMovimiento.Equals("Produccion", StringComparison.OrdinalIgnoreCase)
+                    || m.CategoriaMovimiento.Equals("Produccion por destajo", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string EmpresaNombre(Empresa empresa)
+        {
+            return string.IsNullOrWhiteSpace(empresa.NombreComercial) ? empresa.Nombre : empresa.NombreComercial;
+        }
+
+        private static string EmpresaDireccion(Empresa empresa)
+        {
+            string ubigeo = string.Join(" ", new[] { empresa.Distrito, empresa.Provincia, empresa.Departamento }.Where(v => !string.IsNullOrWhiteSpace(v)));
+            return string.IsNullOrWhiteSpace(ubigeo) ? empresa.Direccion : $"{empresa.Direccion} - {ubigeo}";
+        }
+
+        private static string TextoMediosPago(IReadOnlyList<PagoTrabajador> pagos, ResumenPagoTrabajador resumen)
+        {
+            string texto = string.Join(", ", pagos.Select(p => p.MedioPago).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct());
+            return string.IsNullOrWhiteSpace(texto) ? resumen.MedioPagoPreferido : texto;
+        }
+
+        private static string TextoOperacionesPago(IReadOnlyList<PagoTrabajador> pagos)
+        {
+            string texto = string.Join(", ", pagos.Select(p => p.NumeroOperacion).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct());
+            return string.IsNullOrWhiteSpace(texto) ? "-" : texto;
+        }
+
+        private static string TextoFechasPago(IReadOnlyList<PagoTrabajador> pagos)
+        {
+            if (pagos.Count == 0)
+                return "-";
+
+            DateTime min = pagos.Min(p => p.FechaPago).Date;
+            DateTime max = pagos.Max(p => p.FechaPago).Date;
+            return min == max ? min.ToString("dd/MM/yyyy") : $"{min:dd/MM}-{max:dd/MM}";
+        }
         private static string LimpiarYTruncar(string t, int maxLength)
         {
             string limpio = QuitarTildes(t);
@@ -312,9 +364,9 @@ namespace CorexProd.WPF.Helpers
         private static string QuitarTildes(string t)
         {
             if (string.IsNullOrWhiteSpace(t)) return "";
-            return t.Replace("·", "a").Replace("È", "e").Replace("Ì", "i").Replace("Û", "o").Replace("˙", "u")
-                    .Replace("¡", "A").Replace("…", "E").Replace("Õ", "I").Replace("”", "O").Replace("⁄", "U")
-                    .Replace("Ò", "n").Replace("—", "N").Replace("ø", "").Replace("°", "");
+            return t.Replace("√°", "a").Replace("√©", "e").Replace("√≠", "i").Replace("√≥", "o").Replace("√∫", "u")
+                    .Replace("√Å", "A").Replace("√â", "E").Replace("√ç", "I").Replace("√ì", "O").Replace("√ö", "U")
+                    .Replace("√±", "n").Replace("√ë", "N").Replace("¬ø", "").Replace("¬°", "");
         }
 
         private static string FormatoNumero(decimal v) => v == 0 ? "0.00" : v.ToString("N2");
@@ -464,27 +516,27 @@ namespace CorexProd.WPF.Helpers
                 _content.Append(" Tj ET\n");
             }
 
-            // NUEVA FUNCI”N: Alinea texto a la derecha (Ideal para columnas de dinero)
+            // NUEVA FUNCI√ìN: Alinea texto a la derecha (Ideal para columnas de dinero)
             public void RightText(string text, double rightX, double y, double size, bool bold = false)
             {
                 double textWidth = ApproximateWidth(text, size, bold);
                 Text(text, rightX - textWidth, y, size, bold);
             }
 
-            // Motor matem·tico para aproximar el ancho exacto del texto en la fuente Helvetica del PDF
+            // Motor matem√°tico para aproximar el ancho exacto del texto en la fuente Helvetica del PDF
             private double ApproximateWidth(string text, double size, bool bold)
             {
                 if (string.IsNullOrEmpty(text)) return 0;
                 double w = 0;
                 foreach (char c in text)
                 {
-                    if (char.IsDigit(c)) w += size * 0.556; // N˙meros tabulares
+                    if (char.IsDigit(c)) w += size * 0.556; // N√∫meros tabulares
                     else if (c == '.' || c == ',' || c == ' ') w += size * 0.278; // Signos estrechos
                     else if (c == 'i' || c == 'l' || c == 'I' || c == 't' || c == 'f') w += size * 0.278;
                     else if (char.IsUpper(c) || c == 'w' || c == 'm') w += size * 0.722;
                     else w += size * 0.556; // Letras promedio
                 }
-                if (bold) w *= 1.05; // La negrita ocupa un ~5% m·s
+                if (bold) w *= 1.05; // La negrita ocupa un ~5% m√°s
                 return w;
             }
 

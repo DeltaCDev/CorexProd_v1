@@ -2,12 +2,24 @@ using CorexProd.Datos.Datos;
 using CorexProd.Entidad.Entidades;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace CorexProd.Negocio.Negocio
 {
     public class DestajoPagosNegocio
     {
         private readonly DestajoPagosDatos _datos = new();
+        private static readonly HashSet<string> EstadosPeriodoValidos = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Borrador",
+            "Abierto",
+            "En calculo",
+            "Calculado",
+            "En pago",
+            "Cerrado",
+            "Anulado"
+        };
 
         public List<AreaOperativa> ListarAreas()
         {
@@ -93,6 +105,11 @@ namespace CorexProd.Negocio.Negocio
             if (operacion.TarifaBase < 0)
                 return "La tarifa base no puede ser negativa.";
 
+            if (operacion.FechaInicioVigencia.HasValue
+                && operacion.FechaFinVigencia.HasValue
+                && operacion.FechaInicioVigencia.Value.Date > operacion.FechaFinVigencia.Value.Date)
+                return "La fecha de inicio de vigencia no puede ser mayor que la fecha fin.";
+
             return _datos.GuardarOperacion(operacion);
         }
 
@@ -126,6 +143,12 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(trabajador.MedioPagoPreferido))
                 return "Debe seleccionar el medio de pago preferido.";
 
+            if (RequiereCuenta(trabajador.MedioPagoPreferido) && string.IsNullOrWhiteSpace(trabajador.NumeroCuenta))
+                return "Debe registrar la cuenta bancaria para este medio de pago.";
+
+            if (RequiereTelefono(trabajador.MedioPagoPreferido) && string.IsNullOrWhiteSpace(trabajador.TelefonoPago))
+                return "Debe registrar el telefono para Yape o Plin.";
+
             return _datos.GuardarTrabajador(trabajador);
         }
 
@@ -156,6 +179,16 @@ namespace CorexProd.Negocio.Negocio
             if (string.IsNullOrWhiteSpace(periodo.Estado))
                 periodo.Estado = "Borrador";
 
+            if (!EstadosPeriodoValidos.Contains(periodo.Estado))
+                return "El estado del periodo no es valido.";
+
+            periodo.NumeroSemana = periodo.NumeroSemana > 0
+                ? periodo.NumeroSemana
+                : ISOWeek.GetWeekOfYear(periodo.FechaInicio);
+            periodo.Anio = periodo.Anio > 0
+                ? periodo.Anio
+                : ISOWeek.GetYear(periodo.FechaInicio);
+
             return _datos.GuardarPeriodo(periodo);
         }
 
@@ -166,6 +199,9 @@ namespace CorexProd.Negocio.Negocio
 
             if (string.IsNullOrWhiteSpace(estado))
                 return "Debe seleccionar un estado.";
+
+            if (!EstadosPeriodoValidos.Contains(estado))
+                return "El estado del periodo no es valido.";
 
             return _datos.CambiarEstadoPeriodo(idPeriodoPago, estado.Trim(), usuario);
         }
@@ -193,6 +229,17 @@ namespace CorexProd.Negocio.Negocio
             if (movimiento.IdPeriodoPago <= 0)
                 return "Debe seleccionar un periodo.";
 
+            PeriodoPago? periodo = ListarPeriodos().FirstOrDefault(p => p.IdPeriodoPago == movimiento.IdPeriodoPago);
+
+            if (periodo == null)
+                return "El periodo seleccionado no existe.";
+
+            if (!periodo.Estado.Equals("Abierto", StringComparison.OrdinalIgnoreCase))
+                return "Solo se pueden registrar movimientos en periodos abiertos.";
+
+            if (movimiento.Fecha.Date < periodo.FechaInicio.Date || movimiento.Fecha.Date > periodo.FechaFin.Date)
+                return "La fecha del trabajo debe estar dentro del periodo seleccionado.";
+
             if (movimiento.IdTrabajadorOperativo <= 0)
                 return "Debe seleccionar un trabajador.";
 
@@ -201,6 +248,38 @@ namespace CorexProd.Negocio.Negocio
 
             if (string.IsNullOrWhiteSpace(movimiento.TipoMovimiento))
                 return "Debe seleccionar el tipo de movimiento.";
+
+            bool esProduccion = EsCategoriaProduccion(movimiento.CategoriaMovimiento);
+
+            if ((movimiento.EsDescuento || movimiento.TipoMovimiento.Equals("Descuento", StringComparison.OrdinalIgnoreCase)) && esProduccion)
+                return "Los descuentos no pueden registrarse como produccion.";
+
+            if (esProduccion && (!movimiento.IdOperacionTextil.HasValue || movimiento.IdOperacionTextil.Value <= 0))
+                return "Debe seleccionar una operacion para registrar produccion.";
+
+            if (movimiento.IdOperacionTextil.HasValue && movimiento.IdOperacionTextil.Value > 0)
+            {
+                OperacionTextil? operacion = ListarOperaciones()
+                    .FirstOrDefault(o => o.IdOperacionTextil == movimiento.IdOperacionTextil.Value);
+
+                if (operacion == null)
+                    return "La operacion seleccionada no existe.";
+
+                if (!operacion.Estado)
+                    return "La operacion seleccionada esta inactiva.";
+
+                if (operacion.FechaInicioVigencia.HasValue && movimiento.Fecha.Date < operacion.FechaInicioVigencia.Value.Date)
+                    return "La operacion seleccionada no tiene tarifa vigente para la fecha del trabajo.";
+
+                if (operacion.FechaFinVigencia.HasValue && movimiento.Fecha.Date > operacion.FechaFinVigencia.Value.Date)
+                    return "La operacion seleccionada no tiene tarifa vigente para la fecha del trabajo.";
+
+                movimiento.Tarifa = operacion.TarifaBase;
+                movimiento.UnidadMedida = operacion.UnidadMedida;
+
+                if (!movimiento.IdAreaOperativa.HasValue && operacion.IdAreaOperativa.HasValue)
+                    movimiento.IdAreaOperativa = operacion.IdAreaOperativa;
+            }
 
             if (movimiento.Cantidad < 0)
                 return "La cantidad no puede ser negativa.";
@@ -232,6 +311,41 @@ namespace CorexProd.Negocio.Negocio
             return _datos.ListarResumenPeriodo(idPeriodoPago);
         }
 
+        public List<AlertaCalculoPeriodo> ListarAlertasCalculoPeriodo(int idPeriodoPago)
+        {
+            if (idPeriodoPago <= 0)
+                return [];
+
+            return _datos.ListarAlertasCalculoPeriodo(idPeriodoPago);
+        }
+
+        public string CalcularPeriodo(int idPeriodoPago, string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            return _datos.CalcularPeriodo(idPeriodoPago, null, false, usuario);
+        }
+
+        public string RecalcularTrabajador(int idPeriodoPago, int idTrabajadorOperativo, string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            if (idTrabajadorOperativo <= 0)
+                return "Debe seleccionar un trabajador del resumen.";
+
+            return _datos.CalcularPeriodo(idPeriodoPago, idTrabajadorOperativo, false, usuario);
+        }
+
+        public string ConfirmarCalculoPeriodo(int idPeriodoPago, string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            return _datos.CalcularPeriodo(idPeriodoPago, null, true, usuario);
+        }
+
         public List<PrestamoTrabajador> ListarPrestamos()
         {
             return _datos.ListarPrestamos();
@@ -252,6 +366,9 @@ namespace CorexProd.Negocio.Negocio
 
             if (idConceptoMovimiento <= 0)
                 return "Debe seleccionar el concepto de descuento para la cuota.";
+
+            if (prestamo.FechaInicioDescuento == DateTime.MinValue)
+                prestamo.FechaInicioDescuento = prestamo.FechaPrestamo;
 
             if (prestamo.MontoCuota <= 0)
                 prestamo.MontoCuota = Math.Round(prestamo.MontoTotal / prestamo.NumeroCuotas, 2);
@@ -275,6 +392,47 @@ namespace CorexProd.Negocio.Negocio
             return _datos.AplicarCuota(idCuotaProgramada, idPeriodoPago, usuario);
         }
 
+        public string RegistrarPagoExtraordinarioPrestamo(int idPrestamoTrabajador, DateTime fechaPago, decimal montoPago, string observacion, string usuario)
+        {
+            if (idPrestamoTrabajador <= 0)
+                return "Debe seleccionar un prestamo.";
+
+            if (montoPago <= 0)
+                return "El pago extraordinario debe ser mayor a cero.";
+
+            return _datos.RegistrarPagoExtraordinarioPrestamo(idPrestamoTrabajador, fechaPago, montoPago, observacion.Trim(), usuario);
+        }
+
+        public string SuspenderCuota(int idCuotaProgramada, string observacion, string usuario)
+        {
+            if (idCuotaProgramada <= 0)
+                return "Debe seleccionar una cuota.";
+
+            return _datos.SuspenderCuota(idCuotaProgramada, observacion.Trim(), usuario);
+        }
+
+        public string ReprogramarCuota(int idCuotaProgramada, DateTime fechaProgramada, decimal montoCuota, string observacion, string usuario)
+        {
+            if (idCuotaProgramada <= 0)
+                return "Debe seleccionar una cuota.";
+
+            if (fechaProgramada == DateTime.MinValue)
+                return "Debe seleccionar la nueva fecha de la cuota.";
+
+            if (montoCuota <= 0)
+                return "El monto de la cuota debe ser mayor a cero.";
+
+            return _datos.ReprogramarCuota(idCuotaProgramada, fechaProgramada, montoCuota, observacion.Trim(), usuario);
+        }
+
+        public string CancelarPrestamo(int idPrestamoTrabajador, string observacion, string usuario)
+        {
+            if (idPrestamoTrabajador <= 0)
+                return "Debe seleccionar un prestamo.";
+
+            return _datos.CancelarPrestamo(idPrestamoTrabajador, observacion.Trim(), usuario);
+        }
+
         public List<LotePago> ListarLotes(int? idPeriodoPago)
         {
             return _datos.ListarLotes(idPeriodoPago);
@@ -286,6 +444,11 @@ namespace CorexProd.Negocio.Negocio
                 return [];
 
             return _datos.ListarLoteDetalles(idLotePago);
+        }
+
+        public List<PagoTrabajador> ListarPagos(int? idPeriodoPago)
+        {
+            return _datos.ListarPagos(idPeriodoPago);
         }
 
         public string GenerarLotePago(int idPeriodoPago, string medioPago, string usuario, string observacion)
@@ -316,7 +479,11 @@ namespace CorexProd.Negocio.Negocio
             int? idLotePagoDetalle,
             string medioPago,
             decimal montoPagado,
+            DateTime fechaPago,
+            string numeroOperacion,
             string observacion,
+            string medioPago2,
+            decimal montoPagado2,
             string usuario)
         {
             if (idPeriodoPago <= 0)
@@ -331,14 +498,92 @@ namespace CorexProd.Negocio.Negocio
             if (montoPagado <= 0)
                 return "El monto a pagar debe ser mayor a cero.";
 
+            if (fechaPago == DateTime.MinValue)
+                return "Debe registrar la fecha de pago.";
+
+            medioPago = medioPago.Trim();
+            medioPago2 = medioPago2.Trim();
+            numeroOperacion = numeroOperacion.Trim();
+            observacion = observacion.Trim();
+
+            if (montoPagado2 > 0 && string.IsNullOrWhiteSpace(medioPago2))
+                return "Debe seleccionar el segundo medio del pago mixto.";
+
+            if (montoPagado2 > 0 && medioPago.Equals(medioPago2, StringComparison.OrdinalIgnoreCase))
+                return "Los medios del pago mixto deben ser distintos.";
+
+            if (montoPagado2 > 0 && !medioPago.Equals("Mixto", StringComparison.OrdinalIgnoreCase))
+                medioPago = "Mixto";
+
             return _datos.RegistrarPagoTrabajador(
                 idPeriodoPago,
                 idTrabajadorOperativo,
                 idLotePagoDetalle,
-                medioPago.Trim(),
+                medioPago,
                 montoPagado,
-                observacion.Trim(),
+                fechaPago,
+                numeroOperacion,
+                observacion,
+                medioPago2,
+                montoPagado2,
                 usuario);
+        }
+
+        public string AnularPagoTrabajador(int idPagoTrabajador, string motivo, string autorizadoPor, string usuario)
+        {
+            if (idPagoTrabajador <= 0)
+                return "Debe seleccionar un pago.";
+
+            motivo = motivo.Trim();
+            autorizadoPor = autorizadoPor.Trim();
+
+            if (string.IsNullOrWhiteSpace(motivo))
+                return "Debe indicar el motivo de anulación.";
+
+            if (string.IsNullOrWhiteSpace(autorizadoPor))
+                return "Debe indicar quien autoriza la anulación.";
+
+            return _datos.AnularPagoTrabajador(idPagoTrabajador, motivo, autorizadoPor, usuario);
+        }
+
+        public DashboardDestajoIndicador ObtenerDashboard(int idPeriodoPago)
+        {
+            if (idPeriodoPago <= 0)
+                return new DashboardDestajoIndicador();
+
+            return _datos.ObtenerDashboard(idPeriodoPago);
+        }
+
+        public List<DashboardDestajoSerie> ListarDashboardSeries(int idPeriodoPago)
+        {
+            if (idPeriodoPago <= 0)
+                return [];
+
+            return _datos.ListarDashboardSeries(idPeriodoPago);
+        }
+
+        public List<AuditoriaDestajo> ListarAuditoriaDestajo(int? idPeriodoPago)
+        {
+            return _datos.ListarAuditoriaDestajo(idPeriodoPago);
+        }
+
+        public string RegistrarBoletasGeneradas(int idPeriodoPago, int cantidad, string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            if (cantidad <= 0)
+                return "Debe generar al menos una boleta.";
+
+            return _datos.RegistrarBoletasGeneradas(idPeriodoPago, cantidad, usuario);
+        }
+
+        public string CerrarPeriodo(int idPeriodoPago, string usuario)
+        {
+            if (idPeriodoPago <= 0)
+                return "Debe seleccionar un periodo.";
+
+            return _datos.CerrarPeriodo(idPeriodoPago, usuario);
         }
 
         private static decimal CalcularImporte(MovimientoTrabajador movimiento)
@@ -347,6 +592,24 @@ namespace CorexProd.Negocio.Negocio
                 return Math.Round(movimiento.Cantidad * movimiento.Tarifa, 2);
 
             return Math.Round(movimiento.Importe, 2);
+        }
+
+        private static bool EsCategoriaProduccion(string categoria)
+        {
+            return categoria.Equals("Produccion", StringComparison.OrdinalIgnoreCase)
+                || categoria.Equals("Produccion por destajo", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool RequiereCuenta(string medioPago)
+        {
+            return medioPago.Equals("BCP", StringComparison.OrdinalIgnoreCase)
+                || medioPago.Equals("Transferencia", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool RequiereTelefono(string medioPago)
+        {
+            return medioPago.Equals("Yape", StringComparison.OrdinalIgnoreCase)
+                || medioPago.Equals("Plin", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

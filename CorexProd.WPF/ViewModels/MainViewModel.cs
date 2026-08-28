@@ -409,11 +409,11 @@ namespace CorexProd.WPF.ViewModels
                 EsPadre = true
             };
 
-            if (menusPermitidos.Contains("Panel de Destajo"))
+            if (menusPermitidos.Contains("Dashboard") || menusPermitidos.Contains("Panel de Destajo"))
             {
                 destajoPagos.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Panel de Destajo",
+                    Titulo = "Dashboard",
                     Vista = "PanelDestajo"
                 });
             }
@@ -936,38 +936,38 @@ namespace CorexProd.WPF.ViewModels
 
                 // DESTAJO Y PAGOS
                 case "PanelDestajo":
-                    Titulo = "Panel de Destajo";
-                    VistaActual = new DestajoPagosView(1);
+                    Titulo = "Dashboard de Destajo y Pagos";
+                    VistaActual = new DestajoPagosView(0);
                     break;
 
                 case "PeriodosPago":
                     Titulo = "Periodos de Pago";
-                    VistaActual = new DestajoPagosView(0);
+                    VistaActual = new DestajoPagosView(1);
                     break;
 
                 case "MovimientosOperativos":
                     Titulo = "Movimientos Operativos";
-                    VistaActual = new DestajoPagosView(1);
+                    VistaActual = new DestajoPagosView(2);
                     break;
 
                 case "PrestamosCuotas":
                     Titulo = "Prestamos y Cuotas";
-                    VistaActual = new DestajoPagosView(2);
+                    VistaActual = new DestajoPagosView(3);
                     break;
 
                 case "LotesPago":
                     Titulo = "Lotes de Pago";
-                    VistaActual = new DestajoPagosView(3);
+                    VistaActual = new DestajoPagosView(4);
                     break;
 
                 case "ReportesPagos":
                     Titulo = "Reportes de Pagos";
-                    VistaActual = new DestajoPagosView(4);
+                    VistaActual = new DestajoPagosView(5);
                     break;
 
                 case "ConfiguracionPagos":
                     Titulo = "Configuración de Pagos";
-                    VistaActual = new DestajoPagosView(5); // El índice 5 es la 6ta pestaña
+                    VistaActual = new DestajoPagosView(6);
                     break;
 
                 case "DestajoPagos":

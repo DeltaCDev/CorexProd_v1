@@ -112,6 +112,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="180"/>
         </Grid.RowDefinitions>
 
         <UniformGrid Grid.Row="0"
@@ -149,9 +150,17 @@
             </Border>
         </UniformGrid>
 
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    Margin="0,0,0,8">
+        <WrapPanel Grid.Row="1"
+                   Margin="0,0,0,8">
+            <Button Content="Calcular periodo"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding CalcularPeriodoCommand}"/>
+            <Button Content="Recalcular trabajador"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding RecalcularTrabajadorCommand}"/>
+            <Button Content="Confirmar cálculo"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding ConfirmarCalculoPeriodoCommand}"/>
             <Button Content="Boletas seleccionadas"
                     Style="{StaticResource BotonAccion}"
                     Command="{Binding DescargarBoletasSeleccionadasCommand}"
@@ -159,7 +168,19 @@
             <Button Content="Todas las boletas"
                     Style="{StaticResource BotonAccion}"
                     Command="{Binding DescargarTodasBoletasCommand}"/>
-        </StackPanel>
+            <Button Content="Resumen CSV"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding ExportarResumenPeriodoCommand}"/>
+            <Button Content="Operativo CSV"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding ExportarReporteOperativoCommand}"/>
+            <Button Content="Pagos CSV"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding ExportarReportePagosCommand}"/>
+            <Button Content="Préstamos CSV"
+                    Style="{StaticResource BotonAccion}"
+                    Command="{Binding ExportarReportePrestamosCommand}"/>
+        </WrapPanel>
 
         <DataGrid x:Name="ResumenesGrid"
                   Grid.Row="2"
@@ -179,10 +200,42 @@
                 <DataGridTextColumn Header="Ingresos" Binding="{Binding TotalIngresos, StringFormat={}{0:N2}}" Width="110"/>
                 <DataGridTextColumn Header="Descuentos" Binding="{Binding TotalDescuentos, StringFormat={}{0:N2}}" Width="115"/>
                 <DataGridTextColumn Header="Neto" Binding="{Binding NetoCalculado, StringFormat={}{0:N2}}" Width="100"/>
+                <DataGridTextColumn Header="Por pagar" Binding="{Binding TotalPorPagar, StringFormat={}{0:N2}}" Width="105"/>
                 <DataGridTextColumn Header="Pagado" Binding="{Binding TotalPagado, StringFormat={}{0:N2}}" Width="100"/>
                 <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoPendiente, StringFormat={}{0:N2}}" Width="100"/>
+                <DataGridTextColumn Header="Cálculo" Binding="{Binding EstadoCalculo}" Width="105"/>
+                <DataGridTextColumn Header="Fecha cálculo" Binding="{Binding FechaCalculo, StringFormat=g}" Width="130"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding EstadoPeriodo}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
+
+        <Border Grid.Row="3"
+                Style="{StaticResource CajaSeccion}"
+                Margin="0,12,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="{Binding AlertasCalculo.Count, StringFormat=Alertas del cálculo: {0}}"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding AlertasCalculo}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Severidad" Binding="{Binding Severidad}" Width="100"/>
+                        <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAlerta}" Width="180"/>
+                        <DataGridTextColumn Header="Trabajador" Binding="{Binding NombreTrabajador}" Width="220"/>
+                        <DataGridTextColumn Header="Mensaje" Binding="{Binding Mensaje}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
