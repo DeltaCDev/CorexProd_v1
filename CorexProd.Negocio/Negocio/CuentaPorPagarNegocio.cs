@@ -38,6 +38,16 @@ namespace CorexProd.Negocio.Negocio
             return idCuentaPorPagar <= 0 ? null : _datos.Obtener(idCuentaPorPagar);
         }
 
+        public List<TipoObligacion> ListarTiposObligacion(bool soloActivos = true)
+        {
+            return _datos.ListarTiposObligacion(soloActivos);
+        }
+
+        public List<TipoDocumentoStock> ListarTiposDocumento()
+        {
+            return _datos.ListarTiposDocumento();
+        }
+
         public List<CuentaPorPagarProgramacion> ObtenerProgramacion(DateTime fechaDesde, DateTime fechaHasta, int? idProveedor = null, string? estado = null)
         {
             if (fechaDesde == default || fechaHasta == default || fechaHasta.Date < fechaDesde.Date)

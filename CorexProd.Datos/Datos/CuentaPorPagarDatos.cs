@@ -75,6 +75,60 @@ namespace CorexProd.Datos.Datos
             return lista;
         }
 
+        public List<TipoObligacion> ListarTiposObligacion(bool soloActivos = true)
+        {
+            List<TipoObligacion> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("""
+                SELECT IdTipoObligacion, Codigo, Nombre, Descripcion, Estado, FechaRegistro
+                FROM dbo.TesTiposObligacion
+                WHERE @SoloActivos = 0 OR Estado = 1
+                ORDER BY Nombre;
+                """, conexion);
+            cmd.Parameters.Add("@SoloActivos", SqlDbType.Bit).Value = soloActivos;
+
+            conexion.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new TipoObligacion
+                {
+                    IdTipoObligacion = Convert.ToInt32(dr["IdTipoObligacion"]),
+                    Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
+                    Nombre = dr["Nombre"]?.ToString() ?? string.Empty,
+                    Descripcion = dr["Descripcion"]?.ToString() ?? string.Empty,
+                    Estado = Convert.ToBoolean(dr["Estado"]),
+                    FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                });
+            }
+
+            return lista;
+        }
+
+        public List<TipoDocumentoStock> ListarTiposDocumento()
+        {
+            List<TipoDocumentoStock> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_ALM_TIPO_DOCUMENTO_STOCK_LISTAR", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            conexion.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new TipoDocumentoStock
+                {
+                    IdTipoDocumento = Convert.ToInt32(dr["IdTipoDocumento"]),
+                    NombreTipoDocumento = dr["NombreTipoDocumento"]?.ToString() ?? string.Empty,
+                    Estado = Convert.ToBoolean(dr["Estado"])
+                });
+            }
+
+            return lista;
+        }
+
         public CuentaPorPagar? Obtener(int idCuentaPorPagar)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
