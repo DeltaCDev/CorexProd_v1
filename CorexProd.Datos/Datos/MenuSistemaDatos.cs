@@ -110,8 +110,9 @@ namespace CorexProd.Datos.Datos
                     (N'Almacén', NULL, 5, 1),
                     (N'Productos', NULL, 6, 1),
                     (N'Órdenes de Servicio', NULL, 7, 1),
-                    (N'Destajo y Pagos', NULL, 8, 1),
-                    (N'Seguridad', NULL, 9, 1),
+                    (N'Tesorería', NULL, 8, 1),
+                    (N'Destajo y Pagos', NULL, 9, 1),
+                    (N'Seguridad', NULL, 10, 1),
                     (N'Orden de Compra', N'Ventas', 1, 1),
                     (N'Orden de Trabajo', N'Ventas', 2, 1),
                     (N'Guía de Salida', N'Ventas', 3, 1),
@@ -136,6 +137,7 @@ namespace CorexProd.Datos.Datos
                     (N'Proveedores OS', N'Órdenes de Servicio', 2, 1),
                     (N'Tipos de Servicio', N'Órdenes de Servicio', 3, 1),
                     (N'Reportes OS', N'Órdenes de Servicio', 4, 1),
+                    (N'Cuentas por Pagar', N'Tesorería', 1, 1),
                     (N'Dashboard', N'Destajo y Pagos', 1, 1),
                     (N'Periodos de Pago', N'Destajo y Pagos', 2, 1),
                     (N'Movimientos Operativos', N'Destajo y Pagos', 3, 1),
@@ -211,8 +213,8 @@ namespace CorexProd.Datos.Datos
                 SET m.Estado = 1
                 FROM dbo.Menu m
                 LEFT JOIN dbo.Menu p ON p.IdMenu = m.IdMenuPadre
-                WHERE m.NombreMenu = N'Destajo y Pagos'
-                   OR p.NombreMenu = N'Destajo y Pagos';
+                WHERE m.NombreMenu IN (N'Destajo y Pagos', N'Tesorería')
+                   OR p.NombreMenu IN (N'Destajo y Pagos', N'Tesorería');
 
                 INSERT INTO dbo.PermisosMenu (IdRol, IdMenu, PuedeVer)
                 SELECT
@@ -259,7 +261,8 @@ namespace CorexProd.Datos.Datos
                 LEFT JOIN dbo.Menu p
                     ON p.IdMenu = m.IdMenuPadre
                 WHERE r.NombreRol IN (N'Administrador', N'SuperAdmin')
-                  AND (m.NombreMenu = N'Destajo y Pagos' OR p.NombreMenu = N'Destajo y Pagos');
+                  AND (m.NombreMenu IN (N'Destajo y Pagos', N'Tesorería')
+                       OR p.NombreMenu IN (N'Destajo y Pagos', N'Tesorería'));
                 """, cn);
 
             cmd.ExecuteNonQuery();

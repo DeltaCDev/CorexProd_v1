@@ -8,6 +8,7 @@ using CorexProd.WPF.Modules.Productos.Views;
 using CorexProd.WPF.Modules.Produccion.Views;
 using CorexProd.WPF.Modules.Reportes.Views;
 using CorexProd.WPF.Modules.Seguridad.Views;
+using CorexProd.WPF.Modules.Tesoreria.Views;
 using CorexProd.WPF.Modules.Ventas.Views;
 using CorexProd.WPF.Views;
 using System.Collections.Generic;
@@ -517,6 +518,27 @@ namespace CorexProd.WPF.ViewModels
                 menusConstruidos.Add(ordenesServicio);
             }
 
+            // TESORERÍA
+            MenuItemSistema tesoreria = new()
+            {
+                Titulo = "Tesorería",
+                EsPadre = true
+            };
+
+            if (menusPermitidos.Contains("Cuentas por Pagar"))
+            {
+                tesoreria.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Cuentas por Pagar",
+                    Vista = "CuentasPorPagar"
+                });
+            }
+
+            if (menusPermitidos.Contains("Tesorería") && tesoreria.Hijos.Count > 0)
+            {
+                menusConstruidos.Add(tesoreria);
+            }
+
             // REPORTES
             MenuItemSistema reportes = new()
             {
@@ -739,8 +761,9 @@ namespace CorexProd.WPF.ViewModels
                     [LlaveMenu(null, "Almacén")] = 5,
                     [LlaveMenu(null, "Productos")] = 6,
                     [LlaveMenu(null, "Órdenes de Servicio")] = 7,
-                    [LlaveMenu(null, "Destajo y Pagos")] = 8,
-                    [LlaveMenu(null, "Seguridad")] = 9
+                    [LlaveMenu(null, "Tesorería")] = 8,
+                    [LlaveMenu(null, "Destajo y Pagos")] = 9,
+                    [LlaveMenu(null, "Seguridad")] = 10
                 };
             }
         }
@@ -984,6 +1007,12 @@ namespace CorexProd.WPF.ViewModels
                 case "OrdenesServicioTipos":
                     Titulo = "Tipos de Servicio";
                     VistaActual = new OrdenesServicioView(2);
+                    break;
+
+                // TESORERÍA
+                case "CuentasPorPagar":
+                    Titulo = "Cuentas por Pagar";
+                    VistaActual = new CuentasPorPagarView();
                     break;
 
                 // REPORTES
