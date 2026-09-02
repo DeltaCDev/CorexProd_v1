@@ -1,0 +1,178 @@
+<Window x:Class="CorexProd.WPF.Modules.Tesoreria.Views.RegistrarPagoCuentaPorPagarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Registrar Pago"
+        Width="760"
+        Height="620"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F4F6">
+
+    <Window.Resources>
+        <Style x:Key="Etiqueta" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="EtiquetaDato" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="ValorDato" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="Campo" TargetType="Control">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Boton" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource Boton}">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="REGISTRAR PAGO" FontSize="22" FontWeight="Bold" Foreground="#111827"/>
+            <TextBlock Text="Cancelación o abono sobre la cuota seleccionada" Foreground="#64748B" Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="White" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.3*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,14">
+                            <TextBlock Text="PROVEEDOR" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding Proveedor}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,14,14">
+                            <TextBlock Text="TIPO DE OBLIGACIÓN" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding TipoObligacion}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,14,14">
+                            <TextBlock Text="LETRA / REF." Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding NumeroLetra}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,0,14">
+                            <TextBlock Text="CUOTA" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding CuotaTexto}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,14,14">
+                            <TextBlock Text="VENCIMIENTO" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding FechaVencimiento, StringFormat=dd/MM/yyyy}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,14,14">
+                            <TextBlock Text="MONEDA" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding Moneda}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,14,14">
+                            <TextBlock Text="IMPORTE CUOTA" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding ImporteCuotaTexto}" Style="{StaticResource ValorDato}" FontWeight="Bold"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,14">
+                            <TextBlock Text="SALDO" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding SaldoPendienteTexto}" Style="{StaticResource ValorDato}" FontWeight="Bold" Foreground="#B45309"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,14,0">
+                            <TextBlock Text="TOTAL PAGADO" Style="{StaticResource EtiquetaDato}"/>
+                            <TextBlock Text="{Binding TotalPagadoTexto}" Style="{StaticResource ValorDato}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Background="White" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,12">
+                            <TextBlock Text="Fecha de pago" Style="{StaticResource Etiqueta}"/>
+                            <DatePicker Style="{StaticResource Campo}" SelectedDate="{Binding FechaPago}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
+                            <TextBlock Text="Importe a pagar" Style="{StaticResource Etiqueta}"/>
+                            <TextBox Height="32" Padding="8,0" VerticalContentAlignment="Center" Text="{Binding Importe, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,14,12">
+                            <TextBlock Text="Banco" Style="{StaticResource Etiqueta}"/>
+                            <ComboBox Style="{StaticResource Campo}"
+                                      ItemsSource="{Binding Bancos}"
+                                      DisplayMemberPath="Nombre"
+                                      SelectedItem="{Binding BancoSeleccionado}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
+                            <TextBlock Text="Cuenta bancaria" Style="{StaticResource Etiqueta}"/>
+                            <ComboBox Style="{StaticResource Campo}"
+                                      ItemsSource="{Binding CuentasBancarias}"
+                                      DisplayMemberPath="Nombre"
+                                      SelectedItem="{Binding CuentaSeleccionada}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,0,0,12">
+                            <TextBlock Text="N.° de operación" Style="{StaticResource Etiqueta}"/>
+                            <TextBox Height="32" Padding="8,0" VerticalContentAlignment="Center" Text="{Binding NumeroOperacion, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Grid.ColumnSpan="2">
+                            <TextBlock Text="Observación" Style="{StaticResource Etiqueta}"/>
+                            <TextBox Height="72" Padding="8" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Text="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Cancelar" Style="{StaticResource Boton}" Command="{Binding CancelarCommand}" Margin="0,0,10,0"/>
+            <Button Style="{StaticResource BotonPrimario}" Command="{Binding RegistrarCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                    <TextBlock Text="Registrar Pago"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

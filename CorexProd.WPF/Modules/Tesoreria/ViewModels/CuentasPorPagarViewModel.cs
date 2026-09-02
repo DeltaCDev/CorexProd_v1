@@ -29,7 +29,7 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
         }
 
         public ObservableCollection<CuentaPorPagarListado> Cuentas { get; } = [];
-        public string[] Estados { get; } = ["Todos", "PENDIENTE", "ANULADA"];
+        public string[] Estados { get; } = ["Todos", "PENDIENTE", "PARCIAL", "CANCELADA", "ANULADA"];
         public ICommand NuevaCommand { get; }
         public ICommand ActualizarCommand { get; }
         public ICommand VerCommand { get; }
@@ -115,6 +115,7 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
                     Owner = Application.Current.MainWindow
                 };
                 ventana.ShowDialog();
+                CargarCuentas();
             }
             catch (Exception ex)
             {

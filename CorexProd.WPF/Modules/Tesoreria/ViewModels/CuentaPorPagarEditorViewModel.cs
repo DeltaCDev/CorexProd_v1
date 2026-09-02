@@ -65,7 +65,15 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
         public TipoObligacion? TipoObligacionSeleccionado
         {
             get => _tipoObligacionSeleccionado;
-            set { _tipoObligacionSeleccionado = value; OnPropertyChanged(); }
+            set
+            {
+                _tipoObligacionSeleccionado = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(EsFacturaCredito));
+                OnPropertyChanged(nameof(EsLetrasPorPagar));
+                OnPropertyChanged(nameof(TituloCuotas));
+                SincronizarTipoCuotas();
+            }
         }
 
         public DateTime? FechaDocumento
@@ -77,7 +85,13 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
         public string Moneda
         {
             get => _moneda;
-            set { _moneda = string.IsNullOrWhiteSpace(value) ? "PEN" : value; OnPropertyChanged(); }
+            set
+            {
+                _moneda = string.IsNullOrWhiteSpace(value) ? "PEN" : value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SimboloMoneda));
+                NotificarTotales();
+            }
         }
 
         public decimal ImporteTotal
@@ -98,9 +112,27 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
         }
 
         public decimal TotalDocumentos => Math.Round(Documentos.Sum(d => d.Importe), 2);
+        public decimal TotalFacturas => Math.Round(Documentos.Where(d => d.FactorEfecto == 1).Sum(d => d.Importe), 2);
+        public decimal TotalNotasCredito => Math.Round(Documentos.Where(d => d.FactorEfecto == -1).Sum(d => d.Importe), 2);
+        public decimal TotalNetoPorPagar => Math.Round(TotalFacturas - TotalNotasCredito, 2);
         public decimal TotalCuotas => Math.Round(Cuotas.Sum(c => c.Importe), 2);
         public decimal DiferenciaCuotas => Math.Round(ImporteTotal - TotalCuotas, 2);
-        public decimal DiferenciaDocumentos => Math.Round(ImporteTotal - TotalDocumentos, 2);
+        public decimal DiferenciaDocumentos => Math.Round(ImporteTotal - TotalNetoPorPagar, 2);
+        public bool EsFacturaCredito => TipoObligacionSeleccionado?.Codigo.Equals("FACTURA_CREDITO", StringComparison.OrdinalIgnoreCase) == true;
+        public bool EsLetrasPorPagar => !EsFacturaCredito;
+        public string TituloCuotas => EsFacturaCredito ? "CUOTAS DE FACTURA" : "LETRAS / CUOTAS";
+        public string SimboloMoneda => Moneda.Trim().ToUpperInvariant() switch
+        {
+            "USD" => "US$",
+            "EUR" => "EUR",
+            _ => "S/"
+        };
+        public string ImporteTotalTexto => FormatearMoneda(ImporteTotal);
+        public string TotalFacturasTexto => FormatearMoneda(TotalFacturas);
+        public string TotalNotasCreditoTexto => FormatearMoneda(TotalNotasCredito);
+        public string TotalNetoPorPagarTexto => FormatearMoneda(TotalNetoPorPagar);
+        public string TotalCuotasTexto => FormatearMoneda(TotalCuotas);
+        public string DiferenciaCuotasTexto => FormatearMoneda(DiferenciaCuotas);
 
         public bool IsSaving
         {
@@ -208,9 +240,11 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
             {
                 IdProveedor = ProveedorSeleccionado?.IdProveedor ?? 0,
                 IdTipoObligacion = TipoObligacionSeleccionado?.IdTipoObligacion ?? 0,
+                CodigoTipoObligacion = TipoObligacionSeleccionado?.Codigo ?? string.Empty,
+                TipoObligacion = TipoObligacionSeleccionado?.Nombre ?? string.Empty,
                 FechaDocumento = FechaDocumento ?? DateTime.Today,
                 Moneda = Moneda,
-                ImporteTotal = ImporteTotal,
+                ImporteTotal = TotalNetoPorPagar,
                 OrigenTipo = "MANUAL",
                 Observacion = Observacion,
                 Documentos = Documentos.Select(d => d.ToEntity()).ToList(),
@@ -261,7 +295,7 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
                 return "Debe seleccionar una moneda valida.";
 
             if (ImporteTotal <= 0)
-                return "El importe total debe ser mayor a cero.";
+                return "El total neto por pagar debe ser mayor a cero.";
 
             if (Documentos.Count == 0)
                 return "Debe agregar al menos un documento.";
@@ -272,18 +306,34 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
             if (Documentos.Any(d => d.TipoDocumentoSeleccionado == null || d.FechaEmision == null || d.Importe <= 0))
                 return "Cada documento debe tener tipo, fecha e importe mayor a cero.";
 
+            if (TotalFacturas <= 0)
+                return "Debe registrar al menos una factura o documento positivo.";
+
+            if (TotalNotasCredito > TotalFacturas)
+                return "El total de notas de credito no puede ser mayor al total de facturas.";
+
+            if (TotalNetoPorPagar <= 0)
+                return "El total neto por pagar debe ser mayor a cero.";
+
             if (Cuotas.Any(c => c.NumeroCuota <= 0 || c.TotalCuotas <= 0 || c.Importe <= 0))
                 return "Cada cuota debe tener numeracion valida e importe mayor a cero.";
 
-            if (Cuotas.Any(c => c.FechaGiro == null || c.FechaVencimiento == null))
+            if (EsLetrasPorPagar && Cuotas.Any(c => string.IsNullOrWhiteSpace(c.NumeroLetra)))
+                return "El numero de letra es obligatorio para Letras por Pagar.";
+
+            if (EsLetrasPorPagar && Cuotas.Any(c => c.FechaGiro == null))
+                return "Cada letra debe tener fecha de giro.";
+
+            if (Cuotas.Any(c => c.FechaVencimiento == null))
                 return "Cada cuota debe tener fecha de giro y vencimiento.";
 
-            if (Cuotas.Any(c => c.FechaVencimiento!.Value.Date < c.FechaGiro!.Value.Date))
+            if (Cuotas.Any(c => c.FechaGiro.HasValue && c.FechaVencimiento!.Value.Date < c.FechaGiro.Value.Date))
                 return "La fecha de vencimiento no puede ser anterior a la fecha de giro.";
 
-            if (Cuotas.Where(c => !string.IsNullOrWhiteSpace(c.NumeroLetra))
-                .GroupBy(c => c.NumeroLetra.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Any(g => g.Count() > 1))
+            if (EsLetrasPorPagar
+                && Cuotas.Where(c => !string.IsNullOrWhiteSpace(c.NumeroLetra))
+                    .GroupBy(c => c.NumeroLetra.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Any(g => g.Count() > 1))
             {
                 return "No se puede repetir el numero de letra dentro de la misma cuenta.";
             }
@@ -296,10 +346,33 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
 
         private void NotificarTotales()
         {
+            _importeTotal = TotalNetoPorPagar;
+            OnPropertyChanged(nameof(ImporteTotal));
+            OnPropertyChanged(nameof(ImporteTotalTexto));
             OnPropertyChanged(nameof(TotalDocumentos));
+            OnPropertyChanged(nameof(TotalFacturas));
+            OnPropertyChanged(nameof(TotalFacturasTexto));
+            OnPropertyChanged(nameof(TotalNotasCredito));
+            OnPropertyChanged(nameof(TotalNotasCreditoTexto));
+            OnPropertyChanged(nameof(TotalNetoPorPagar));
+            OnPropertyChanged(nameof(TotalNetoPorPagarTexto));
             OnPropertyChanged(nameof(TotalCuotas));
+            OnPropertyChanged(nameof(TotalCuotasTexto));
             OnPropertyChanged(nameof(DiferenciaCuotas));
+            OnPropertyChanged(nameof(DiferenciaCuotasTexto));
             OnPropertyChanged(nameof(DiferenciaDocumentos));
+        }
+
+        private string FormatearMoneda(decimal valor) => $"{SimboloMoneda} {valor:N2}";
+
+        private void SincronizarTipoCuotas()
+        {
+            foreach (CuentaPorPagarCuotaItemViewModel cuota in Cuotas)
+            {
+                cuota.TipoCuota = EsFacturaCredito ? "CUOTA_FACTURA" : "LETRA";
+                if (EsFacturaCredito && cuota.FechaGiro == null)
+                    cuota.FechaGiro = cuota.FechaVencimiento;
+            }
         }
     }
 
@@ -319,13 +392,28 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        public TipoDocumentoStock? TipoDocumentoSeleccionado { get => _tipoDocumentoSeleccionado; set { _tipoDocumentoSeleccionado = value; OnPropertyChanged(); } }
+        public TipoDocumentoStock? TipoDocumentoSeleccionado
+        {
+            get => _tipoDocumentoSeleccionado;
+            set
+            {
+                _tipoDocumentoSeleccionado = value;
+                FactorEfecto = EsNotaCredito(value) ? (short)-1 : (short)1;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(EfectoTexto));
+                OnPropertyChanged(nameof(ImporteConEfectoTexto));
+                _totalesCambiaron();
+            }
+        }
         public string Serie { get => _serie; set { _serie = value ?? string.Empty; OnPropertyChanged(); OnPropertyChanged(nameof(NumeroDocumento)); } }
         public string Numero { get => _numero; set { _numero = value ?? string.Empty; OnPropertyChanged(); OnPropertyChanged(nameof(NumeroDocumento)); } }
         public string NumeroDocumento => string.IsNullOrWhiteSpace(Serie) ? Numero : $"{Serie}-{Numero}";
         public DateTime? FechaEmision { get => _fechaEmision; set { _fechaEmision = value; OnPropertyChanged(); } }
-        public decimal Importe { get => _importe; set { _importe = value; OnPropertyChanged(); _totalesCambiaron(); } }
+        public decimal Importe { get => _importe; set { _importe = value; OnPropertyChanged(); OnPropertyChanged(nameof(ImporteConEfectoTexto)); _totalesCambiaron(); } }
         public string Observacion { get => _observacion; set { _observacion = value ?? string.Empty; OnPropertyChanged(); } }
+        public short FactorEfecto { get; private set; } = 1;
+        public string EfectoTexto => FactorEfecto < 0 ? $"- {Importe:N2}" : $"+ {Importe:N2}";
+        public string ImporteConEfectoTexto => EfectoTexto;
 
         public CuentaPorPagarDocumento ToEntity() => new()
         {
@@ -335,8 +423,15 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
             NumeroDocumento = NumeroDocumento,
             FechaEmision = FechaEmision ?? DateTime.Today,
             Importe = Importe,
+            FactorEfecto = FactorEfecto,
             Observacion = Observacion
         };
+
+        private static bool EsNotaCredito(TipoDocumentoStock? tipo)
+        {
+            string nombre = tipo?.NombreTipoDocumento?.Trim().ToUpperInvariant() ?? string.Empty;
+            return nombre.Contains("NOTA DE CREDITO") || nombre.Contains("NOTA DE CR");
+        }
 
         private void OnPropertyChanged([CallerMemberName] string? propiedad = null)
         {
@@ -348,6 +443,7 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
     {
         private readonly Action _totalesCambiaron;
         private string _numeroLetra = string.Empty;
+        private string _tipoCuota = "LETRA";
         private int _numeroCuota;
         private int _totalCuotas;
         private DateTime? _fechaGiro = DateTime.Today;
@@ -362,6 +458,7 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public string NumeroLetra { get => _numeroLetra; set { _numeroLetra = value ?? string.Empty; OnPropertyChanged(); } }
+        public string TipoCuota { get => _tipoCuota; set { _tipoCuota = string.IsNullOrWhiteSpace(value) ? "LETRA" : value; OnPropertyChanged(); } }
         public int NumeroCuota { get => _numeroCuota; set { _numeroCuota = value; OnPropertyChanged(); } }
         public int TotalCuotas { get => _totalCuotas; set { _totalCuotas = value; OnPropertyChanged(); } }
         public DateTime? FechaGiro { get => _fechaGiro; set { _fechaGiro = value; OnPropertyChanged(); } }
@@ -374,7 +471,8 @@ namespace CorexProd.WPF.Modules.Tesoreria.ViewModels
             NumeroCuota = NumeroCuota,
             TotalCuotas = TotalCuotas,
             NumeroLetra = NumeroLetra,
-            FechaGiro = FechaGiro ?? DateTime.Today,
+            TipoCuota = TipoCuota,
+            FechaGiro = FechaGiro,
             FechaVencimiento = FechaVencimiento ?? DateTime.Today,
             Importe = Importe,
             Observacion = Observacion

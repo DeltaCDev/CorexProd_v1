@@ -48,6 +48,16 @@ namespace CorexProd.Negocio.Negocio
             return _datos.ListarTiposDocumento();
         }
 
+        public List<BancoTesoreria> ListarBancos(bool soloActivos = true)
+        {
+            return _datos.ListarBancos(soloActivos);
+        }
+
+        public List<CuentaBancariaTesoreria> ListarCuentasBancarias(int? idBanco = null, bool soloActivas = true)
+        {
+            return _datos.ListarCuentasBancarias(idBanco, soloActivas);
+        }
+
         public List<CuentaPorPagarProgramacion> ObtenerProgramacion(DateTime fechaDesde, DateTime fechaHasta, int? idProveedor = null, string? estado = null)
         {
             if (fechaDesde == default || fechaHasta == default || fechaHasta.Date < fechaDesde.Date)
@@ -79,6 +89,72 @@ namespace CorexProd.Negocio.Negocio
             }
 
             return _datos.Anular(idCuentaPorPagar, Usuario(usuario), motivo.Trim());
+        }
+
+        public CuentaPorPagarPagoResultado RegistrarPago(CuentaPorPagarPago pago, string usuario)
+        {
+            string validacion = ValidarPago(pago);
+            if (!string.IsNullOrWhiteSpace(validacion))
+            {
+                return new CuentaPorPagarPagoResultado
+                {
+                    IdPago = pago?.IdPago ?? 0,
+                    Resultado = false,
+                    Mensaje = validacion
+                };
+            }
+
+            pago.FechaPago = pago.FechaPago.Date;
+            pago.Importe = Math.Round(pago.Importe, 2);
+            pago.NumeroOperacion = pago.NumeroOperacion?.Trim() ?? string.Empty;
+            pago.Observacion = pago.Observacion?.Trim() ?? string.Empty;
+
+            return _datos.RegistrarPago(pago, Usuario(usuario));
+        }
+
+        public CuentaPorPagarPagoResultado AnularPago(int idPago, string motivo, string usuario)
+        {
+            if (idPago <= 0)
+            {
+                return new CuentaPorPagarPagoResultado
+                {
+                    IdPago = idPago,
+                    Resultado = false,
+                    Mensaje = "Debe seleccionar un pago valido."
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(motivo))
+            {
+                return new CuentaPorPagarPagoResultado
+                {
+                    IdPago = idPago,
+                    Resultado = false,
+                    Mensaje = "Debe ingresar el motivo de anulacion del pago."
+                };
+            }
+
+            return _datos.AnularPago(idPago, motivo.Trim(), Usuario(usuario));
+        }
+
+        private static string ValidarPago(CuentaPorPagarPago? pago)
+        {
+            if (pago == null)
+                return "Debe ingresar los datos del pago.";
+
+            if (pago.IdCuota <= 0)
+                return "Debe seleccionar una cuota valida.";
+
+            if (pago.FechaPago == default)
+                return "Debe ingresar la fecha de pago.";
+
+            if (pago.Importe <= 0)
+                return "El importe del pago debe ser mayor a cero.";
+
+            if (pago.IdCuentaBancaria.HasValue && pago.IdCuentaBancaria.Value <= 0)
+                return "La cuenta bancaria seleccionada no es valida.";
+
+            return string.Empty;
         }
 
         private static string ValidarCuenta(CuentaPorPagar? cuenta)
@@ -118,7 +194,28 @@ namespace CorexProd.Negocio.Negocio
 
                 if (documento.Importe <= 0)
                     return "Los importes de los documentos deben ser mayores a cero.";
+
+                if (documento.FactorEfecto is not (1 or -1))
+                    return "El efecto de los documentos debe ser positivo o nota de credito.";
             }
+
+            decimal totalDocumentosPositivos = Math.Round(cuenta.Documentos.Where(d => d.FactorEfecto == 1).Sum(d => d.Importe), 2);
+            decimal totalNotasCredito = Math.Round(cuenta.Documentos.Where(d => d.FactorEfecto == -1).Sum(d => d.Importe), 2);
+            decimal totalNeto = Math.Round(totalDocumentosPositivos - totalNotasCredito, 2);
+
+            if (totalDocumentosPositivos <= 0)
+                return "Debe registrar al menos una factura o documento positivo.";
+
+            if (totalNotasCredito > totalDocumentosPositivos)
+                return "El total de notas de credito no puede ser mayor al total de facturas.";
+
+            if (totalNeto <= 0)
+                return "El total neto por pagar debe ser mayor a cero.";
+
+            if (Math.Abs(Math.Round(cuenta.ImporteTotal, 2) - totalNeto) > ToleranciaImporte)
+                return "El importe total debe ser igual al total neto documental.";
+
+            bool esFacturaCredito = EsFacturaCredito(cuenta);
 
             foreach (CuentaPorPagarCuota cuota in cuenta.Cuotas)
             {
@@ -128,28 +225,33 @@ namespace CorexProd.Negocio.Negocio
                 if (cuota.Importe <= 0)
                     return "Los importes de las cuotas deben ser mayores a cero.";
 
-                if (cuota.FechaGiro == default)
+                if (!esFacturaCredito && string.IsNullOrWhiteSpace(cuota.NumeroLetra))
+                    return "El numero de letra es obligatorio para Letras por Pagar.";
+
+                if (!esFacturaCredito && cuota.FechaGiro == null)
                     return "Todas las cuotas deben tener fecha de giro.";
 
                 if (cuota.FechaVencimiento == default)
                     return "Todas las cuotas deben tener fecha de vencimiento.";
 
-                if (cuota.FechaVencimiento.Date < cuota.FechaGiro.Date)
+                if (cuota.FechaGiro.HasValue && cuota.FechaVencimiento.Date < cuota.FechaGiro.Value.Date)
                     return "La fecha de vencimiento no puede ser anterior a la fecha de giro.";
             }
 
-            bool letraDuplicada = cuenta.Cuotas
-                .Where(c => !string.IsNullOrWhiteSpace(c.NumeroLetra))
-                .GroupBy(c => c.NumeroLetra.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Any(g => g.Count() > 1);
+            if (!esFacturaCredito)
+            {
+                bool letraDuplicada = cuenta.Cuotas
+                    .Where(c => !string.IsNullOrWhiteSpace(c.NumeroLetra))
+                    .GroupBy(c => c.NumeroLetra.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Any(g => g.Count() > 1);
 
-            if (letraDuplicada)
-                return "No se puede duplicar el numero de letra dentro de la misma cuenta.";
+                if (letraDuplicada)
+                    return "No se puede duplicar el numero de letra dentro de la misma cuenta.";
+            }
 
             decimal sumaCuotas = Math.Round(cuenta.Cuotas.Sum(c => c.Importe), 2);
-            decimal importeTotal = Math.Round(cuenta.ImporteTotal, 2);
-            if (Math.Abs(sumaCuotas - importeTotal) > ToleranciaImporte)
-                return "La suma de cuotas debe ser igual al importe total.";
+            if (Math.Abs(sumaCuotas - totalNeto) > ToleranciaImporte)
+                return "La suma de cuotas debe ser igual al total neto por pagar.";
 
             return string.Empty;
         }
@@ -159,7 +261,8 @@ namespace CorexProd.Negocio.Negocio
             cuenta.Moneda = string.IsNullOrWhiteSpace(cuenta.Moneda) ? "PEN" : cuenta.Moneda.Trim().ToUpperInvariant();
             cuenta.OrigenTipo = string.IsNullOrWhiteSpace(cuenta.OrigenTipo) ? "MANUAL" : cuenta.OrigenTipo.Trim().ToUpperInvariant();
             cuenta.Observacion = cuenta.Observacion?.Trim() ?? string.Empty;
-            cuenta.ImporteTotal = Math.Round(cuenta.ImporteTotal, 2);
+            cuenta.ImporteTotal = Math.Round(cuenta.TotalNetoDocumental, 2);
+            bool esFacturaCredito = EsFacturaCredito(cuenta);
 
             foreach (CuentaPorPagarDocumento documento in cuenta.Documentos)
             {
@@ -170,14 +273,25 @@ namespace CorexProd.Negocio.Negocio
                     : documento.NumeroDocumento.Trim();
                 documento.Observacion = documento.Observacion?.Trim() ?? string.Empty;
                 documento.Importe = Math.Round(documento.Importe, 2);
+                documento.FactorEfecto = documento.FactorEfecto == -1 ? (short)-1 : (short)1;
             }
 
             foreach (CuentaPorPagarCuota cuota in cuenta.Cuotas)
             {
                 cuota.NumeroLetra = cuota.NumeroLetra?.Trim() ?? string.Empty;
+                cuota.TipoCuota = esFacturaCredito ? "CUOTA_FACTURA" : "LETRA";
+                if (!cuota.FechaGiro.HasValue)
+                    cuota.FechaGiro = cuota.FechaVencimiento;
                 cuota.Observacion = cuota.Observacion?.Trim() ?? string.Empty;
                 cuota.Importe = Math.Round(cuota.Importe, 2);
             }
+        }
+
+        private static bool EsFacturaCredito(CuentaPorPagar cuenta)
+        {
+            return cuenta.CodigoTipoObligacion.Equals("FACTURA_CREDITO", StringComparison.OrdinalIgnoreCase)
+                || cuenta.TipoObligacion.Equals("Factura a credito", StringComparison.OrdinalIgnoreCase)
+                || cuenta.TipoObligacion.Equals("Factura a crédito", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string UnirNumeroDocumento(string serie, string numero)

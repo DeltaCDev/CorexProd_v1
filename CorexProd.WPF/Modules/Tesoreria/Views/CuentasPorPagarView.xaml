@@ -142,7 +142,7 @@
                   BorderThickness="1"
                   GridLinesVisibility="Horizontal">
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Acciones" Width="92">
+                <DataGridTemplateColumn Header="Acciones" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -156,14 +156,14 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Fecha" Binding="{Binding FechaDocumento, StringFormat=dd/MM/yyyy}" Width="98" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="250" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Tipo" Binding="{Binding TipoObligacion}" Width="170" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="76" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Importe Total" Binding="{Binding ImporteTotal, StringFormat=N2}" Width="120" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Total Pagado" Binding="{Binding TotalPagado, StringFormat=N2}" Width="120" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTextColumn Header="Saldo Pendiente" Binding="{Binding SaldoPendiente, StringFormat=N2}" Width="130" ElementStyle="{StaticResource Celda}"/>
-                <DataGridTemplateColumn Header="Estado" Width="130">
+                <DataGridTextColumn Header="Fecha" Binding="{Binding FechaDocumento, StringFormat=dd/MM/yyyy}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="200" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Tipo" Binding="{Binding TipoObligacion}" Width="135" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="80" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Importe Total" Binding="{Binding ImporteTotal, StringFormat=N2}" Width="110" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Total Pagado" Binding="{Binding TotalPagado, StringFormat=N2}" Width="110" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTextColumn Header="Saldo Pendiente" Binding="{Binding SaldoPendiente, StringFormat=N2}" Width="110" ElementStyle="{StaticResource Celda}"/>
+                <DataGridTemplateColumn Header="Estado" Width="125">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource EstadoBadge}">

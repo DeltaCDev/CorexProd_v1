@@ -1,0 +1,326 @@
+<UserControl x:Class="CorexProd.WPF.Modules.Tesoreria.Views.ProgramacionPagosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <Style x:Key="Boton" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="92"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource Boton}">
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderBrush" Value="#2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="BotonAccion" TargetType="Button">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="Icono" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Etiqueta" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="Campo" TargetType="Control">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Celda" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="CeldaNumero" TargetType="TextBlock" BasedOn="{StaticResource Celda}">
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+        <Style x:Key="EstadoBadge" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="MinWidth" Value="100"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#FEE2E2"/>
+            <Setter Property="BorderBrush" Value="#EF4444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="PARCIAL">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                    <Setter Property="BorderBrush" Value="#F59E0B"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="CANCELADA">
+                    <Setter Property="Background" Value="#DCFCE7"/>
+                    <Setter Property="BorderBrush" Value="#22C55E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstaVencido}" Value="True">
+                    <Setter Property="Background" Value="#FEE2E2"/>
+                    <Setter Property="BorderBrush" Value="#EF4444"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EstadoTexto" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#B91C1C"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Estado}" Value="PARCIAL">
+                    <Setter Property="Foreground" Value="#92400E"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Estado}" Value="CANCELADA">
+                    <Setter Property="Foreground" Value="#166534"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EstaVencido}" Value="True">
+                    <Setter Property="Foreground" Value="#B91C1C"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="PROGRAMACIÓN DE PAGOS" FontSize="21" FontWeight="Bold" Foreground="#0F172A"/>
+                    <TextBlock Text="{Binding RangoSemana}" FontSize="15" FontWeight="SemiBold" Foreground="#2563EB" Margin="0,3,0,0"/>
+                    <TextBlock Text="{Binding ResumenSemana}" Foreground="#64748B" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Style="{StaticResource Boton}" Command="{Binding SemanaAnteriorCommand}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
+                            <TextBlock Text="Semana anterior"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource BotonPrimario}" Command="{Binding SemanaActualCommand}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/>
+                            <TextBlock Text="Hoy"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Boton}" Command="{Binding SemanaSiguienteCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Semana siguiente" Margin="0,0,6,0"/>
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,16,0,0">
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Fecha desde" Style="{StaticResource Etiqueta}"/>
+                        <DatePicker Width="145" Style="{StaticResource Campo}" SelectedDate="{Binding FechaDesde}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Fecha hasta" Style="{StaticResource Etiqueta}"/>
+                        <DatePicker Width="145" Style="{StaticResource Campo}" SelectedDate="{Binding FechaHasta}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Proveedor" Style="{StaticResource Etiqueta}"/>
+                        <ComboBox Width="310" Style="{StaticResource Campo}"
+                                  ItemsSource="{Binding Proveedores}"
+                                  DisplayMemberPath="Nombre"
+                                  SelectedItem="{Binding ProveedorSeleccionado}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Estado" Style="{StaticResource Etiqueta}"/>
+                        <ComboBox Width="145" Style="{StaticResource Campo}" ItemsSource="{Binding Estados}" SelectedItem="{Binding EstadoFiltro}"/>
+                    </StackPanel>
+                    <Button Style="{StaticResource Boton}" Command="{Binding ActualizarCommand}" Margin="0,21,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                            <TextBlock Text="Actualizar"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource BotonPrimario}" Command="{Binding ExportarPdfCommand}" Margin="8,21,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0"/>
+                            <TextBlock Text="Exportar PDF"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+
+                <ItemsControl Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding TotalesSemana}" Margin="0,16,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,10,0" MinWidth="210">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Moneda, StringFormat=TOTAL SEMANA {0}}" FontWeight="Bold" Foreground="#0F172A"/>
+                                    <TextBlock Text="{Binding ImporteTexto, StringFormat=Importe: {0}}" Foreground="#334155" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding TotalPagadoTexto, StringFormat=Pagado: {0}}" Foreground="#475569"/>
+                                    <TextBlock Text="{Binding SaldoPendienteTexto, StringFormat=Saldo: {0}}" Foreground="#B45309" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Dias}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding DiaTitulo}" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ResumenDia}" Foreground="#64748B" FontWeight="SemiBold"/>
+                                    </Grid>
+
+                                    <TextBlock Grid.Row="1"
+                                               Text="No existen pagos programados para este día."
+                                               Visibility="{Binding EmptyVisibility}"
+                                               Foreground="#64748B"
+                                               Margin="0,12,0,0"/>
+
+                                    <DataGrid Grid.Row="1"
+                                              ItemsSource="{Binding Pagos}"
+                                              AutoGenerateColumns="False"
+                                              CanUserAddRows="False"
+                                              IsReadOnly="True"
+                                              RowHeight="38"
+                                              MinHeight="70"
+                                              MaxHeight="230"
+                                              Margin="0,12,0,0"
+                                              Background="White"
+                                              BorderBrush="#CBD5E1"
+                                              BorderThickness="1"
+                                              GridLinesVisibility="Horizontal"
+                                              SelectedItem="{Binding DataContext.PagoSeleccionado, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Header="Acciones" Width="125">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                            <Button Style="{StaticResource BotonAccion}"
+                                                                    Margin="0,0,6,0"
+                                                                    ToolTip="Registrar pago"
+                                                                    Visibility="{Binding PagarVisibility}"
+                                                                    Command="{Binding DataContext.PagarCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="&#xE8C7;" Style="{StaticResource Icono}" Foreground="#16A34A"/>
+                                                            </Button>
+                                                            <Button Style="{StaticResource BotonAccion}"
+                                                                    ToolTip="Ver cuenta por pagar"
+                                                                    Command="{Binding DataContext.VerDetalleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="&#xE890;" Style="{StaticResource Icono}" Foreground="#475569"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTextColumn Header="Vencimiento" Binding="{Binding FechaVencimiento, StringFormat=dd/MM/yyyy}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTextColumn Header="Proveedor" Binding="{Binding NombreProveedor}" Width="230" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTemplateColumn Header="Estado" Width="118">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border Style="{StaticResource EstadoBadge}">
+                                                            <TextBlock Text="{Binding VencimientoTexto}" Style="{StaticResource EstadoTexto}"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTextColumn Header="Tipo" Binding="{Binding TipoObligacion}" Width="145" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTextColumn Header="Letra / Ref." Binding="{Binding ReferenciaObligacion}" Width="130" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTextColumn Header="Cuota" Binding="{Binding CuotaTexto}" Width="70" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="72" ElementStyle="{StaticResource Celda}"/>
+                                            <DataGridTextColumn Header="Importe" Binding="{Binding ImporteTexto}" Width="112" ElementStyle="{StaticResource CeldaNumero}"/>
+                                            <DataGridTextColumn Header="Pagado" Binding="{Binding TotalPagadoTexto}" Width="112" ElementStyle="{StaticResource CeldaNumero}"/>
+                                            <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoPendienteTexto}" Width="112" ElementStyle="{StaticResource CeldaNumero}"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+
+                                    <ItemsControl Grid.Row="2" ItemsSource="{Binding Totales}" Visibility="{Binding TotalesVisibility}" Margin="0,12,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel HorizontalAlignment="Right"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#FFFBEB" BorderBrush="#FBBF24" BorderThickness="1" CornerRadius="8" Padding="10" Margin="8,0,0,0" MinWidth="190">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Moneda, StringFormat=TOTAL DÍA {0}}" FontWeight="Bold" Foreground="#92400E"/>
+                                                        <TextBlock Text="{Binding ImporteTexto, StringFormat=Importe: {0}}" Foreground="#334155" Margin="0,4,0,0"/>
+                                                        <TextBlock Text="{Binding TotalPagadoTexto, StringFormat=Pagado: {0}}" Foreground="#475569"/>
+                                                        <TextBlock Text="{Binding SaldoPendienteTexto, StringFormat=Saldo: {0}}" Foreground="#B45309" FontWeight="SemiBold"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <Border Background="#E5E7EB" Opacity="0.82" Visibility="{Binding LoadingVisibility}">
+                <TextBlock Text="Cargando programación de pagos..."
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="#0F172A"/>
+            </Border>
+
+            <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="22"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Visibility="{Binding EmptyVisibility}">
+                <TextBlock Text="No existen pagos programados para esta semana."
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#475569"/>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

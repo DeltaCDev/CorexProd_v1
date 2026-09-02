@@ -138,6 +138,7 @@ namespace CorexProd.Datos.Datos
                     (N'Tipos de Servicio', N'Órdenes de Servicio', 3, 1),
                     (N'Reportes OS', N'Órdenes de Servicio', 4, 1),
                     (N'Cuentas por Pagar', N'Tesorería', 1, 1),
+                    (N'Programación de Pagos', N'Tesorería', 2, 1),
                     (N'Dashboard', N'Destajo y Pagos', 1, 1),
                     (N'Periodos de Pago', N'Destajo y Pagos', 2, 1),
                     (N'Movimientos Operativos', N'Destajo y Pagos', 3, 1),

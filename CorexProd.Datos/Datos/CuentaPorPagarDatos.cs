@@ -129,6 +129,81 @@ namespace CorexProd.Datos.Datos
             return lista;
         }
 
+        public List<BancoTesoreria> ListarBancos(bool soloActivos = true)
+        {
+            List<BancoTesoreria> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("""
+                SELECT IdBanco, Codigo, Nombre, Estado
+                FROM dbo.TesBancos
+                WHERE @SoloActivos = 0 OR Estado = 1
+                ORDER BY Nombre;
+                """, conexion);
+            cmd.Parameters.Add("@SoloActivos", SqlDbType.Bit).Value = soloActivos;
+
+            conexion.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new BancoTesoreria
+                {
+                    IdBanco = Convert.ToInt32(dr["IdBanco"]),
+                    Codigo = dr["Codigo"]?.ToString() ?? string.Empty,
+                    Nombre = dr["Nombre"]?.ToString() ?? string.Empty,
+                    Estado = Convert.ToBoolean(dr["Estado"])
+                });
+            }
+
+            return lista;
+        }
+
+        public List<CuentaBancariaTesoreria> ListarCuentasBancarias(int? idBanco = null, bool soloActivas = true)
+        {
+            List<CuentaBancariaTesoreria> lista = [];
+
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("""
+                SELECT
+                    CB.IdCuentaBancaria,
+                    CB.IdBanco,
+                    B.Nombre AS Banco,
+                    CB.NombreCuenta,
+                    CB.Titular,
+                    CB.Moneda,
+                    CB.NumeroCuenta,
+                    CB.Cci,
+                    CB.Estado
+                FROM dbo.TesCuentasBancarias CB
+                INNER JOIN dbo.TesBancos B ON B.IdBanco = CB.IdBanco
+                WHERE (@IdBanco IS NULL OR CB.IdBanco = @IdBanco)
+                  AND (@SoloActivas = 0 OR CB.Estado = 1)
+                ORDER BY B.Nombre, CB.Moneda, CB.NombreCuenta, CB.NumeroCuenta;
+                """, conexion);
+            cmd.Parameters.Add("@IdBanco", SqlDbType.Int).Value = idBanco.HasValue ? idBanco.Value : DBNull.Value;
+            cmd.Parameters.Add("@SoloActivas", SqlDbType.Bit).Value = soloActivas;
+
+            conexion.Open();
+            using SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                lista.Add(new CuentaBancariaTesoreria
+                {
+                    IdCuentaBancaria = Convert.ToInt32(dr["IdCuentaBancaria"]),
+                    IdBanco = Convert.ToInt32(dr["IdBanco"]),
+                    Banco = dr["Banco"]?.ToString() ?? string.Empty,
+                    NombreCuenta = dr["NombreCuenta"]?.ToString() ?? string.Empty,
+                    Titular = dr["Titular"]?.ToString() ?? string.Empty,
+                    Moneda = dr["Moneda"]?.ToString() ?? string.Empty,
+                    NumeroCuenta = dr["NumeroCuenta"]?.ToString() ?? string.Empty,
+                    Cci = dr["Cci"]?.ToString() ?? string.Empty,
+                    Estado = Convert.ToBoolean(dr["Estado"])
+                });
+            }
+
+            return lista;
+        }
+
         public CuentaPorPagar? Obtener(int idCuentaPorPagar)
         {
             using SqlConnection conexion = Conexion.ObtenerConexion();
@@ -161,9 +236,7 @@ namespace CorexProd.Datos.Datos
             if (dr.NextResult())
             {
                 while (dr.Read())
-                {
-                    // El SP expone pagos como cuarto resultset; esta etapa aun no implementa pagos.
-                }
+                    cuenta.Pagos.Add(MapearPago(dr));
             }
 
             if (dr.NextResult())
@@ -173,6 +246,92 @@ namespace CorexProd.Datos.Datos
             }
 
             return cuenta;
+        }
+
+        public CuentaPorPagarPagoResultado RegistrarPago(CuentaPorPagarPago pago, string usuario)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_TES_CXP_REGISTRAR_PAGO", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            SqlParameter idPago = new("@IdPago", SqlDbType.Int)
+            {
+                Direction = ParameterDirection.InputOutput,
+                Value = pago.IdPago
+            };
+            cmd.Parameters.Add(idPago);
+            cmd.Parameters.Add("@IdCuota", SqlDbType.Int).Value = pago.IdCuota;
+            cmd.Parameters.Add("@FechaPago", SqlDbType.Date).Value = pago.FechaPago.Date;
+            cmd.Parameters.Add("@Importe", SqlDbType.Decimal).Value = pago.Importe;
+            cmd.Parameters.Add("@IdBanco", SqlDbType.Int).Value = pago.IdBanco.HasValue ? pago.IdBanco.Value : DBNull.Value;
+            cmd.Parameters.Add("@IdCuentaBancaria", SqlDbType.Int).Value = pago.IdCuentaBancaria.HasValue ? pago.IdCuentaBancaria.Value : DBNull.Value;
+            cmd.Parameters.Add("@NumeroOperacion", SqlDbType.VarChar, 80).Value = pago.NumeroOperacion ?? string.Empty;
+            cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = pago.Observacion ?? string.Empty;
+            cmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 80).Value = usuario;
+
+            SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+            SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+            SqlParameter totalPagado = new("@TotalPagado", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 18, Scale = 2 };
+            SqlParameter saldoPendiente = new("@SaldoPendiente", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 18, Scale = 2 };
+            SqlParameter estadoCuota = new("@EstadoCuota", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            SqlParameter estadoCuenta = new("@EstadoCuentaPorPagar", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(resultado);
+            cmd.Parameters.Add(mensaje);
+            cmd.Parameters.Add(totalPagado);
+            cmd.Parameters.Add(saldoPendiente);
+            cmd.Parameters.Add(estadoCuota);
+            cmd.Parameters.Add(estadoCuenta);
+
+            conexion.Open();
+            cmd.ExecuteNonQuery();
+
+            return new CuentaPorPagarPagoResultado
+            {
+                IdPago = idPago.Value == DBNull.Value ? 0 : Convert.ToInt32(idPago.Value),
+                Resultado = resultado.Value != DBNull.Value && Convert.ToBoolean(resultado.Value),
+                Mensaje = mensaje.Value?.ToString() ?? string.Empty,
+                TotalPagado = totalPagado.Value == DBNull.Value ? 0 : Convert.ToDecimal(totalPagado.Value),
+                SaldoPendiente = saldoPendiente.Value == DBNull.Value ? 0 : Convert.ToDecimal(saldoPendiente.Value),
+                EstadoCuota = estadoCuota.Value?.ToString() ?? string.Empty,
+                EstadoCuentaPorPagar = estadoCuenta.Value?.ToString() ?? string.Empty
+            };
+        }
+
+        public CuentaPorPagarPagoResultado AnularPago(int idPago, string motivo, string usuario)
+        {
+            using SqlConnection conexion = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_TES_CXP_ANULAR_PAGO", conexion);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("@IdPago", SqlDbType.Int).Value = idPago;
+            cmd.Parameters.Add("@Motivo", SqlDbType.VarChar, 500).Value = motivo;
+            cmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 80).Value = usuario;
+
+            SqlParameter resultado = new("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+            SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+            SqlParameter totalPagado = new("@TotalPagado", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 18, Scale = 2 };
+            SqlParameter saldoPendiente = new("@SaldoPendiente", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 18, Scale = 2 };
+            SqlParameter estadoCuota = new("@EstadoCuota", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            SqlParameter estadoCuenta = new("@EstadoCuentaPorPagar", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(resultado);
+            cmd.Parameters.Add(mensaje);
+            cmd.Parameters.Add(totalPagado);
+            cmd.Parameters.Add(saldoPendiente);
+            cmd.Parameters.Add(estadoCuota);
+            cmd.Parameters.Add(estadoCuenta);
+
+            conexion.Open();
+            cmd.ExecuteNonQuery();
+
+            return new CuentaPorPagarPagoResultado
+            {
+                IdPago = idPago,
+                Resultado = resultado.Value != DBNull.Value && Convert.ToBoolean(resultado.Value),
+                Mensaje = mensaje.Value?.ToString() ?? string.Empty,
+                TotalPagado = totalPagado.Value == DBNull.Value ? 0 : Convert.ToDecimal(totalPagado.Value),
+                SaldoPendiente = saldoPendiente.Value == DBNull.Value ? 0 : Convert.ToDecimal(saldoPendiente.Value),
+                EstadoCuota = estadoCuota.Value?.ToString() ?? string.Empty,
+                EstadoCuentaPorPagar = estadoCuenta.Value?.ToString() ?? string.Empty
+            };
         }
 
         public List<CuentaPorPagarProgramacion> ObtenerProgramacion(DateTime fechaDesde, DateTime fechaHasta, int? idProveedor, string? estado)
@@ -229,6 +388,7 @@ namespace CorexProd.Datos.Datos
             tabla.Columns.Add("NumeroDocumento", typeof(string));
             tabla.Columns.Add("FechaDocumento", typeof(DateTime));
             tabla.Columns.Add("Importe", typeof(decimal));
+            tabla.Columns.Add("FactorEfecto", typeof(short));
             tabla.Columns.Add("Observacion", typeof(string));
 
             foreach (CuentaPorPagarDocumento documento in documentos)
@@ -240,6 +400,7 @@ namespace CorexProd.Datos.Datos
                     documento.NumeroDocumento,
                     documento.FechaEmision.Date,
                     documento.Importe,
+                    documento.FactorEfecto,
                     string.IsNullOrWhiteSpace(documento.Observacion) ? DBNull.Value : documento.Observacion);
             }
 
@@ -252,6 +413,7 @@ namespace CorexProd.Datos.Datos
             tabla.Columns.Add("NumeroCuota", typeof(int));
             tabla.Columns.Add("TotalCuotas", typeof(int));
             tabla.Columns.Add("NumeroLetra", typeof(string));
+            tabla.Columns.Add("TipoCuota", typeof(string));
             tabla.Columns.Add("FechaGiro", typeof(DateTime));
             tabla.Columns.Add("FechaVencimiento", typeof(DateTime));
             tabla.Columns.Add("Importe", typeof(decimal));
@@ -263,7 +425,8 @@ namespace CorexProd.Datos.Datos
                     cuota.NumeroCuota,
                     cuota.TotalCuotas,
                     string.IsNullOrWhiteSpace(cuota.NumeroLetra) ? DBNull.Value : cuota.NumeroLetra,
-                    cuota.FechaGiro.Date,
+                    string.IsNullOrWhiteSpace(cuota.TipoCuota) ? "LETRA" : cuota.TipoCuota.Trim().ToUpperInvariant(),
+                    cuota.FechaGiro.HasValue ? cuota.FechaGiro.Value.Date : DBNull.Value,
                     cuota.FechaVencimiento.Date,
                     cuota.Importe,
                     string.IsNullOrWhiteSpace(cuota.Observacion) ? DBNull.Value : cuota.Observacion);
@@ -311,6 +474,7 @@ namespace CorexProd.Datos.Datos
             NumeroDocumento = dr["NumeroDocumento"]?.ToString() ?? string.Empty,
             FechaEmision = Convert.ToDateTime(dr["FechaDocumento"]),
             Importe = Convert.ToDecimal(dr["Importe"]),
+            FactorEfecto = dr["FactorEfecto"] == DBNull.Value ? (short)1 : Convert.ToInt16(dr["FactorEfecto"]),
             Observacion = dr["Observacion"]?.ToString() ?? string.Empty,
             Estado = dr["Estado"]?.ToString() ?? string.Empty
         };
@@ -322,13 +486,38 @@ namespace CorexProd.Datos.Datos
             NumeroCuota = Convert.ToInt32(dr["NumeroCuota"]),
             TotalCuotas = Convert.ToInt32(dr["TotalCuotas"]),
             NumeroLetra = dr["NumeroLetra"]?.ToString() ?? string.Empty,
-            FechaGiro = Convert.ToDateTime(dr["FechaGiro"]),
+            TipoCuota = dr["TipoCuota"]?.ToString() ?? "LETRA",
+            FechaGiro = dr["FechaGiro"] == DBNull.Value ? null : Convert.ToDateTime(dr["FechaGiro"]),
             FechaVencimiento = Convert.ToDateTime(dr["FechaVencimiento"]),
             Importe = Convert.ToDecimal(dr["Importe"]),
             TotalPagado = Convert.ToDecimal(dr["TotalPagado"]),
             SaldoPendiente = Convert.ToDecimal(dr["SaldoPendiente"]),
             Estado = dr["Estado"]?.ToString() ?? string.Empty,
             Observacion = dr["Observacion"]?.ToString() ?? string.Empty
+        };
+
+        private static CuentaPorPagarPago MapearPago(SqlDataReader dr) => new()
+        {
+            IdPago = Convert.ToInt32(dr["IdCuentaPorPagarPago"]),
+            IdCuota = Convert.ToInt32(dr["IdCuota"]),
+            IdCuentaPorPagar = Convert.ToInt32(dr["IdCuentaPorPagar"]),
+            NumeroCuota = Convert.ToInt32(dr["NumeroCuota"]),
+            NumeroLetra = dr["NumeroLetra"]?.ToString() ?? string.Empty,
+            FechaPago = Convert.ToDateTime(dr["FechaPago"]),
+            Importe = Convert.ToDecimal(dr["Importe"]),
+            MedioPago = dr["MedioPago"]?.ToString() ?? string.Empty,
+            IdBanco = dr["IdBanco"] == DBNull.Value ? null : Convert.ToInt32(dr["IdBanco"]),
+            IdCuentaBancaria = dr["IdCuentaBancaria"] == DBNull.Value ? null : Convert.ToInt32(dr["IdCuentaBancaria"]),
+            Banco = dr["Banco"]?.ToString() ?? string.Empty,
+            NumeroCuenta = dr["NumeroCuenta"]?.ToString() ?? string.Empty,
+            NumeroOperacion = dr["NumeroOperacion"]?.ToString() ?? string.Empty,
+            Observacion = dr["Observacion"]?.ToString() ?? string.Empty,
+            Estado = dr["Estado"]?.ToString() ?? string.Empty,
+            UsuarioRegistro = dr["UsuarioRegistro"]?.ToString() ?? string.Empty,
+            FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
+            UsuarioAnulacion = dr["UsuarioAnulacion"]?.ToString() ?? string.Empty,
+            FechaAnulacion = dr["FechaAnulacion"] == DBNull.Value ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
+            MotivoAnulacion = dr["MotivoAnulacion"]?.ToString() ?? string.Empty
         };
 
         private static CuentaPorPagarHistorial MapearHistorial(SqlDataReader dr) => new()
@@ -380,6 +569,8 @@ namespace CorexProd.Datos.Datos
             NumeroCuota = Convert.ToInt32(dr["NumeroCuota"]),
             TotalCuotas = Convert.ToInt32(dr["TotalCuotas"]),
             NumeroLetra = dr["NumeroLetra"]?.ToString() ?? string.Empty,
+            TipoCuota = dr["TipoCuota"]?.ToString() ?? "LETRA",
+            DocumentoPrincipal = dr["DocumentoPrincipal"]?.ToString() ?? string.Empty,
             FechaGiro = Convert.ToDateTime(dr["FechaGiro"]),
             FechaVencimiento = Convert.ToDateTime(dr["FechaVencimiento"]),
             Importe = Convert.ToDecimal(dr["Importe"]),

@@ -534,6 +534,15 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
+            if (menusPermitidos.Contains("Programación de Pagos"))
+            {
+                tesoreria.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Programación de Pagos",
+                    Vista = "ProgramacionPagos"
+                });
+            }
+
             if (menusPermitidos.Contains("Tesorería") && tesoreria.Hijos.Count > 0)
             {
                 menusConstruidos.Add(tesoreria);
@@ -762,6 +771,8 @@ namespace CorexProd.WPF.ViewModels
                     [LlaveMenu(null, "Productos")] = 6,
                     [LlaveMenu(null, "Órdenes de Servicio")] = 7,
                     [LlaveMenu(null, "Tesorería")] = 8,
+                    [LlaveMenu("Tesorería", "Cuentas por Pagar")] = 1,
+                    [LlaveMenu("Tesorería", "Programación de Pagos")] = 2,
                     [LlaveMenu(null, "Destajo y Pagos")] = 9,
                     [LlaveMenu(null, "Seguridad")] = 10
                 };
@@ -1013,6 +1024,11 @@ namespace CorexProd.WPF.ViewModels
                 case "CuentasPorPagar":
                     Titulo = "Cuentas por Pagar";
                     VistaActual = new CuentasPorPagarView();
+                    break;
+
+                case "ProgramacionPagos":
+                    Titulo = "Programación de Pagos";
+                    VistaActual = new ProgramacionPagosView();
                     break;
 
                 // REPORTES
