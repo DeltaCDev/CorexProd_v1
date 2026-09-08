@@ -1,0 +1,112 @@
+<Window x:Class="CorexProd.WPF.Modules.Tesoreria.Views.TarjetaCreditoDetalleWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:CorexProd.WPF.Modules.Tesoreria.Views" Title="Períodos de tarjeta" Width="1200" Height="760" WindowStartupLocation="CenterOwner" Background="#F3F4F6">
+  <Window.Resources>
+    <local:TarjetaCreditoAccionHabilitadaConverter x:Key="AccionHabilitada" />
+  </Window.Resources>
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="2*" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Grid Grid.ColumnSpan="2">
+      <StackPanel>
+        <TextBlock x:Name="TituloTextBlock" FontSize="22" FontWeight="Bold" />
+        <TextBlock x:Name="EstadoTextBlock" Foreground="#64748B" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="NuevoPeriodoButton" Content="Nuevo período" Click="NuevoPeriodo_Click" Padding="12,6" Margin="0,0,8,0" />
+        <Button Content="Actualizar" Click="Actualizar_Click" Padding="12,6" />
+      </StackPanel>
+    </Grid>
+    <GroupBox Grid.Row="1" Grid.ColumnSpan="2" Header="Períodos" Margin="0,14,0,10">
+      <DataGrid x:Name="PeriodosDataGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionChanged="Periodo_SelectionChanged">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn Header="Acciones" Width="210">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal">
+                  <Button Content="Editar" Tag="{Binding}" Click="EditarPeriodo_Click">
+                    <Button.IsEnabled>
+                      <MultiBinding Converter="{StaticResource AccionHabilitada}" ConverterParameter="EDITAR_PERIODO">
+                        <Binding Path="Estado" />
+                        <Binding Path="SaldoPendiente" />
+                        <Binding Path="DataContext.EstaAnulada" RelativeSource="{RelativeSource AncestorType=Window}" />
+                        <Binding Path="IdTarjetaPeriodo" />
+                      </MultiBinding>
+                    </Button.IsEnabled>
+                  </Button>
+                  <Button Content="Pagar" Tag="{Binding}" Click="Pagar_Click" Margin="4,0">
+                  </Button>
+                  <Button Content="Anular" Tag="{Binding}" Click="AnularPeriodo_Click">
+                    <Button.IsEnabled>
+                      <MultiBinding Converter="{StaticResource AccionHabilitada}" ConverterParameter="ANULAR_PERIODO">
+                        <Binding Path="Estado" />
+                        <Binding Path="TotalPagado" />
+                        <Binding Path="DataContext.EstaAnulada" RelativeSource="{RelativeSource AncestorType=Window}" />
+                        <Binding Path="IdTarjetaPeriodo" />
+                      </MultiBinding>
+                    </Button.IsEnabled>
+                  </Button>
+                </StackPanel>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="Periodo" Binding="{Binding PeriodoTexto}" Width="90" />
+          <DataGridTextColumn Header="Estado PEN" Binding="{Binding EstadoPEN}" Width="90" />
+          <DataGridTextColumn Header="Estado USD" Binding="{Binding EstadoUSD}" Width="90" />
+          <DataGridTextColumn Header="Corte" Binding="{Binding FechaCorte,StringFormat=dd/MM/yyyy}" Width="95" />
+          <DataGridTextColumn Header="Vencimiento" Binding="{Binding FechaVencimiento,StringFormat=dd/MM/yyyy}" Width="100" />
+          <DataGridTextColumn Header="Importe PEN" Binding="{Binding ImportePEN,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Pagado PEN" Binding="{Binding TotalPagadoPEN,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Saldo PEN" Binding="{Binding SaldoPendientePEN,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Importe USD" Binding="{Binding ImporteUSD,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Pagado USD" Binding="{Binding TotalPagadoUSD,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Saldo USD" Binding="{Binding SaldoPendienteUSD,StringFormat=N2}" Width="95" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </GroupBox>
+    <GroupBox Grid.Row="2" Header="Pagos del período seleccionado" Margin="0,0,8,0">
+      <DataGrid x:Name="PagosDataGrid" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn Header="Acción" Width="80">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="Revertir" Tag="{Binding}" Click="Revertir_Click">
+                  <Button.IsEnabled>
+                    <MultiBinding Converter="{StaticResource AccionHabilitada}" ConverterParameter="REVERTIR">
+                      <Binding Path="Estado" />
+                      <Binding Path="Importe" />
+                      <Binding Path="DataContext.EstaAnulada" RelativeSource="{RelativeSource AncestorType=Window}" />
+                      <Binding Path="IdPago" />
+                    </MultiBinding>
+                  </Button.IsEnabled>
+                </Button>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="Fecha" Binding="{Binding FechaPago,StringFormat=dd/MM/yyyy}" Width="90" />
+          <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="70" />
+          <DataGridTextColumn Header="Banco" Binding="{Binding Banco}" Width="120" />
+          <DataGridTextColumn Header="Importe" Binding="{Binding Importe,StringFormat=N2}" Width="95" />
+          <DataGridTextColumn Header="Operación" Binding="{Binding NumeroOperacion}" Width="100" />
+          <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="80" />
+          <DataGridTextColumn Header="Observación" Binding="{Binding Observacion}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </GroupBox>
+    <GroupBox Grid.Row="2" Grid.Column="1" Header="Historial">
+      <DataGrid x:Name="HistorialDataGrid" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Fecha" Binding="{Binding FechaHora,StringFormat=dd/MM/yyyy HH:mm}" Width="130" />
+          <DataGridTextColumn Header="Acción" Binding="{Binding Accion}" Width="140" />
+          <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="100" />
+          <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </GroupBox>
+  </Grid>
+</Window>

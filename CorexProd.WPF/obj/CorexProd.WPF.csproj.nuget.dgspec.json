@@ -295,6 +295,10 @@
           "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
           "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.105.1, )"
+            },
             "HandyControl": {
               "target": "Package",
               "version": "[3.5.1, )"

@@ -534,12 +534,35 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
-            if (menusPermitidos.Contains("Programación de Pagos"))
+            if (menusPermitidos.Contains("Préstamos") || menusPermitidos.Contains("Prestamos") || menusPermitidos.Contains("Obligaciones Financieras") || menusPermitidos.Contains("Tesorería"))
             {
                 tesoreria.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Programación de Pagos",
-                    Vista = "ProgramacionPagos"
+                    Titulo = "Préstamos",
+                    Vista = "Prestamos"
+                });
+            }
+
+            if (menusPermitidos.Contains("Tarjetas de Crédito") || menusPermitidos.Contains("Tarjetas de Credito") || menusPermitidos.Contains("Tesorería"))
+            {
+                tesoreria.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Tarjetas de Crédito",
+                    Vista = "TarjetasCredito"
+                });
+            }
+
+            if (menusPermitidos.Contains("Seguros") || menusPermitidos.Contains("Obligaciones Financieras") || menusPermitidos.Contains("Tesorería"))
+            {
+                tesoreria.Hijos.Add(new MenuItemSistema { Titulo = "Seguros", Vista = "Seguros" });
+            }
+
+            if (menusPermitidos.Contains("Programación General de Pagos") || menusPermitidos.Contains("Tesorería"))
+            {
+                tesoreria.Hijos.Add(new MenuItemSistema
+                {
+                    Titulo = "Programación General de Pagos",
+                    Vista = "ProgramacionGeneralPagos"
                 });
             }
 
@@ -772,7 +795,8 @@ namespace CorexProd.WPF.ViewModels
                     [LlaveMenu(null, "Órdenes de Servicio")] = 7,
                     [LlaveMenu(null, "Tesorería")] = 8,
                     [LlaveMenu("Tesorería", "Cuentas por Pagar")] = 1,
-                    [LlaveMenu("Tesorería", "Programación de Pagos")] = 2,
+                    [LlaveMenu("Tesorería", "Préstamos")] = 2,
+                    [LlaveMenu("Tesorería", "Programación General de Pagos")] = 3,
                     [LlaveMenu(null, "Destajo y Pagos")] = 9,
                     [LlaveMenu(null, "Seguridad")] = 10
                 };
@@ -1026,9 +1050,29 @@ namespace CorexProd.WPF.ViewModels
                     VistaActual = new CuentasPorPagarView();
                     break;
 
+                case "Prestamos":
+                    Titulo = "Préstamos";
+                    VistaActual = new PrestamosView();
+                    break;
+
+                case "TarjetasCredito":
+                    Titulo = "Tarjetas de Crédito";
+                    VistaActual = new TarjetasCreditoView();
+                    break;
+
+                case "Seguros":
+                    Titulo = "Seguros";
+                    VistaActual = new SegurosView();
+                    break;
+
                 case "ProgramacionPagos":
                     Titulo = "Programación de Pagos";
                     VistaActual = new ProgramacionPagosView();
+                    break;
+
+                case "ProgramacionGeneralPagos":
+                    Titulo = "Programación General de Pagos";
+                    VistaActual = new ProgramacionGeneralPagosView();
                     break;
 
                 // REPORTES
