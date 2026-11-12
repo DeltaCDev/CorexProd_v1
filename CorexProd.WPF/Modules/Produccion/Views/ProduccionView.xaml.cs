@@ -306,8 +306,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             {
                 OrdenTrabajo ot = _negocio.Obtener(resumen.IdOrdenTrabajo)
                     ?? throw new InvalidOperationException("No se encontró la OT seleccionada.");
-                Usuario? gerente = ot.IdUsuarioAprobacionGerencia.HasValue
-                    ? new UsuarioNegocio().ObtenerPorId(ot.IdUsuarioAprobacionGerencia.Value)
+                bool otAprobada = resumen.EstaAprobada || ot.EstaAprobada;
+                int? idAprobadorGerencia = ot.IdUsuarioAprobacionGerencia ?? resumen.IdUsuarioAprobacionGerencia;
+                Usuario? gerente = idAprobadorGerencia.HasValue
+                    ? new UsuarioNegocio().ObtenerPorId(idAprobadorGerencia.Value)
                     : null;
                 OrdenCompraInterna? oci = ot.IdOrdenCompraInterna > 0
                     ? new OrdenCompraInternaNegocio().Obtener(ot.IdOrdenCompraInterna)
@@ -337,8 +339,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     }),
                     null,
                     oci?.FechaEntrega == default ? null : oci?.FechaEntrega,
-                    ot.EstadoAprobacion,
-                    gerente?.NombreUsuario ?? string.Empty)
+                    otAprobada ? "APROBADA" : ot.EstadoAprobacion,
+                    gerente?.NombreUsuario
+                        ?? resumen.UsuarioAprobadorGerencia
+                        ?? string.Empty)
                 {
                     Owner = Application.Current.MainWindow,
                     Title = $"Imprimir {ot.NumeroOT}"

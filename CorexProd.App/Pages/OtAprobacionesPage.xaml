@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.OtAprobacionesPage"
+             Title="Aprobación de OT"
+             BackgroundColor="#F4F6F8">
+    <Grid RowDefinitions="Auto,*">
+        <VerticalStackLayout Padding="16" Spacing="3" BackgroundColor="#3F1D95">
+            <Label Text="Aprobación de órdenes de trabajo" FontFamily="OpenSansSemibold" FontSize="22" TextColor="White" />
+            <Label x:Name="ContadorLabel" Text="Cargando..." FontSize="12" TextColor="#E9DFFF" />
+        </VerticalStackLayout>
+        <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
+            <CollectionView x:Name="OrdenesView" Margin="12" SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Label Text="No hay OT pendientes de aprobación." Padding="24" HorizontalTextAlignment="Center" TextColor="#667085" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="14" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="5">
+                                <Label Text="{Binding NumeroOT}" FontFamily="OpenSansSemibold" FontSize="18" TextColor="#10324A" />
+                                <Border Grid.Column="1" Padding="9,4" BackgroundColor="#FFF1D6" Stroke="#F59E0B">
+                                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                                    <Label Text="POR APROBAR" FontFamily="OpenSansSemibold" FontSize="11" TextColor="#9A3412" />
+                                </Border>
+                                <Label Grid.Row="1" Text="{Binding NombreCliente}" FontFamily="OpenSansSemibold" TextColor="#344054" LineBreakMode="WordWrap" />
+                                <Label Grid.Row="2" Text="{Binding ReferenciaTexto}" TextColor="#667085" />
+                                <Button Grid.Row="2" Grid.Column="1" Text="Revisar" Padding="14,5" Clicked="OnRevisarClicked" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

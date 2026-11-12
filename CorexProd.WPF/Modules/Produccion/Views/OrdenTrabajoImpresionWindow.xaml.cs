@@ -181,7 +181,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private static TableCell CrearCeldaFirma(string etiqueta, Usuario? usuario)
         {
-            TableCell celda = new() { Padding = new Thickness(8), BorderBrush = new SolidColorBrush(Color.FromRgb(31, 56, 96)), BorderThickness = new Thickness(0.8) };
+            TableCell celda = new() { Padding = new Thickness(8, 8, 8, 16), BorderBrush = new SolidColorBrush(Color.FromRgb(31, 56, 96)), BorderThickness = new Thickness(0.8) };
             if (usuario?.FirmaImagen is { Length: > 0 } bytes)
             {
                 try
@@ -189,12 +189,36 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                     using MemoryStream stream = new(bytes);
                     BitmapImage bitmap = new();
                     bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.StreamSource = stream; bitmap.EndInit(); bitmap.Freeze();
-                    celda.Blocks.Add(new BlockUIContainer(new Image { Source = bitmap, Width = 220, Height = 82, Stretch = Stretch.UniformToFill }) { TextAlignment = TextAlignment.Center });
+                    celda.Blocks.Add(new BlockUIContainer(new Image
+                    {
+                        Source = bitmap,
+                        Width = 220,
+                        Height = 96,
+                        Stretch = Stretch.Uniform,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        // Baja la firma hacia la línea sin desplazar las etiquetas inferiores.
+                        Margin = new Thickness(0, 14, 0, -14)
+                    }) { TextAlignment = TextAlignment.Center });
                 }
                 catch { }
             }
-            string nombre = usuario == null ? string.Empty : (!string.IsNullOrWhiteSpace(usuario.NombreEmpleado) ? usuario.NombreEmpleado : usuario.NombreUsuario);
-            celda.Blocks.Add(new Paragraph(new Run($"\n________________________\n{etiqueta}{(string.IsNullOrWhiteSpace(nombre) ? string.Empty : $"\n{nombre}")}")) { TextAlignment = TextAlignment.Center, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0) });
+            else
+            {
+                // Conserva la misma altura visual para "Recibido por" aunque no tenga firma cargada.
+                celda.Blocks.Add(new BlockUIContainer(new Border { Height = 96, Background = Brushes.Transparent })
+                {
+                    TextAlignment = TextAlignment.Center
+                });
+            }
+
+            // El nombre ya forma parte de la imagen de firma. No se repite debajo.
+            celda.Blocks.Add(new Paragraph(new Run($"\n________________________\n{etiqueta}"))
+            {
+                TextAlignment = TextAlignment.Center,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0)
+            });
             return celda;
         }
 
@@ -273,7 +297,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 DrawingVisual marca = new();
                 using (DrawingContext dc = marca.RenderOpen())
                 {
-                    dc.PushTransform(new RotateTransform(-35, pagina.Size.Width / 2, pagina.Size.Height / 2));
+                    double centroX = pagina.Size.Width / 2;
+                    double centroY = pagina.Size.Height * 0.62;
+                    dc.PushTransform(new RotateTransform(35, centroX, centroY));
                     FormattedText texto = new(
                         "PENDIENTE DE APROBACIÓN",
                         System.Globalization.CultureInfo.CurrentCulture,
@@ -282,7 +308,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                         58,
                         new SolidColorBrush(Color.FromArgb(88, 110, 110, 110)),
                         96);
-                    dc.DrawText(texto, new Point((pagina.Size.Width - texto.Width) / 2, (pagina.Size.Height - texto.Height) / 2));
+                    dc.DrawText(texto, new Point(centroX - texto.Width / 2, centroY - texto.Height / 2));
                     dc.Pop();
                 }
                 ContainerVisual contenedor = new();

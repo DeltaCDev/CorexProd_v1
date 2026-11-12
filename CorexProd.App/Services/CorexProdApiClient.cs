@@ -369,6 +369,48 @@ public sealed class CorexProdApiClient
         return await GetAsync<OrdenTrabajoDetalleResponse>($"api/ordenes-trabajo/{idOrdenTrabajo}", cancellationToken);
     }
 
+    public async Task<ApiListResponse<OtAprobacionResumen>> GetOtAprobacionesAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ApiListResponse<OtAprobacionResumen>>("api/ot-aprobaciones", cancellationToken);
+    }
+
+    public async Task<ApiListResponse<OtAprobacionUsuario>> GetUsuariosAprobadoresOtAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ApiListResponse<OtAprobacionUsuario>>("api/ot-aprobaciones/usuarios", cancellationToken);
+    }
+
+    public async Task<OtAprobacionDetalleResponse> GetOtAprobacionDetalleAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<OtAprobacionDetalleResponse>($"api/ot-aprobaciones/{idOrdenTrabajo}", cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> AprobarOtAsync(int idOrdenTrabajo, OtAprobacionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ot-aprobaciones/{idOrdenTrabajo}/aprobar"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
+    }
+
+    public async Task<DocumentoAccionResponse> RechazarOtAsync(int idOrdenTrabajo, OtAprobacionRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ot-aprobaciones/{idOrdenTrabajo}/rechazar"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<DocumentoAccionResponse>(response, cancellationToken);
+    }
+
+    public string GetOtAprobacionPdfUrl(int idOrdenTrabajo)
+        => BuildUrl($"api/ot-aprobaciones/{idOrdenTrabajo}/pdf");
+
+    public async Task<byte[]> GetOtAprobacionPdfAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.GetAsync(GetOtAprobacionPdfUrl(idOrdenTrabajo), cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     public async Task<ApiListResponse<OrdenTrabajoKardexItem>> GetOrdenTrabajoKardexAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
     {
         return await GetAsync<ApiListResponse<OrdenTrabajoKardexItem>>($"api/ordenes-trabajo/{idOrdenTrabajo}/kardex", cancellationToken);

@@ -45,24 +45,28 @@
                                 <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
                             <VerticalStackLayout Spacing="10">
-                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="8">
                                     <Button Text="Ver"
                                             Padding="10,6"
                                             BackgroundColor="#0E9384"
                                             Clicked="OnVerClicked" />
-                                    <Button Grid.Column="1"
+                                    <Button Grid.Column="1" Text="Imprimir"
+                                            Padding="10,6"
+                                            BackgroundColor="#2563EB"
+                                            Clicked="OnImprimirClicked" />
+                                    <Button Grid.Column="2"
                                             Text="X"
                                             Padding="10,6"
                                             BackgroundColor="#B42318"
                                             IsVisible="{Binding PuedeAnular}"
                                             Clicked="OnAnularClicked" />
-                                    <Button Grid.Column="2"
+                                    <Button Grid.Column="3"
                                             Text="!"
                                             IsVisible="{Binding MostrarAnulacion}"
                                             Padding="10,6"
                                             BackgroundColor="#F04438"
                                             Clicked="OnAnulacionInfoClicked" />
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="4"
                                             Text="Regularizar"
                                             IsVisible="{Binding PuedeRegularizar}"
                                             Padding="10,6"

@@ -3,6 +3,8 @@ using CorexProd.Entidad.Entidades;
 using CorexProd.Entidad.Utilidades;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
 using System.Text;
 
@@ -1930,6 +1932,285 @@ app.MapPost("/api/guias-internas/{id:int}/anular", async (int id, DocumentoAccio
     return Results.Ok(new { mensaje = mensaje.Value?.ToString() ?? string.Empty });
 });
 
+app.MapGet("/api/ot-aprobaciones", async () =>
+{
+    const string sql = @"
+SELECT O.IdOrdenTrabajo, O.NumeroOT, ISNULL(OCI.NumeroOci, '') AS NumeroOci,
+       ISNULL(OCI.OrdenCompraCliente, '') AS OrdenCompraCliente, O.NombreCliente,
+       O.FechaEmision, O.Estado,
+       ISNULL(O.EstadoAprobacion, 'PENDIENTE_APROBACION') AS EstadoAprobacion,
+       U.NombreUsuario AS UsuarioCreacion
+FROM dbo.OrdenTrabajo O
+LEFT JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+INNER JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
+WHERE UPPER(ISNULL(O.Estado, '')) NOT IN ('ANULADA', 'ANULADO', 'TERMINADA', 'TERMINADO')
+  AND UPPER(ISNULL(O.EstadoAprobacion, 'PENDIENTE_APROBACION')) NOT IN ('APROBADA', 'RECHAZADA')
+ORDER BY O.FechaRegistro DESC, O.IdOrdenTrabajo DESC;";
+    List<object> items = [];
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+        items.Add(new
+        {
+            idOrdenTrabajo = Convert.ToInt32(dr["IdOrdenTrabajo"]),
+            numeroOT = LeerString(dr, "NumeroOT"),
+            numeroOci = LeerString(dr, "NumeroOci"),
+            ordenCompraCliente = LeerString(dr, "OrdenCompraCliente"),
+            nombreCliente = LeerString(dr, "NombreCliente"),
+            fechaEmision = Convert.ToDateTime(dr["FechaEmision"]),
+            estado = LeerString(dr, "Estado"),
+            estadoAprobacion = LeerString(dr, "EstadoAprobacion"),
+            usuarioCreacion = LeerString(dr, "UsuarioCreacion")
+        });
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/ot-aprobaciones/usuarios", async () =>
+{
+    const string sql = @"
+SELECT U.IdUsuario, U.NombreUsuario, CONCAT(E.Nombre, ' ', E.Apellido) AS NombreCompleto
+FROM dbo.Usuarios U
+INNER JOIN dbo.Empleados E ON E.IdEmpleado = U.IdEmpleado
+WHERE U.Estado = 1 AND U.AprobacionOs = 1
+ORDER BY NombreCompleto, U.NombreUsuario;";
+    List<object> items = [];
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    await conexion.OpenAsync();
+    await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+    while (await dr.ReadAsync())
+        items.Add(new
+        {
+            idUsuario = Convert.ToInt32(dr["IdUsuario"]),
+            nombreUsuario = LeerString(dr, "NombreUsuario"),
+            nombreCompleto = LeerString(dr, "NombreCompleto")
+        });
+    return Results.Ok(new { total = items.Count, items });
+});
+
+app.MapGet("/api/ot-aprobaciones/{id:int}", async (int id) =>
+{
+    const string cabeceraSql = @"
+SELECT O.NumeroOT, O.NombreCliente, O.FechaEmision, O.Observacion, O.Estado,
+       ISNULL(O.EstadoAprobacion, 'PENDIENTE_APROBACION') AS EstadoAprobacion,
+       ISNULL(OCI.NumeroOci, '') AS NumeroOci, ISNULL(OCI.OrdenCompraCliente, '') AS OrdenCompraCliente,
+       OCI.FechaEntrega, U.NombreUsuario AS UsuarioCreacion
+FROM dbo.OrdenTrabajo O
+LEFT JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+INNER JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
+WHERE O.IdOrdenTrabajo = @Id;";
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    await using SqlCommand cabeceraCmd = new(cabeceraSql, conexion);
+    cabeceraCmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+    await using SqlDataReader cabeceraReader = await cabeceraCmd.ExecuteReaderAsync();
+    if (!await cabeceraReader.ReadAsync())
+        return Results.NotFound(new { mensaje = "No se encontró la OT." });
+    var cabecera = new
+    {
+        idOrdenTrabajo = id,
+        numeroOT = LeerString(cabeceraReader, "NumeroOT"),
+        nombreCliente = LeerString(cabeceraReader, "NombreCliente"),
+        numeroOci = LeerString(cabeceraReader, "NumeroOci"),
+        ordenCompraCliente = LeerString(cabeceraReader, "OrdenCompraCliente"),
+        fechaEmision = Convert.ToDateTime(cabeceraReader["FechaEmision"]),
+        fechaEntrega = LeerDateTimeNullable(cabeceraReader, "FechaEntrega"),
+        estado = LeerString(cabeceraReader, "Estado"),
+        estadoAprobacion = LeerString(cabeceraReader, "EstadoAprobacion"),
+        usuarioCreacion = LeerString(cabeceraReader, "UsuarioCreacion"),
+        observacion = LeerString(cabeceraReader, "Observacion")
+    };
+    await cabeceraReader.CloseAsync();
+
+    const string detalleSql = @"
+SELECT D.IdDetalleOT, D.CodigoProducto, D.NombreProducto,
+       ISNULL(OCI_D.Cantidad, D.CantidadRequerida) AS CantidadReqOc,
+       CONVERT(DECIMAL(18,2), ISNULL(S.StockActual, 0)) AS StockActual,
+       ISNULL(D.CantidadAdicionalStock, 0) AS CantidadAdicionalStock,
+       D.CantidadPlanificada AS TotalProducir,
+       ISNULL(OCI_D.Observacion, '') AS ObservacionModelo
+FROM dbo.OrdenTrabajoDetalle D
+LEFT JOIN dbo.OrdenCompraInternaDetalle OCI_D ON OCI_D.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+OUTER APPLY (SELECT SUM(SPA.StockActual) AS StockActual FROM dbo.StockProductosAlmacen SPA WHERE SPA.IdProducto = D.IdProducto) S
+WHERE D.IdOrdenTrabajo = @Id
+ORDER BY D.IdDetalleOT;";
+    List<object> detalles = [];
+    await using SqlCommand detalleCmd = new(detalleSql, conexion);
+    detalleCmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+    await using SqlDataReader detalleReader = await detalleCmd.ExecuteReaderAsync();
+    while (await detalleReader.ReadAsync())
+    {
+        decimal req = Convert.ToDecimal(detalleReader["CantidadReqOc"]);
+        decimal stock = Convert.ToDecimal(detalleReader["StockActual"]);
+        detalles.Add(new
+        {
+            idDetalleOT = Convert.ToInt32(detalleReader["IdDetalleOT"]),
+            codigoProducto = LeerString(detalleReader, "CodigoProducto"),
+            nombreProducto = LeerString(detalleReader, "NombreProducto"),
+            cantidadReqOc = req,
+            stockActual = stock,
+            cantidadFaltante = Math.Max(0, req - stock),
+            cantidadAdicionalStock = Convert.ToDecimal(detalleReader["CantidadAdicionalStock"]),
+            totalProducir = Convert.ToDecimal(detalleReader["TotalProducir"]),
+            observacionModelo = LeerString(detalleReader, "ObservacionModelo")
+        });
+    }
+    return Results.Ok(new { cabecera, detalles });
+});
+
+app.MapGet("/api/ot-aprobaciones/{id:int}/pdf", async (int id) =>
+{
+    const string sql = @"
+SELECT O.NumeroOT, O.NombreCliente, O.FechaEmision, O.Observacion, O.Estado,
+       ISNULL(O.EstadoAprobacion, 'PENDIENTE_APROBACION') AS EstadoAprobacion,
+       ISNULL(OCI.NumeroOci, '') AS NumeroOci, ISNULL(OCI.OrdenCompraCliente, '') AS OrdenCompraCliente,
+       U.NombreUsuario AS UsuarioCreacion, E.Nombre + ' ' + E.Apellido AS NombreCreador,
+       UA.NombreUsuario AS UsuarioAprobacion, EA.Nombre + ' ' + EA.Apellido AS NombreAprobador,
+       U.FirmaImagen AS FirmaCreador, UA.FirmaImagen AS FirmaAprobador
+FROM dbo.OrdenTrabajo O
+LEFT JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
+INNER JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
+LEFT JOIN dbo.Empleados E ON E.IdEmpleado = U.IdEmpleado
+LEFT JOIN dbo.Usuarios UA ON UA.IdUsuario = O.IdUsuarioAprobacionGerencia
+LEFT JOIN dbo.Empleados EA ON EA.IdEmpleado = UA.IdEmpleado
+WHERE O.IdOrdenTrabajo = @Id;
+SELECT D.CodigoProducto, D.NombreProducto, ISNULL(OCI_D.Cantidad, D.CantidadRequerida) AS CantidadReq,
+       ISNULL(D.CantidadAdicionalStock, 0) AS CantidadAdicional, D.CantidadPlanificada AS TotalProducir,
+       ISNULL(OCI_D.Observacion, '') AS Observacion
+FROM dbo.OrdenTrabajoDetalle D
+LEFT JOIN dbo.OrdenCompraInternaDetalle OCI_D ON OCI_D.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle
+WHERE D.IdOrdenTrabajo = @Id ORDER BY D.IdDetalleOT;";
+    await using SqlConnection conexion = new(connectionString);
+    await using SqlCommand cmd = new(sql, conexion);
+    cmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+    await conexion.OpenAsync();
+    await using SqlDataReader reader = await cmd.ExecuteReaderAsync();
+    if (!await reader.ReadAsync()) return Results.NotFound(new { mensaje = "No se encontró la OT." });
+    string numero = LeerString(reader, "NumeroOT");
+    string aprobacion = LeerString(reader, "EstadoAprobacion");
+    string cliente = LimpiarPdf(LeerString(reader, "NombreCliente"));
+    string oci = LimpiarPdf(LeerString(reader, "NumeroOci"));
+    string ocCliente = LimpiarPdf(LeerString(reader, "OrdenCompraCliente"));
+    string observacionGeneral = LimpiarPdf(LeerString(reader, "Observacion"));
+    string creador = LeerString(reader, "NombreCreador");
+    if (string.IsNullOrWhiteSpace(creador)) creador = LeerString(reader, "UsuarioCreacion");
+    string aprobador = LeerString(reader, "NombreAprobador");
+    if (string.IsNullOrWhiteSpace(aprobador)) aprobador = "Pendiente";
+    byte[]? firmaCreador = reader["FirmaCreador"] is DBNull ? null : (byte[])reader["FirmaCreador"];
+    byte[]? firmaAprobador = reader["FirmaAprobador"] is DBNull ? null : (byte[])reader["FirmaAprobador"];
+    SimplePdf pdf = new();
+    SimplePdfPage page = pdf.AddPage(595, 842);
+    double y = 800;
+    page.Text("DELTA", 36, y, 20, true);
+    page.CenterText("ORDEN DE TRABAJO (OT)", 310, y, 18, true); y -= 28;
+    page.Rectangle(210, y - 25, 175, 28);
+    page.CenterText(numero, 297, y - 17, 15, true); y -= 42;
+    page.Rectangle(24, y - 72, 547, 72);
+    page.Text("Empresa / Cliente", 32, y - 14, 8, true); page.Text(TruncarPdf(cliente, 45), 125, y - 14, 8);
+    page.Text("Orden de Compra Cliente", 32, y - 30, 8, true); page.Text(TruncarPdf(ocCliente, 35), 125, y - 30, 8);
+    page.Text("OCI (Referencia)", 32, y - 46, 8, true); page.Text(oci, 125, y - 46, 8);
+    page.Text("Fecha y hora de emisión", 310, y - 14, 8, true); page.Text(Convert.ToDateTime(reader["FechaEmision"]).ToString("dd/MM/yyyy HH:mm"), 430, y - 14, 8);
+    page.Text("Elaborado por", 310, y - 30, 8, true); page.Text(TruncarPdf(LimpiarPdf(creador), 25), 430, y - 30, 8);
+    page.Text("Autorizado por", 310, y - 46, 8, true); page.Text(TruncarPdf(LimpiarPdf(aprobador), 25), 430, y - 46, 8);
+    y -= 94;
+    if (!aprobacion.Equals("APROBADA", StringComparison.OrdinalIgnoreCase))
+        page.CenterText("PENDIENTE DE APROBACION", 297, 430, 24, true);
+    page.Text("DETALLE DE PRODUCTOS", 30, y, 12, true); y -= 18;
+    page.Rectangle(24, y - 22, 547, 22);
+    page.Text("Codigo / Producto", 30, y - 14, 8, true); page.RightText("Para OC", 410, y - 14, 8, true); page.RightText("Adicional", 490, y - 14, 8, true); page.RightText("Total", 565, y - 14, 8, true); y -= 22;
+    await reader.CloseAsync();
+    await using SqlCommand detailCmd = new(sql, conexion);
+    detailCmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+    await using SqlDataReader detailReader = await detailCmd.ExecuteReaderAsync();
+    await detailReader.ReadAsync();
+    await detailReader.NextResultAsync();
+    while (await detailReader.ReadAsync())
+    {
+        List<string> lineas = DividirLineasPdf($"{LeerString(detailReader, "CodigoProducto")} - {LeerString(detailReader, "NombreProducto")}", 48).Take(2).ToList();
+        double h = Math.Max(22, lineas.Count * 10 + 8);
+        page.Rectangle(24, y - h, 547, h);
+        for (int i = 0; i < lineas.Count; i++) page.Text(lineas[i], 30, y - 13 - i * 10, 8);
+        page.RightText(Convert.ToDecimal(detailReader["CantidadReq"]).ToString("N2"), 410, y - 13, 8);
+        page.RightText(Convert.ToDecimal(detailReader["CantidadAdicional"]).ToString("N2"), 490, y - 13, 8);
+        page.RightText(Convert.ToDecimal(detailReader["TotalProducir"]).ToString("N2"), 565, y - 13, 8); y -= h;
+    }
+    await detailReader.CloseAsync();
+    y -= 12; page.Text("OBSERVACIONES GENERALES:", 30, y, 9, true); y -= 14;
+    foreach (string linea in DividirLineasPdf(string.IsNullOrWhiteSpace(observacionGeneral) ? "-" : observacionGeneral, 90).Take(3))
+    { page.Text(linea, 30, y, 8); y -= 10; }
+    y -= 12;
+    page.Rectangle(24, y - 112, 175, 112); page.Rectangle(210, y - 112, 175, 112); page.Rectangle(396, y - 112, 175, 112);
+    if (ConvertirImagenPdf(firmaCreador, out int cw, out int ch) is byte[] creadorJpg) page.Image(creadorJpg, cw, ch, 34, y - 72, 155, 48);
+    if (ConvertirImagenPdf(firmaAprobador, out int aw, out int ah) is byte[] aprobadorJpg) page.Image(aprobadorJpg, aw, ah, 406, y - 72, 155, 48);
+    page.CenterText(LimpiarPdf(creador), 111, y - 84, 8, true); page.CenterText("Elaborado por", 111, y - 101, 8);
+    page.CenterText("Recibido por", 297, y - 101, 8); page.CenterText(LimpiarPdf(aprobador), 483, y - 84, 8, true); page.CenterText("Autorizado por (Gerencia)", 483, y - 101, 8);
+    return Results.File(pdf.Save(), "application/pdf", $"{numero}.pdf");
+});
+
+app.MapPost("/api/ot-aprobaciones/{id:int}/aprobar", async (int id, OtAprobacionApiRequest request) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Clave))
+        return Results.BadRequest(new { mensaje = "Seleccione el usuario e ingrese la contraseña." });
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    const string usuarioSql = "SELECT IdUsuario, Clave, Estado, AprobacionOs FROM dbo.Usuarios WHERE NombreUsuario = @Usuario;";
+    await using SqlCommand usuarioCmd = new(usuarioSql, conexion);
+    usuarioCmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 80).Value = request.Usuario.Trim();
+    await using SqlDataReader usuarioReader = await usuarioCmd.ExecuteReaderAsync();
+    if (!await usuarioReader.ReadAsync()) return Results.Unauthorized();
+    int idUsuario = Convert.ToInt32(usuarioReader["IdUsuario"]);
+    string hash = usuarioReader["Clave"]?.ToString() ?? string.Empty;
+    bool valido = Convert.ToBoolean(usuarioReader["Estado"]) && Convert.ToBoolean(usuarioReader["AprobacionOs"])
+        && BCrypt.Net.BCrypt.Verify(request.Clave.Trim(), hash);
+    if (!valido) return Results.Unauthorized();
+    await usuarioReader.CloseAsync();
+    await using (SqlCommand estadoCmd = new("SELECT Estado, ISNULL(EstadoAprobacion, 'PENDIENTE_APROBACION') FROM dbo.OrdenTrabajo WHERE IdOrdenTrabajo = @Id;", conexion))
+    {
+        estadoCmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+        await using SqlDataReader estadoReader = await estadoCmd.ExecuteReaderAsync();
+        if (!await estadoReader.ReadAsync()) return Results.NotFound(new { mensaje = "No se encontró la OT." });
+        string estado = estadoReader.IsDBNull(0) ? string.Empty : estadoReader.GetString(0);
+        string estadoAprobacion = estadoReader.IsDBNull(1) ? string.Empty : estadoReader.GetString(1);
+        if (estado.Equals("ANULADA", StringComparison.OrdinalIgnoreCase) || estado.Equals("ANULADO", StringComparison.OrdinalIgnoreCase)
+            || estado.Equals("TERMINADA", StringComparison.OrdinalIgnoreCase) || estado.Equals("TERMINADO", StringComparison.OrdinalIgnoreCase)
+            || estadoAprobacion.Equals("APROBADA", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new { mensaje = "La OT ya no está pendiente de aprobación." });
+    }
+    await using SqlCommand cmd = new("dbo.USP_PRO_OT_APROBAR_GERENCIA", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@IdUsuarioGerencia", SqlDbType.Int).Value = idUsuario;
+    cmd.Parameters.Add("@Observacion", SqlDbType.VarChar, 500).Value = (object?)request.Observacion?.Trim() ?? DBNull.Value;
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = "OT aprobada correctamente." });
+});
+
+app.MapPost("/api/ot-aprobaciones/{id:int}/rechazar", async (int id, OtAprobacionApiRequest request) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Clave) || string.IsNullOrWhiteSpace(request.Motivo))
+        return Results.BadRequest(new { mensaje = "Seleccione el usuario, ingrese la contraseña y el motivo." });
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    const string usuarioSql = "SELECT IdUsuario, Clave, Estado, AprobacionOs FROM dbo.Usuarios WHERE NombreUsuario = @Usuario;";
+    await using SqlCommand usuarioCmd = new(usuarioSql, conexion);
+    usuarioCmd.Parameters.Add("@Usuario", SqlDbType.VarChar, 80).Value = request.Usuario.Trim();
+    await using SqlDataReader usuarioReader = await usuarioCmd.ExecuteReaderAsync();
+    if (!await usuarioReader.ReadAsync()) return Results.Unauthorized();
+    int idUsuario = Convert.ToInt32(usuarioReader["IdUsuario"]);
+    string hash = usuarioReader["Clave"]?.ToString() ?? string.Empty;
+    bool valido = Convert.ToBoolean(usuarioReader["Estado"]) && Convert.ToBoolean(usuarioReader["AprobacionOs"])
+        && BCrypt.Net.BCrypt.Verify(request.Clave.Trim(), hash);
+    if (!valido) return Results.Unauthorized();
+    await usuarioReader.CloseAsync();
+    await using SqlCommand cmd = new("dbo.USP_PRO_OT_RECHAZAR_GERENCIA", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@IdUsuarioGerencia", SqlDbType.Int).Value = idUsuario;
+    cmd.Parameters.Add("@Motivo", SqlDbType.VarChar, 500).Value = request.Motivo.Trim();
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = "OT rechazada correctamente." });
+});
+
 app.MapGet("/api/ordenes-trabajo", async (string? buscar) =>
 {
     List<object> items = [];
@@ -3524,6 +3805,32 @@ static string LimpiarPdf(string? value)
     return new string(value.Select(c => reemplazos.TryGetValue(c, out char r) ? r : c <= 127 ? c : ' ').ToArray());
 }
 
+static byte[]? ConvertirImagenPdf(byte[]? bytes, out int width, out int height)
+{
+    width = height = 0;
+    if (bytes is not { Length: > 0 }) return null;
+    try
+    {
+        using MemoryStream input = new(bytes);
+        using Bitmap source = new(input);
+        width = source.Width;
+        height = source.Height;
+        using Bitmap rgb = new(width, height, PixelFormat.Format24bppRgb);
+        using (Graphics graphics = Graphics.FromImage(rgb))
+        {
+            graphics.Clear(Color.White);
+            graphics.DrawImage(source, 0, 0, width, height);
+        }
+        using MemoryStream output = new();
+        rgb.Save(output, ImageFormat.Jpeg);
+        return output.ToArray();
+    }
+    catch
+    {
+        return null;
+    }
+}
+
 static async Task<decimal> ObtenerTotalProducidoOtAsync(string connectionString, int idOrdenTrabajo)
 {
     await using SqlConnection conexion = new(connectionString);
@@ -3623,7 +3930,8 @@ internal sealed class SimplePdf
     public byte[] Save()
     {
         int pageCount = _pages.Count;
-        int objectCount = 4 + pageCount * 2;
+        List<SimplePdfImage> images = _pages.SelectMany(x => x.Images).ToList();
+        int objectCount = 4 + pageCount * 2 + images.Count;
         byte[][] objects = new byte[objectCount + 1][];
         int[] pageObjectIds = new int[pageCount];
         int[] contentObjectIds = new int[pageCount];
@@ -3634,6 +3942,9 @@ internal sealed class SimplePdf
             pageObjectIds[i] = nextId++;
             contentObjectIds[i] = nextId++;
         }
+        int imageId = 5 + pageCount * 2;
+        foreach (SimplePdfImage image in images)
+            image.ObjectId = imageId++;
 
         string kids = string.Join(" ", pageObjectIds.Select(id => $"{id} 0 R"));
         objects[1] = AsciiObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
@@ -3644,10 +3955,16 @@ internal sealed class SimplePdf
         for (int i = 0; i < pageCount; i++)
         {
             SimplePdfPage page = _pages[i];
+            string xObjects = page.Images.Count == 0
+                ? string.Empty
+                : " /XObject << " + string.Join(" ", page.Images.Select(image => $"/{image.Name} {image.ObjectId} 0 R")) + " >>";
             objects[pageObjectIds[i]] = AsciiObject(pageObjectIds[i],
-                $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectIds[i]} 0 R >>");
+                $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {N(page.Width)} {N(page.Height)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xObjects} >> /Contents {contentObjectIds[i]} 0 R >>");
             objects[contentObjectIds[i]] = StreamObject(contentObjectIds[i], page.Content);
         }
+
+        foreach (SimplePdfImage image in images)
+            objects[image.ObjectId] = ImageObject(image.ObjectId, image);
 
         using MemoryStream stream = new();
         WriteAscii(stream, "%PDF-1.4\n");
@@ -3680,6 +3997,17 @@ internal sealed class SimplePdf
         return stream.ToArray();
     }
 
+    private static byte[] ImageObject(int id, SimplePdfImage image)
+    {
+        byte[] header = Encoding.ASCII.GetBytes($"{id} 0 obj\n<< /Type /XObject /Subtype /Image /Width {image.Width} /Height {image.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {image.Bytes.Length} >>\nstream\n");
+        byte[] footer = Encoding.ASCII.GetBytes("\nendstream\nendobj\n");
+        using MemoryStream stream = new();
+        stream.Write(header);
+        stream.Write(image.Bytes);
+        stream.Write(footer);
+        return stream.ToArray();
+    }
+
     private static void WriteAscii(Stream stream, string value) => stream.Write(Encoding.ASCII.GetBytes(value));
     internal static string N(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 }
@@ -3687,10 +4015,12 @@ internal sealed class SimplePdf
 internal sealed class SimplePdfPage(double width, double height)
 {
     private readonly StringBuilder _content = new();
+    private int _imageCounter;
 
     public double Width { get; } = width;
     public double Height { get; } = height;
     public string Content => _content.ToString();
+    public List<SimplePdfImage> Images { get; } = [];
 
     public void Text(string text, double x, double y, double size, bool bold = false)
     {
@@ -3712,6 +4042,22 @@ internal sealed class SimplePdfPage(double width, double height)
 
     public void CenterText(string text, double centerX, double y, double size, bool bold = false)
         => Text(text, centerX - ApproximateWidth(text, size, bold) / 2, y, size, bold);
+
+    public void Image(byte[] bytes, int sourceWidth, int sourceHeight, double x, double y, double maxWidth, double maxHeight)
+    {
+        if (bytes.Length == 0 || sourceWidth <= 0 || sourceHeight <= 0) return;
+        double scale = Math.Min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+        double width = sourceWidth * scale;
+        double height = sourceHeight * scale;
+        SimplePdfImage image = new($"Im{++_imageCounter}", bytes, sourceWidth, sourceHeight);
+        Images.Add(image);
+        _content.Append("q ");
+        _content.Append(SimplePdf.N(width)); _content.Append(" 0 0 ");
+        _content.Append(SimplePdf.N(height)); _content.Append(' ');
+        _content.Append(SimplePdf.N(x + (maxWidth - width) / 2)); _content.Append(' ');
+        _content.Append(SimplePdf.N(y + (maxHeight - height) / 2));
+        _content.Append(" cm /"); _content.Append(image.Name); _content.Append(" Do Q\n");
+    }
 
     public void Rectangle(double x, double y, double width, double height)
     {
@@ -3765,6 +4111,15 @@ internal sealed class SimplePdfPage(double width, double height)
         builder.Append(')');
         return builder.ToString();
     }
+}
+
+internal sealed class SimplePdfImage(string name, byte[] bytes, int width, int height)
+{
+    public string Name { get; } = name;
+    public byte[] Bytes { get; } = bytes;
+    public int Width { get; } = width;
+    public int Height { get; } = height;
+    public int ObjectId { get; set; }
 }
 
 internal sealed record EmpresaPdfInfo(string Nombre, string Ruc, string Direccion, string Telefono, string Correo);
@@ -3828,6 +4183,7 @@ internal sealed record FichaDocumentoApi(
     DateTime FechaRegistro);
 
 internal sealed record LoginRequest(string? Usuario, string? Clave);
+internal sealed record OtAprobacionApiRequest(string? Usuario, string? Clave, string? Motivo = null, string? Observacion = null);
 
 internal sealed record LoginUserResponse(
     int IdUsuario,

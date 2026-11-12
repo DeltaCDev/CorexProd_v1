@@ -94,6 +94,9 @@ public partial class SidebarMenuView : ContentView
     private async void OnOrdenesTrabajoClicked(object? sender, EventArgs e) =>
         await NavegarAsync(nameof(OrdenesTrabajoPage));
 
+    private async void OnAprobacionesOtClicked(object? sender, EventArgs e) =>
+        await NavegarAsync(nameof(OtAprobacionesPage));
+
     private async void OnOtManualClicked(object? sender, EventArgs e) =>
         await NavegarAsync(nameof(OrdenTrabajoManualPage));
 
@@ -118,7 +121,7 @@ public partial class SidebarMenuView : ContentView
         await Shell.Current.GoToAsync(ruta);
     }
 
-    private async void OnLogoutClicked(object? sender, EventArgs e)
+    private async void OnLogoutTapped(object? sender, TappedEventArgs e)
     {
         bool confirmar = await Shell.Current.DisplayAlert(
             "Cerrar sesión",

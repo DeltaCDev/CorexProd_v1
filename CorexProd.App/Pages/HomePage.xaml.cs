@@ -501,6 +501,7 @@ public partial class HomePage : ContentPage
             new("OC", "Ventas", "OC", nameof(OciPage)),
             new("Guia Interna", "Ventas", "GI", nameof(GuiaInternaPage)),
             new("OT", "Produccion", "OT", nameof(OrdenesTrabajoPage)),
+            new("Aprobacion OT", "Produccion", "AP", nameof(OtAprobacionesPage)),
             new("OT Manual", "Produccion", "OM", nameof(OrdenTrabajoManualPage)),
             new("Kardex", "Reportes", "KX", "Kardex"),
             new("Stock productos", "Almacen", "SP", nameof(StockProductosPage)),

@@ -89,6 +89,29 @@ public partial class OrdenesTrabajoPage : ContentPage
         await Shell.Current.GoToAsync($"{nameof(OrdenTrabajoDetallePage)}?id={item.Item.IdOrdenTrabajo}");
     }
 
+    private async void OnImprimirClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not OrdenTrabajoListItem item)
+            return;
+
+        try
+        {
+            byte[] pdf = await _apiClient.GetOtAprobacionPdfAsync(item.Item.IdOrdenTrabajo);
+            string fileName = string.IsNullOrWhiteSpace(item.Item.NumeroOT) ? $"ot-{item.Item.IdOrdenTrabajo}.pdf" : $"{item.Item.NumeroOT}.pdf";
+            string path = Path.Combine(FileSystem.CacheDirectory, fileName);
+            await File.WriteAllBytesAsync(path, pdf);
+            await Launcher.Default.OpenAsync(new OpenFileRequest
+            {
+                Title = $"Imprimir {item.Item.NumeroOT}",
+                File = new ReadOnlyFile(path, "application/pdf")
+            });
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Imprimir OT", ex.Message, "OK");
+        }
+    }
+
     private async void OnAnularClicked(object? sender, EventArgs e)
     {
         if ((sender as BindableObject)?.BindingContext is not OrdenTrabajoListItem item)

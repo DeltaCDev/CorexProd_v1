@@ -533,6 +533,53 @@ public sealed record OrdenTrabajoResumen(
     DateTime? FechaAnulacion = null,
     DateTime? FechaCierre = null);
 
+public sealed record OtAprobacionResumen(
+    int IdOrdenTrabajo,
+    string NumeroOT,
+    string NumeroOci,
+    string OrdenCompraCliente,
+    string NombreCliente,
+    DateTime FechaEmision,
+    string Estado,
+    string EstadoAprobacion,
+    string UsuarioCreacion)
+{
+    public string ReferenciaTexto => $"OCI: {NumeroOci} | OC cliente: {OrdenCompraCliente}";
+}
+
+public sealed record OtAprobacionUsuario(int IdUsuario, string NombreUsuario, string NombreCompleto)
+{
+    public string Texto => string.IsNullOrWhiteSpace(NombreCompleto) ? NombreUsuario : $"{NombreCompleto} ({NombreUsuario})";
+}
+
+public sealed record OtAprobacionDetalleResponse(OtAprobacionCabecera Cabecera, IReadOnlyList<OtAprobacionProducto> Detalles);
+
+public sealed record OtAprobacionCabecera(
+    int IdOrdenTrabajo,
+    string NumeroOT,
+    string NombreCliente,
+    string NumeroOci,
+    string OrdenCompraCliente,
+    DateTime FechaEmision,
+    DateTime? FechaEntrega,
+    string Estado,
+    string EstadoAprobacion,
+    string UsuarioCreacion,
+    string Observacion);
+
+public sealed record OtAprobacionProducto(
+    int IdDetalleOT,
+    string CodigoProducto,
+    string NombreProducto,
+    decimal CantidadReqOc,
+    decimal StockActual,
+    decimal CantidadFaltante,
+    decimal CantidadAdicionalStock,
+    decimal TotalProducir,
+    string ObservacionModelo);
+
+public sealed record OtAprobacionRequest(string Usuario, string Clave, string? Motivo = null, string? Observacion = null);
+
 public sealed record OrdenTrabajoDetalleResponse(
     OrdenTrabajoCabecera Cabecera,
     IReadOnlyList<OrdenTrabajoProducto> Detalles,

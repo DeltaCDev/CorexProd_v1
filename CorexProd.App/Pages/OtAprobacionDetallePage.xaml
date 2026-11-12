@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CorexProd.App.Pages.OtAprobacionDetallePage"
+             Title="Revisar OT"
+             BackgroundColor="#F4F6F8">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <VerticalStackLayout Padding="14" Spacing="4" BackgroundColor="White">
+            <Label x:Name="TituloLabel" FontFamily="OpenSansSemibold" FontSize="20" TextColor="#101828" />
+            <Label x:Name="CabeceraLabel" FontSize="12" TextColor="#667085" LineBreakMode="WordWrap" />
+            <Label x:Name="EstadoLabel" FontFamily="OpenSansSemibold" TextColor="#B54708" />
+        </VerticalStackLayout>
+        <RefreshView Grid.Row="1" x:Name="Refresh" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="12" Spacing="10">
+                    <CollectionView x:Name="ProductosView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12" Margin="0,0,0,10" BackgroundColor="White" Stroke="#D9E0E6">
+                                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="{Binding ProductoTitulo}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" LineBreakMode="WordWrap" />
+                                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="3">
+                                            <Label Text="Req. OC" FontSize="12" TextColor="#667085" /><Label Grid.Column="1" Text="{Binding CantidadReqOc, StringFormat='{0:N2}'}" HorizontalTextAlignment="End" />
+                                            <Label Grid.Row="1" Text="Stock almacén" FontSize="12" TextColor="#667085" /><Label Grid.Row="1" Grid.Column="1" Text="{Binding StockActual, StringFormat='{0:N2}'}" HorizontalTextAlignment="End" />
+                                            <Label Grid.Row="2" Text="Faltante" FontSize="12" TextColor="#B42318" /><Label Grid.Row="2" Grid.Column="1" Text="{Binding CantidadFaltante, StringFormat='{0:N2}'}" TextColor="#B42318" HorizontalTextAlignment="End" />
+                                            <Label Grid.Row="3" Text="Adicional stock / Total" FontSize="12" TextColor="#667085" /><Label Grid.Row="3" Grid.Column="1" Text="{Binding AdicionalTotalTexto}" HorizontalTextAlignment="End" />
+                                        </Grid>
+                                        <Label Text="{Binding ObservacionModeloTexto}" FontSize="12" TextColor="#475467" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Border Padding="12" BackgroundColor="#E8F1FF" Stroke="#B6D0F5">
+                        <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="TOTAL GENERAL A PRODUCIR" FontFamily="OpenSansSemibold" TextColor="#164E8A" />
+                            <Label x:Name="TotalGeneralLabel" FontSize="20" FontFamily="OpenSansSemibold" TextColor="#164E8A" />
+                            <Label x:Name="ObservacionGeneralLabel" FontSize="12" TextColor="#475467" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+        <Grid Grid.Row="2" Padding="12" ColumnDefinitions="*,*" ColumnSpacing="8" BackgroundColor="White">
+            <Button Text="Rechazar" BackgroundColor="#B42318" Clicked="OnRechazarClicked" />
+            <Button Grid.Column="1" Text="Aprobar" BackgroundColor="#16A34A" Clicked="OnAprobarClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>
