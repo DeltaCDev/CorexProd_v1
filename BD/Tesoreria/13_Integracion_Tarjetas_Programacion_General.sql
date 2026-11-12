@@ -50,20 +50,56 @@ BEGIN
     ),
     TarjetasBase AS
     (
+        /* Una fila por moneda exigible: nunca se combinan PEN y USD. */
         SELECT P.IdTarjetaPeriodo AS OrigenDetalleId, T.IdTarjetaCredito AS OrigenId, P.FechaVencimiento,
             CAST('TARJETA' AS VARCHAR(40)) AS Categoria, CAST('TARJETA' AS VARCHAR(40)) AS OrigenTipo, CAST('TARJETA_CREDITO' AS VARCHAR(80)) AS Subcategoria,
             E.Nombre AS EntidadProveedor, T.Titular, ISNULL(ER.Nombre, T.EmpresaResponsable) AS EmpresaResponsable,
             CONCAT(CASE WHEN NULLIF(T.Alias, '') IS NULL THEN 'Tarjeta' ELSE T.Alias END, CASE WHEN NULLIF(T.Ultimos4, '') IS NULL THEN '' ELSE CONCAT(' ****', T.Ultimos4) END) AS Concepto,
             CONCAT('Periodo ', RIGHT(CONCAT('0', P.PeriodoMes), 2), '/', P.PeriodoAnio) AS Referencia,
             CAST(NULL AS DATE) AS FechaDocumento, CAST(NULL AS INT) AS NumeroCuota, CAST(NULL AS INT) AS TotalCuotas,
-            T.Moneda, P.Monto AS Importe, ISNULL(PG.TotalPagado, 0) AS Pagado, P.Monto - ISNULL(PG.TotalPagado, 0) AS Saldo,
-            P.Estado, T.Estado AS EstadoOrigen
+            CAST('PEN' AS VARCHAR(10)) AS Moneda, P.ImportePEN AS Importe, ISNULL(Pagos.TotalPagadoPEN, 0) AS Pagado,
+            P.ImportePEN - ISNULL(Pagos.TotalPagadoPEN, 0) AS Saldo, P.EstadoPEN AS Estado, T.Estado AS EstadoOrigen
         FROM dbo.TesTarjetaCreditoPeriodos P
         INNER JOIN dbo.TesTarjetasCredito T ON T.IdTarjetaCredito = P.IdTarjetaCredito
         INNER JOIN dbo.TesEntidadesFinancieras E ON E.IdEntidadFinanciera = T.IdEntidadFinanciera
         LEFT JOIN dbo.Empresas ER ON ER.IdEmpresa = T.IdEmpresaResponsable
-        OUTER APPLY (SELECT SUM(PG2.Importe) AS TotalPagado FROM dbo.TesTarjetaCreditoPagos PG2 WHERE PG2.IdTarjetaPeriodo = P.IdTarjetaPeriodo AND PG2.Estado = 'ACTIVO') PG
-        WHERE T.Estado <> 'ANULADA' AND P.Estado IN ('PENDIENTE', 'PARCIAL', 'CANCELADA') AND P.Monto IS NOT NULL AND P.FechaVencimiento IS NOT NULL
+        OUTER APPLY
+        (
+            SELECT
+                SUM(CASE WHEN PG2.Estado = 'ACTIVO' AND PG2.Moneda = 'PEN' THEN PG2.Importe ELSE 0 END) AS TotalPagadoPEN,
+                SUM(CASE WHEN PG2.Estado = 'ACTIVO' AND PG2.Moneda = 'USD' THEN PG2.Importe ELSE 0 END) AS TotalPagadoUSD
+            FROM dbo.TesTarjetaCreditoPagos PG2
+            WHERE PG2.IdTarjetaPeriodo = P.IdTarjetaPeriodo
+        ) Pagos
+        WHERE T.Estado <> 'ANULADA'
+          AND P.FechaVencimiento IS NOT NULL
+          AND P.ImportePEN IS NOT NULL
+
+        UNION ALL
+
+        SELECT P.IdTarjetaPeriodo AS OrigenDetalleId, T.IdTarjetaCredito AS OrigenId, P.FechaVencimiento,
+            CAST('TARJETA' AS VARCHAR(40)) AS Categoria, CAST('TARJETA' AS VARCHAR(40)) AS OrigenTipo, CAST('TARJETA_CREDITO' AS VARCHAR(80)) AS Subcategoria,
+            E.Nombre AS EntidadProveedor, T.Titular, ISNULL(ER.Nombre, T.EmpresaResponsable) AS EmpresaResponsable,
+            CONCAT(CASE WHEN NULLIF(T.Alias, '') IS NULL THEN 'Tarjeta' ELSE T.Alias END, CASE WHEN NULLIF(T.Ultimos4, '') IS NULL THEN '' ELSE CONCAT(' ****', T.Ultimos4) END) AS Concepto,
+            CONCAT('Periodo ', RIGHT(CONCAT('0', P.PeriodoMes), 2), '/', P.PeriodoAnio) AS Referencia,
+            CAST(NULL AS DATE) AS FechaDocumento, CAST(NULL AS INT) AS NumeroCuota, CAST(NULL AS INT) AS TotalCuotas,
+            CAST('USD' AS VARCHAR(10)) AS Moneda, P.ImporteUSD AS Importe, ISNULL(Pagos.TotalPagadoUSD, 0) AS Pagado,
+            P.ImporteUSD - ISNULL(Pagos.TotalPagadoUSD, 0) AS Saldo, P.EstadoUSD AS Estado, T.Estado AS EstadoOrigen
+        FROM dbo.TesTarjetaCreditoPeriodos P
+        INNER JOIN dbo.TesTarjetasCredito T ON T.IdTarjetaCredito = P.IdTarjetaCredito
+        INNER JOIN dbo.TesEntidadesFinancieras E ON E.IdEntidadFinanciera = T.IdEntidadFinanciera
+        LEFT JOIN dbo.Empresas ER ON ER.IdEmpresa = T.IdEmpresaResponsable
+        OUTER APPLY
+        (
+            SELECT
+                SUM(CASE WHEN PG2.Estado = 'ACTIVO' AND PG2.Moneda = 'PEN' THEN PG2.Importe ELSE 0 END) AS TotalPagadoPEN,
+                SUM(CASE WHEN PG2.Estado = 'ACTIVO' AND PG2.Moneda = 'USD' THEN PG2.Importe ELSE 0 END) AS TotalPagadoUSD
+            FROM dbo.TesTarjetaCreditoPagos PG2
+            WHERE PG2.IdTarjetaPeriodo = P.IdTarjetaPeriodo
+        ) Pagos
+        WHERE T.Estado <> 'ANULADA'
+          AND P.FechaVencimiento IS NOT NULL
+          AND P.ImporteUSD IS NOT NULL
     ),
     UnionProgramacion AS
     (

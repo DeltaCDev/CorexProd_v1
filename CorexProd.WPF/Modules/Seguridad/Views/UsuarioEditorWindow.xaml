@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding TituloEditor}"
         Width="680"
-        Height="590"
-        MinHeight="590"
+        Height="700"
+        MinHeight="700"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="#F3F4F6">
@@ -116,6 +116,38 @@
                                        FontSize="12"
                                        Margin="0,5,0,0"/>
                         </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Background="#EFF6FF"
+                        BorderBrush="#BFDBFE"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12"
+                        Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Firma del usuario"
+                                       Style="{StaticResource LabelCampo}"/>
+                            <TextBlock Text="Se utilizará en la impresión de OT como elaborador o aprobador."
+                                       Foreground="#475569"
+                                       FontSize="12"/>
+                            <TextBlock Text="{Binding FirmaTexto}"
+                                       Foreground="#1D4ED8"
+                                       FontWeight="SemiBold"
+                                       Margin="0,5,0,0"/>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Content="Cargar firma"
+                                Width="120"
+                                Height="34"
+                                VerticalAlignment="Center"
+                                Click="CargarFirma_Click"
+                                Style="{StaticResource BotonBase}"/>
                     </Grid>
                 </Border>
 

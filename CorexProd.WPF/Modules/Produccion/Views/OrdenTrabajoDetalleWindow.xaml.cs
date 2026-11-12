@@ -614,6 +614,31 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private bool ValidarPermisoOperacion()
         {
+            if (_ot != null && !_ot.EstaAprobada)
+            {
+                string estado = _ot.EstadoAprobacion.Equals("RECHAZADA", StringComparison.OrdinalIgnoreCase)
+                    ? "RECHAZADA: " + _ot.MotivoRechazoAprobacion
+                    : "PENDIENTE DE APROBACIÓN DE GERENCIA";
+                MessageBox.Show(this,
+                    $"Esta OT no puede pasar a producción. Estado: {estado}.",
+                    "OT sin aprobación",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (_ot != null && _ot.Estado.Trim().Equals("ANULADA", StringComparison.OrdinalIgnoreCase)
+                || _ot != null && _ot.Estado.Trim().Equals("ANULADO", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show(
+                    this,
+                    "La OT está anulada. No se pueden iniciar, transferir, terminar ni reservar productos en sus áreas.",
+                    "OT anulada",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+
             if (_puedeOperarOt)
                 return true;
 

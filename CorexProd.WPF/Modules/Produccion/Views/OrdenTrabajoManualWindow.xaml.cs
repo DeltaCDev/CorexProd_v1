@@ -120,8 +120,28 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 if (ventanaValidacion.ShowDialog() != true)
                     return;
 
+                AutorizacionOperacionWindow autorizacion = new("Autorizar abastecimiento de stock")
+                {
+                    Owner = this
+                };
+                if (autorizacion.ShowDialog() != true)
+                    return;
+
+                Usuario? usuarioAutorizaStock = _ordenTrabajoNegocio.AutenticarUsuario(
+                    autorizacion.Usuario,
+                    autorizacion.Clave);
+                if (usuarioAutorizaStock == null)
+                {
+                    NotificationService.Warning("El usuario o la contraseña del autorizador no son válidos.");
+                    return;
+                }
+
                 int idUsuario = SessionManager.UsuarioActual?.IdUsuario ?? 0;
-                (int idOrdenTrabajo, string numero) = _ordenTrabajoNegocio.CrearManual(idUsuario, ObservacionTextBox.Text.Trim(), plan);
+                (int idOrdenTrabajo, string numero) = _ordenTrabajoNegocio.CrearManual(
+                    idUsuario,
+                    ObservacionTextBox.Text.Trim(),
+                    plan,
+                    usuarioAutorizaStock.IdUsuario);
                 OrdenTrabajo? otCreada = _ordenTrabajoNegocio.Obtener(idOrdenTrabajo);
                 if (otCreada != null)
                     MobileNotificationPublisher.OtNueva(otCreada, "Desktop - OT manual");
@@ -135,6 +155,26 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                         Codigo = x.Codigo,
                         Producto = x.NombreProducto,
                         Cantidad = x.Cantidad
+                    }))
+                {
+                    Owner = this
+                }.ShowDialog();
+
+                new OrdenTrabajoImpresionWindow(
+                    numero,
+                    "OT MANUAL",
+                    string.Empty,
+                    "ABASTECIMIENTO DE STOCK",
+                    SessionManager.UsuarioActual?.NombreUsuario ?? string.Empty,
+                    usuarioAutorizaStock.NombreUsuario,
+                    DateTime.Now,
+                    ObservacionTextBox.Text.Trim(),
+                    Detalles.Select(x => new OrdenTrabajoImpresionItem
+                    {
+                        Codigo = x.Codigo,
+                        Producto = x.NombreProducto,
+                        CantidadOc = 0,
+                        CantidadStock = x.Cantidad
                     }))
                 {
                     Owner = this

@@ -39,6 +39,16 @@ BEGIN TRY
     BEGIN TRAN;
 
     /* 1. Movimientos y Kardex */
+    /* Reservas generales y reservas de insumos/productos en proceso */
+    IF OBJECT_ID('dbo.StockReservaMovimiento', 'U') IS NOT NULL
+        DELETE FROM dbo.StockReservaMovimiento;
+
+    IF OBJECT_ID('dbo.StockReserva', 'U') IS NOT NULL
+        DELETE FROM dbo.StockReserva;
+
+    IF OBJECT_ID('dbo.StockProcesoReserva', 'U') IS NOT NULL
+        DELETE FROM dbo.StockProcesoReserva;
+
     IF OBJECT_ID('dbo.KardexProductos', 'U') IS NOT NULL
         DELETE FROM dbo.KardexProductos;
 
@@ -117,6 +127,9 @@ BEGIN TRY
         DELETE FROM dbo.Proformas;
 
     /* 7. Fichas técnicas */
+    IF OBJECT_ID('dbo.FichaTecnicaDocumento', 'U') IS NOT NULL
+        DELETE FROM dbo.FichaTecnicaDocumento;
+
     IF OBJECT_ID('dbo.FichaTecnicaDetalle', 'U') IS NOT NULL
         DELETE FROM dbo.FichaTecnicaDetalle;
 
@@ -220,6 +233,9 @@ BEGIN TRY
         ('StockInsumosAlmacen'),
         ('KardexProductos'),
         ('KardexInsumos'),
+        ('StockReserva'),
+        ('StockReservaMovimiento'),
+        ('StockProcesoReserva'),
         ('SeriesCorrelativosHistorial');
 
     DECLARE @TablaIdentity SYSNAME;

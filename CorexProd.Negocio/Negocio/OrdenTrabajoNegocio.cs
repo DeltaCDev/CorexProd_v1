@@ -20,14 +20,46 @@ namespace CorexProd.Negocio.Negocio
         public List<OrdenTrabajoValidacionProducto> ValidarInsumosManual(IEnumerable<OrdenTrabajoManualPlanificacion> items)=>_datos.ValidarInsumosManual(items);
         public List<OrdenTrabajoValidacionProducto> ListarPendientesRegularizacion(int idOrdenTrabajo)=>idOrdenTrabajo>0?_datos.ListarPendientesRegularizacion(idOrdenTrabajo):[];
         public List<OrdenTrabajoInsumoDetalle> DetalleInsumos(int idDetalleOci)=>_datos.DetalleInsumos(idDetalleOci);
-        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null,bool procesarTodaReserva=false)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada,procesarTodaReserva);
-        public (int Id,string Numero) CrearManual(int idUsuario,string observacion,IEnumerable<OrdenTrabajoManualPlanificacion> items)
+        public (int Id,string Numero) Crear(int idOci,int idUsuario,string observacion,IEnumerable<OrdenTrabajoPlanificacion> items,int? idOrdenTrabajoRelacionada=null,bool procesarTodaReserva=false,int? idUsuarioAutorizaStock=null)=>_datos.Crear(idOci,idUsuario,observacion,items,idOrdenTrabajoRelacionada,procesarTodaReserva,idUsuarioAutorizaStock);
+        public (int Id,string Numero) CrearManual(int idUsuario,string observacion,IEnumerable<OrdenTrabajoManualPlanificacion> items,int? idUsuarioAutorizaStock=null)
         {
             List<OrdenTrabajoManualPlanificacion> lista = items.ToList();
             if (idUsuario <= 0) throw new InvalidOperationException("No se pudo identificar al usuario de sesion.");
             if (lista.Count == 0) throw new InvalidOperationException("Seleccione al menos un producto.");
             if (lista.Any(x => x.IdProducto <= 0 || x.CantidadPlanificada <= 0)) throw new InvalidOperationException("Todas las cantidades deben ser mayores que cero.");
-            return _datos.CrearManual(idUsuario, observacion, lista);
+            return _datos.CrearManual(idUsuario, observacion, lista, idUsuarioAutorizaStock);
+        }
+
+        public Usuario? AutenticarUsuario(string nombreUsuario, string clave)
+        {
+            Usuario? usuario = _usuarios.ObtenerPorNombreUsuario(nombreUsuario);
+            return usuario != null
+                && usuario.Estado
+                && PasswordService.VerifyPassword(clave, usuario.Clave)
+                    ? usuario
+                    : null;
+        }
+
+        public Usuario? AutenticarAprobadorGerencia(string nombreUsuario, string clave)
+        {
+            Usuario? usuario = _usuarios.ObtenerPorNombreUsuario(nombreUsuario);
+            return usuario != null && usuario.Estado && usuario.AprobacionOs
+                && PasswordService.VerifyPassword(clave, usuario.Clave)
+                    ? usuario
+                    : null;
+        }
+
+        public void AprobarGerencia(int idOrdenTrabajo, int idUsuario, string observacion) => _datos.AprobarGerencia(idOrdenTrabajo, idUsuario, observacion);
+        public void RechazarGerencia(int idOrdenTrabajo, int idUsuario, string motivo) => _datos.RechazarGerencia(idOrdenTrabajo, idUsuario, motivo);
+
+        private void ValidarAprobacion(int idOt)
+        {
+            OrdenTrabajo? ot = _datos.Obtener(idOt);
+            if (ot == null) throw new InvalidOperationException("No se encontró la OT.");
+            if (ot.EstadoAprobacion.Equals("RECHAZADA", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("La OT fue rechazada por Gerencia: " + ot.MotivoRechazoAprobacion);
+            if (!ot.EstaAprobada)
+                throw new InvalidOperationException("La OT aún no está aprobada por Gerencia.");
         }
         public void Anular(int idOrdenTrabajo, bool convertirProcesoAMerma = false, int idUsuarioSesion = 0, string motivoAnulacion = "", string usuarioAnulacion = "")
         {
@@ -67,28 +99,33 @@ namespace CorexProd.Negocio.Negocio
 
         public void Lanzar(int idOt,int idSesion,Usuario autoriza,IEnumerable<OrdenTrabajoLanzamiento> items)
         {
+            ValidarAprobacion(idOt);
             List<OrdenTrabajoLanzamiento> lista=items.ToList(); if(lista.Count==0) throw new InvalidOperationException("Seleccione al menos un producto.");
             _datos.Lanzar(idOt,idSesion,autoriza.IdUsuario,lista);
         }
         public long Transferir(int idOt,int idArea,int idSesion,Usuario autoriza,string observacion,IEnumerable<OrdenTrabajoTransferenciaItem> items)
         {
+            ValidarAprobacion(idOt);
             List<OrdenTrabajoTransferenciaItem> lista=items.ToList(); if(lista.Count==0) throw new InvalidOperationException("Seleccione al menos un producto.");
             if(lista.GroupBy(x=>x.IdDetalleOT).Any(g=>g.Count()>1)) throw new InvalidOperationException("No se puede transferir un producto duplicado.");
             return _datos.Transferir(idOt,idArea,idSesion,autoriza.IdUsuario,observacion,lista);
         }
         public long Terminar(int idOt,int idArea,int idSesion,Usuario autoriza,string observacion,IEnumerable<OrdenTrabajoTransferenciaItem> items)
         {
+            ValidarAprobacion(idOt);
             List<OrdenTrabajoTransferenciaItem> lista=items.ToList(); if(lista.Count==0) throw new InvalidOperationException("Seleccione al menos un producto.");
             if(lista.GroupBy(x=>x.IdDetalleOT).Any(g=>g.Count()>1)) throw new InvalidOperationException("No se puede terminar un producto duplicado.");
             return _datos.Terminar(idOt,idArea,idSesion,autoriza.IdUsuario,observacion,lista);
         }
         public long TransferirConMerma(int idOt,int idArea,long idDetalleArea,int idSesion,Usuario autoriza,decimal cantidadMerma,string motivo,string observacion,IEnumerable<OrdenTrabajoTransferenciaItem> items)
         {
+            ValidarAprobacion(idOt);
             List<OrdenTrabajoTransferenciaItem> lista=items.ToList(); if(lista.Count!=1) throw new InvalidOperationException("La operacion con merma debe realizarse para un producto.");
             return _datos.TransferirConMerma(idOt,idArea,idDetalleArea,idSesion,autoriza.IdUsuario,cantidadMerma,motivo,observacion,lista);
         }
         public long TerminarConMerma(int idOt,int idArea,long idDetalleArea,int idSesion,Usuario autoriza,decimal cantidadMerma,string motivo,string observacion,IEnumerable<OrdenTrabajoTransferenciaItem> items)
         {
+            ValidarAprobacion(idOt);
             List<OrdenTrabajoTransferenciaItem> lista=items.ToList(); if(lista.Count!=1) throw new InvalidOperationException("La operacion con merma debe realizarse para un producto.");
             return _datos.TerminarConMerma(idOt,idArea,idDetalleArea,idSesion,autoriza.IdUsuario,cantidadMerma,motivo,observacion,lista);
         }
@@ -99,6 +136,7 @@ namespace CorexProd.Negocio.Negocio
             if (cantidad <= 0) throw new InvalidOperationException("La cantidad a reservar debe ser mayor que cero.");
             _datos.ReservarStockProceso(idDetalleArea,cantidad,observacion,idSesion,autoriza.IdUsuario);
         }
+
         public void ConfirmarConsumo(int idDetalleOt,int idUsuario)=>_datos.ConfirmarConsumo(idDetalleOt,idUsuario);
     }
 }

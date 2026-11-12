@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace CorexProd.Entidad.Entidades
 {
@@ -18,6 +20,17 @@ namespace CorexProd.Entidad.Entidades
         public string NombreCliente { get; set; } = string.Empty;
         public DateTime FechaEmision { get; set; }
         public string Estado { get; set; } = string.Empty;
+        public string EstadoAprobacion { get; set; } = "PENDIENTE_APROBACION";
+        public int? IdUsuarioAprobacionGerencia { get; set; }
+        public DateTime? FechaAprobacionGerencia { get; set; }
+        public string UsuarioAprobadorGerencia { get; set; } = string.Empty;
+        public string MotivoRechazoAprobacion { get; set; } = string.Empty;
+        public string ObservacionAprobacion { get; set; } = string.Empty;
+        public string AprobadoresGerenciaTexto { get; set; } = "Sin usuarios autorizados";
+        public string EstadoAprobacionTexto => EstadoAprobacion.Equals("APROBADA", StringComparison.OrdinalIgnoreCase)
+            ? "APROBADA"
+            : "POR APROBAR";
+        public bool EstaAprobada => EstadoAprobacion.Equals("APROBADA", StringComparison.OrdinalIgnoreCase);
         public string EstadoOperativo
         {
             get
@@ -36,6 +49,7 @@ namespace CorexProd.Entidad.Entidades
         public int IdUsuarioCreacion { get; set; }
         public string UsuarioCreacion { get; set; } = string.Empty;
         public string UsuarioAutoriza { get; set; } = string.Empty;
+        public DateTime? FechaAutorizacionStock { get; set; }
         public string Observacion { get; set; } = string.Empty;
         public DateTime FechaRegistro { get; set; }
         public string MotivoAnulacion { get; set; } = string.Empty;
@@ -67,6 +81,7 @@ namespace CorexProd.Entidad.Entidades
         public string NombreProducto { get; set; } = string.Empty;
         public decimal CantidadRequerida { get; set; }
         public decimal CantidadPlanificada { get; set; }
+        public decimal CantidadAdicionalStock { get; set; }
         public decimal CantidadLanzada { get; set; }
         public decimal CantidadProducida { get; set; }
         public decimal CantidadAplicada { get; set; }
@@ -133,7 +148,7 @@ namespace CorexProd.Entidad.Entidades
         public decimal Cantidad { get; set; }
     }
 
-    public class OrdenTrabajoValidacionProducto
+    public class OrdenTrabajoValidacionProducto : INotifyPropertyChanged
     {
         public int IdOrdenCompraInternaDetalle { get; set; }
         public int IdProducto { get; set; }
@@ -150,6 +165,19 @@ namespace CorexProd.Entidad.Entidades
         public decimal StockTotal { get; set; }
         public decimal StockProcesoReservado { get; set; }
         public decimal Deficit { get; set; }
+        private decimal _adicionalStock;
+        public decimal AdicionalStock
+        {
+            get => _adicionalStock;
+            set
+            {
+                if (_adicionalStock == value) return;
+                _adicionalStock = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TotalProduccion));
+            }
+        }
+        public decimal TotalProduccion => Deficit + Math.Max(0, AdicionalStock);
         public decimal CantidadRequeridaOc => CantidadRequerida + StockAlmacen;
         public decimal DeficitContraStockActual => Math.Max(0, CantidadRequerida - StockAlmacen);
         public decimal StockProcesoDisponible => Math.Max(0, StockProcesoReservado > 0 ? StockProcesoReservado : StockTotal - StockAlmacen);
@@ -161,6 +189,11 @@ namespace CorexProd.Entidad.Entidades
             !EstadoInsumos.Equals("Sin ficha tecnica", StringComparison.OrdinalIgnoreCase);
         public bool TieneSuministrosDisponibles =>
             EstadoInsumos.Equals("Completo para producir", StringComparison.OrdinalIgnoreCase);
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
     public class OrdenTrabajoInsumoDetalle

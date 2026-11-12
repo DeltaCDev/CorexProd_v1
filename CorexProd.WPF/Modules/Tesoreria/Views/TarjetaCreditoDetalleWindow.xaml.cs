@@ -40,7 +40,9 @@ namespace CorexProd.WPF.Modules.Tesoreria.Views
                     ? "Crear período"
                     : "Solo una tarjeta ACTIVA permite nuevos períodos.";
                 PeriodosDataGrid.ItemsSource = _negocio.ListarPeriodos(_id)
-                    .OrderByDescending(x => x.PeriodoAnio).ThenByDescending(x => x.PeriodoMes).ToList();
+                    .OrderByDescending(x => x.PeriodoAnio).ThenByDescending(x => x.PeriodoMes)
+                    .Select(periodo => _negocio.ObtenerPeriodo(periodo.IdTarjetaPeriodo) ?? periodo)
+                    .ToList();
                 HistorialDataGrid.ItemsSource = _negocio.ListarHistorial(_id);
                 PagosDataGrid.ItemsSource = null;
             }

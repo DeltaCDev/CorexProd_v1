@@ -2726,7 +2726,20 @@ ORDER BY Version DESC, IdFichaTecnicaDocumento DESC;";
     await conexion.OpenAsync();
     await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
     if (!await dr.ReadAsync())
-        return null;
+    {
+        // Respaldo para instalaciones donde los PDF ya fueron copiados,
+        // pero aún no se ejecutó la carga inicial de FichaTecnicaDocumento.
+        string rutaPdf = Path.Combine(rutaBase, $"{codigoModelo}.pdf");
+        if (!File.Exists(rutaPdf))
+            return null;
+
+        return new FichaDocumentoApi(
+            codigoModelo,
+            $"{codigoModelo}.pdf",
+            rutaPdf,
+            1,
+            DateTime.MinValue);
+    }
 
     string rutaRelativa = dr["RutaRelativa"]?.ToString() ?? string.Empty;
     string rutaCompleta = Path.IsPathRooted(rutaRelativa)

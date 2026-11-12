@@ -86,7 +86,7 @@ namespace CorexProd.Datos.Datos
 
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new(
-                "SELECT IdUsuario, NombreUsuario, Clave, Estado, AprobacionOs, ClaveAprobacionOs FROM Usuarios WHERE IdUsuario = @IdUsuario",
+                "SELECT IdUsuario, NombreUsuario, Clave, Estado, AprobacionOs, ClaveAprobacionOs, FirmaImagen, FirmaMimeType FROM Usuarios WHERE IdUsuario = @IdUsuario",
                 conexion);
 
             cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
@@ -105,7 +105,9 @@ namespace CorexProd.Datos.Datos
                     Clave = dr["Clave"]?.ToString() ?? string.Empty,
                     Estado = Convert.ToBoolean(dr["Estado"]),
                     AprobacionOs = Convert.ToBoolean(dr["AprobacionOs"]),
-                    ClaveAprobacionOs = dr["ClaveAprobacionOs"]?.ToString() ?? string.Empty
+                    ClaveAprobacionOs = dr["ClaveAprobacionOs"]?.ToString() ?? string.Empty,
+                    FirmaImagen = dr["FirmaImagen"] is DBNull ? null : (byte[])dr["FirmaImagen"],
+                    FirmaMimeType = dr["FirmaMimeType"]?.ToString() ?? string.Empty
                 };
             }
 
@@ -118,7 +120,7 @@ namespace CorexProd.Datos.Datos
 
             using SqlConnection conexion = Conexion.ObtenerConexion();
             using SqlCommand cmd = new(
-                "SELECT IdUsuario, NombreUsuario, Clave, Estado, AprobacionOs, ClaveAprobacionOs FROM Usuarios WHERE NombreUsuario = @NombreUsuario",
+                "SELECT IdUsuario, NombreUsuario, Clave, Estado, AprobacionOs, ClaveAprobacionOs, FirmaImagen, FirmaMimeType FROM Usuarios WHERE NombreUsuario = @NombreUsuario",
                 conexion);
 
             cmd.Parameters.AddWithValue("@NombreUsuario", nombreUsuario);
@@ -137,7 +139,9 @@ namespace CorexProd.Datos.Datos
                     Clave = dr["Clave"]?.ToString() ?? string.Empty,
                     Estado = Convert.ToBoolean(dr["Estado"]),
                     AprobacionOs = Convert.ToBoolean(dr["AprobacionOs"]),
-                    ClaveAprobacionOs = dr["ClaveAprobacionOs"]?.ToString() ?? string.Empty
+                    ClaveAprobacionOs = dr["ClaveAprobacionOs"]?.ToString() ?? string.Empty,
+                    FirmaImagen = dr["FirmaImagen"] is DBNull ? null : (byte[])dr["FirmaImagen"],
+                    FirmaMimeType = dr["FirmaMimeType"]?.ToString() ?? string.Empty
                 };
             }
 
@@ -319,6 +323,10 @@ namespace CorexProd.Datos.Datos
                     ALTER TABLE dbo.Usuarios ADD AprobacionOs BIT NOT NULL CONSTRAINT DF_Usuarios_AprobacionOs DEFAULT(0);
                 IF COL_LENGTH('dbo.Usuarios', 'ClaveAprobacionOs') IS NULL
                     ALTER TABLE dbo.Usuarios ADD ClaveAprobacionOs VARCHAR(200) NOT NULL CONSTRAINT DF_Usuarios_ClaveAprobacionOs DEFAULT('');
+                IF COL_LENGTH('dbo.Usuarios', 'FirmaImagen') IS NULL
+                    ALTER TABLE dbo.Usuarios ADD FirmaImagen VARBINARY(MAX) NULL;
+                IF COL_LENGTH('dbo.Usuarios', 'FirmaMimeType') IS NULL
+                    ALTER TABLE dbo.Usuarios ADD FirmaMimeType VARCHAR(100) NULL;
                 """, conexion);
             cmd.ExecuteNonQuery();
         }
@@ -332,13 +340,17 @@ namespace CorexProd.Datos.Datos
                         WHEN @AprobacionOs = 0 THEN ''
                         WHEN @ClaveAprobacionOs = '' THEN ClaveAprobacionOs
                         ELSE @ClaveAprobacionOs
-                    END
+                    END,
+                    FirmaImagen = CASE WHEN @FirmaImagen IS NULL THEN FirmaImagen ELSE @FirmaImagen END,
+                    FirmaMimeType = CASE WHEN @FirmaImagen IS NULL THEN FirmaMimeType ELSE @FirmaMimeType END
                 WHERE IdUsuario = @IdUsuario OR NombreUsuario = @NombreUsuario;
                 """, conexion);
             cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = usuario.IdUsuario;
             cmd.Parameters.Add("@NombreUsuario", SqlDbType.VarChar, 80).Value = usuario.NombreUsuario;
             cmd.Parameters.Add("@AprobacionOs", SqlDbType.Bit).Value = usuario.AprobacionOs;
             cmd.Parameters.Add("@ClaveAprobacionOs", SqlDbType.VarChar, 200).Value = usuario.ClaveAprobacionOs ?? string.Empty;
+            cmd.Parameters.Add("@FirmaImagen", SqlDbType.VarBinary, -1).Value = (object?)usuario.FirmaImagen ?? DBNull.Value;
+            cmd.Parameters.Add("@FirmaMimeType", SqlDbType.VarChar, 100).Value = usuario.FirmaMimeType ?? string.Empty;
             cmd.ExecuteNonQuery();
         }
 
@@ -347,7 +359,7 @@ namespace CorexProd.Datos.Datos
             foreach (Usuario usuario in usuarios)
             {
                 using SqlCommand cmd = new("""
-                    SELECT AprobacionOs, ClaveAprobacionOs
+                    SELECT AprobacionOs, ClaveAprobacionOs, FirmaImagen, FirmaMimeType
                     FROM dbo.Usuarios
                     WHERE IdUsuario = @IdUsuario;
                     """, conexion);
@@ -357,6 +369,8 @@ namespace CorexProd.Datos.Datos
                 {
                     usuario.AprobacionOs = Convert.ToBoolean(dr["AprobacionOs"]);
                     usuario.ClaveAprobacionOs = dr["ClaveAprobacionOs"]?.ToString() ?? string.Empty;
+                    usuario.FirmaImagen = dr["FirmaImagen"] is DBNull ? null : (byte[])dr["FirmaImagen"];
+                    usuario.FirmaMimeType = dr["FirmaMimeType"]?.ToString() ?? string.Empty;
                 }
             }
         }

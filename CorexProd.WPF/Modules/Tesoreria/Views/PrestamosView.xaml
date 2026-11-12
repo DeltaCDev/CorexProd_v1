@@ -164,7 +164,7 @@
                   BorderThickness="1"
                   GridLinesVisibility="Horizontal">
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Acciones" Width="130">
+                <DataGridTemplateColumn Header="Acciones" Width="131">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

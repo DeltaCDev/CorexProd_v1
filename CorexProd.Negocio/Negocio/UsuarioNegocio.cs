@@ -71,6 +71,11 @@ namespace CorexProd.Negocio.Negocio
             return _usuarioDatos.Listar();
         }
 
+        public Usuario? ObtenerPorId(int idUsuario)
+        {
+            return idUsuario > 0 ? _usuarioDatos.ObtenerPorId(idUsuario) : null;
+        }
+
         public string ObtenerNombrePersona(string nombreUsuario)
         {
             nombreUsuario = nombreUsuario?.Trim() ?? string.Empty;

@@ -14,6 +14,9 @@ namespace CorexProd.Entidad.Entidades
         public string Clave { get; set; } = string.Empty;
         public bool AprobacionOs { get; set; }
         public string ClaveAprobacionOs { get; set; } = string.Empty;
+        public byte[]? FirmaImagen { get; set; }
+        public string FirmaMimeType { get; set; } = string.Empty;
+        public bool TieneFirma => FirmaImagen is { Length: > 0 };
         public string AprobacionOsTexto => AprobacionOs ? "Si" : "No";
         public string ClaveAprobacionOsTexto => string.IsNullOrWhiteSpace(ClaveAprobacionOs) ? "No configurada" : "Configurada";
 

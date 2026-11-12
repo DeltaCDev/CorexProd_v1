@@ -29,6 +29,10 @@ SELECT
     END AS Estado,
     O.IdUsuarioCreacion,
     U.NombreUsuario,
+    O.EstadoAprobacion,
+    O.IdUsuarioAprobacionGerencia,
+    O.FechaAprobacionGerencia,
+    ISNULL(AP.NombreUsuario, '') AS UsuarioAprobadorGerencia,
     O.Observacion,
     O.FechaRegistro,
     ISNULL(O.MotivoAnulacion, '') AS MotivoAnulacion,
@@ -63,6 +67,7 @@ FROM dbo.OrdenTrabajo O
 LEFT JOIN dbo.OrdenesCompraInterna OCI ON OCI.IdOrdenCompraInterna = O.IdOrdenCompraInterna
 JOIN dbo.Usuarios U ON U.IdUsuario = O.IdUsuarioCreacion
 LEFT JOIN dbo.Usuarios UA ON UA.IdUsuario = O.IdUsuarioAutorizaCreacion
+LEFT JOIN dbo.Usuarios AP ON AP.IdUsuario = O.IdUsuarioAprobacionGerencia
 LEFT JOIN dbo.OrdenTrabajo REL ON REL.IdOrdenTrabajo = O.IdOrdenTrabajoRelacionada
 LEFT JOIN dbo.OrdenTrabajoDetalle D ON D.IdOrdenTrabajo = O.IdOrdenTrabajo
 OUTER APPLY
@@ -90,7 +95,8 @@ OUTER APPLY
 GROUP BY
     O.IdOrdenTrabajo,O.NumeroOT,O.IdOrdenCompraInterna,OCI.NumeroOci,OCI.OrdenCompraCliente,
     O.IdCliente,O.NombreCliente,O.FechaEmision,O.Estado,O.IdUsuarioCreacion,U.NombreUsuario,
-    O.Observacion,O.FechaRegistro,O.MotivoAnulacion,O.UsuarioAnulacion,O.FechaAnulacion,O.TipoOT,O.IdOrdenTrabajoRelacionada,REL.NumeroOT,UA.NombreUsuario
+    O.Observacion,O.FechaRegistro,O.MotivoAnulacion,O.UsuarioAnulacion,O.FechaAnulacion,O.TipoOT,O.IdOrdenTrabajoRelacionada,REL.NumeroOT,UA.NombreUsuario,
+    O.EstadoAprobacion,O.IdUsuarioAprobacionGerencia,O.FechaAprobacionGerencia,AP.NombreUsuario
 ORDER BY O.IdOrdenTrabajo DESC;";
 
             List<OrdenTrabajo> lista = [];
@@ -108,6 +114,10 @@ ORDER BY O.IdOrdenTrabajo DESC;";
                 FechaEmision = Convert.ToDateTime(dr["FechaEmision"]), Estado = Texto(dr, "Estado"),
                 IdUsuarioCreacion = Convert.ToInt32(dr["IdUsuarioCreacion"]), UsuarioCreacion = Texto(dr, "NombreUsuario"),
                 UsuarioAutoriza=Texto(dr,"UsuarioAutoriza"),
+                EstadoAprobacion = TextoOpcional(dr, "EstadoAprobacion", "PENDIENTE_APROBACION"),
+                IdUsuarioAprobacionGerencia = EnteroOpcional(dr, "IdUsuarioAprobacionGerencia"),
+                FechaAprobacionGerencia = FechaOpcional(dr, "FechaAprobacionGerencia"),
+                UsuarioAprobadorGerencia = TextoOpcional(dr, "UsuarioAprobadorGerencia"),
                 Observacion = Texto(dr, "Observacion"), FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
                 MotivoAnulacion = Texto(dr, "MotivoAnulacion"), UsuarioAnulacion = Texto(dr, "UsuarioAnulacion"),
                 FechaAnulacion = dr["FechaAnulacion"] is DBNull ? null : Convert.ToDateTime(dr["FechaAnulacion"]),
@@ -168,6 +178,11 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
                 IdOrdenTrabajoRelacionada=dr["IdOrdenTrabajoRelacionada"] is DBNull?null:Convert.ToInt32(dr["IdOrdenTrabajoRelacionada"]),
                 IdCliente = Convert.ToInt32(dr["IdCliente"]), NombreCliente = Texto(dr,"NombreCliente"),
                 FechaEmision = Convert.ToDateTime(dr["FechaEmision"]), Estado = Texto(dr,"Estado"), IdUsuarioCreacion = Convert.ToInt32(dr["IdUsuarioCreacion"]),
+                EstadoAprobacion = TextoOpcional(dr, "EstadoAprobacion", "PENDIENTE_APROBACION"),
+                IdUsuarioAprobacionGerencia = EnteroOpcional(dr, "IdUsuarioAprobacionGerencia"),
+                FechaAprobacionGerencia = FechaOpcional(dr, "FechaAprobacionGerencia"),
+                MotivoRechazoAprobacion = TextoOpcional(dr, "MotivoRechazoAprobacion"),
+                ObservacionAprobacion = TextoOpcional(dr, "ObservacionAprobacion"),
                 UsuarioCreacion = Texto(dr,"NombreUsuario"),UsuarioAutoriza=Texto(dr,"UsuarioAutoriza"), Observacion = Texto(dr,"Observacion"), FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
                 MotivoAnulacion = Texto(dr, "MotivoAnulacion"), UsuarioAnulacion = Texto(dr, "UsuarioAnulacion"),
                 FechaAnulacion = dr["FechaAnulacion"] is DBNull ? null : Convert.ToDateTime(dr["FechaAnulacion"])
@@ -233,7 +248,11 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
                 // Compatibilidad con bases anteriores al modulo de reserva de stock en proceso.
             }
 
-            CargarReservasStockFisico(cn, ot);
+            // Las reservas de StockReserva representan stock fisico comprometido
+            // para la OC/OT, pero no son reservas de stock en proceso dentro de
+            // un area de produccion. No deben descontarse del pendiente de la OT.
+            // El pendiente de produccion se calcula exclusivamente con
+            // StockProcesoReserva en CargarReservasProceso.
         }
 
         private static void CargarReservasStockFisico(SqlConnection cn, OrdenTrabajo ot)
@@ -394,7 +413,7 @@ ORDER BY D.IdDetalleOT;";
             return lista;
         }
 
-        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items, int? idOrdenTrabajoRelacionada = null, bool procesarTodaReserva = false)
+        public (int Id, string Numero) Crear(int idOci, int idUsuario, string observacion, IEnumerable<OrdenTrabajoPlanificacion> items, int? idOrdenTrabajoRelacionada = null, bool procesarTodaReserva = false, int? idUsuarioAutorizaStock = null)
         {
             if (idOrdenTrabajoRelacionada.HasValue)
                 return CrearRegularizacion(idOci, idOrdenTrabajoRelacionada.Value, idUsuario, observacion, items);
@@ -422,6 +441,7 @@ ORDER BY D.IdDetalleOT;";
             cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOci); cmd.Parameters.AddWithValue("@IdUsuario", idUsuario); cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
             cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName="dbo.TipoOTPlanificacion", Value=TablaPlanificacion(items) });
             cmd.Parameters.Add("@ProcesarTodaReserva", SqlDbType.Bit).Value = procesarTodaReserva;
+            cmd.Parameters.Add("@IdUsuarioAutorizaStock", SqlDbType.Int).Value = (object?)idUsuarioAutorizaStock ?? DBNull.Value;
             SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction=ParameterDirection.Output };
             SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar,30) { Direction=ParameterDirection.Output };
             cmd.Parameters.Add(id); cmd.Parameters.Add(numero); cmd.ExecuteNonQuery();
@@ -495,13 +515,14 @@ WHERE IdOrdenTrabajoRelacionada = @IdOrdenTrabajoOrigen
             return lista;
         }
 
-        public (int Id, string Numero) CrearManual(int idUsuario, string observacion, IEnumerable<OrdenTrabajoManualPlanificacion> items)
+        public (int Id, string Numero) CrearManual(int idUsuario, string observacion, IEnumerable<OrdenTrabajoManualPlanificacion> items, int? idUsuarioAutorizaStock = null)
         {
             using SqlConnection cn = Conexion.ObtenerConexion();
             using SqlCommand cmd = new("USP_PRO_OT_MANUAL_CREAR", cn) { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
             cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
             cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTManualPlanificacion", Value = TablaPlanificacionManual(items) });
+            cmd.Parameters.Add("@IdUsuarioAutorizaStock", SqlDbType.Int).Value = (object?)idUsuarioAutorizaStock ?? DBNull.Value;
             SqlParameter id = new("@IdOrdenTrabajo", SqlDbType.Int) { Direction = ParameterDirection.Output };
             SqlParameter numero = new("@NumeroOT", SqlDbType.VarChar, 30) { Direction = ParameterDirection.Output };
             cmd.Parameters.Add(id);
@@ -851,13 +872,32 @@ ORDER BY k.FechaMovimiento DESC;";
 
         public void ConfirmarConsumo(int idDetalleOt,int idUsuario){using SqlConnection cn=Conexion.ObtenerConexion();using SqlCommand cmd=new("USP_PRO_OT_CONSUMO_CONFIRMAR",cn){CommandType=CommandType.StoredProcedure};cmd.Parameters.AddWithValue("@IdDetalleOT",idDetalleOt);cmd.Parameters.AddWithValue("@IdUsuario",idUsuario);cn.Open();cmd.ExecuteNonQuery();}
 
+        public void AprobarGerencia(int idOrdenTrabajo, int idUsuario, string observacion)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_APROBAR_GERENCIA", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo); cmd.Parameters.AddWithValue("@IdUsuarioGerencia", idUsuario); cmd.Parameters.AddWithValue("@Observacion", observacion ?? string.Empty);
+            cn.Open(); cmd.ExecuteNonQuery();
+        }
+
+        public void RechazarGerencia(int idOrdenTrabajo, int idUsuario, string motivo)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_RECHAZAR_GERENCIA", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@IdOrdenTrabajo", idOrdenTrabajo); cmd.Parameters.AddWithValue("@IdUsuarioGerencia", idUsuario); cmd.Parameters.AddWithValue("@Motivo", motivo ?? string.Empty);
+            cn.Open(); cmd.ExecuteNonQuery();
+        }
+
         private static DataTable TablaPlanificacion(IEnumerable<OrdenTrabajoPlanificacion> items) { DataTable t=new(); t.Columns.Add("IdOrdenCompraInternaDetalle",typeof(int)); t.Columns.Add("CantidadPlanificada",typeof(decimal)); foreach(var x in items)t.Rows.Add(x.IdOrdenCompraInternaDetalle,x.CantidadPlanificada); return t; }
         private static DataTable TablaPlanificacionManual(IEnumerable<OrdenTrabajoManualPlanificacion> items) { DataTable t=new(); t.Columns.Add("IdProducto",typeof(int)); t.Columns.Add("CantidadPlanificada",typeof(decimal)); foreach(var x in items)t.Rows.Add(x.IdProducto,x.CantidadPlanificada); return t; }
         private static DataTable TablaLanzamiento(IEnumerable<OrdenTrabajoLanzamiento> items) { DataTable t=new(); t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("CantidadLanzada",typeof(decimal));t.Columns.Add("Motivo",typeof(string));t.Columns.Add("Observacion",typeof(string));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.CantidadLanzada,x.Motivo,x.Observacion);return t; }
         private static DataTable TablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaItem> items) { DataTable t=new();t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("Cantidad",typeof(decimal));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.Cantidad);return t; }
-        private static OrdenTrabajoDetalle MapearDetalle(SqlDataReader dr)=>new(){IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdOrdenCompraInternaDetalle=dr["IdOrdenCompraInternaDetalle"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),CantidadPlanificada=Decimal(dr,"CantidadPlanificada"),CantidadLanzada=Decimal(dr,"CantidadLanzada"),CantidadProducida=Decimal(dr,"CantidadProducida"),CantidadAplicada=Decimal(dr,"CantidadAplicada"),CantidadExcedente=Decimal(dr,"CantidadExcedente"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),MotivoDiferencia=Texto(dr,"MotivoDiferencia"),ObservacionDiferencia=Texto(dr,"ObservacionDiferencia")};
+        private static OrdenTrabajoDetalle MapearDetalle(SqlDataReader dr)=>new(){IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdOrdenCompraInternaDetalle=dr["IdOrdenCompraInternaDetalle"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),CantidadPlanificada=Decimal(dr,"CantidadPlanificada"),CantidadAdicionalStock=DecimalOpcional(dr,"CantidadAdicionalStock"),CantidadLanzada=Decimal(dr,"CantidadLanzada"),CantidadProducida=Decimal(dr,"CantidadProducida"),CantidadAplicada=Decimal(dr,"CantidadAplicada"),CantidadExcedente=Decimal(dr,"CantidadExcedente"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),MotivoDiferencia=Texto(dr,"MotivoDiferencia"),ObservacionDiferencia=Texto(dr,"ObservacionDiferencia")};
         private static OrdenTrabajoDetalleArea MapearArea(SqlDataReader dr)=>new(){IdDetalleArea=Convert.ToInt64(dr["IdDetalleArea"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdAreaProduccion=Convert.ToInt32(dr["IdAreaProduccion"]),CodigoArea=Texto(dr,"CodigoArea"),NombreArea=Texto(dr,"NombreArea"),OrdenSecuencia=Convert.ToInt32(dr["OrdenSecuencia"]),EsInicio=Convert.ToBoolean(dr["EsInicio"]),EsTermino=Convert.ToBoolean(dr["EsTermino"]),ManejaMerma=Convert.ToBoolean(dr["ManejaMerma"]),PermiteReservarStockProceso=BooleanoOpcional(dr,"PermiteReservarStockProceso"),ModoEnvio=Texto(dr,"ModoEnvio"),CantidadRecibida=Decimal(dr,"CantidadRecibida"),CantidadEnviada=Decimal(dr,"CantidadEnviada"),CantidadMerma=Decimal(dr,"CantidadMerma"),CantidadReservada=DecimalOpcional(dr,"CantidadReservada"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto")};
         private static string Texto(SqlDataReader dr,string c)=>dr[c] is DBNull?string.Empty:dr[c]?.ToString()??string.Empty;
+        private static string TextoOpcional(SqlDataReader dr,string c,string valorPorDefecto="") { try { return dr[c] is DBNull ? valorPorDefecto : dr[c]?.ToString() ?? valorPorDefecto; } catch (IndexOutOfRangeException) { return valorPorDefecto; } }
+        private static int? EnteroOpcional(SqlDataReader dr,string c) { try { int o=dr.GetOrdinal(c); return dr.IsDBNull(o)?null:Convert.ToInt32(dr.GetValue(o)); } catch (IndexOutOfRangeException) { return null; } }
+        private static DateTime? FechaOpcional(SqlDataReader dr,string c) { try { int o=dr.GetOrdinal(c); return dr.IsDBNull(o)?null:Convert.ToDateTime(dr.GetValue(o)); } catch (IndexOutOfRangeException) { return null; } }
         private static decimal Decimal(SqlDataReader dr,string c)=>dr[c] is DBNull?0:Convert.ToDecimal(dr[c]);
         private static decimal DecimalOpcional(SqlDataReader dr,string c){try{int o=dr.GetOrdinal(c);return dr.IsDBNull(o)?0:Convert.ToDecimal(dr.GetValue(o));}catch(IndexOutOfRangeException){return 0;}}
         private static bool BooleanoOpcional(SqlDataReader dr,string c){try{int o=dr.GetOrdinal(c);return !dr.IsDBNull(o)&&Convert.ToBoolean(dr.GetValue(o));}catch(IndexOutOfRangeException){return false;}}

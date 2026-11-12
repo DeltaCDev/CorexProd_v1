@@ -431,16 +431,23 @@ WHERE D.IdOrdenCompraInterna = @IdOrdenCompraInterna;";
 
         public string Anular(int idOrdenCompraInterna, string motivoAnulacion, string usuarioAnulacion)
         {
-            using SqlConnection conexion = Conexion.ObtenerConexion();
-            using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
-            cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOrdenCompraInterna);
-            cmd.Parameters.AddWithValue("@MotivoAnulacion", motivoAnulacion);
-            cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
-            SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
-            cmd.Parameters.Add(mensaje);
-            conexion.Open();
-            cmd.ExecuteNonQuery();
-            return mensaje.Value?.ToString() ?? string.Empty;
+            try
+            {
+                using SqlConnection conexion = Conexion.ObtenerConexion();
+                using SqlCommand cmd = new("USP_VEN_OCI_ANULAR", conexion) { CommandType = CommandType.StoredProcedure };
+                cmd.Parameters.AddWithValue("@IdOrdenCompraInterna", idOrdenCompraInterna);
+                cmd.Parameters.AddWithValue("@MotivoAnulacion", motivoAnulacion);
+                cmd.Parameters.AddWithValue("@UsuarioAnulacion", usuarioAnulacion);
+                SqlParameter mensaje = new("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+                cmd.Parameters.Add(mensaje);
+                conexion.Open();
+                cmd.ExecuteNonQuery();
+                return mensaje.Value?.ToString() ?? string.Empty;
+            }
+            catch (SqlException ex)
+            {
+                return $"No se pudo anular la OCI: {ex.Message}";
+            }
         }
 
         public bool TieneOtActiva(int idOrdenCompraInterna)

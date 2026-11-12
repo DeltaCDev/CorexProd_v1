@@ -1,4 +1,4 @@
-<Window x:Class="CorexProd.WPF.Modules.Tesoreria.Views.TarjetaCreditoDetalleWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:CorexProd.WPF.Modules.Tesoreria.Views" Title="Períodos de tarjeta" Width="1200" Height="760" WindowStartupLocation="CenterOwner" Background="#F3F4F6">
+<Window x:Class="CorexProd.WPF.Modules.Tesoreria.Views.TarjetaCreditoDetalleWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:CorexProd.WPF.Modules.Tesoreria.Views" Title="Períodos de tarjeta" Width="1200" Height="760" WindowState="Maximized" WindowStartupLocation="CenterOwner" Background="#F3F4F6">
   <Window.Resources>
     <local:TarjetaCreditoAccionHabilitadaConverter x:Key="AccionHabilitada" />
   </Window.Resources>
@@ -45,7 +45,7 @@
                     <Button.IsEnabled>
                       <MultiBinding Converter="{StaticResource AccionHabilitada}" ConverterParameter="ANULAR_PERIODO">
                         <Binding Path="Estado" />
-                        <Binding Path="TotalPagado" />
+                        <Binding Path="Pagos" />
                         <Binding Path="DataContext.EstaAnulada" RelativeSource="{RelativeSource AncestorType=Window}" />
                         <Binding Path="IdTarjetaPeriodo" />
                       </MultiBinding>

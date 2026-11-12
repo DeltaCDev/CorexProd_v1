@@ -4,6 +4,14 @@ SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
 
+IF COL_LENGTH('dbo.OrdenTrabajoDetalle', 'CantidadAdicionalStock') IS NULL
+BEGIN
+    ALTER TABLE dbo.OrdenTrabajoDetalle
+        ADD CantidadAdicionalStock DECIMAL(18,2) NOT NULL
+            CONSTRAINT DF_OTDetalle_AdicionalStock DEFAULT(0);
+END;
+GO
+
 IF EXISTS
 (
     SELECT 1
@@ -163,7 +171,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_PRO_OT_CREAR
     @Detalles dbo.TipoOTPlanificacion READONLY,
     @IdOrdenTrabajo INT OUTPUT,
     @NumeroOT VARCHAR(30) OUTPUT,
-    @ProcesarTodaReserva BIT = 0
+    @ProcesarTodaReserva BIT = 0,
+    @IdUsuarioAutorizaStock INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -176,6 +185,9 @@ BEGIN
             THROW 51000, 'El usuario de sesion no es valido.', 1;
         IF NOT EXISTS(SELECT 1 FROM @Detalles)
             THROW 51000, 'Seleccione al menos un producto.', 1;
+        IF @IdUsuarioAutorizaStock IS NOT NULL
+           AND NOT EXISTS(SELECT 1 FROM dbo.Usuarios WHERE IdUsuario = @IdUsuarioAutorizaStock AND Estado = 1)
+            THROW 51000, 'El usuario autorizador no es valido.', 1;
         IF NOT EXISTS(SELECT 1 FROM dbo.AreaProduccion WHERE Activo = 1 AND EsInicio = 1)
             OR NOT EXISTS(SELECT 1 FROM dbo.AreaProduccion WHERE Activo = 1 AND EsTermino = 1)
             THROW 51000, 'Configure las areas activas de inicio y termino.', 1;
@@ -256,7 +268,8 @@ BEGIN
             LEFT JOIN @Pendientes P ON P.IdOrdenCompraInternaDetalle = X.IdOrdenCompraInternaDetalle
             WHERE P.IdOrdenCompraInternaDetalle IS NULL
                OR X.CantidadPlanificada < 0
-               OR X.CantidadPlanificada > P.CantidadDeficit
+               OR X.CantidadPlanificada < P.CantidadDeficit
+               OR (X.CantidadPlanificada > P.CantidadDeficit AND @IdUsuarioAutorizaStock IS NULL)
                OR (P.CantidadDeficit > 0 AND X.CantidadPlanificada <= 0)
         )
             THROW 51000, 'La planificacion contiene productos sin deficit o cantidades no validas.', 1;
@@ -272,8 +285,8 @@ BEGIN
         DECLARE @Correlativo INT = ISNULL((SELECT MAX(TRY_CONVERT(INT, RIGHT(NumeroOT, 6))) FROM dbo.OrdenTrabajo WITH(UPDLOCK, HOLDLOCK)), 0) + 1;
         SET @NumeroOT = CONCAT('OT-', RIGHT(CONCAT('000000', @Correlativo), 6));
 
-        INSERT dbo.OrdenTrabajo(NumeroOT, IdOrdenCompraInterna, IdCliente, NombreCliente, IdUsuarioCreacion, Observacion, Estado, TipoOT, IdOrdenTrabajoRelacionada)
-        SELECT @NumeroOT, O.IdOrdenCompraInterna, O.IdCliente, O.NombreCliente, @IdUsuario, ISNULL(@Observacion, N''), 'PENDIENTE',
+        INSERT dbo.OrdenTrabajo(NumeroOT, IdOrdenCompraInterna, IdCliente, NombreCliente, IdUsuarioCreacion, IdUsuarioAutorizaCreacion, Observacion, Estado, TipoOT, IdOrdenTrabajoRelacionada)
+        SELECT @NumeroOT, O.IdOrdenCompraInterna, O.IdCliente, O.NombreCliente, @IdUsuario, @IdUsuarioAutorizaStock, ISNULL(@Observacion, N''), 'PENDIENTE',
                CASE WHEN @IdOrdenTrabajoRelacionada IS NULL THEN 'OCI' ELSE 'OT' END, @IdOrdenTrabajoRelacionada
         FROM dbo.OrdenesCompraInterna O
         WHERE O.IdOrdenCompraInterna = @IdOrdenCompraInterna
@@ -283,9 +296,9 @@ BEGIN
 
         SET @IdOrdenTrabajo = CONVERT(INT, SCOPE_IDENTITY());
 
-        INSERT dbo.OrdenTrabajoDetalle(IdOrdenTrabajo, IdOrdenCompraInternaDetalle, IdProducto, CodigoProducto, NombreProducto, CantidadRequerida, CantidadPlanificada, CantidadPendiente)
+        INSERT dbo.OrdenTrabajoDetalle(IdOrdenTrabajo, IdOrdenCompraInternaDetalle, IdProducto, CodigoProducto, NombreProducto, CantidadRequerida, CantidadPlanificada, CantidadAdicionalStock, CantidadPendiente)
         SELECT @IdOrdenTrabajo, D.IdOrdenCompraInternaDetalle, D.IdProducto, D.CodigoProducto, D.NombreProducto,
-               P.CantidadObjetivo, X.CantidadPlanificada, P.CantidadObjetivo
+               P.CantidadObjetivo, X.CantidadPlanificada, X.CantidadPlanificada - P.CantidadDeficit, P.CantidadObjetivo
         FROM @Detalles X
         JOIN dbo.OrdenCompraInternaDetalle D ON D.IdOrdenCompraInternaDetalle = X.IdOrdenCompraInternaDetalle
         JOIN @Pendientes P ON P.IdOrdenCompraInternaDetalle = D.IdOrdenCompraInternaDetalle;

@@ -3,6 +3,14 @@ SET QUOTED_IDENTIFIER ON;
 SET XACT_ABORT ON;
 GO
 
+IF COL_LENGTH('dbo.OrdenTrabajoDetalle', 'CantidadAdicionalStock') IS NULL
+BEGIN
+    ALTER TABLE dbo.OrdenTrabajoDetalle
+        ADD CantidadAdicionalStock DECIMAL(18,2) NOT NULL
+            CONSTRAINT DF_OTDetalle_AdicionalStock DEFAULT(0);
+END;
+GO
+
 IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_OrdenTrabajo_OCI')
     ALTER TABLE dbo.OrdenTrabajo DROP CONSTRAINT FK_OrdenTrabajo_OCI;
 GO
@@ -188,7 +196,8 @@ CREATE OR ALTER PROCEDURE dbo.USP_PRO_OT_MANUAL_CREAR
     @Observacion NVARCHAR(500),
     @Detalles dbo.TipoOTManualPlanificacion READONLY,
     @IdOrdenTrabajo INT OUTPUT,
-    @NumeroOT VARCHAR(30) OUTPUT
+    @NumeroOT VARCHAR(30) OUTPUT,
+    @IdUsuarioAutorizaStock INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -201,6 +210,10 @@ BEGIN
             THROW 51000, 'El usuario de sesion no es valido.', 1;
         IF NOT EXISTS(SELECT 1 FROM @Detalles)
             THROW 51000, 'Seleccione al menos un producto.', 1;
+        IF @IdUsuarioAutorizaStock IS NULL
+            THROW 51000, 'Se requiere autorizacion para abastecimiento de stock.', 1;
+        IF NOT EXISTS(SELECT 1 FROM dbo.Usuarios WHERE IdUsuario = @IdUsuarioAutorizaStock AND Estado = 1)
+            THROW 51000, 'El usuario autorizador no es valido.', 1;
         IF EXISTS(SELECT 1 FROM @Detalles WHERE CantidadPlanificada <= 0)
             THROW 51000, 'Todas las cantidades deben ser mayores que cero.', 1;
         IF EXISTS(SELECT IdProducto FROM @Detalles GROUP BY IdProducto HAVING COUNT(*) > 1)
@@ -230,12 +243,12 @@ BEGIN
 
         INSERT dbo.OrdenTrabajo
         (
-            NumeroOT, IdOrdenCompraInterna, IdCliente, NombreCliente, IdUsuarioCreacion,
+            NumeroOT, IdOrdenCompraInterna, IdCliente, NombreCliente, IdUsuarioCreacion, IdUsuarioAutorizaCreacion,
             Observacion, Estado, TipoOT, IdOrdenTrabajoRelacionada
         )
         VALUES
         (
-            @NumeroOT, NULL, @IdClienteAbastecimiento, @NombreClienteAbastecimiento, @IdUsuario,
+            @NumeroOT, NULL, @IdClienteAbastecimiento, @NombreClienteAbastecimiento, @IdUsuario, @IdUsuarioAutorizaStock,
             ISNULL(@Observacion, N''), 'PENDIENTE', 'MANUAL', NULL
         );
 
@@ -244,11 +257,11 @@ BEGIN
         INSERT dbo.OrdenTrabajoDetalle
         (
             IdOrdenTrabajo, IdOrdenCompraInternaDetalle, IdProducto, CodigoProducto, NombreProducto,
-            CantidadRequerida, CantidadPlanificada, CantidadPendiente
+            CantidadRequerida, CantidadPlanificada, CantidadAdicionalStock, CantidadPendiente
         )
         SELECT
             @IdOrdenTrabajo, NULL, P.IdProducto, P.Codigo, P.NombreProducto,
-            D.CantidadPlanificada, D.CantidadPlanificada, D.CantidadPlanificada
+            D.CantidadPlanificada, D.CantidadPlanificada, D.CantidadPlanificada, D.CantidadPlanificada
         FROM @Detalles D
         JOIN dbo.Productos P ON P.IdProducto = D.IdProducto;
 

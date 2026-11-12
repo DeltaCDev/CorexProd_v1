@@ -27,6 +27,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
         private bool _estado = true;
         private bool _aprobacionOs;
         private string _claveAprobacionOs = string.Empty;
+        private byte[]? _firmaImagen;
+        private string _firmaMimeType = string.Empty;
         private bool _puedeGenerarOtRol;
         private bool _puedeGenerarGuiaRol;
         private bool _puedeTransferirOtRol;
@@ -89,6 +91,21 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             set { _claveAprobacionOs = value ?? string.Empty; OnPropertyChanged(); }
         }
 
+        public byte[]? FirmaImagen
+        {
+            get => _firmaImagen;
+            set { _firmaImagen = value; OnPropertyChanged(); OnPropertyChanged(nameof(TieneFirma)); OnPropertyChanged(nameof(FirmaTexto)); }
+        }
+
+        public string FirmaMimeType
+        {
+            get => _firmaMimeType;
+            set { _firmaMimeType = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        public bool TieneFirma => FirmaImagen is { Length: > 0 };
+        public string FirmaTexto => TieneFirma ? "Firma cargada" : "Sin firma cargada";
+
         public bool PuedeGenerarOtRol
         {
             get => _puedeGenerarOtRol;
@@ -125,6 +142,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     Estado = _usuarioSeleccionado.Estado;
                     AprobacionOs = _usuarioSeleccionado.AprobacionOs;
                     ClaveAprobacionOs = string.Empty;
+                    FirmaImagen = _usuarioSeleccionado.FirmaImagen;
+                    FirmaMimeType = _usuarioSeleccionado.FirmaMimeType;
                 }
             }
         }
@@ -226,7 +245,9 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                 IdRol = IdRol,
                 Estado = Estado,
                 AprobacionOs = AprobacionOs,
-                ClaveAprobacionOs = ClaveAprobacionOs
+                ClaveAprobacionOs = ClaveAprobacionOs,
+                FirmaImagen = FirmaImagen,
+                FirmaMimeType = FirmaMimeType
             };
 
             string usuarioAuditoria = SessionManager.UsuarioActual?.NombreUsuario ?? "Sistema";
@@ -318,6 +339,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
             Estado = true;
             AprobacionOs = false;
             ClaveAprobacionOs = string.Empty;
+            FirmaImagen = null;
+            FirmaMimeType = string.Empty;
             UsuarioSeleccionado = null;
             OnPropertyChanged(nameof(TituloEditor));
         }
@@ -345,6 +368,8 @@ namespace CorexProd.WPF.Modules.Seguridad.ViewModels
                     viewModel.Estado = usuario.Estado;
                     viewModel.AprobacionOs = usuario.AprobacionOs;
                     viewModel.ClaveAprobacionOs = string.Empty;
+                    viewModel.FirmaImagen = usuario.FirmaImagen;
+                    viewModel.FirmaMimeType = usuario.FirmaMimeType;
                     viewModel.OnPropertyChanged(nameof(TituloEditor));
                 }
 
