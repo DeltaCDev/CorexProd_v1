@@ -10,8 +10,23 @@
                     Background="#2563EB" Foreground="White" Click="Imprimir_Click"/>
             <Button Content="Cerrar" Width="105" Height="34" IsCancel="True"/>
         </StackPanel>
-        <FlowDocumentScrollViewer x:Name="Visor"
-                                  VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled"/>
+        <Grid>
+            <FlowDocumentScrollViewer x:Name="Visor"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"/>
+            <TextBlock x:Name="MarcaAguaText"
+                       Text="PENDIENTE DE APROBACIÓN"
+                       FontFamily="Segoe UI"
+                       FontSize="58"
+                       FontWeight="Bold"
+                       Foreground="#66747E"
+                       Opacity="0.42"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"
+                       RenderTransformOrigin="0.5,0.5"
+                       RenderTransform="-0.58,0.82,-0.82,-0.58,0,0"
+                       Visibility="Collapsed"/>
+        </Grid>
     </DockPanel>
 </Window>

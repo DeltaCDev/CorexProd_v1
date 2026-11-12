@@ -20,6 +20,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private const double AnchoA4 = 793.7007874015749;
         private const double AltoA4 = 1122.51968503937;
         private readonly FlowDocument _documento;
+        private readonly bool _requiereMarcaAgua;
 
         public OrdenTrabajoImpresionWindow(
             string numeroOt,
@@ -40,6 +41,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             _documento = CrearDocumento(numeroOt, numeroOci, ordenCompraCliente, cliente,
                 usuarioGenerador, usuarioAutorizador, fecha, observacion, items.ToList(),
                 fechaEntregaOt, fechaPactadaOc, estadoAprobacion, usuarioAprobadorGerencia);
+            _requiereMarcaAgua = !string.Equals(estadoAprobacion, "APROBADA", StringComparison.OrdinalIgnoreCase);
+            MarcaAguaText.Visibility = _requiereMarcaAgua ? Visibility.Visible : Visibility.Collapsed;
             Visor.Document = _documento;
         }
 
@@ -61,11 +64,6 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 FontSize = 11
             };
 
-            if (!string.Equals(estadoAprobacion, "APROBADA", StringComparison.OrdinalIgnoreCase))
-            {
-                documento.Blocks.Add(CrearMarcaAguaPendiente());
-            }
-
             documento.Blocks.Add(CrearCabecera(numeroOt, numeroOci, ordenCompraCliente, cliente,
                 usuarioGenerador, usuarioAutorizador, fecha, fechaEntregaOt, fechaPactadaOc));
 
@@ -84,26 +82,6 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             documento.Blocks.Add(CrearObservacionesGenerales(observacion));
             documento.Blocks.Add(CrearFirmas(usuarioGenerador, usuarioAprobadorGerencia));
             return documento;
-        }
-
-        private static BlockUIContainer CrearMarcaAguaPendiente()
-        {
-            Canvas lienzo = new() { Width = AnchoA4 - 56, Height = 115, Background = Brushes.Transparent };
-            TextBlock marca = new()
-            {
-                Text = "PENDIENTE DE APROBACIÓN",
-                Width = 620,
-                FontSize = 38,
-                FontWeight = FontWeights.Bold,
-                Foreground = new SolidColorBrush(Color.FromArgb(38, 100, 116, 139)),
-                TextAlignment = TextAlignment.Center,
-                RenderTransform = new RotateTransform(25),
-                RenderTransformOrigin = new Point(0.5, 0.5)
-            };
-            Canvas.SetLeft(marca, 25);
-            Canvas.SetTop(marca, 24);
-            lienzo.Children.Add(marca);
-            return new BlockUIContainer(lienzo) { Margin = new Thickness(0, 0, 0, 4) };
         }
 
         private static Section CrearCabecera(string numeroOt, string numeroOci, string ordenCompraCliente, string cliente,
@@ -266,7 +244,53 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private static void FilaTotal(Table tabla, string etiqueta, decimal oc, decimal stock, decimal total) { TableRow fila = new(); fila.Cells.Add(new TableCell(new Paragraph(new Run(etiqueta)) { FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Right }) { ColumnSpan = 3, Padding = new Thickness(5), Background = new SolidColorBrush(Color.FromRgb(218, 234, 252)) }); foreach (decimal n in new[] { oc, stock, total }) fila.Cells.Add(new TableCell(new Paragraph(new Run(n.ToString("N2"))) { FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Right }) { Padding = new Thickness(5), Background = new SolidColorBrush(Color.FromRgb(218, 234, 252)) }); tabla.RowGroups[0].Rows.Add(fila); }
         private static void FilaTotalGeneral(Table tabla, string etiqueta, decimal oc, decimal stock, decimal total) { TableRow fila = new(); fila.Cells.Add(new TableCell(new Paragraph(new Run(etiqueta)) { FontSize = 14, FontWeight = FontWeights.Bold, Foreground = Brushes.White, TextAlignment = TextAlignment.Right }) { Padding = new Thickness(6), Background = new SolidColorBrush(Color.FromRgb(12, 60, 112)) }); foreach (decimal n in new[] { oc, stock, total }) fila.Cells.Add(new TableCell(new Paragraph(new Run(n.ToString("N2"))) { FontSize = 13, FontWeight = FontWeights.Bold, Foreground = Brushes.White, TextAlignment = TextAlignment.Right }) { Padding = new Thickness(6), Background = new SolidColorBrush(Color.FromRgb(12, 60, 112)) }); tabla.RowGroups[0].Rows.Add(fila); }
         private static string Valor(string? valor) => string.IsNullOrWhiteSpace(valor) ? "-" : valor.Trim();
-        private void Imprimir_Click(object sender, RoutedEventArgs e) { PrintDialog dialogo = new(); if (dialogo.ShowDialog() != true) return; _documento.PageWidth = dialogo.PrintableAreaWidth > 0 ? dialogo.PrintableAreaWidth : AnchoA4; _documento.PageHeight = dialogo.PrintableAreaHeight > 0 ? dialogo.PrintableAreaHeight : AltoA4; _documento.ColumnWidth = Math.Max(1, _documento.PageWidth - _documento.PagePadding.Left - _documento.PagePadding.Right); ((IDocumentPaginatorSource)_documento).DocumentPaginator.PageSize = new Size(_documento.PageWidth, _documento.PageHeight); dialogo.PrintDocument(((IDocumentPaginatorSource)_documento).DocumentPaginator, "Orden de Trabajo"); }
+        private void Imprimir_Click(object sender, RoutedEventArgs e)
+        {
+            PrintDialog dialogo = new();
+            if (dialogo.ShowDialog() != true) return;
+            _documento.PageWidth = dialogo.PrintableAreaWidth > 0 ? dialogo.PrintableAreaWidth : AnchoA4;
+            _documento.PageHeight = dialogo.PrintableAreaHeight > 0 ? dialogo.PrintableAreaHeight : AltoA4;
+            _documento.ColumnWidth = Math.Max(1, _documento.PageWidth - _documento.PagePadding.Left - _documento.PagePadding.Right);
+            DocumentPaginator paginator = ((IDocumentPaginatorSource)_documento).DocumentPaginator;
+            paginator.PageSize = new Size(_documento.PageWidth, _documento.PageHeight);
+            if (_requiereMarcaAgua)
+                paginator = new MarcaAguaDocumentPaginator(paginator);
+            dialogo.PrintDocument(paginator, "Orden de Trabajo");
+        }
+
+        private sealed class MarcaAguaDocumentPaginator : DocumentPaginator
+        {
+            private readonly DocumentPaginator _origen;
+            public MarcaAguaDocumentPaginator(DocumentPaginator origen) => _origen = origen;
+            public override bool IsPageCountValid => _origen.IsPageCountValid;
+            public override int PageCount => _origen.PageCount;
+            public override Size PageSize { get => _origen.PageSize; set => _origen.PageSize = value; }
+            public override IDocumentPaginatorSource Source => _origen.Source;
+            public override void ComputePageCount() => _origen.ComputePageCount();
+            public override DocumentPage GetPage(int pageNumber)
+            {
+                DocumentPage pagina = _origen.GetPage(pageNumber);
+                DrawingVisual marca = new();
+                using (DrawingContext dc = marca.RenderOpen())
+                {
+                    dc.PushTransform(new RotateTransform(-35, pagina.Size.Width / 2, pagina.Size.Height / 2));
+                    FormattedText texto = new(
+                        "PENDIENTE DE APROBACIÓN",
+                        System.Globalization.CultureInfo.CurrentCulture,
+                        FlowDirection.LeftToRight,
+                        new Typeface("Segoe UI"),
+                        58,
+                        new SolidColorBrush(Color.FromArgb(88, 110, 110, 110)),
+                        96);
+                    dc.DrawText(texto, new Point((pagina.Size.Width - texto.Width) / 2, (pagina.Size.Height - texto.Height) / 2));
+                    dc.Pop();
+                }
+                ContainerVisual contenedor = new();
+                contenedor.Children.Add(pagina.Visual);
+                contenedor.Children.Add(marca);
+                return new DocumentPage(contenedor, pagina.Size, pagina.BleedBox, pagina.ContentBox);
+            }
+        }
     }
 
     public sealed class OrdenTrabajoImpresionItem
