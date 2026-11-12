@@ -51,6 +51,16 @@ BEGIN
             THROW 51000, 'La OT no existe.', 1;
         IF EXISTS (SELECT 1 FROM dbo.OrdenTrabajo WHERE IdOrdenTrabajo=@IdOrdenTrabajo AND UPPER(Estado) IN ('ANULADO','ANULADA'))
             THROW 51000, 'No se puede aprobar una OT anulada.', 1;
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.OrdenTrabajo O
+            WHERE O.IdOrdenTrabajo = @IdOrdenTrabajo
+              AND UPPER(ISNULL(O.Estado, '')) IN ('TERMINADO','TERMINADA','FINALIZADO','FINALIZADA')
+        )
+            THROW 51000, 'No se puede aprobar una OT terminada.', 1;
+        IF EXISTS (SELECT 1 FROM dbo.OrdenTrabajo WHERE IdOrdenTrabajo=@IdOrdenTrabajo AND EstadoAprobacion='APROBADA')
+            THROW 51000, 'La OT ya está aprobada.', 1;
         UPDATE dbo.OrdenTrabajo
         SET EstadoAprobacion='APROBADA', IdUsuarioAprobacionGerencia=@IdUsuarioGerencia,
             FechaAprobacionGerencia=SYSDATETIME(), MotivoRechazoAprobacion=NULL,

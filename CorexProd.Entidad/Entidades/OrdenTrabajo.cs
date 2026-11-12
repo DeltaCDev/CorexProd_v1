@@ -31,6 +31,10 @@ namespace CorexProd.Entidad.Entidades
             ? "APROBADA"
             : "POR APROBAR";
         public bool EstaAprobada => EstadoAprobacion.Equals("APROBADA", StringComparison.OrdinalIgnoreCase);
+        public bool PuedeAprobarGerencia => !EstaAprobada
+            && !EstadoOperativo.Equals("Anulado", StringComparison.OrdinalIgnoreCase)
+            && !EstadoOperativo.Equals("Terminado", StringComparison.OrdinalIgnoreCase)
+            && !EstadoOperativo.Equals("Terminado Parcial", StringComparison.OrdinalIgnoreCase);
         public string EstadoOperativo
         {
             get

@@ -49,8 +49,23 @@ namespace CorexProd.Negocio.Negocio
                     : null;
         }
 
-        public void AprobarGerencia(int idOrdenTrabajo, int idUsuario, string observacion) => _datos.AprobarGerencia(idOrdenTrabajo, idUsuario, observacion);
-        public void RechazarGerencia(int idOrdenTrabajo, int idUsuario, string motivo) => _datos.RechazarGerencia(idOrdenTrabajo, idUsuario, motivo);
+        public void AprobarGerencia(int idOrdenTrabajo, int idUsuario, string observacion)
+        {
+            OrdenTrabajo? ot = _datos.Obtener(idOrdenTrabajo);
+            if (ot == null) throw new InvalidOperationException("No se encontró la OT.");
+            if (!ot.PuedeAprobarGerencia)
+                throw new InvalidOperationException("La OT anulada, terminada o ya aprobada no puede aprobarse nuevamente.");
+            _datos.AprobarGerencia(idOrdenTrabajo, idUsuario, observacion);
+        }
+
+        public void RechazarGerencia(int idOrdenTrabajo, int idUsuario, string motivo)
+        {
+            OrdenTrabajo? ot = _datos.Obtener(idOrdenTrabajo);
+            if (ot == null) throw new InvalidOperationException("No se encontró la OT.");
+            if (!ot.PuedeAprobarGerencia)
+                throw new InvalidOperationException("La OT anulada, terminada o ya aprobada no puede rechazarse mediante el flujo normal.");
+            _datos.RechazarGerencia(idOrdenTrabajo, idUsuario, motivo);
+        }
 
         private void ValidarAprobacion(int idOt)
         {

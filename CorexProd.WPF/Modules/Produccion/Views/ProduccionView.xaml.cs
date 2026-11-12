@@ -173,7 +173,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 consulta = consulta.Where(x => CoincideEstado(x.EstadoOperativo, estado));
             string aprobacion = EstadoAprobacionComboBox.SelectedItem?.ToString() ?? "Todos";
             if (!aprobacion.Equals("Todos", StringComparison.OrdinalIgnoreCase))
-                consulta = consulta.Where(x => aprobacion.Equals("Aprobada", StringComparison.OrdinalIgnoreCase) ? x.EstaAprobada : !x.EstaAprobada);
+                consulta = consulta.Where(x => aprobacion.Equals("Aprobada", StringComparison.OrdinalIgnoreCase) ? x.EstaAprobada : x.PuedeAprobarGerencia);
             string tipo = TipoOtComboBox.SelectedItem?.ToString() ?? "Todos";
             if (!tipo.Equals("Todos", StringComparison.OrdinalIgnoreCase))
                 consulta = consulta.Where(x => x.TipoOTDescripcion.Equals(tipo, StringComparison.OrdinalIgnoreCase));
@@ -192,7 +192,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             if (seleccion.HasValue)
                 OrdenesGrid.SelectedItem = visibles.FirstOrDefault(x => x.IdOrdenTrabajo == seleccion.Value);
             TotalOtText.Text = visibles.Count.ToString("N0");
-            PorAprobarText.Text = visibles.Count(x => !x.EstaAprobada).ToString("N0");
+            PorAprobarText.Text = visibles.Count(x => x.PuedeAprobarGerencia).ToString("N0");
             PendientesProduccionText.Text = visibles.Count(x => x.EstadoOperativo.Equals("Pendiente", StringComparison.OrdinalIgnoreCase)).ToString("N0");
             EnProcesoText.Text = visibles.Count(x => x.EstadoOperativo.Equals("En Proceso", StringComparison.OrdinalIgnoreCase)).ToString("N0");
             TerminadasText.Text = visibles.Count(x => x.EstadoOperativo is "Terminado" or "Terminado Parcial").ToString("N0");
@@ -356,7 +356,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             try
             {
                 OrdenTrabajo ot = _negocio.Obtener(resumen.IdOrdenTrabajo) ?? throw new InvalidOperationException("No se encontró la OT seleccionada.");
-                if (ot.EstaAprobada) { NotificationService.Success("La OT ya está aprobada por Gerencia."); return; }
+                if (!ot.PuedeAprobarGerencia)
+                {
+                    NotificationService.Warning("Esta OT no es elegible para aprobación: puede estar aprobada, terminada o anulada.");
+                    return;
+                }
                 new OrdenTrabajoAprobacionWindow(ot) { Owner = Application.Current.MainWindow }.ShowDialog();
                 Cargar();
             }
