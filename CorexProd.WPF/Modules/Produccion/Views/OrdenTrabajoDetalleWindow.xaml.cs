@@ -18,6 +18,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         private readonly int _id;
         private readonly OrdenTrabajoNegocio _negocio = new();
         private readonly OrdenCompraInternaNegocio _ociNegocio = new();
+        private readonly UsuarioNegocio _usuarioNegocio = new();
         private readonly ParametroNegocio _parametroNegocio = new();
         private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
         private OrdenTrabajo _ot = null!;
@@ -58,6 +59,10 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void Cargar()
         {
+            Dictionary<long, (bool Seleccionado, decimal Cantidad)> edicionesServicio = _visibles
+                .GroupBy(x => x.IdDetalleArea)
+                .ToDictionary(g => g.Key, g => (g.First().Seleccionado, g.First().CantidadOperacion));
+
             _ot = _negocio.Obtener(_id) ?? throw new InvalidOperationException("No se encontró la OT.");
             _observacionesDetalleOci = _ociNegocio.Obtener(_ot.IdOrdenCompraInterna)?
                 .Detalles
@@ -76,8 +81,23 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             List<OrdenTrabajoDetalleArea> areas = _ot.Areas.GroupBy(x => x.IdAreaProduccion).Select(g => g.First()).OrderBy(x => x.OrdenSecuencia).ToList();
             int? seleccionada = (AreaCombo.SelectedItem as OrdenTrabajoDetalleArea)?.IdAreaProduccion;
             AreaCombo.ItemsSource = areas;
-            AreaCombo.SelectedItem = areas.FirstOrDefault(x => x.IdAreaProduccion == seleccionada) ?? areas.FirstOrDefault();
+            AreaCombo.SelectedItem = areas.FirstOrDefault(x => x.IdAreaProduccion == seleccionada)
+                ?? areas.FirstOrDefault(x => x.Disponible)
+                ?? areas.FirstOrDefault(x => x.CantidadEnServicioExterno > 0)
+                ?? areas.FirstOrDefault();
             MostrarArea();
+
+            // El refresco automático no debe borrar lo que el operador ya marcó
+            // ni las cantidades digitadas para el envío externo.
+            foreach (OrdenTrabajoDetalleArea item in _visibles)
+            {
+                if (!edicionesServicio.TryGetValue(item.IdDetalleArea, out (bool Seleccionado, decimal Cantidad) edicion))
+                    continue;
+
+                item.Seleccionado = edicion.Seleccionado;
+                item.CantidadOperacion = edicion.Cantidad;
+            }
+            ItemsGrid.Items.Refresh();
         }
 
         private void CargarResumen()
@@ -331,8 +351,14 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             merma.SetValue(TextBlock.FontSizeProperty, 11.0);
             merma.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
             merma.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadMerma") { StringFormat = "M: {0:N2}" });
+            FrameworkElementFactory externo = new(typeof(TextBlock));
+            externo.SetValue(TextBlock.FontSizeProperty, 10.0);
+            externo.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
+            externo.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(180, 83, 9)));
+            externo.SetBinding(TextBlock.TextProperty, new Binding("ServicioExternoTexto"));
             segundaFila.AppendChild(reservado);
             segundaFila.AppendChild(merma);
+            segundaFila.AppendChild(externo);
             contenido.AppendChild(primeraFila);
             contenido.AppendChild(segundaFila);
             boton.SetValue(ContentControl.ContentTemplateProperty, new DataTemplate { VisualTree = contenido });
@@ -350,7 +376,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 MessageBox.Show(this, $"{celda.Area.NombreArea} es el área de término y no tiene un destino siguiente.", "Área final", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (celda.Area.CantidadPendienteDisponible <= 0)
+            if (celda.Area.CantidadDisponibleParaOperacion <= 0)
             {
                 MessageBox.Show(this, $"No hay stock en {celda.Area.NombreArea} disponible para transferir.", "Sin stock", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -483,12 +509,31 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
         private void MostrarArea()
         {
-            if (AreaCombo.SelectedItem is not OrdenTrabajoDetalleArea area) return;
-            _visibles = _ot.Areas.Where(x => x.IdAreaProduccion == area.IdAreaProduccion).ToList();
+            // En esta pestaña se muestran directamente todos los productos
+            // que pueden enviarse o que aún tienen saldo en un servicio externo.
+            _visibles = _ot.Areas
+                .Where(x => x.CantidadDisponibleParaOperacion > 0 || x.CantidadEnServicioExterno > 0)
+                .OrderBy(x => x.OrdenSecuencia)
+                .ThenBy(x => x.CodigoProducto)
+                .ToList();
             ItemsGrid.ItemsSource = _visibles;
         }
 
         private void AreaCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => MostrarArea();
+
+        private void SeleccionarTodosServicio_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (OrdenTrabajoDetalleArea item in _visibles)
+                item.Seleccionado = true;
+            ItemsGrid.Items.Refresh();
+        }
+
+        private void QuitarSeleccionServicio_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (OrdenTrabajoDetalleArea item in _visibles)
+                item.Seleccionado = false;
+            ItemsGrid.Items.Refresh();
+        }
         private void EnviarTodos_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidarPermisoOperacion()) return;
@@ -591,10 +636,104 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             catch (Exception ex) { NotificationService.Error(ex.Message); }
         }
 
+        private void EnviarServicioExterno_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidarPermisoOperacion()) return;
+            try
+            {
+                List<OrdenTrabajoDetalleArea> seleccion = _visibles.Where(x => x.Seleccionado && x.CantidadOperacion > 0 && x.CantidadDisponibleParaOperacion > 0).ToList();
+                if (seleccion.Count == 0)
+                    throw new InvalidOperationException("Seleccione productos e ingrese la cantidad a enviar en la columna Cantidad.");
+                ServicioExternoWindow ventana = new(seleccion, false) { Owner = this };
+                if (ventana.ShowDialog() != true) return;
+                AutorizacionOperacionWindow auth = new("Autorizar salida a servicio externo", soloAprobadores: true) { Owner = this };
+                if (auth.ShowDialog() != true) return;
+                ValidarAutorizadorServicioExterno(auth);
+                long id = _negocio.EnviarServicioExterno(_id, ventana.Proveedor, ventana.FechaRetornoEsperada, SessionManager.UsuarioActual?.IdUsuario ?? 0, ventana.Observacion, seleccion.Select(x => new OrdenTrabajoServicioExternoItem { IdDetalleArea=x.IdDetalleArea, Cantidad=x.CantidadOperacion }));
+                LimpiarEdicionServicioExterno();
+                Cargar();
+                NotificationService.Success($"Salida a servicio externo #{id} registrada para {ventana.Proveedor}.");
+            }
+            catch (Exception ex) { NotificationService.Error(ex.Message); }
+        }
+
+        private void RetornarServicioExterno_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidarPermisoOperacion()) return;
+            try
+            {
+                List<OrdenTrabajoServicioExternoDetalle> servicios = _negocio.ListarServicioExterno(_id)
+                    .Where(x => x.SaldoExterno > 0 && _visibles.Any(v => v.Seleccionado && v.IdDetalleArea == x.IdDetalleArea))
+                    .ToList();
+                if (servicios.Count == 0)
+                    throw new InvalidOperationException("Seleccione productos con saldo pendiente de retorno.");
+
+                ServicioExternoWindow ventana = servicios.Count == 1
+                    ? new ServicioExternoWindow(servicios[0]) { Owner = this }
+                    : new ServicioExternoWindow(servicios) { Owner = this };
+                if (ventana.ShowDialog() != true) return;
+                AutorizacionOperacionWindow auth = new("Autorizar retorno de servicio externo", soloAprobadores: true) { Owner = this };
+                if (auth.ShowDialog() != true) return;
+                ValidarAutorizadorServicioExterno(auth);
+                if (ventana.EsRetornoMultiple)
+                {
+                    foreach (OrdenTrabajoServicioExternoDetalle servicio in ventana.Retornos)
+                        _negocio.RetornarServicioExterno(servicio.IdDetalleServicioExterno, servicio.SaldoExterno, SessionManager.UsuarioActual?.IdUsuario ?? 0, ventana.Observacion);
+                }
+                else
+                {
+                    _negocio.RetornarServicioExterno(servicios[0].IdDetalleServicioExterno, ventana.Cantidad, SessionManager.UsuarioActual?.IdUsuario ?? 0, ventana.Observacion);
+                }
+                LimpiarEdicionServicioExterno();
+                Cargar();
+                NotificationService.Success(ventana.EsRetornoMultiple
+                    ? $"Retorno registrado para {ventana.Retornos.Count} producto(s)."
+                    : $"Retorno de {ventana.Cantidad:N2} unidades registrado.");
+            }
+            catch (Exception ex) { NotificationService.Error(ex.Message); }
+        }
+
+        private void VerServicioExterno_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                List<OrdenTrabajoServicioExternoDetalle> servicios = _negocio.ListarServicioExterno(_id);
+                if (servicios.Count == 0)
+                {
+                    MessageBox.Show(this, "Esta OT no tiene envíos registrados a servicio externo.", "Servicio externo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                new ServicioExternoDetalleWindow(_ot.NumeroOT, servicios) { Owner = this }.ShowDialog();
+            }
+            catch (Exception ex) { NotificationService.Error(ex.Message); }
+        }
+
+        private void LimpiarEdicionServicioExterno()
+        {
+            foreach (OrdenTrabajoDetalleArea item in _visibles)
+            {
+                item.Seleccionado = false;
+                item.CantidadOperacion = 0;
+            }
+        }
+
+        private void ValidarAutorizadorServicioExterno(AutorizacionOperacionWindow auth)
+        {
+            (string Mensaje, string UsuarioAprobador) resultado =
+                _usuarioNegocio.ResolverAprobadorOs(auth.Usuario, auth.Clave);
+
+            if (!string.Equals(resultado.Mensaje, "OK", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(resultado.Mensaje);
+
+            if (string.IsNullOrWhiteSpace(resultado.UsuarioAprobador))
+                throw new InvalidOperationException("No se pudo identificar al usuario aprobador.");
+        }
+
         private sealed class ResumenAreaCelda
         {
             public OrdenTrabajoDetalleArea Area { get; }
             public string AreaDestino { get; }
+            public string ServicioExternoTexto => Area.CantidadEnServicioExterno > 0 ? $"SE: {Area.CantidadEnServicioExterno:N2}" : string.Empty;
             public Brush Fondo { get; }
             public Brush TextoColor { get; }
             public bool EsPrimerProceso { get; }

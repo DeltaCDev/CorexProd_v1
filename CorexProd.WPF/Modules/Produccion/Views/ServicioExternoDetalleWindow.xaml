@@ -1,0 +1,28 @@
+<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.ServicioExternoDetalleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Detalle de servicios externos" Height="520" Width="1200"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TituloText" FontSize="19" FontWeight="Bold" Margin="0,0,0,12"/>
+        <DataGrid x:Name="ServiciosGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Servicio externo" Binding="{Binding Proveedor}" Width="180"/>
+                <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="90"/>
+                <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="260"/>
+                <DataGridTextColumn Header="Enviada" Binding="{Binding CantidadEnviada,StringFormat=N2}" Width="85"/>
+                <DataGridTextColumn Header="Retornada" Binding="{Binding CantidadRetornada,StringFormat=N2}" Width="85"/>
+                <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoExterno,StringFormat=N2}" Width="85"/>
+                <DataGridTextColumn Header="Enviado por" Binding="{Binding UsuarioSalida}" Width="120"/>
+                <DataGridTextColumn Header="Fecha y hora salida" Binding="{Binding FechaSalida,StringFormat=dd/MM/yyyy HH:mm}" Width="140"/>
+                <DataGridTextColumn Header="Retorno previsto" Binding="{Binding FechaRetornoEsperada,StringFormat=dd/MM/yyyy}" Width="120"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="95"/>
+                <DataGridTextColumn Header="Observación" Binding="{Binding Observacion}" Width="180"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Button Grid.Row="2" Content="Cerrar" Width="95" Height="34" HorizontalAlignment="Right" Margin="0,12,0,0" IsCancel="True"/>
+    </Grid>
+</Window>

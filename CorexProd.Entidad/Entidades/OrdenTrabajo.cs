@@ -117,13 +117,43 @@ namespace CorexProd.Entidad.Entidades
         public decimal CantidadMerma { get; set; }
         public decimal CantidadReservada { get; set; }
         public decimal CantidadPendiente { get; set; }
+        public decimal CantidadEnServicioExterno { get; set; }
         public decimal CantidadPendienteDisponible => Math.Max(0, CantidadPendiente - CantidadReservada);
+        public decimal CantidadDisponibleParaOperacion => Math.Max(0, CantidadPendiente - CantidadReservada - CantidadEnServicioExterno);
+        public string EstadoServicioExterno => CantidadEnServicioExterno > 0 ? "EN SERVICIO EXTERNO" : string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string CodigoProducto { get; set; } = string.Empty;
         public string NombreProducto { get; set; } = string.Empty;
         public bool Seleccionado { get; set; }
         public decimal CantidadOperacion { get; set; }
-        public bool Disponible => CantidadPendienteDisponible > 0 && Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA");
+        public bool Disponible => CantidadDisponibleParaOperacion > 0 && Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA");
+    }
+
+    public class OrdenTrabajoServicioExternoDetalle
+    {
+        public long IdDetalleServicioExterno { get; set; }
+        public long IdServicioExterno { get; set; }
+        public long IdDetalleArea { get; set; }
+        public int IdDetalleOT { get; set; }
+        public string CodigoProducto { get; set; } = string.Empty;
+        public string NombreProducto { get; set; } = string.Empty;
+        public string NombreArea { get; set; } = string.Empty;
+        public string Proveedor { get; set; } = string.Empty;
+        public string UsuarioSalida { get; set; } = string.Empty;
+        public decimal CantidadEnviada { get; set; }
+        public decimal CantidadRetornada { get; set; }
+        public decimal SaldoExterno { get; set; }
+        public string Estado { get; set; } = string.Empty;
+        public DateTime FechaSalida { get; set; }
+        public DateTime? FechaRetornoEsperada { get; set; }
+        public DateTime? FechaUltimoRetorno { get; set; }
+        public string Observacion { get; set; } = string.Empty;
+    }
+
+    public class OrdenTrabajoServicioExternoItem
+    {
+        public long IdDetalleArea { get; set; }
+        public decimal Cantidad { get; set; }
     }
 
     public class OrdenTrabajoPlanificacion

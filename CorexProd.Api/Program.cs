@@ -2368,6 +2368,145 @@ app.MapGet("/api/ordenes-trabajo/{id:int}", async (int id) =>
     return Results.Ok(new { cabecera, detalles, areas });
 });
 
+app.MapGet("/api/ordenes-trabajo/{id:int}/servicios-externos", async (int id) =>
+{
+    const string actualSql = @"
+SELECT A.IdDetalleArea, A.IdDetalleOT, A.IdAreaProduccion, A.NombreArea,
+       A.CodigoProducto, A.NombreProducto, A.CantidadPendiente,
+       ISNULL(S.SaldoExterno, 0) AS CantidadEnServicioExterno,
+       CASE WHEN A.CantidadPendiente - ISNULL(S.SaldoExterno, 0) > 0
+            THEN A.CantidadPendiente - ISNULL(S.SaldoExterno, 0) ELSE 0 END AS CantidadDisponible,
+       A.Estado
+FROM dbo.OrdenTrabajoDetalleArea A
+OUTER APPLY
+(
+    SELECT SUM(D.CantidadEnviada - D.CantidadRetornada) AS SaldoExterno
+    FROM dbo.OrdenTrabajoServicioExternoDetalle D
+    WHERE D.IdDetalleArea = A.IdDetalleArea
+      AND D.Estado IN ('ENVIADO','PARCIAL')
+) S
+WHERE A.IdOrdenTrabajo = @IdOrdenTrabajo
+  AND (A.CantidadPendiente > 0 OR ISNULL(S.SaldoExterno, 0) > 0)
+ORDER BY A.OrdenSecuencia, A.CodigoProducto;";
+    const string historialSql = @"
+SELECT D.IdDetalleServicioExterno, D.IdDetalleArea, D.CantidadEnviada,
+       D.CantidadRetornada, D.SaldoExterno, D.Estado AS EstadoDetalle,
+       C.Proveedor, C.FechaSalida, C.FechaRetornoEsperada, C.Observacion,
+       ISNULL(U.NombreUsuario, '') AS UsuarioSalida,
+       A.NombreArea, OT.CodigoProducto, OT.NombreProducto
+FROM dbo.OrdenTrabajoServicioExternoDetalle D
+INNER JOIN dbo.OrdenTrabajoServicioExterno C ON C.IdServicioExterno = D.IdServicioExterno
+INNER JOIN dbo.OrdenTrabajoDetalleArea A ON A.IdDetalleArea = D.IdDetalleArea
+INNER JOIN dbo.OrdenTrabajoDetalle OT ON OT.IdDetalleOT = D.IdDetalleOT
+LEFT JOIN dbo.Usuarios U ON U.IdUsuario = C.IdUsuarioSalida
+WHERE C.IdOrdenTrabajo = @IdOrdenTrabajo
+ORDER BY C.FechaSalida DESC, D.IdDetalleServicioExterno DESC;";
+
+    List<object> actual = [];
+    List<object> historial = [];
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    await using (SqlCommand cmd = new(actualSql, conexion))
+    {
+        cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+        await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+        while (await dr.ReadAsync())
+            actual.Add(new
+            {
+                idDetalleArea = Convert.ToInt64(dr["IdDetalleArea"]),
+                idDetalleOT = Convert.ToInt32(dr["IdDetalleOT"]),
+                idAreaProduccion = Convert.ToInt32(dr["IdAreaProduccion"]),
+                nombreArea = LeerString(dr, "NombreArea"),
+                codigoProducto = LeerString(dr, "CodigoProducto"),
+                nombreProducto = LeerString(dr, "NombreProducto"),
+                cantidadPendiente = Convert.ToDecimal(dr["CantidadPendiente"]),
+                cantidadEnServicioExterno = Convert.ToDecimal(dr["CantidadEnServicioExterno"]),
+                cantidadDisponible = Convert.ToDecimal(dr["CantidadDisponible"]),
+                estado = LeerString(dr, "Estado")
+            });
+    }
+
+    await using (SqlCommand cmd = new(historialSql, conexion))
+    {
+        cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+        await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
+        while (await dr.ReadAsync())
+            historial.Add(new
+            {
+                idDetalleServicioExterno = Convert.ToInt64(dr["IdDetalleServicioExterno"]),
+                idDetalleArea = Convert.ToInt64(dr["IdDetalleArea"]),
+                codigoProducto = LeerString(dr, "CodigoProducto"),
+                nombreProducto = LeerString(dr, "NombreProducto"),
+                nombreArea = LeerString(dr, "NombreArea"),
+                proveedor = LeerString(dr, "Proveedor"),
+                cantidadEnviada = Convert.ToDecimal(dr["CantidadEnviada"]),
+                cantidadRetornada = Convert.ToDecimal(dr["CantidadRetornada"]),
+                saldoExterno = Convert.ToDecimal(dr["SaldoExterno"]),
+                estado = LeerString(dr, "EstadoDetalle"),
+                fechaSalida = Convert.ToDateTime(dr["FechaSalida"]),
+                fechaRetornoEsperada = LeerDateTimeNullable(dr, "FechaRetornoEsperada"),
+                usuarioSalida = LeerString(dr, "UsuarioSalida"),
+                observacion = LeerString(dr, "Observacion")
+            });
+    }
+
+    return Results.Ok(new { actual, historial });
+});
+
+app.MapPost("/api/ordenes-trabajo/{id:int}/servicios-externos/enviar", async (int id, ServicioExternoEnviarApiRequest request) =>
+{
+    if (request.Detalles.Count == 0)
+        return Results.BadRequest(new { mensaje = "Seleccione al menos un producto." });
+    if (string.IsNullOrWhiteSpace(request.Clave))
+        return Results.BadRequest(new { mensaje = "Ingrese la clave de aprobación." });
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    int idUsuarioAutoriza = await ObtenerIdUsuarioAprobadorPorClaveAsync(conexion, request.Clave);
+    if (idUsuarioAutoriza <= 0)
+        return Results.Json(new { mensaje = "Clave de aprobación incorrecta o usuario sin permiso." }, statusCode: StatusCodes.Status401Unauthorized);
+
+    await using SqlCommand cmd = new("USP_PRO_OT_SERVICIO_EXTERNO_ENVIAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    cmd.Parameters.Add("@Proveedor", SqlDbType.NVarChar, 200).Value = request.Proveedor?.Trim() ?? string.Empty;
+    cmd.Parameters.Add("@FechaRetornoEsperada", SqlDbType.Date).Value = request.FechaRetornoEsperada.HasValue ? (object)request.FechaRetornoEsperada.Value.Date : DBNull.Value;
+    cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = request.IdUsuarioSesion;
+    cmd.Parameters.Add("@Observacion", SqlDbType.NVarChar, 500).Value = request.Observacion?.Trim() ?? string.Empty;
+    cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTServicioExterno", Value = CrearTablaServicioExterno(request.Detalles) });
+    SqlParameter salida = new("@IdServicioExterno", SqlDbType.BigInt) { Direction = ParameterDirection.Output };
+    cmd.Parameters.Add(salida);
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = "Envío a servicio externo registrado.", idServicioExterno = Convert.ToInt64(salida.Value), idUsuarioAutoriza });
+});
+
+app.MapPost("/api/ordenes-trabajo/{id:int}/servicios-externos/retornar", async (int id, ServicioExternoRetornarApiRequest request) =>
+{
+    if (request.Cantidad <= 0)
+        return Results.BadRequest(new { mensaje = "Ingrese una cantidad retornada mayor a cero." });
+    if (string.IsNullOrWhiteSpace(request.Clave))
+        return Results.BadRequest(new { mensaje = "Ingrese la clave de aprobación." });
+
+    await using SqlConnection conexion = new(connectionString);
+    await conexion.OpenAsync();
+    int idUsuarioAutoriza = await ObtenerIdUsuarioAprobadorPorClaveAsync(conexion, request.Clave);
+    if (idUsuarioAutoriza <= 0)
+        return Results.Json(new { mensaje = "Clave de aprobación incorrecta o usuario sin permiso." }, statusCode: StatusCodes.Status401Unauthorized);
+
+    await using SqlCommand validar = new("SELECT COUNT(1) FROM dbo.OrdenTrabajoServicioExternoDetalle D INNER JOIN dbo.OrdenTrabajoServicioExterno C ON C.IdServicioExterno=D.IdServicioExterno WHERE D.IdDetalleServicioExterno=@IdDetalle AND C.IdOrdenTrabajo=@IdOrdenTrabajo", conexion);
+    validar.Parameters.Add("@IdDetalle", SqlDbType.BigInt).Value = request.IdDetalleServicioExterno;
+    validar.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = id;
+    if (Convert.ToInt32(await validar.ExecuteScalarAsync()) == 0)
+        return Results.NotFound(new { mensaje = "El detalle de servicio externo no pertenece a la OT." });
+
+    await using SqlCommand cmd = new("USP_PRO_OT_SERVICIO_EXTERNO_RETORNAR", conexion) { CommandType = CommandType.StoredProcedure };
+    cmd.Parameters.Add("@IdDetalleServicioExterno", SqlDbType.BigInt).Value = request.IdDetalleServicioExterno;
+    cmd.Parameters.Add("@Cantidad", SqlDbType.Decimal).Value = request.Cantidad;
+    cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = request.IdUsuarioSesion;
+    cmd.Parameters.Add("@Observacion", SqlDbType.NVarChar, 500).Value = request.Observacion?.Trim() ?? string.Empty;
+    await cmd.ExecuteNonQueryAsync();
+    return Results.Ok(new { mensaje = "Retorno de servicio externo registrado.", idUsuarioAutoriza });
+});
+
 app.MapGet("/api/ordenes-trabajo/{id:int}/kardex", async (int id) =>
 {
     const string sql = @"
@@ -3214,6 +3353,25 @@ static async Task<int> ObtenerIdUsuarioActivoPorClaveAsync(SqlConnection conexio
     return 0;
 }
 
+static async Task<int> ObtenerIdUsuarioAprobadorPorClaveAsync(SqlConnection conexion, string clave)
+{
+    List<UsuarioClaveApi> usuarios = [];
+    await using (SqlCommand cmd = new("SELECT IdUsuario, ClaveAprobacionOs AS Clave FROM dbo.Usuarios WHERE Estado = 1 AND AprobacionOs = 1", conexion))
+    await using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+    {
+        while (await dr.ReadAsync())
+            usuarios.Add(new UsuarioClaveApi(Convert.ToInt32(dr["IdUsuario"]), dr["Clave"]?.ToString() ?? string.Empty));
+    }
+
+    foreach (UsuarioClaveApi usuario in usuarios)
+    {
+        if (!string.IsNullOrWhiteSpace(usuario.ClaveHash) && BCrypt.Net.BCrypt.Verify(clave, usuario.ClaveHash))
+            return usuario.IdUsuario;
+    }
+
+    return 0;
+}
+
 static async Task<OrdenTrabajoRegularizacionContext?> ObtenerContextoRegularizacionAsync(SqlConnection conexion, int idOrdenTrabajo)
 {
     const string sql = @"
@@ -3872,6 +4030,16 @@ static DataTable CrearTablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaDe
     return tabla;
 }
 
+static DataTable CrearTablaServicioExterno(IEnumerable<ServicioExternoDetalleApiRequest> detalles)
+{
+    DataTable tabla = new();
+    tabla.Columns.Add("IdDetalleArea", typeof(long));
+    tabla.Columns.Add("Cantidad", typeof(decimal));
+    foreach (ServicioExternoDetalleApiRequest detalle in detalles)
+        tabla.Rows.Add(detalle.IdDetalleArea, detalle.Cantidad);
+    return tabla;
+}
+
 static string CrearDetallesProformaXml(IEnumerable<ProformaGuardarDetalleApiRequest> detalles)
 {
     System.Text.StringBuilder xml = new("<Detalles>");
@@ -4393,6 +4561,25 @@ internal sealed record OrdenTrabajoTransferirApiRequest(
 internal sealed record OrdenTrabajoTransferenciaDetalleApiRequest(
     int IdDetalleOT,
     decimal Cantidad);
+
+internal sealed record ServicioExternoEnviarApiRequest(
+    int IdUsuarioSesion,
+    string? Clave,
+    string? Proveedor,
+    DateTime? FechaRetornoEsperada,
+    string? Observacion,
+    List<ServicioExternoDetalleApiRequest> Detalles);
+
+internal sealed record ServicioExternoDetalleApiRequest(
+    long IdDetalleArea,
+    decimal Cantidad);
+
+internal sealed record ServicioExternoRetornarApiRequest(
+    long IdDetalleServicioExterno,
+    decimal Cantidad,
+    int IdUsuarioSesion,
+    string? Clave,
+    string? Observacion);
 
 internal sealed record OrdenTrabajoMermaApiRequest(
     long IdDetalleArea,

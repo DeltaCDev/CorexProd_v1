@@ -369,6 +369,29 @@ public sealed class CorexProdApiClient
         return await GetAsync<OrdenTrabajoDetalleResponse>($"api/ordenes-trabajo/{idOrdenTrabajo}", cancellationToken);
     }
 
+    public async Task<ServicioExternoResponse> GetServiciosExternosAsync(int idOrdenTrabajo, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ServicioExternoResponse>($"api/ordenes-trabajo/{idOrdenTrabajo}/servicios-externos", cancellationToken);
+    }
+
+    public async Task<OperacionOrdenTrabajoResponse> EnviarServicioExternoAsync(int idOrdenTrabajo, ServicioExternoEnviarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/servicios-externos/enviar"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<OperacionOrdenTrabajoResponse>(response, cancellationToken);
+    }
+
+    public async Task<OperacionOrdenTrabajoResponse> RetornarServicioExternoAsync(int idOrdenTrabajo, ServicioExternoRetornarRequest request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/ordenes-trabajo/{idOrdenTrabajo}/servicios-externos/retornar"), request, _jsonOptions, cancellationToken),
+            cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<OperacionOrdenTrabajoResponse>(response, cancellationToken);
+    }
+
     public async Task<ApiListResponse<OtAprobacionResumen>> GetOtAprobacionesAsync(CancellationToken cancellationToken = default)
     {
         return await GetAsync<ApiListResponse<OtAprobacionResumen>>("api/ot-aprobaciones", cancellationToken);

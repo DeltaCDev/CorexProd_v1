@@ -141,13 +141,20 @@
                                        FontWeight="SemiBold"
                                        Margin="0,5,0,0"/>
                         </StackPanel>
-                        <Button Grid.Column="1"
-                                Content="Cargar firma"
-                                Width="120"
-                                Height="34"
-                                VerticalAlignment="Center"
-                                Click="CargarFirma_Click"
-                                Style="{StaticResource BotonBase}"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Cargar firma"
+                                    Width="120"
+                                    Height="34"
+                                    Margin="0,0,8,0"
+                                    Click="CargarFirma_Click"
+                                    Style="{StaticResource BotonBase}"/>
+                            <Button Content="Ver firma"
+                                    Width="95"
+                                    Height="34"
+                                    Click="VerFirma_Click"
+                                    IsEnabled="{Binding TieneFirma}"
+                                    Style="{StaticResource BotonBase}"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 

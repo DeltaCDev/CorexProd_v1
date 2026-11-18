@@ -194,6 +194,167 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         }
     }
 
+    private async void OnServiciosExternosClicked(object? sender, EventArgs e)
+    {
+        if (_detalleActual == null)
+            return;
+
+        try
+        {
+            ServicioExternoResponse response = _session.EsDemo
+                ? new ServicioExternoResponse([], [])
+                : await _apiClient.GetServiciosExternosAsync(_detalleActual.Cabecera.IdOrdenTrabajo);
+
+            List<ServicioExternoMobileRow> filas = response.Actual
+                .Select(x => new ServicioExternoMobileRow(x))
+                .ToList();
+
+            ContentPage page = new()
+            {
+                Title = "Servicios externos",
+                BackgroundColor = Color.FromArgb("#F4F6F8")
+            };
+            VerticalStackLayout contenido = new() { Padding = 14, Spacing = 10 };
+            contenido.Add(new Label { Text = "Servicios externos", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
+            contenido.Add(new Label { Text = "Seleccione productos, indique la cantidad y gestione sus retornos.", FontSize = 13, TextColor = Color.FromArgb("#667085") });
+
+            VerticalStackLayout lista = new() { Spacing = 8 };
+            Dictionary<ServicioExternoMobileRow, (CheckBox Check, Entry Cantidad)> controles = [];
+            foreach (ServicioExternoMobileRow fila in filas)
+            {
+                CheckBox check = new() { IsChecked = false, VerticalOptions = LayoutOptions.Start };
+                Entry cantidad = new()
+                {
+                    Text = fila.Area.CantidadDisponible.ToString("0.##", CultureInfo.InvariantCulture),
+                    Keyboard = Keyboard.Numeric,
+                    WidthRequest = 92,
+                    HorizontalTextAlignment = TextAlignment.End
+                };
+                controles[fila] = (check, cantidad);
+                Grid encabezado = new()
+                {
+                    ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
+                    ColumnSpacing = 8
+                };
+                encabezado.Add(check, 0, 0);
+                encabezado.Add(new Label { Text = $"{fila.Area.CodigoProducto} - {fila.Area.NombreProducto}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A"), LineBreakMode = LineBreakMode.WordWrap }, 1, 0);
+                encabezado.Add(cantidad, 2, 0);
+                VerticalStackLayout tarjeta = new() { Spacing = 4 };
+                tarjeta.Add(encabezado);
+                tarjeta.Add(new Label { Text = $"Área: {fila.Area.NombreArea} | Pendiente: {fila.Area.CantidadPendiente:N2} | En servicio: {fila.Area.CantidadEnServicioExterno:N2} | Disponible: {fila.Area.CantidadDisponible:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
+                lista.Add(new Border { Padding = 10, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = tarjeta });
+            }
+            contenido.Add(lista);
+
+            if (filas.Count == 0)
+                contenido.Add(new Label { Text = "No hay productos pendientes o enviados a servicio externo.", Padding = 12, TextColor = Color.FromArgb("#667085") });
+
+            Grid acciones = new() { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) }, ColumnSpacing = 8 };
+            Button todos = new() { Text = "Seleccionar todos" };
+            Button ninguno = new() { Text = "Quitar selección" };
+            acciones.Add(todos, 0, 0);
+            acciones.Add(ninguno, 1, 0);
+            contenido.Add(acciones);
+
+            Button enviar = new() { Text = "Enviar a servicio externo", BackgroundColor = Color.FromArgb("#0E9384"), TextColor = Colors.White };
+            Button retornar = new() { Text = "Registrar retornos seleccionados", BackgroundColor = Color.FromArgb("#2563EB"), TextColor = Colors.White };
+            Button historial = new() { Text = "Ver historial", BackgroundColor = Color.FromArgb("#7A5AF8"), TextColor = Colors.White };
+            Button cerrar = new() { Text = "Cerrar", BackgroundColor = Color.FromArgb("#344054"), TextColor = Colors.White };
+            contenido.Add(enviar);
+            contenido.Add(retornar);
+            contenido.Add(historial);
+            contenido.Add(cerrar);
+            page.Content = new ScrollView { Content = contenido };
+
+            todos.Clicked += (_, _) => { foreach ((CheckBox check, Entry _) in controles.Values) check.IsChecked = true; };
+            ninguno.Clicked += (_, _) => { foreach ((CheckBox check, Entry _) in controles.Values) check.IsChecked = false; };
+            cerrar.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+            historial.Clicked += async (_, _) => await Navigation.PushModalAsync(CrearServiciosHistorialPage(response.Historial));
+            enviar.Clicked += async (_, _) =>
+            {
+                List<ServicioExternoDetalleRequest> detalles = controles
+                    .Where(x => x.Value.Check.IsChecked)
+                    .Select(x => new ServicioExternoDetalleRequest(x.Key.Area.IdDetalleArea, ParseCantidad(x.Value.Cantidad.Text)))
+                    .Where(x => x.Cantidad > 0)
+                    .ToList();
+                if (detalles.Count == 0) { await page.DisplayAlertAsync("Servicio externo", "Seleccione productos e ingrese cantidades válidas.", "OK"); return; }
+                string? proveedor = await page.DisplayPromptAsync("Proveedor", "Ingrese el proveedor o servicio externo:", "Continuar", "Cancelar", "Proveedor");
+                if (string.IsNullOrWhiteSpace(proveedor)) return;
+                string? fechaTexto = await page.DisplayPromptAsync("Retorno", "Fecha estimada de retorno (dd/mm/aaaa):", "Continuar", "Cancelar", "Fecha", initialValue: DateTime.Today.AddDays(7).ToString("dd/MM/yyyy"));
+                if (!DateTime.TryParse(fechaTexto, CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime fecha)) fecha = DateTime.Today.AddDays(7);
+                string? observacion = await page.DisplayPromptAsync("Observación", "Observación del envío (opcional):", "Continuar", "Cancelar", "Observación");
+                string? clave = await PedirClaveAsync();
+                if (string.IsNullOrWhiteSpace(clave)) return;
+                try
+                {
+                    if (!_session.EsDemo)
+                        await _apiClient.EnviarServicioExternoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, new ServicioExternoEnviarRequest(_session.Usuario?.IdUsuario ?? 0, clave, proveedor, fecha, observacion, detalles));
+                    await page.DisplayAlertAsync("Servicio externo", "Envío registrado correctamente.", "OK");
+                    await page.Navigation.PopModalAsync();
+                    await CargarDetalleAsync(_id, forzar: true);
+                }
+                catch (Exception ex) { await page.DisplayAlertAsync("Servicio externo", ex.Message, "OK"); }
+            };
+            retornar.Clicked += async (_, _) =>
+            {
+                List<ServicioExternoHistorial> servicios = response.Historial
+                    .Where(x => x.SaldoExterno > 0 && controles.Any(c => c.Key.Area.IdDetalleArea == x.IdDetalleArea && c.Value.Check.IsChecked))
+                    .ToList();
+                if (servicios.Count == 0) { await page.DisplayAlertAsync("Servicio externo", "Seleccione productos con saldo pendiente de retorno.", "OK"); return; }
+                string? observacion = await page.DisplayPromptAsync("Observación", "Observación del retorno (opcional):", "Continuar", "Cancelar", "Observación");
+                string? clave = await PedirClaveAsync();
+                if (string.IsNullOrWhiteSpace(clave)) return;
+                try
+                {
+                    if (!_session.EsDemo)
+                        foreach (ServicioExternoHistorial servicio in servicios)
+                            await _apiClient.RetornarServicioExternoAsync(_detalleActual.Cabecera.IdOrdenTrabajo, new ServicioExternoRetornarRequest(servicio.IdDetalleServicioExterno, servicio.SaldoExterno, _session.Usuario?.IdUsuario ?? 0, clave, observacion));
+                    await page.DisplayAlertAsync("Servicio externo", $"Retorno registrado para {servicios.Count} producto(s).", "OK");
+                    await page.Navigation.PopModalAsync();
+                    await CargarDetalleAsync(_id, forzar: true);
+                }
+                catch (Exception ex) { await page.DisplayAlertAsync("Servicio externo", ex.Message, "OK"); }
+            };
+
+            await Navigation.PushModalAsync(page);
+        }
+        catch (Exception ex) { await DisplayAlertAsync("Servicios externos", ex.Message, "OK"); }
+    }
+
+    private static decimal ParseCantidad(string? texto)
+    {
+        texto = (texto ?? string.Empty).Trim().Replace(',', '.');
+        return decimal.TryParse(texto, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal valor) ? valor : 0;
+    }
+
+    private static ContentPage CrearServiciosHistorialPage(IReadOnlyList<ServicioExternoHistorial> items)
+    {
+        VerticalStackLayout contenido = new() { Padding = 14, Spacing = 10 };
+        contenido.Add(new Label { Text = "Historial de servicios externos", FontFamily = "OpenSansSemibold", FontSize = 22, TextColor = Color.FromArgb("#101828") });
+        foreach (ServicioExternoHistorial item in items)
+            contenido.Add(new Border
+            {
+                Padding = 10,
+                BackgroundColor = Colors.White,
+                Stroke = Color.FromArgb("#D9E0E6"),
+                StrokeShape = new RoundRectangle { CornerRadius = 8 },
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 3,
+                    Children =
+                    {
+                        new Label { Text = $"{item.CodigoProducto} - {item.NombreProducto}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") },
+                        new Label { Text = $"Servicio: {item.Proveedor} | Área: {item.NombreArea}", FontSize = 12, TextColor = Color.FromArgb("#344054") },
+                        new Label { Text = $"Enviado: {item.CantidadEnviada:N2} | Retornado: {item.CantidadRetornada:N2} | Saldo: {item.SaldoExterno:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085") },
+                        new Label { Text = $"Salida: {item.FechaSalida:dd/MM/yyyy HH:mm} | Retorno esperado: {item.FechaRetornoEsperada:dd/MM/yyyy}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap },
+                        new Label { Text = $"Enviado por: {item.UsuarioSalida} | Estado: {item.Estado}", FontSize = 12, TextColor = Color.FromArgb("#667085") },
+                        new Label { Text = string.IsNullOrWhiteSpace(item.Observacion) ? "" : $"Obs.: {item.Observacion}", FontSize = 12, TextColor = Color.FromArgb("#475467"), LineBreakMode = LineBreakMode.WordWrap }
+                    }
+                }
+            });
+        return CrearModalListado("Servicios externos", contenido);
+    }
+
     private IDispatcherTimer CrearTimer()
     {
         IDispatcherTimer timer = Dispatcher.CreateTimer();
@@ -1031,5 +1192,15 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         public double OpacidadTransferir => PuedeTransferir ? 1 : 0.42;
         public double OpacidadMerma => PuedeMerma ? 1 : 0.42;
         public double OpacidadReservar => PuedeReservar ? 1 : 0.42;
+    }
+
+    private sealed class ServicioExternoMobileRow
+    {
+        public ServicioExternoActual Area { get; }
+
+        public ServicioExternoMobileRow(ServicioExternoActual area)
+        {
+            Area = area;
+        }
     }
 }

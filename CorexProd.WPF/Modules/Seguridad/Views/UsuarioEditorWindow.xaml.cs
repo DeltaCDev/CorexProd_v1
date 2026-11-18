@@ -53,5 +53,16 @@ namespace CorexProd.WPF.Modules.Seguridad.Views
                 MessageBox.Show(this, $"No se pudo cargar la firma: {ex.Message}", "Firma", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
+
+        private void VerFirma_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not UsuariosViewModel vm || vm.FirmaImagen is not { Length: > 0 } bytes)
+                return;
+
+            new FirmaPreviewWindow(bytes, "Vista previa de firma")
+            {
+                Owner = this
+            }.ShowDialog();
+        }
     }
 }

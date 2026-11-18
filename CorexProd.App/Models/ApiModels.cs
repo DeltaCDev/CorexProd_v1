@@ -652,6 +652,55 @@ public sealed record OrdenTrabajoArea(
     public string AccionPrincipal => EsTermino ? "Terminar" : "Transferir";
 }
 
+public sealed record ServicioExternoResponse(
+    IReadOnlyList<ServicioExternoActual> Actual,
+    IReadOnlyList<ServicioExternoHistorial> Historial);
+
+public sealed record ServicioExternoActual(
+    long IdDetalleArea,
+    int IdDetalleOT,
+    int IdAreaProduccion,
+    string NombreArea,
+    string CodigoProducto,
+    string NombreProducto,
+    decimal CantidadPendiente,
+    decimal CantidadEnServicioExterno,
+    decimal CantidadDisponible,
+    string Estado);
+
+public sealed record ServicioExternoHistorial(
+    long IdDetalleServicioExterno,
+    long IdDetalleArea,
+    string CodigoProducto,
+    string NombreProducto,
+    string NombreArea,
+    string Proveedor,
+    decimal CantidadEnviada,
+    decimal CantidadRetornada,
+    decimal SaldoExterno,
+    string Estado,
+    DateTime FechaSalida,
+    DateTime? FechaRetornoEsperada,
+    string UsuarioSalida,
+    string Observacion);
+
+public sealed record ServicioExternoDetalleRequest(long IdDetalleArea, decimal Cantidad);
+
+public sealed record ServicioExternoEnviarRequest(
+    int IdUsuarioSesion,
+    string? Clave,
+    string? Proveedor,
+    DateTime? FechaRetornoEsperada,
+    string? Observacion,
+    IReadOnlyList<ServicioExternoDetalleRequest> Detalles);
+
+public sealed record ServicioExternoRetornarRequest(
+    long IdDetalleServicioExterno,
+    decimal Cantidad,
+    int IdUsuarioSesion,
+    string? Clave,
+    string? Observacion);
+
 public sealed record OrdenTrabajoLanzarRequest(
     int IdUsuarioSesion,
     int IdUsuarioAutoriza,

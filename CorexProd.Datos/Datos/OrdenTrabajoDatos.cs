@@ -191,6 +191,7 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
             if (dr.NextResult()) while (dr.Read()) ot.Areas.Add(MapearArea(dr));
             dr.Close();
             CargarReservasProceso(cn, ot);
+            CargarServicioExterno(cn, ot);
             ot.TotalProducido = ot.Detalles.Sum(x => x.CantidadProducida);
             ot.TotalPendiente = ot.Detalles.Sum(x => x.CantidadPendiente);
             ot.TotalPendienteDisponibleProceso = ot.Areas
@@ -253,6 +254,98 @@ ORDER BY SUM(ISNULL(D.CantidadPlanificada, 0)) DESC;
             // un area de produccion. No deben descontarse del pendiente de la OT.
             // El pendiente de produccion se calcula exclusivamente con
             // StockProcesoReserva en CargarReservasProceso.
+        }
+
+        private static void CargarServicioExterno(SqlConnection cn, OrdenTrabajo ot)
+        {
+            if (ot.Areas.Count == 0) return;
+            try
+            {
+                using SqlCommand cmd = new(
+                    """
+                    SELECT D.IdDetalleArea,
+                           CONVERT(DECIMAL(18,2), SUM(D.CantidadEnviada-D.CantidadRetornada)) AS SaldoExterno
+                    FROM dbo.OrdenTrabajoServicioExternoDetalle D
+                    INNER JOIN dbo.OrdenTrabajoServicioExterno C ON C.IdServicioExterno=D.IdServicioExterno
+                    WHERE C.IdOrdenTrabajo=@IdOrdenTrabajo AND D.Estado IN ('ENVIADO','PARCIAL')
+                    GROUP BY D.IdDetalleArea;
+                    """, cn);
+                cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = ot.IdOrdenTrabajo;
+                Dictionary<long, OrdenTrabajoDetalleArea> areas = ot.Areas.ToDictionary(x => x.IdDetalleArea);
+                using SqlDataReader dr = cmd.ExecuteReader();
+                while (dr.Read())
+                {
+                    long id = Convert.ToInt64(dr["IdDetalleArea"]);
+                    if (areas.TryGetValue(id, out OrdenTrabajoDetalleArea? area))
+                        area.CantidadEnServicioExterno = Convert.ToDecimal(dr["SaldoExterno"]);
+                }
+            }
+            catch (SqlException ex) when (ex.Number is 208 or 207)
+            {
+                // Compatibilidad hasta ejecutar la migracion del servicio externo.
+            }
+        }
+
+        public long EnviarServicioExterno(int idOt, string proveedor, DateTime? fechaRetornoEsperada, int idUsuario, string observacion, IEnumerable<OrdenTrabajoServicioExternoItem> items)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_SERVICIO_EXTERNO_ENVIAR", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOt;
+            cmd.Parameters.Add("@Proveedor", SqlDbType.NVarChar, 200).Value = proveedor;
+            cmd.Parameters.Add("@FechaRetornoEsperada", SqlDbType.Date).Value = (object?)fechaRetornoEsperada?.Date ?? DBNull.Value;
+            cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = idUsuario;
+            cmd.Parameters.Add("@Observacion", SqlDbType.NVarChar, 500).Value = observacion ?? string.Empty;
+            cmd.Parameters.Add(new SqlParameter("@Detalles", SqlDbType.Structured) { TypeName = "dbo.TipoOTServicioExterno", Value = TablaServicioExterno(items) });
+            SqlParameter id = new("@IdServicioExterno", SqlDbType.BigInt) { Direction = ParameterDirection.Output };
+            cmd.Parameters.Add(id);
+            cn.Open(); cmd.ExecuteNonQuery();
+            return Convert.ToInt64(id.Value);
+        }
+
+        public void RetornarServicioExterno(long idDetalleServicioExterno, decimal cantidad, int idUsuario, string observacion)
+        {
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new("USP_PRO_OT_SERVICIO_EXTERNO_RETORNAR", cn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.Add("@IdDetalleServicioExterno", SqlDbType.BigInt).Value = idDetalleServicioExterno;
+            cmd.Parameters.Add("@Cantidad", SqlDbType.Decimal).Value = cantidad;
+            cmd.Parameters.Add("@IdUsuario", SqlDbType.Int).Value = idUsuario;
+            cmd.Parameters.Add("@Observacion", SqlDbType.NVarChar, 500).Value = observacion ?? string.Empty;
+            cn.Open(); cmd.ExecuteNonQuery();
+        }
+
+        public List<OrdenTrabajoServicioExternoDetalle> ListarServicioExterno(int idOt)
+        {
+            List<OrdenTrabajoServicioExternoDetalle> lista = [];
+            using SqlConnection cn = Conexion.ObtenerConexion();
+            using SqlCommand cmd = new(
+                """
+                SELECT D.IdDetalleServicioExterno,D.IdServicioExterno,D.IdDetalleArea,D.IdDetalleOT,
+                       D.CantidadEnviada,D.CantidadRetornada,D.SaldoExterno,D.Estado,D.FechaUltimoRetorno,D.Observacion,
+                       C.Proveedor,C.FechaSalida,C.FechaRetornoEsperada,C.Observacion AS ObservacionCabecera,
+                       ISNULL(U.NombreUsuario,'') AS UsuarioSalida,A.NombreArea,OT.CodigoProducto,OT.NombreProducto
+                FROM dbo.OrdenTrabajoServicioExternoDetalle D
+                JOIN dbo.OrdenTrabajoServicioExterno C ON C.IdServicioExterno=D.IdServicioExterno
+                LEFT JOIN dbo.Usuarios U ON U.IdUsuario=C.IdUsuarioSalida
+                JOIN dbo.OrdenTrabajoDetalleArea A ON A.IdDetalleArea=D.IdDetalleArea
+                JOIN dbo.OrdenTrabajoDetalle OT ON OT.IdDetalleOT=D.IdDetalleOT
+                WHERE C.IdOrdenTrabajo=@IdOrdenTrabajo
+                ORDER BY C.FechaSalida,D.IdDetalleServicioExterno;
+                """, cn);
+            cmd.Parameters.Add("@IdOrdenTrabajo", SqlDbType.Int).Value = idOt;
+            try
+            {
+                cn.Open(); using SqlDataReader dr = cmd.ExecuteReader();
+                while (dr.Read()) lista.Add(new OrdenTrabajoServicioExternoDetalle
+                {
+                    IdDetalleServicioExterno=Convert.ToInt64(dr["IdDetalleServicioExterno"]), IdServicioExterno=Convert.ToInt64(dr["IdServicioExterno"]),
+                    IdDetalleArea=Convert.ToInt64(dr["IdDetalleArea"]), IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),
+                    CodigoProducto=Texto(dr,"CodigoProducto"), NombreProducto=Texto(dr,"NombreProducto"), NombreArea=Texto(dr,"NombreArea"), Proveedor=Texto(dr,"Proveedor"),
+                    CantidadEnviada=Convert.ToDecimal(dr["CantidadEnviada"]), CantidadRetornada=Convert.ToDecimal(dr["CantidadRetornada"]), SaldoExterno=Convert.ToDecimal(dr["SaldoExterno"]),
+                    Estado=Texto(dr,"Estado"), FechaSalida=Convert.ToDateTime(dr["FechaSalida"]), FechaRetornoEsperada=FechaOpcional(dr,"FechaRetornoEsperada"), FechaUltimoRetorno=FechaOpcional(dr,"FechaUltimoRetorno"), UsuarioSalida=Texto(dr,"UsuarioSalida"), Observacion=string.IsNullOrWhiteSpace(Texto(dr,"Observacion")) ? Texto(dr,"ObservacionCabecera") : Texto(dr,"Observacion")
+                });
+            }
+            catch (SqlException ex) when (ex.Number is 208 or 207) { }
+            return lista;
         }
 
         private static void CargarReservasStockFisico(SqlConnection cn, OrdenTrabajo ot)
@@ -892,6 +985,7 @@ ORDER BY k.FechaMovimiento DESC;";
         private static DataTable TablaPlanificacionManual(IEnumerable<OrdenTrabajoManualPlanificacion> items) { DataTable t=new(); t.Columns.Add("IdProducto",typeof(int)); t.Columns.Add("CantidadPlanificada",typeof(decimal)); foreach(var x in items)t.Rows.Add(x.IdProducto,x.CantidadPlanificada); return t; }
         private static DataTable TablaLanzamiento(IEnumerable<OrdenTrabajoLanzamiento> items) { DataTable t=new(); t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("CantidadLanzada",typeof(decimal));t.Columns.Add("Motivo",typeof(string));t.Columns.Add("Observacion",typeof(string));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.CantidadLanzada,x.Motivo,x.Observacion);return t; }
         private static DataTable TablaTransferencia(IEnumerable<OrdenTrabajoTransferenciaItem> items) { DataTable t=new();t.Columns.Add("IdDetalleOT",typeof(int));t.Columns.Add("Cantidad",typeof(decimal));foreach(var x in items)t.Rows.Add(x.IdDetalleOT,x.Cantidad);return t; }
+        private static DataTable TablaServicioExterno(IEnumerable<OrdenTrabajoServicioExternoItem> items) { DataTable t=new();t.Columns.Add("IdDetalleArea",typeof(long));t.Columns.Add("Cantidad",typeof(decimal));foreach(var x in items)t.Rows.Add(x.IdDetalleArea,x.Cantidad);return t; }
         private static OrdenTrabajoDetalle MapearDetalle(SqlDataReader dr)=>new(){IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdOrdenCompraInternaDetalle=dr["IdOrdenCompraInternaDetalle"] is DBNull ? 0 : Convert.ToInt32(dr["IdOrdenCompraInternaDetalle"]),IdProducto=Convert.ToInt32(dr["IdProducto"]),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto"),CantidadRequerida=Decimal(dr,"CantidadRequerida"),CantidadPlanificada=Decimal(dr,"CantidadPlanificada"),CantidadAdicionalStock=DecimalOpcional(dr,"CantidadAdicionalStock"),CantidadLanzada=Decimal(dr,"CantidadLanzada"),CantidadProducida=Decimal(dr,"CantidadProducida"),CantidadAplicada=Decimal(dr,"CantidadAplicada"),CantidadExcedente=Decimal(dr,"CantidadExcedente"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),MotivoDiferencia=Texto(dr,"MotivoDiferencia"),ObservacionDiferencia=Texto(dr,"ObservacionDiferencia")};
         private static OrdenTrabajoDetalleArea MapearArea(SqlDataReader dr)=>new(){IdDetalleArea=Convert.ToInt64(dr["IdDetalleArea"]),IdOrdenTrabajo=Convert.ToInt32(dr["IdOrdenTrabajo"]),IdDetalleOT=Convert.ToInt32(dr["IdDetalleOT"]),IdAreaProduccion=Convert.ToInt32(dr["IdAreaProduccion"]),CodigoArea=Texto(dr,"CodigoArea"),NombreArea=Texto(dr,"NombreArea"),OrdenSecuencia=Convert.ToInt32(dr["OrdenSecuencia"]),EsInicio=Convert.ToBoolean(dr["EsInicio"]),EsTermino=Convert.ToBoolean(dr["EsTermino"]),ManejaMerma=Convert.ToBoolean(dr["ManejaMerma"]),PermiteReservarStockProceso=BooleanoOpcional(dr,"PermiteReservarStockProceso"),ModoEnvio=Texto(dr,"ModoEnvio"),CantidadRecibida=Decimal(dr,"CantidadRecibida"),CantidadEnviada=Decimal(dr,"CantidadEnviada"),CantidadMerma=Decimal(dr,"CantidadMerma"),CantidadReservada=DecimalOpcional(dr,"CantidadReservada"),CantidadPendiente=Decimal(dr,"CantidadPendiente"),Estado=Texto(dr,"Estado"),CodigoProducto=Texto(dr,"CodigoProducto"),NombreProducto=Texto(dr,"NombreProducto")};
         private static string Texto(SqlDataReader dr,string c)=>dr[c] is DBNull?string.Empty:dr[c]?.ToString()??string.Empty;

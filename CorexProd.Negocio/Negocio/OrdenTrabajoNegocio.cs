@@ -153,5 +153,21 @@ namespace CorexProd.Negocio.Negocio
         }
 
         public void ConfirmarConsumo(int idDetalleOt,int idUsuario)=>_datos.ConfirmarConsumo(idDetalleOt,idUsuario);
+
+        public long EnviarServicioExterno(int idOt, string proveedor, DateTime? fechaRetornoEsperada, int idUsuario, string observacion, IEnumerable<OrdenTrabajoServicioExternoItem> items)
+        {
+            ValidarAprobacion(idOt);
+            List<OrdenTrabajoServicioExternoItem> lista = items.Where(x => x.Cantidad > 0).ToList();
+            if (lista.Count == 0) throw new InvalidOperationException("Seleccione al menos un producto y cantidad para enviar al servicio externo.");
+            return _datos.EnviarServicioExterno(idOt, proveedor, fechaRetornoEsperada, idUsuario, observacion, lista);
+        }
+
+        public void RetornarServicioExterno(long idDetalleServicioExterno, decimal cantidad, int idUsuario, string observacion)
+        {
+            if (cantidad <= 0) throw new InvalidOperationException("La cantidad retornada debe ser mayor que cero.");
+            _datos.RetornarServicioExterno(idDetalleServicioExterno, cantidad, idUsuario, observacion);
+        }
+
+        public List<OrdenTrabajoServicioExternoDetalle> ListarServicioExterno(int idOt) => _datos.ListarServicioExterno(idOt);
     }
 }
