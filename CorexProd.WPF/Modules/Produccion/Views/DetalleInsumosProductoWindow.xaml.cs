@@ -18,7 +18,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             InitializeComponent();
             ProductoText.Text = $"Producto: {producto.Producto}";
             OrdenText.Text = $"Orden de compra del cliente: {ordenCompra}";
-            ProduccionText.Text = $"Producción solicitada: {producto.CantidadRequerida:N3} unidades";
+            ProduccionText.Text = $"Producción solicitada: {producto.CantidadRequerida:N0} unidades";
             InsumosGrid.ItemsSource = insumos;
 
             int faltantes = insumos.Count(x => x.CantidadFaltante > 0);

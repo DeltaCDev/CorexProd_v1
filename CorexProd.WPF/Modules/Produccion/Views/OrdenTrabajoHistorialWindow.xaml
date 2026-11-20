@@ -74,7 +74,7 @@
                 <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="360" ElementStyle="{StaticResource TextoWrap}"/>
                 <DataGridTextColumn Header="Origen" Binding="{Binding Origen}" Width="120"/>
                 <DataGridTextColumn Header="Destino" Binding="{Binding Destino}" Width="165"/>
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N3}" Width="90"/>
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="90"/>
                 <DataGridTextColumn Header="Accion" Binding="{Binding Accion}" Width="165"/>
                 <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120"/>
             </DataGrid.Columns>

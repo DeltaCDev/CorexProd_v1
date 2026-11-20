@@ -225,7 +225,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                 CheckBox check = new() { IsChecked = false, VerticalOptions = LayoutOptions.Start };
                 Entry cantidad = new()
                 {
-                    Text = fila.Area.CantidadDisponible.ToString("0.##", CultureInfo.InvariantCulture),
+                    Text = fila.Area.CantidadDisponible.ToString("0", CultureInfo.InvariantCulture),
                     Keyboard = Keyboard.Numeric,
                     WidthRequest = 92,
                     HorizontalTextAlignment = TextAlignment.End
@@ -241,7 +241,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                 encabezado.Add(cantidad, 2, 0);
                 VerticalStackLayout tarjeta = new() { Spacing = 4 };
                 tarjeta.Add(encabezado);
-                tarjeta.Add(new Label { Text = $"Área: {fila.Area.NombreArea} | Pendiente: {fila.Area.CantidadPendiente:N2} | En servicio: {fila.Area.CantidadEnServicioExterno:N2} | Disponible: {fila.Area.CantidadDisponible:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
+                tarjeta.Add(new Label { Text = $"Área: {fila.Area.NombreArea} | Pendiente: {fila.Area.CantidadPendiente:N0} | En servicio: {fila.Area.CantidadEnServicioExterno:N0} | Disponible: {fila.Area.CantidadDisponible:N0}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap });
                 lista.Add(new Border { Padding = 10, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = tarjeta });
             }
             contenido.Add(lista);
@@ -345,7 +345,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                     {
                         new Label { Text = $"{item.CodigoProducto} - {item.NombreProducto}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") },
                         new Label { Text = $"Servicio: {item.Proveedor} | Área: {item.NombreArea}", FontSize = 12, TextColor = Color.FromArgb("#344054") },
-                        new Label { Text = $"Enviado: {item.CantidadEnviada:N2} | Retornado: {item.CantidadRetornada:N2} | Saldo: {item.SaldoExterno:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085") },
+                        new Label { Text = $"Enviado: {item.CantidadEnviada:N0} | Retornado: {item.CantidadRetornada:N0} | Saldo: {item.SaldoExterno:N0}", FontSize = 12, TextColor = Color.FromArgb("#667085") },
                         new Label { Text = $"Salida: {item.FechaSalida:dd/MM/yyyy HH:mm} | Retorno esperado: {item.FechaRetornoEsperada:dd/MM/yyyy}", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.WordWrap },
                         new Label { Text = $"Enviado por: {item.UsuarioSalida} | Estado: {item.Estado}", FontSize = 12, TextColor = Color.FromArgb("#667085") },
                         new Label { Text = string.IsNullOrWhiteSpace(item.Observacion) ? "" : $"Obs.: {item.Observacion}", FontSize = 12, TextColor = Color.FromArgb("#475467"), LineBreakMode = LineBreakMode.WordWrap }
@@ -488,7 +488,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         string destino = idAreaDestino.HasValue ? ObtenerDestino(area) : "siguiente area";
         bool confirmar = await DisplayAlertAsync(
             "Confirmar",
-            $"Se iniciaran {cantidad:N2} y se transferiran automaticamente desde {area.NombreArea} hacia {destino}.",
+            $"Se iniciaran {cantidad:N0} y se transferiran automaticamente desde {area.NombreArea} hacia {destino}.",
             "Confirmar",
             "Cancelar");
         if (!confirmar)
@@ -546,7 +546,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         string destino = area.EsTermino ? "productos terminados" : ObtenerDestino(area);
         bool confirmar = await DisplayAlertAsync(
             "Confirmar transferencia",
-            $"Desea transferir {cantidad:N2} unidades desde {area.NombreArea} hacia {destino}?",
+            $"Desea transferir {cantidad:N0} unidades desde {area.NombreArea} hacia {destino}?",
             "Transferir",
             "Cancelar");
         if (!confirmar)
@@ -638,7 +638,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
 
         bool confirmar = await DisplayAlertAsync(
             "Confirmar reserva",
-            $"Se reservaran {cantidad:N2} unidades de {area.NombreArea} como stock en proceso.",
+            $"Se reservaran {cantidad:N0} unidades de {area.NombreArea} como stock en proceso.",
             "Reservar",
             "Cancelar");
         if (!confirmar)
@@ -763,7 +763,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
                      .Select(x => x.Producto))
         {
             sb.AppendLine($"{producto.CodigoProducto} - {producto.NombreProducto}");
-            sb.AppendLine($"Producido: {producto.CantidadProducida:N2} / Planificado: {producto.CantidadPlanificada:N2}");
+            sb.AppendLine($"Producido: {producto.CantidadProducida:N0} / Planificado: {producto.CantidadPlanificada:N0}");
         }
 
         return sb.ToString().Trim();
@@ -929,7 +929,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
         });
         texto.Spans.Add(new Span
         {
-            Text = $" / Planificado: {producto.CantidadPlanificada:N2}",
+            Text = $" / Planificado: {producto.CantidadPlanificada:N0}",
             TextColor = textoBase
         });
 
@@ -1017,7 +1017,7 @@ public partial class OrdenTrabajoDetallePage : ContentPage
     {
         string? texto = await DisplayPromptAsync(
             titulo,
-            $"Cantidad disponible: {maximo:N2}",
+            $"Cantidad disponible: {maximo:N0}",
             "Aceptar",
             "Cancelar",
             "Cantidad",

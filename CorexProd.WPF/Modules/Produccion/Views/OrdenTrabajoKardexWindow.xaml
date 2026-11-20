@@ -47,7 +47,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="95"/>
                 <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*" ElementStyle="{StaticResource TextoWrap}"/>
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N3}" Width="95"/>
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="95"/>
                 <DataGridTextColumn Header="Almacen" Binding="{Binding Almacen}" Width="170"/>
                 <DataGridTextColumn Header="Fecha y Hora Movimiento" Binding="{Binding FechaMovimiento, StringFormat=dd/MM/yyyy HH:mm:ss}" Width="175"/>
                 <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="130"/>

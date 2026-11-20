@@ -1,6 +1,7 @@
 ﻿<Window x:Class="CorexProd.WPF.Modules.Produccion.Views.FichaTecnicaEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:CorexProd.WPF.Helpers"
         Title="{Binding TituloEditor}"
         Height="680"
         Width="980"
@@ -63,7 +64,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="0,0,10,0">
                         <TextBlock Text="Cantidad"/>
-                        <TextBox Text="{Binding Cantidad}" Height="32"/>
+                        <TextBox helpers:IntegerInputBehavior.IsEnabled="True" Text="{Binding Cantidad}" Height="32"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Margin="0,0,10,0">
                         <TextBlock Text="Unidad"/>
@@ -82,7 +83,7 @@
                     <DataGridTextColumn Header="ID Insumo" Binding="{Binding IdInsumo}" Width="90"/>
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoInsumo}" Width="120"/>
                     <DataGridTextColumn Header="Insumo" Binding="{Binding NombreInsumo}" Width="*"/>
-                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="120"/>
+                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="120"/>
                     <DataGridTextColumn Header="U.M" Binding="{Binding Abreviatura}" Width="100"/>
                 </DataGrid.Columns>
             </DataGrid>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:CorexProd.App.Behaviors"
              x:Class="CorexProd.App.Pages.OrdenTrabajoManualPage"
              Title="OT Manual">
     <Grid RowDefinitions="Auto,*,Auto" BackgroundColor="#F4F6F8">
@@ -23,7 +24,7 @@
                 <Entry Grid.Column="1"
                        x:Name="CantidadEntry"
                        Placeholder="Cant."
-                       Keyboard="Numeric" />
+                       Keyboard="Numeric"><Entry.Behaviors><behaviors:IntegerEntryBehavior /></Entry.Behaviors></Entry>
                 <Button Grid.Column="2"
                         Text="Agregar"
                         Clicked="OnAgregarClicked" />

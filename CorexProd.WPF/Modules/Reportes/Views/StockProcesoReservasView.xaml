@@ -113,7 +113,7 @@
                         <TextBlock Text="Cantidad reservada"
                                    Foreground="#047857"
                                    FontSize="12"/>
-                        <TextBlock Text="{Binding CantidadTotal, StringFormat=N2}"
+                        <TextBlock Text="{Binding CantidadTotal, StringFormat=N0}"
                                    Foreground="#065F46"
                                    FontWeight="Bold"
                                    FontSize="18"
@@ -133,7 +133,7 @@
                         <TextBlock Text="Cantidad usada"
                                    Foreground="#B91C1C"
                                    FontSize="12"/>
-                        <TextBlock Text="{Binding CantidadUsadaTotal, StringFormat=N2}"
+                        <TextBlock Text="{Binding CantidadUsadaTotal, StringFormat=N0}"
                                    Foreground="#991B1B"
                                    FontWeight="Bold"
                                    FontSize="18"
@@ -153,7 +153,7 @@
                         <TextBlock Text="Cantidad disponible"
                                    Foreground="#15803D"
                                    FontSize="12"/>
-                        <TextBlock Text="{Binding CantidadDisponibleTotal, StringFormat=N2}"
+                        <TextBlock Text="{Binding CantidadDisponibleTotal, StringFormat=N0}"
                                    Foreground="#166534"
                                    FontWeight="Bold"
                                    FontSize="18"
@@ -249,7 +249,7 @@
                     <DataGridTextColumn Header="OT ORIGEN"
                                         Binding="{Binding NumeroOT}"
                                         Width="90"/>
-                    <DataGridTextColumn Binding="{Binding CantidadReservada, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding CantidadReservada, StringFormat=N0}"
                                         Width="90">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="CANTIDAD&#10;RESERVADA"
@@ -257,7 +257,7 @@
                                        LineHeight="15"/>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Binding="{Binding CantidadAplicada, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding CantidadAplicada, StringFormat=N0}"
                                         Width="85">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="CANTIDAD&#10;USADA"
@@ -265,7 +265,7 @@
                                        LineHeight="15"/>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Binding="{Binding CantidadDisponible, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding CantidadDisponible, StringFormat=N0}"
                                         Width="89">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="CANTIDAD&#10;DISPONIBLE"

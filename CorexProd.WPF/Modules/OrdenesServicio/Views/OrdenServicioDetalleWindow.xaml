@@ -107,7 +107,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="180"/>
                             <DataGridTextColumn Header="Descripcion" Binding="{Binding Descripcion}" Width="*"/>
-                            <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
+                            <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat=N0}" Width="90"/>
                             <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="80"/>
                             <DataGridTextColumn Header="P. Unit." Binding="{Binding PrecioUnitario, StringFormat=S/ {0:N2}}" Width="110"/>
                             <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="110"/>
@@ -122,8 +122,8 @@
                         <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy}" Width="100"/>
                         <DataGridTextColumn Header="Tipo" Binding="{Binding TipoMovimiento}" Width="100"/>
                         <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="180"/>
-                        <DataGridTextColumn Header="Cantidad" Binding="{Binding CantidadMovimiento, StringFormat=N2}" Width="90"/>
-                        <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Cantidad" Binding="{Binding CantidadMovimiento, StringFormat=N0}" Width="90"/>
+                        <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N0}" Width="90"/>
                         <DataGridTextColumn Header="Usuario" Binding="{Binding UsuarioRegistro}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -152,7 +152,7 @@
                         <Border Background="#FEF2F2" BorderBrush="#EF4444" BorderThickness="1" Padding="12" Margin="8,0,0,0">
                             <StackPanel>
                                 <TextBlock Text="Pendiente" Foreground="#B91C1C"/>
-                                <TextBlock Text="{Binding Orden.SaldoPendiente, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#B91C1C"/>
+                                <TextBlock Text="{Binding Orden.SaldoPendiente, StringFormat=S/ {0:N0}}" FontSize="18" FontWeight="Bold" Foreground="#B91C1C"/>
                             </StackPanel>
                         </Border>
                     </UniformGrid>

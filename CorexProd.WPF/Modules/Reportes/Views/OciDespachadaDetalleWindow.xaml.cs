@@ -22,7 +22,7 @@ namespace CorexProd.WPF.Modules.Reportes.Views
             TxtSubtitulo.Text = $"Proforma: {proforma}  |  OT: {(string.IsNullOrWhiteSpace(ot) ? "Sin OT" : ot)}  |  Registros: {detalle.Count}";
             TxtOci.Text = oci;
             TxtCliente.Text = cliente;
-            TxtTotales.Text = $"Solicitado: {totalSolicitado:N2}  |  Producido: {totalProducido:N2}  |  Despachado: {totalDespachado:N2}";
+            TxtTotales.Text = $"Solicitado: {totalSolicitado:N0}  |  Producido: {totalProducido:N0}  |  Despachado: {totalDespachado:N0}";
             GrdDetalle.ItemsSource = detalle;
         }
 

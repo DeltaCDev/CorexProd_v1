@@ -495,7 +495,7 @@ public partial class OciPage : ContentPage
         stack.Add(new Label { Text = item.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
         stack.Add(new Label
         {
-            Text = $"Requerimiento: {item.CantidadRequerida:N2} | Stock terminado: {item.StockTerminado:N2} | Reserva: {item.StockReservado:N2} | A completar: {item.CantidadFaltanteDespuesStock:N2}",
+            Text = $"Requerimiento: {item.CantidadRequerida:N0} | Stock terminado: {item.StockTerminado:N0} | Reserva: {item.StockReservado:N0} | A completar: {item.CantidadFaltanteDespuesStock:N0}",
             FontSize = 12,
             TextColor = Color.FromArgb("#667085"),
             LineBreakMode = LineBreakMode.WordWrap
@@ -514,7 +514,7 @@ public partial class OciPage : ContentPage
 
         RadioButton soloNecesario = new()
         {
-            Content = $"Usar solo {item.CantidadReservaSugerida:N2} necesarias de la reserva.",
+            Content = $"Usar solo {item.CantidadReservaSugerida:N0} necesarias de la reserva.",
             GroupName = $"reserva-{item.IdOrdenCompraInternaDetalle}",
             IsChecked = item.ModoUsoReserva == OtReservaDecisionItem.ModoSoloNecesario
         };
@@ -529,7 +529,7 @@ public partial class OciPage : ContentPage
 
         RadioButton reservaCompleta = new()
         {
-            Content = $"Procesar las {item.StockReservado:N2} reservadas.",
+            Content = $"Procesar las {item.StockReservado:N0} reservadas.",
             GroupName = $"reserva-{item.IdOrdenCompraInternaDetalle}",
             IsChecked = item.ModoUsoReserva == OtReservaDecisionItem.ModoReservaCompleta,
             IsEnabled = item.PermiteProcesarReservaCompleta
@@ -570,11 +570,11 @@ public partial class OciPage : ContentPage
         header.Add(new Label { Text = ObtenerOtValidacionTexto(producto), FontFamily = "OpenSansSemibold", TextColor = estadoColor }, 1, 0);
         stack.Add(header);
         stack.Add(new Label { Text = producto.NombreProducto, TextColor = Color.FromArgb("#344054"), LineBreakMode = LineBreakMode.WordWrap });
-        stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N2} | Produccion nueva: {producto.ProduccionNuevaSugerida:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
+        stack.Add(new Label { Text = $"Cantidad OT: {producto.CantidadRequerida:N0} | Produccion nueva: {producto.ProduccionNuevaSugerida:N0}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#101828") });
         stack.Add(CrearOtResumenLabel(producto, estadoColor));
         stack.Add(new Label
         {
-            Text = $"Fisico: {producto.StockFisico:N2} | Reservado OC: {producto.StockReservadoOci:N2} | Reservado otros: {producto.StockReservadoOtros:N2} | Disponible real: {producto.StockDisponibleReal:N2}",
+            Text = $"Fisico: {producto.StockFisico:N0} | Reservado OC: {producto.StockReservadoOci:N0} | Reservado otros: {producto.StockReservadoOtros:N0} | Disponible real: {producto.StockDisponibleReal:N0}",
             FontSize = 12,
             TextColor = Color.FromArgb("#475467"),
             LineBreakMode = LineBreakMode.WordWrap
@@ -584,7 +584,7 @@ public partial class OciPage : ContentPage
         {
             stack.Add(new Label
             {
-                Text = $"Reserva: {producto.ReservaDisponible:N2} | Usar sugerido: {producto.ReservaSugerida:N2} | Excedente: {producto.ExcedenteReservaDisponible:N2}",
+                Text = $"Reserva: {producto.ReservaDisponible:N0} | Usar sugerido: {producto.ReservaSugerida:N0} | Excedente: {producto.ExcedenteReservaDisponible:N0}",
                 FontSize = 12,
                 TextColor = Color.FromArgb("#0E9384"),
                 LineBreakMode = LineBreakMode.WordWrap
@@ -620,7 +620,7 @@ public partial class OciPage : ContentPage
             ApiListResponse<OtValidacionInsumo> response = await _apiClient.GetDetalleInsumosOtAsync(producto.IdOrdenCompraInternaDetalle);
             VerticalStackLayout contenido = new() { Padding = 14, Spacing = 12 };
             contenido.Add(new Label { Text = producto.CodigoProducto, FontFamily = "OpenSansSemibold", FontSize = 21, TextColor = Color.FromArgb("#101828") });
-            contenido.Add(new Label { Text = $"Cantidad a producir: {producto.Deficit:N2}", FontSize = 13, TextColor = Color.FromArgb("#667085") });
+            contenido.Add(new Label { Text = $"Cantidad a producir: {producto.Deficit:N0}", FontSize = 13, TextColor = Color.FromArgb("#667085") });
 
             foreach (OtValidacionInsumo insumo in response.Items)
                 contenido.Add(CrearInsumoCard(insumo));
@@ -882,7 +882,7 @@ public partial class OciPage : ContentPage
         Label importe = new() { Text = $"Importe: S/ {detalle.Importe:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085") };
         Label disponibilidad = CrearDisponibilidadOciLabel(detalle);
         grid.Add(new Label { Text = detalle.CodigoProducto, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") }, 0, 0);
-        grid.Add(new Label { Text = $"x {detalle.Cantidad:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") }, 1, 0);
+        grid.Add(new Label { Text = $"x {detalle.Cantidad:N0}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") }, 1, 0);
         grid.Add(nombre, 0, 1);
         grid.SetColumnSpan(nombre, 2);
         grid.Add(importe, 0, 2);
@@ -907,10 +907,10 @@ public partial class OciPage : ContentPage
         string texto = pendiente <= 0
             ? "Entregado"
             : stock >= pendiente
-                ? $"Stock suficiente para despachar {pendiente:N2}"
+                ? $"Stock suficiente para despachar {pendiente:N0}"
                 : stock > 0
-                    ? $"Stock parcial {stock:N2}; requiere producir {(pendiente - stock):N2}"
-                    : $"Sin stock; requiere producir {pendiente:N2}";
+                    ? $"Stock parcial {stock:N0}; requiere producir {(pendiente - stock):N0}"
+                    : $"Sin stock; requiere producir {pendiente:N0}";
 
         return new Label
         {
@@ -1041,7 +1041,7 @@ public partial class OciPage : ContentPage
                 {
                     emitir.IsEnabled = true;
                     volver.IsEnabled = true;
-                    await page.DisplayAlertAsync("Guia Interna", $"La cantidad maxima para {item.CodigoProducto} es {item.CantidadMaxima:N2}.", "OK");
+                    await page.DisplayAlertAsync("Guia Interna", $"La cantidad maxima para {item.CodigoProducto} es {item.CantidadMaxima:N0}.", "OK");
                     return;
                 }
             }
@@ -1142,7 +1142,7 @@ public partial class OciPage : ContentPage
         grid.SetColumnSpan(nombre, 2);
         Label cantidades = new()
         {
-            Text = $"Requerido: {item.CantidadPendiente:N2} | Stock: {item.StockActual:N2} | Sugerido: {item.CantidadSugerida:N2}",
+            Text = $"Requerido: {item.CantidadPendiente:N0} | Stock: {item.StockActual:N0} | Sugerido: {item.CantidadSugerida:N0}",
             FontSize = compacto ? 11 : 12,
             TextColor = Color.FromArgb("#667085"),
             LineBreakMode = LineBreakMode.WordWrap
@@ -1174,7 +1174,7 @@ public partial class OciPage : ContentPage
         observacion.TextChanged += (_, e) => item.ObservacionTexto = e.NewTextValue ?? string.Empty;
         grid.Add(cantidad, 0, 0);
         grid.Add(observacion, 1, 0);
-        stack.Add(new Label { Text = $"Maximo: {item.CantidadMaxima:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085") });
+        stack.Add(new Label { Text = $"Maximo: {item.CantidadMaxima:N0}", FontSize = 12, TextColor = Color.FromArgb("#667085") });
         stack.Add(grid);
         return new Border { Padding = 12, BackgroundColor = Colors.White, Stroke = Color.FromArgb("#D9E0E6"), StrokeShape = new RoundRectangle { CornerRadius = 8 }, Content = stack };
     }
@@ -1218,7 +1218,7 @@ public partial class OciPage : ContentPage
         FormattedString texto = new();
         texto.Spans.Add(new Span
         {
-            Text = $"Stock total: {producto.StockTotal:N2} | ",
+            Text = $"Stock total: {producto.StockTotal:N0} | ",
             TextColor = textoBase
         });
         texto.Spans.Add(new Span
@@ -1259,7 +1259,7 @@ public partial class OciPage : ContentPage
                 : "Solo necesario";
             stack.Add(new Label
             {
-                Text = $"{codigo}: {modo} | reserva {detalle.CantidadProcesarReserva:N2} | produccion nueva {detalle.CantidadProduccionNueva:N2}",
+                Text = $"{codigo}: {modo} | reserva {detalle.CantidadProcesarReserva:N0} | produccion nueva {detalle.CantidadProduccionNueva:N0}",
                 FontSize = 12,
                 TextColor = Color.FromArgb("#475467"),
                 LineBreakMode = LineBreakMode.WordWrap
@@ -1293,7 +1293,7 @@ public partial class OciPage : ContentPage
         grid.SetColumnSpan(nombre, 2);
         Label cantidades = new()
         {
-            Text = $"Necesario {insumo.CantidadNecesaria:N3} {insumo.UnidadMedida} | Stock {insumo.StockActual:N3} | Faltante {insumo.CantidadFaltante:N3}",
+            Text = $"Necesario {insumo.CantidadNecesaria:N0} {insumo.UnidadMedida} | Stock {insumo.StockActual:N0} | Faltante {insumo.CantidadFaltante:N0}",
             FontSize = 12,
             TextColor = Color.FromArgb("#667085"),
             LineBreakMode = LineBreakMode.WordWrap
@@ -1333,9 +1333,9 @@ public partial class OciPage : ContentPage
             {
                 decimal reservaProcesar = ModoUsoReserva == ModoReservaCompleta ? StockReservado : CantidadReservaSugerida;
                 decimal excedente = ModoUsoReserva == ModoReservaCompleta ? Math.Max(0, StockReservado - CantidadReservaSugerida) : 0;
-                string texto = $"Se tomaran {reservaProcesar:N2} de reserva y {CantidadProduccionNueva:N2} de produccion nueva.";
+                string texto = $"Se tomaran {reservaProcesar:N0} de reserva y {CantidadProduccionNueva:N0} de produccion nueva.";
                 return excedente > 0
-                    ? $"{texto} Excedente a stock terminado: {excedente:N2}."
+                    ? $"{texto} Excedente a stock terminado: {excedente:N0}."
                     : texto;
             }
         }

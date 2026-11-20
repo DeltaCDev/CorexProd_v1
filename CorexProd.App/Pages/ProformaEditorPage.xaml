@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:CorexProd.App.Behaviors"
              x:Class="CorexProd.App.Pages.ProformaEditorPage"
              Title="Nueva OC">
     <Grid RowDefinitions="*,Auto" BackgroundColor="#F4F6F8">
@@ -49,7 +50,7 @@
                                TextColor="#667085"
                                LineBreakMode="WordWrap" />
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                            <Entry x:Name="CantidadEntry" Placeholder="Cant." Keyboard="Numeric" />
+                            <Entry x:Name="CantidadEntry" Placeholder="Cant." Keyboard="Numeric"><Entry.Behaviors><behaviors:IntegerEntryBehavior /></Entry.Behaviors></Entry>
                             <Entry x:Name="PrecioEntry" Grid.Column="1" Placeholder="Precio" Keyboard="Numeric" />
                             <Entry x:Name="DescuentoEntry" Grid.Column="2" Placeholder="Desc." Keyboard="Numeric" />
                         </Grid>

@@ -161,7 +161,7 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="80"/>
                                 <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="550"/>
-                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
+                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="90"/>
                                 <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion}" Width="230"/>
                             </DataGrid.Columns>
                         </DataGrid>

@@ -262,7 +262,7 @@
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="*"/>
-                                        <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat=N2}" Width="80"/>
+                                        <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, StringFormat=N0}" Width="80"/>
                                         <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="70"/>
                                         <DataGridTextColumn Header="P. Unit." Binding="{Binding PrecioUnitario, StringFormat=S/ {0:N2}}" Width="95"/>
                                         <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="95"/>
@@ -277,7 +277,7 @@
                                     <TextBlock Text="Observaciones" Style="{StaticResource Etiqueta}" Margin="0,9,0,5"/>
                                     <TextBox Height="50" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}"/>
                                     <TextBlock Text="{Binding TotalFormulario, StringFormat=Total: S/ {0:N2}}" FontSize="16" FontWeight="Bold" Foreground="#0F766E" Margin="0,10,0,0"/>
-                                    <TextBlock Text="{Binding SaldoPendienteFormulario, StringFormat=Saldo pendiente: S/ {0:N2}}" FontSize="15" FontWeight="Bold" Foreground="#B45309"/>
+                                    <TextBlock Text="{Binding SaldoPendienteFormulario, StringFormat=Saldo pendiente: S/ {0:N0}}" FontSize="15" FontWeight="Bold" Foreground="#B45309"/>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                                         <Button Style="{StaticResource BotonPrimario}" Command="{Binding GuardarCommand}" Content="Guardar" Margin="0,0,8,0"/>
                                         <Button Style="{StaticResource Boton}" Command="{Binding CancelarCommand}" Content="Cancelar"/>
@@ -353,7 +353,7 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="Pagado" Binding="{Binding TotalPagado, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
-                            <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoPendiente, StringFormat=S/ {0:N2}}" Width="105" ElementStyle="{StaticResource Celda}"/>
+                            <DataGridTextColumn Header="Saldo" Binding="{Binding SaldoPendiente, StringFormat=S/ {0:N0}}" Width="105" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="Cliente" Binding="{Binding Cliente}" Width="250" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="OCI" Binding="{Binding OciRelacionada}" Width="90" ElementStyle="{StaticResource Celda}"/>
                             <DataGridTextColumn Header="OT" Binding="{Binding OtRelacionada}" Width="90" ElementStyle="{StaticResource Celda}"/>
@@ -372,10 +372,10 @@
                             <DataGrid Grid.Row="1" ItemsSource="{Binding MovimientosFormulario}" AutoGenerateColumns="False" CanUserAddRows="False">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" Width="*"/>
-                                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" IsReadOnly="True" Width="90"/>
-                                    <DataGridTextColumn Header="Anterior" Binding="{Binding CantidadAnterior, StringFormat=N2}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Anterior" Binding="{Binding CantidadAnterior, StringFormat=N0}" IsReadOnly="True" Width="90"/>
                                     <DataGridTextColumn Header="Ahora" Binding="{Binding CantidadMovimiento, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                                    <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" IsReadOnly="True" Width="90"/>
+                                    <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N0}" IsReadOnly="True" Width="90"/>
                                     <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="70"/>
                                     <DataGridTextColumn Header="Observacion" Binding="{Binding Observacion, UpdateSourceTrigger=PropertyChanged}" Width="190"/>
                                 </DataGrid.Columns>

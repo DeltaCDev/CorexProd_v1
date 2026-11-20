@@ -63,12 +63,12 @@
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="100" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="*" MinWidth="280" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Requerido" Binding="{Binding CantidadRequerida, StringFormat=N2}" Width="82" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="82" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Stock" Binding="{Binding StockActual, StringFormat=N2}" Width="75" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Máximo" Binding="{Binding CantidadMaxima, StringFormat=N2}" Width="75" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Requerido" Binding="{Binding CantidadRequerida, StringFormat=N0}" Width="82" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Pendiente" Binding="{Binding CantidadPendiente, StringFormat=N0}" Width="82" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Stock" Binding="{Binding StockActual, StringFormat=N0}" Width="75" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Máximo" Binding="{Binding CantidadMaxima, StringFormat=N0}" Width="75" IsReadOnly="True"/>
                     <DataGridTemplateColumn Header="A despachar" Width="100">
-                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBox Text="{Binding CantidadDespachar, UpdateSourceTrigger=PropertyChanged}" Padding="6,3" HorizontalContentAlignment="Right" LostFocus="CantidadDespachar_LostFocus" ToolTip="{Binding CantidadMaxima, StringFormat=Cantidad máxima permitida: {0:N2}}"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBox Text="{Binding CantidadDespachar, UpdateSourceTrigger=PropertyChanged}" Padding="6,3" HorizontalContentAlignment="Right" LostFocus="CantidadDespachar_LostFocus" ToolTip="{Binding CantidadMaxima, StringFormat=Cantidad máxima permitida: {0:N0}}"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Estado" Binding="{Binding EstadoDespacho}" Width="85" IsReadOnly="True"/>
                     <DataGridTemplateColumn Header="Observación" Width="180">

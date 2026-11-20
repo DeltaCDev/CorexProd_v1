@@ -49,10 +49,10 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Código" Binding="{Binding CodigoProducto}" Width="110"/>
                     <DataGridTextColumn Header="Nombre del producto" Binding="{Binding NombreProducto}" Width="*" MinWidth="280"/>
-                    <DataGridTextColumn Header="Cant. requerida" Binding="{Binding CantidadRequerida, StringFormat=N2}" Width="110"/>
-                    <DataGridTextColumn Header="Cant. atendida" Binding="{Binding CantidadEntregada, StringFormat=N2}" Width="105"/>
-                    <DataGridTextColumn Header="Cant. pendiente" Binding="{Binding CantidadPendiente, StringFormat=N2}" Width="110"/>
-                    <DataGridTextColumn Header="Stock disponible" Binding="{Binding StockActual, StringFormat=N2}" Width="120"/>
+                    <DataGridTextColumn Header="Cant. requerida" Binding="{Binding CantidadRequerida, StringFormat=N0}" Width="110"/>
+                    <DataGridTextColumn Header="Cant. atendida" Binding="{Binding CantidadEntregada, StringFormat=N0}" Width="105"/>
+                    <DataGridTextColumn Header="Cant. pendiente" Binding="{Binding CantidadPendiente, StringFormat=N0}" Width="110"/>
+                    <DataGridTextColumn Header="Stock disponible" Binding="{Binding StockActual, StringFormat=N0}" Width="120"/>
                     <DataGridTextColumn Header="Estado" Binding="{Binding EstadoDespacho}" Width="105"/>
                     <DataGridTemplateColumn Header="Acciones" Width="105">
                         <DataGridTemplateColumn.CellTemplate>

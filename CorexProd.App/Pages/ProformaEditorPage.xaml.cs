@@ -511,8 +511,8 @@ public partial class ProformaEditorPage : ContentPage, IQueryAttributable
         public decimal Importe => _importe;
         public string Observacion { get; }
         public bool EsCantidadEditable { get; }
-        public string CantidadTexto => Cantidad.ToString("0.##", CultureInfo.InvariantCulture);
-        public string CantidadPrecio => $"{Cantidad:N2} x S/ {PrecioUnitario:N2} | Desc. S/ {Descuento:N2}";
+        public string CantidadTexto => Cantidad.ToString("0", CultureInfo.InvariantCulture);
+        public string CantidadPrecio => $"{Cantidad:N0} x S/ {PrecioUnitario:N0} | Desc. S/ {Descuento:N0}";
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

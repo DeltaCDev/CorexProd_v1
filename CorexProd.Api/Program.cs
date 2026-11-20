@@ -2372,12 +2372,13 @@ app.MapGet("/api/ordenes-trabajo/{id:int}/servicios-externos", async (int id) =>
 {
     const string actualSql = @"
 SELECT A.IdDetalleArea, A.IdDetalleOT, A.IdAreaProduccion, A.NombreArea,
-       A.CodigoProducto, A.NombreProducto, A.CantidadPendiente,
+       OT.CodigoProducto, OT.NombreProducto, A.CantidadPendiente,
        ISNULL(S.SaldoExterno, 0) AS CantidadEnServicioExterno,
        CASE WHEN A.CantidadPendiente - ISNULL(S.SaldoExterno, 0) > 0
             THEN A.CantidadPendiente - ISNULL(S.SaldoExterno, 0) ELSE 0 END AS CantidadDisponible,
        A.Estado
 FROM dbo.OrdenTrabajoDetalleArea A
+INNER JOIN dbo.OrdenTrabajoDetalle OT ON OT.IdDetalleOT = A.IdDetalleOT
 OUTER APPLY
 (
     SELECT SUM(D.CantidadEnviada - D.CantidadRetornada) AS SaldoExterno
@@ -2387,7 +2388,7 @@ OUTER APPLY
 ) S
 WHERE A.IdOrdenTrabajo = @IdOrdenTrabajo
   AND (A.CantidadPendiente > 0 OR ISNULL(S.SaldoExterno, 0) > 0)
-ORDER BY A.OrdenSecuencia, A.CodigoProducto;";
+ORDER BY A.OrdenSecuencia, OT.CodigoProducto;";
     const string historialSql = @"
 SELECT D.IdDetalleServicioExterno, D.IdDetalleArea, D.CantidadEnviada,
        D.CantidadRetornada, D.SaldoExterno, D.Estado AS EstadoDetalle,

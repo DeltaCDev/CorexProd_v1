@@ -226,7 +226,7 @@ public partial class IngresoManualStockPage : ContentPage
             GuardarButton.IsEnabled = false;
             if (_session.EsDemo)
             {
-                await DisplayAlertAsync("Ingreso manual demo", $"Se registraria ingreso de {_detalles.Sum(x => x.Cantidad):N2} unidades en {almacen.NombreAlmacen}.", "OK");
+                await DisplayAlertAsync("Ingreso manual demo", $"Se registraria ingreso de {_detalles.Sum(x => x.Cantidad):N0} unidades en {almacen.NombreAlmacen}.", "OK");
                 Limpiar();
                 MostrarListado();
                 await CargarIngresosAsync();
@@ -291,7 +291,7 @@ public partial class IngresoManualStockPage : ContentPage
 
     private void ActualizarTotal()
     {
-        TotalLabel.Text = $"{_detalles.Count} producto(s) | {_detalles.Sum(x => x.Cantidad):N2} unidades";
+        TotalLabel.Text = $"{_detalles.Count} producto(s) | {_detalles.Sum(x => x.Cantidad):N0} unidades";
     }
 
     private sealed class IngresoManualStockDetalleItem

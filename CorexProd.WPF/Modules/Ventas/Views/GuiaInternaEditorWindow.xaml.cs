@@ -105,7 +105,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
         }
 
         private static void MostrarCantidadMaxima(GuiaInternaDetalle detalle) =>
-            NotificationService.Warning($"La cantidad máxima permitida para {detalle.CodigoProducto} es {detalle.CantidadMaxima:N2}.");
+            NotificationService.Warning($"La cantidad máxima permitida para {detalle.CodigoProducto} es {detalle.CantidadMaxima:N0}.");
 
         private void Volver_Click(object sender, RoutedEventArgs e) => Close();
     }

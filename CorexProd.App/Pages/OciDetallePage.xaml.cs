@@ -424,7 +424,7 @@ public partial class OciDetallePage : ContentPage
                 NumeroOT = TextoVacio(resumen.NumeroOT),
                 TipoOT = TextoVacio(resumen.TipoOT),
                 Estado = estado,
-                AvanceTexto = $"{resumen.Avance:N0}% | {resumen.TotalProducido:N2} prod.",
+                AvanceTexto = $"{resumen.Avance:N0}% | {resumen.TotalProducido:N0} prod.",
                 ProductosTexto = $"{resumen.CantidadProductos} item(s)",
                 EstadoBackgroundColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Background),
                 EstadoStrokeColor = ObtenerEstadoBadgeColor(estado, EstadoBadgePart.Stroke),

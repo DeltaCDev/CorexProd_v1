@@ -191,7 +191,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" IsReadOnly="True" Width="95"/>
+                                <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N0}" IsReadOnly="True" Width="95"/>
                                 <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
                                 <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" IsReadOnly="True" Width="100"/>
                                 <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="92"/>

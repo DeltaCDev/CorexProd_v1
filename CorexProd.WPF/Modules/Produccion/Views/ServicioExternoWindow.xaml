@@ -1,6 +1,7 @@
 <Window x:Class="CorexProd.WPF.Modules.Produccion.Views.ServicioExternoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:CorexProd.WPF.Helpers"
         Title="Servicio externo" Width="560" Height="650" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
     <Grid Margin="22">
         <Grid.RowDefinitions>
@@ -18,7 +19,7 @@
         </StackPanel>
         <StackPanel x:Name="CantidadPanel" Grid.Row="4" Margin="0,0,0,10">
             <TextBlock x:Name="CantidadLabel" Text="Cantidad:" FontWeight="SemiBold"/>
-            <TextBox x:Name="CantidadTextBox" Height="34" Margin="0,4,0,0" Padding="7"/>
+            <TextBox x:Name="CantidadTextBox" helpers:IntegerInputBehavior.IsEnabled="True" Height="34" Margin="0,4,0,0" Padding="7"/>
         </StackPanel>
         <StackPanel Grid.Row="5">
             <TextBlock Text="Observación del envío (opcional):" FontWeight="SemiBold"/>

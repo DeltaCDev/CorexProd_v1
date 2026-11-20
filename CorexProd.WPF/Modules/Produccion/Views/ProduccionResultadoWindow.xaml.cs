@@ -18,8 +18,8 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             MensajeText.Text = mensaje;
             OrigenText.Text = $"Area origen: {origen}";
             DestinoText.Text = $"Area destino: {destino}";
-            CantidadText.Text = $"Cantidad transferida: {cantidad:N3}";
-            SaldoText.Text = $"Saldo pendiente en origen: {saldoPendiente:N3}";
+            CantidadText.Text = $"Cantidad transferida: {cantidad:N0}";
+            SaldoText.Text = $"Saldo pendiente en origen: {saldoPendiente:N0}";
             EstadoText.Text = estado;
         }
 

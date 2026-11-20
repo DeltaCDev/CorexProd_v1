@@ -22,6 +22,7 @@ namespace CorexProd.WPF
             ConfigHelper.Instance.SetLang("es");
 
             InitializeComponent();
+            IntegerInputBehavior.Initialize();
 
             EventManager.RegisterClassHandler(
                 typeof(Window),

@@ -230,7 +230,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
             return string.IsNullOrWhiteSpace(validacion.Mensaje) ? "Validacion correcta." : validacion.Mensaje;
 
         IEnumerable<string> lineas = validacion.Productos.Take(6).Select(x =>
-            $"{x.CodigoProducto} - {x.NombreProducto}\nCant.: {x.CantidadRequerida:N2} | Insumos: {x.EstadoInsumos}");
+            $"{x.CodigoProducto} - {x.NombreProducto}\nCant.: {x.CantidadRequerida:N0} | Insumos: {x.EstadoInsumos}");
         string extra = validacion.Productos.Count > 6 ? $"\n... y {validacion.Productos.Count - 6} producto(s) mas." : string.Empty;
         return $"{validacion.Mensaje}\n\n{string.Join("\n\n", lineas)}{extra}";
     }
@@ -252,7 +252,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
     private sealed class ProductoPickerItem(ProductoStock producto)
     {
         public ProductoStock Producto { get; } = producto;
-        public string Display => $"{producto.Codigo} | {producto.Producto} | Stock: {producto.StockActual:N2}";
+        public string Display => $"{producto.Codigo} | {producto.Producto} | Stock: {producto.StockActual:N0}";
     }
 
     private sealed class DetalleManualItem(ProductoStock producto, decimal cantidad)
@@ -262,7 +262,7 @@ public partial class OrdenTrabajoManualPage : ContentPage
         public string NombreProducto { get; } = producto.Producto;
         public decimal Cantidad { get; set; } = cantidad;
         public string ProductoTexto => $"{Codigo} - {NombreProducto}";
-        public string CantidadTexto => $"Cantidad: {Cantidad:N2}";
+        public string CantidadTexto => $"Cantidad: {Cantidad:N0}";
     }
 
     private sealed record OrdenTrabajoManualRequest(

@@ -339,9 +339,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
             string mensaje =
                 "Existen unidades reservadas para uno o mas productos.\n\n" +
-                $"Reserva disponible: {reservaDisponible:N2}\n" +
-                $"Reserva necesaria para cubrir el requerimiento: {reservaNecesaria:N2}\n" +
-                $"Excedente si procesas toda la reserva: {reservaExcedente:N2}\n\n" +
+                $"Reserva disponible: {reservaDisponible:N0}\n" +
+                $"Reserva necesaria para cubrir el requerimiento: {reservaNecesaria:N0}\n" +
+                $"Excedente si procesas toda la reserva: {reservaExcedente:N0}\n\n" +
                 "Si eliges Si, se usara solo la cantidad necesaria.\n" +
                 "Si eliges No, se procesara toda la reserva disponible y el excedente quedara como stock terminado.\n" +
                 "Cancelar detiene la generacion de la OT.";

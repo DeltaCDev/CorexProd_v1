@@ -90,7 +90,7 @@
                         <TextBlock Text="Disponible total"
                                    Foreground="#047857"
                                    FontSize="12"/>
-                        <TextBlock Text="{Binding CantidadTotal, StringFormat=N2}"
+                        <TextBlock Text="{Binding CantidadTotal, StringFormat=N0}"
                                    Foreground="#065F46"
                                    FontWeight="Bold"
                                    FontSize="18"
@@ -173,7 +173,7 @@
                     <DataGridTextColumn Header="PRODUCTO"
                                         Binding="{Binding NombreProducto}"
                                         Width="500"/>
-                    <DataGridTextColumn Binding="{Binding StockFisico, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding StockFisico, StringFormat=N0}"
                                         Width="80">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="STOCK&#10;FISICO"
@@ -191,7 +191,7 @@
                                         Padding="0"
                                         Cursor="Hand"
                                         ToolTip="Ver stock de reservas filtrado por producto">
-                                    <TextBlock Text="{Binding StockReservado, StringFormat=N2}"
+                                    <TextBlock Text="{Binding StockReservado, StringFormat=N0}"
                                                TextAlignment="Center"
                                                TextDecorations="Underline"
                                                Foreground="#1D4ED8"/>
@@ -200,7 +200,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="DISPONIBLE"
-                                        Binding="{Binding StockDisponible, StringFormat=N2}"
+                                        Binding="{Binding StockDisponible, StringFormat=N0}"
                                         Width="90"/>
                     <DataGridTextColumn Binding="{Binding EtiquetaCliente}"
                                         Width="140">

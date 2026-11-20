@@ -21,9 +21,9 @@
                                     <VerticalStackLayout Spacing="5">
                                         <Label Text="{Binding ProductoTitulo}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" LineBreakMode="WordWrap" />
                                         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="3">
-                                            <Label Text="Req. OC" FontSize="12" TextColor="#667085" /><Label Grid.Column="1" Text="{Binding CantidadReqOc, StringFormat='{0:N2}'}" HorizontalTextAlignment="End" />
-                                            <Label Grid.Row="1" Text="Stock almacén" FontSize="12" TextColor="#667085" /><Label Grid.Row="1" Grid.Column="1" Text="{Binding StockActual, StringFormat='{0:N2}'}" HorizontalTextAlignment="End" />
-                                            <Label Grid.Row="2" Text="Faltante" FontSize="12" TextColor="#B42318" /><Label Grid.Row="2" Grid.Column="1" Text="{Binding CantidadFaltante, StringFormat='{0:N2}'}" TextColor="#B42318" HorizontalTextAlignment="End" />
+                                            <Label Text="Req. OC" FontSize="12" TextColor="#667085" /><Label Grid.Column="1" Text="{Binding CantidadReqOc, StringFormat='{0:N0}'}" HorizontalTextAlignment="End" />
+                                            <Label Grid.Row="1" Text="Stock almacén" FontSize="12" TextColor="#667085" /><Label Grid.Row="1" Grid.Column="1" Text="{Binding StockActual, StringFormat='{0:N0}'}" HorizontalTextAlignment="End" />
+                                            <Label Grid.Row="2" Text="Faltante" FontSize="12" TextColor="#B42318" /><Label Grid.Row="2" Grid.Column="1" Text="{Binding CantidadFaltante, StringFormat='{0:N0}'}" TextColor="#B42318" HorizontalTextAlignment="End" />
                                             <Label Grid.Row="3" Text="Adicional stock / Total" FontSize="12" TextColor="#667085" /><Label Grid.Row="3" Grid.Column="1" Text="{Binding AdicionalTotalTexto}" HorizontalTextAlignment="End" />
                                         </Grid>
                                         <Label Text="{Binding ObservacionModeloTexto}" FontSize="12" TextColor="#475467" LineBreakMode="WordWrap" />

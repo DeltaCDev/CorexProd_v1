@@ -345,7 +345,7 @@ public partial class StockProductosPage : ContentPage
         VerticalStackLayout stack = new() { Spacing = 5 };
         stack.Add(new Label
         {
-            Text = $"{item.TipoMovimiento} | {item.CantidadMovimiento:N2}",
+            Text = $"{item.TipoMovimiento} | {item.CantidadMovimiento:N0}",
             FontFamily = "OpenSansSemibold",
             TextColor = MColor.FromArgb("#10324A")
         });
@@ -359,7 +359,7 @@ public partial class StockProductosPage : ContentPage
         });
         stack.Add(new Label
         {
-            Text = $"Reserva: {item.CantidadReservada:N2} | Consumida: {item.CantidadConsumida:N2} | Liberada: {item.CantidadLiberada:N2} | Pendiente: {item.CantidadPendiente:N2}",
+            Text = $"Reserva: {item.CantidadReservada:N0} | Consumida: {item.CantidadConsumida:N0} | Liberada: {item.CantidadLiberada:N0} | Pendiente: {item.CantidadPendiente:N0}",
             FontSize = 12,
             TextColor = MColor.FromArgb("#475467"),
             LineBreakMode = LineBreakMode.WordWrap

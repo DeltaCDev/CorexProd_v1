@@ -113,14 +113,14 @@
                     <DataGridTextColumn Header="Unidad"
                                         Binding="{Binding NombreUnidad}"
                                         Width="90"/>
-                    <DataGridTextColumn Binding="{Binding CantidadDespachar, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding CantidadDespachar, StringFormat=N0}"
                                         Width="125">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="Cantidad&#x0a;despachada"
                                        TextAlignment="Center"/>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Binding="{Binding StockActual, StringFormat=N2}"
+                    <DataGridTextColumn Binding="{Binding StockActual, StringFormat=N0}"
                                         Width="110">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="Stock&#x0a;anterior"

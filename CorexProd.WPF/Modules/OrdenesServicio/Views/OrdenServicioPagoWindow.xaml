@@ -71,7 +71,7 @@
                 <Border Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" Padding="12" Margin="8,0,0,0">
                     <StackPanel>
                         <TextBlock Text="Saldo pendiente" Foreground="#92400E"/>
-                        <TextBlock Text="{Binding Orden.SaldoPendiente, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#92400E"/>
+                        <TextBlock Text="{Binding Orden.SaldoPendiente, StringFormat=S/ {0:N0}}" FontSize="18" FontWeight="Bold" Foreground="#92400E"/>
                     </StackPanel>
                 </Border>
             </UniformGrid>

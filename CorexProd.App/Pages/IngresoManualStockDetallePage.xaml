@@ -28,7 +28,7 @@
                         <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                         <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4" ColumnSpacing="10">
                             <Label Text="{Binding CodigoProducto}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
-                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N0}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
                             <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding NombreProducto}" TextColor="#344054" LineBreakMode="WordWrap" />
                             <Label Grid.Row="2" Text="{Binding NombreUnidad}" FontSize="12" TextColor="#667085" />
                         </Grid>

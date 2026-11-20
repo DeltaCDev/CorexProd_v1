@@ -168,7 +168,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 fila["Estado"] = detalle.Estado;
                 decimal pendienteNuevaOt = Math.Max(0, detalle.CantidadRequerida - detalle.CantidadProducida);
                 fila["Pendientes"] = detalle.Estado == "TERMINADO"
-                    ? pendienteNuevaOt > 0 ? $"{pendienteNuevaOt:0.##} por producir\nRegularizacion de OT" : "Completo"
+                    ? pendienteNuevaOt > 0 ? $"{pendienteNuevaOt:0} por producir\nRegularizacion de OT" : "Completo"
                     : string.Empty;
                 tabla.Rows.Add(fila);
             }
@@ -333,11 +333,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             primeraFila.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
             FrameworkElementFactory pendiente = new(typeof(TextBlock));
             pendiente.SetValue(TextBlock.FontSizeProperty, 11.0);
-            pendiente.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadPendienteDisponible") { StringFormat = "P: {0:N2}" });
+            pendiente.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadPendienteDisponible") { StringFormat = "P: {0:N0}" });
             FrameworkElementFactory enviado = new(typeof(TextBlock));
             enviado.SetValue(TextBlock.FontSizeProperty, 11.0);
             enviado.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
-            enviado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadEnviada") { StringFormat = "E: {0:N2}" });
+            enviado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadEnviada") { StringFormat = "E: {0:N0}" });
             primeraFila.AppendChild(pendiente);
             primeraFila.AppendChild(enviado);
             FrameworkElementFactory segundaFila = new(typeof(StackPanel));
@@ -346,11 +346,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             segundaFila.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 3, 0, 0));
             FrameworkElementFactory reservado = new(typeof(TextBlock));
             reservado.SetValue(TextBlock.FontSizeProperty, 11.0);
-            reservado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadReservada") { StringFormat = "R: {0:N2}" });
+            reservado.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadReservada") { StringFormat = "R: {0:N0}" });
             FrameworkElementFactory merma = new(typeof(TextBlock));
             merma.SetValue(TextBlock.FontSizeProperty, 11.0);
             merma.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
-            merma.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadMerma") { StringFormat = "M: {0:N2}" });
+            merma.SetBinding(TextBlock.TextProperty, new Binding("Area.CantidadMerma") { StringFormat = "M: {0:N0}" });
             FrameworkElementFactory externo = new(typeof(TextBlock));
             externo.SetValue(TextBlock.FontSizeProperty, 10.0);
             externo.SetValue(FrameworkElement.MarginProperty, new Thickness(7, 0, 0, 0));
@@ -417,7 +417,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                         $"{celda.Area.CodigoProducto} - {celda.Area.NombreProducto}",
                         ventana.Cantidad);
                     Cargar();
-                    MessageBox.Show(this, $"Se reservaron {ventana.Cantidad:N2} unidades de {celda.Area.NombreArea} como stock en proceso.", "Reserva registrada", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, $"Se reservaron {ventana.Cantidad:N0} unidades de {celda.Area.NombreArea} como stock en proceso.", "Reserva registrada", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -436,7 +436,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                                 CantidadLanzada = cantidadLanzada,
                                 Motivo = detalle != null && cantidadLanzada != detalle.CantidadPlanificada ? "AJUSTE POR APROVECHAMIENTO" : string.Empty,
                                 Observacion = cantidadLanzada > celda.Area.CantidadPendienteDisponible
-                                    ? $"Cantidad ajustada en area de inicio de {celda.Area.CantidadPendienteDisponible:N2} a {cantidadLanzada:N2}."
+                                    ? $"Cantidad ajustada en area de inicio de {celda.Area.CantidadPendienteDisponible:N0} a {cantidadLanzada:N0}."
                                     : string.Empty
                             }
                         ]);
@@ -472,7 +472,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 string titulo = esTerminacion ? "Producto Terminado Correctamente" : "Transferencia Realizada Correctamente";
                 string mensaje = esTerminacion
                     ? $"✅ Producto {completadosDespues} de {totalProductos} completado correctamente."
-                    : $"✅ Proceso completado con éxito.\n\nSe transfirieron {ventana.Cantidad:N3} unidades desde el área {celda.Area.NombreArea} hacia {celda.AreaDestino}.";
+                    : $"✅ Proceso completado con éxito.\n\nSe transfirieron {ventana.Cantidad:N0} unidades desde el área {celda.Area.NombreArea} hacia {celda.AreaDestino}.";
                 string estado = saldoOrigen <= 0
                     ? "🎉 No existen unidades pendientes en el área de origen. El flujo de producción continúa correctamente."
                     : "El área de origen aún mantiene saldo pendiente.";
@@ -688,7 +688,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
                 Cargar();
                 NotificationService.Success(ventana.EsRetornoMultiple
                     ? $"Retorno registrado para {ventana.Retornos.Count} producto(s)."
-                    : $"Retorno de {ventana.Cantidad:N2} unidades registrado.");
+                    : $"Retorno de {ventana.Cantidad:N0} unidades registrado.");
             }
             catch (Exception ex) { NotificationService.Error(ex.Message); }
         }
@@ -733,7 +733,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
         {
             public OrdenTrabajoDetalleArea Area { get; }
             public string AreaDestino { get; }
-            public string ServicioExternoTexto => Area.CantidadEnServicioExterno > 0 ? $"SE: {Area.CantidadEnServicioExterno:N2}" : string.Empty;
+            public string ServicioExternoTexto => Area.CantidadEnServicioExterno > 0 ? $"SE: {Area.CantidadEnServicioExterno:N0}" : string.Empty;
             public Brush Fondo { get; }
             public Brush TextoColor { get; }
             public bool EsPrimerProceso { get; }

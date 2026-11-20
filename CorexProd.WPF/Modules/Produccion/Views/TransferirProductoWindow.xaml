@@ -1,6 +1,7 @@
 <Window x:Class="CorexProd.WPF.Modules.Produccion.Views.TransferirProductoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:CorexProd.WPF.Helpers"
         Title="Transferir producto"
         Height="650"
         Width="560"
@@ -47,7 +48,7 @@
                                Margin="0,3,0,0"/>
                 </StackPanel>
             </Border>
-            <TextBox x:Name="CantidadTextBox" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
+            <TextBox x:Name="CantidadTextBox" helpers:IntegerInputBehavior.IsEnabled="True" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
         </StackPanel>
 
         <CheckBox x:Name="RegistrarMermaCheckBox"
@@ -70,12 +71,12 @@
 
         <StackPanel x:Name="ReservaPanel" Grid.Row="6" Visibility="Collapsed">
             <TextBlock Text="Cantidad a reservar:" FontWeight="SemiBold"/>
-            <TextBox x:Name="CantidadReservaTextBox" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
+                <TextBox x:Name="CantidadReservaTextBox" helpers:IntegerInputBehavior.IsEnabled="True" Height="34" Margin="0,4,0,10" Padding="7" VerticalContentAlignment="Center"/>
         </StackPanel>
 
         <StackPanel x:Name="MermaPanel" Grid.Row="7" Visibility="Collapsed">
             <TextBlock Text="Cantidad de merma:" FontWeight="SemiBold"/>
-            <TextBox x:Name="CantidadMermaTextBox" Height="34" Margin="0,4,0,9" Padding="7" VerticalContentAlignment="Center"/>
+            <TextBox x:Name="CantidadMermaTextBox" helpers:IntegerInputBehavior.IsEnabled="True" Height="34" Margin="0,4,0,9" Padding="7" VerticalContentAlignment="Center"/>
             <TextBlock Text="Observacion de merma:" FontWeight="SemiBold"/>
             <TextBox x:Name="ObservacionMermaTextBox" Height="52" Margin="0,4,0,10" Padding="7" TextWrapping="Wrap" AcceptsReturn="True" MaxLength="500"/>
         </StackPanel>

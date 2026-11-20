@@ -177,7 +177,7 @@
                             <DataGridTextColumn Header="Supercategoría" Binding="{Binding NombreSuperCategoria}" Width="100" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Categoria" Binding="{Binding NombreCategoria}" Width="80" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="60" ElementStyle="{StaticResource CeldaTexto}"/>
-                            <DataGridTextColumn Header="Stock Min." Binding="{Binding StockMinimo, StringFormat=N2}" Width="80" ElementStyle="{StaticResource CeldaTexto}"/>
+                            <DataGridTextColumn Header="Stock Min." Binding="{Binding StockMinimo, StringFormat=N0}" Width="80" ElementStyle="{StaticResource CeldaTexto}"/>
                             <DataGridTemplateColumn Header="Estado" Width="80">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>

@@ -65,7 +65,7 @@
                                         Binding="{Binding Producto}"
                                         Width="*"/>
                     <DataGridTextColumn Header="Cantidad"
-                                        Binding="{Binding Cantidad, StringFormat=N3}"
+                                        Binding="{Binding Cantidad, StringFormat=N0}"
                                         Width="110"/>
                 </DataGrid.Columns>
             </DataGrid>

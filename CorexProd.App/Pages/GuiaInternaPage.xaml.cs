@@ -283,7 +283,7 @@ public partial class GuiaInternaPage : ContentPage
             string usuario = _session.Usuario?.NombreUsuario ?? "Android";
             if (_session.EsDemo)
             {
-                await DisplayAlertAsync("Guia Interna demo", $"Guia manual demo emitida con {_detalles.Sum(x => x.Cantidad):N2} unidades.", "OK");
+                await DisplayAlertAsync("Guia Interna demo", $"Guia manual demo emitida con {_detalles.Sum(x => x.Cantidad):N0} unidades.", "OK");
             }
             else
             {
@@ -343,7 +343,7 @@ public partial class GuiaInternaPage : ContentPage
 
     private void ActualizarTotal()
     {
-        TotalLabel.Text = $"{_detalles.Count} producto(s) | {_detalles.Sum(x => x.Cantidad):N2} unidades";
+        TotalLabel.Text = $"{_detalles.Count} producto(s) | {_detalles.Sum(x => x.Cantidad):N0} unidades";
     }
 
     private async Task<GuiaInternaListItem> CrearGuiaListItemAsync(GuiaInternaResumen guia)

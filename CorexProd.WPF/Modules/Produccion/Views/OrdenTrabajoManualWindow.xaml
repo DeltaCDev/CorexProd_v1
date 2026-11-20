@@ -1,6 +1,7 @@
 <Window x:Class="CorexProd.WPF.Modules.Produccion.Views.OrdenTrabajoManualWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:CorexProd.WPF.Helpers"
         Title="OT Manual - Abastecimiento de Stock"
         Height="720" Width="1180" MinHeight="620" MinWidth="980"
         WindowStartupLocation="CenterOwner">
@@ -48,7 +49,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,10">
                 <StackPanel Width="150">
                     <TextBlock Text="Cantidad" Foreground="#475569" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <TextBox x:Name="CantidadTextBox" Height="34" Padding="8,0" VerticalContentAlignment="Center"/>
+                    <TextBox x:Name="CantidadTextBox" helpers:IntegerInputBehavior.IsEnabled="True" Height="34" Padding="8,0" VerticalContentAlignment="Center"/>
                 </StackPanel>
                 <Button Content="Agregar"
                         Width="105"
@@ -88,7 +89,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="105" ElementStyle="{StaticResource TextoCentro}"/>
+                        <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0, UpdateSourceTrigger=PropertyChanged}" Width="105" ElementStyle="{StaticResource TextoCentro}"/>
                         <DataGridTemplateColumn Header="Acciones" Width="85">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

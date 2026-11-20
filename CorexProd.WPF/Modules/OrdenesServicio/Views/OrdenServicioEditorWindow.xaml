@@ -533,7 +533,7 @@
                                         <Run Text="Cantidad"/>
                                         <Run Text=" *" Foreground="#EF4444"/>
                                     </TextBlock>
-                                    <TextBox Style="{StaticResource Input}" Text="{Binding DetalleCantidad, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                    <TextBox Style="{StaticResource Input}" Text="{Binding DetalleCantidad, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="3" Margin="0,0,10,0">
                                     <TextBlock Style="{StaticResource Label}">
@@ -794,7 +794,7 @@
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ACuenta, StringFormat=S/ {0:N2}}" FontSize="12" FontWeight="Bold" Foreground="#00A651" VerticalAlignment="Center"/>
                                 <Separator Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="SALDO PENDIENTE" FontSize="13" FontWeight="Bold" Foreground="#25324D" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SaldoPendienteFormulario, StringFormat=S/ {0:N2}}" FontSize="18" FontWeight="Bold" Foreground="#FF6B00" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SaldoPendienteFormulario, StringFormat=S/ {0:N0}}" FontSize="18" FontWeight="Bold" Foreground="#FF6B00" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
 

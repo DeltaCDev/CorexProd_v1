@@ -73,9 +73,9 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Código" Binding="{Binding [Codigo]}" Width="110"/>
                     <DataGridTextColumn Header="Producto" Binding="{Binding [Descripcion]}" Width="*"/>
-                    <DataGridTextColumn Header="Cant. solicitada" Binding="{Binding [Cantidad solicitada], StringFormat=N2}" Width="130"/>
-                    <DataGridTextColumn Header="Cant. producida" Binding="{Binding [Cantidad producida], StringFormat=N2}" Width="130"/>
-                    <DataGridTextColumn Header="Cant. despachada" Binding="{Binding [Cantidad despachada], StringFormat=N2}" Width="140"/>
+                    <DataGridTextColumn Header="Cant. solicitada" Binding="{Binding [Cantidad solicitada], StringFormat=N0}" Width="130"/>
+                    <DataGridTextColumn Header="Cant. producida" Binding="{Binding [Cantidad producida], StringFormat=N0}" Width="130"/>
+                    <DataGridTextColumn Header="Cant. despachada" Binding="{Binding [Cantidad despachada], StringFormat=N0}" Width="140"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

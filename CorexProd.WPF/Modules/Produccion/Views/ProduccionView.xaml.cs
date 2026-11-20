@@ -428,7 +428,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             List<string> areas = ot.Areas
                 .Where(x => x.CantidadPendiente > 0 && x.Estado is not ("FINALIZADA" or "BLOQUEADA" or "ANULADA"))
                 .GroupBy(x => x.NombreArea)
-                .Select(g => $"{g.Key} ({g.Sum(x => x.CantidadPendiente):N2})")
+                .Select(g => $"{g.Key} ({g.Sum(x => x.CantidadPendiente):N0})")
                 .ToList();
 
             return areas.Count == 0 ? "las areas de produccion" : string.Join(", ", areas);

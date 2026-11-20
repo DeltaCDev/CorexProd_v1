@@ -132,7 +132,7 @@ public partial class OtAprobacionDetallePage : ContentPage
         public decimal CantidadReqOc => item.CantidadReqOc;
         public decimal StockActual => item.StockActual;
         public decimal CantidadFaltante => item.CantidadFaltante;
-        public string AdicionalTotalTexto => $"{item.CantidadAdicionalStock:N2} / {item.TotalProducir:N2}";
+        public string AdicionalTotalTexto => $"{item.CantidadAdicionalStock:N0} / {item.TotalProducir:N0}";
         public string ObservacionModeloTexto => string.IsNullOrWhiteSpace(item.ObservacionModelo) ? "Sin observación del modelo." : $"Observación: {item.ObservacionModelo}";
     }
 }

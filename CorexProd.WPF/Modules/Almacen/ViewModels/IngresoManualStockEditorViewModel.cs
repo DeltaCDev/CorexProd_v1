@@ -313,7 +313,7 @@ namespace CorexProd.WPF.Modules.Almacen.ViewModels
             }
 
             RecalcularTotales();
-            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {productosProcesados}. Unidades agregadas: {unidadesAgregadas:N2}. Errores encontrados: {ventana.ErroresEncontrados}");
+            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {productosProcesados}. Unidades agregadas: {unidadesAgregadas:N0}. Errores encontrados: {ventana.ErroresEncontrados}");
         }
 
         private CargaMasivaProductoInfo? BuscarProductoCargaMasiva(string codigo)

@@ -47,11 +47,11 @@
                 <DataGridTextColumn Header="Suministro requerido" Binding="{Binding NombreInsumo}" Width="*"/>
                 <DataGridTextColumn Header="UM" Binding="{Binding UnidadMedida}" Width="65"/>
                 <DataGridTextColumn Header="Cantidad necesaria"
-                                    Binding="{Binding CantidadNecesaria, StringFormat=N3}" Width="120"/>
+                                    Binding="{Binding CantidadNecesaria, StringFormat=N0}" Width="120"/>
                 <DataGridTextColumn Header="Stock actual"
-                                    Binding="{Binding StockActual, StringFormat=N3}" Width="100"/>
+                                    Binding="{Binding StockActual, StringFormat=N0}" Width="100"/>
                 <DataGridTextColumn Header="Cantidad faltante"
-                                    Binding="{Binding CantidadFaltante, StringFormat=N3}" Width="115"/>
+                                    Binding="{Binding CantidadFaltante, StringFormat=N0}" Width="115"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="95"/>
             </DataGrid.Columns>
         </DataGrid>

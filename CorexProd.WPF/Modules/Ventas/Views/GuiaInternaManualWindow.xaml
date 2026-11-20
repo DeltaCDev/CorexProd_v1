@@ -51,7 +51,7 @@
                             </Grid>
                         </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                         <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Stock" Binding="{Binding StockActual,StringFormat=N2}" Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Stock" Binding="{Binding StockActual,StringFormat=N0}" Width="90" IsReadOnly="True"/>
                         <DataGridTextColumn Header="Cantidad a retirar" Binding="{Binding CantidadDespachar,UpdateSourceTrigger=PropertyChanged}" Width="125"/>
                         <DataGridTextColumn Header="Observación" Binding="{Binding Observacion,UpdateSourceTrigger=PropertyChanged}" Width="180"/>
                         <DataGridTemplateColumn Header="" Width="75"><DataGridTemplateColumn.CellTemplate><DataTemplate><Button Content="Quitar" Height="28" Click="QuitarProducto_Click"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>

@@ -312,7 +312,7 @@
                                                      Padding="6,0"
                                                      VerticalContentAlignment="Center"
                                                      HorizontalContentAlignment="Right"
-                                                     Text="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}"/>
+                                                     Text="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>

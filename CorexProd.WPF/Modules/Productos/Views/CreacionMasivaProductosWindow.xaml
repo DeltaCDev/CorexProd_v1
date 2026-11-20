@@ -59,7 +59,7 @@
                 <DataGridTextColumn Header="Supercategoría" Binding="{Binding NombreSuperCategoria}" Width="150"/>
                 <DataGridTextColumn Header="Categoria encontrada" Binding="{Binding NombreCategoria}" Width="150"/>
                 <DataGridTextColumn Header="Unidad encontrada" Binding="{Binding NombreUnidad}" Width="140"/>
-                <DataGridTextColumn Header="Stock minimo" Binding="{Binding StockMinimo, StringFormat=N2}" Width="105"/>
+                <DataGridTextColumn Header="Stock minimo" Binding="{Binding StockMinimo, StringFormat=N0}" Width="105"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="90"/>
                 <DataGridTextColumn Header="Validacion" Binding="{Binding Validacion}" Width="260"/>
             </DataGrid.Columns>

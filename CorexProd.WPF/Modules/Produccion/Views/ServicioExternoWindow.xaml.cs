@@ -26,9 +26,9 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             List<OrdenTrabajoDetalleArea> lista = areas.ToList();
             _maximo = lista.Sum(x => x.CantidadOperacion);
             TituloText.Text = "Enviar a servicio externo";
-            ProductoText.Text = string.Join(Environment.NewLine, lista.Select(x => $"{x.CodigoProducto} - {x.NombreProducto}: {x.CantidadOperacion:N2} unidades desde {x.NombreArea}"));
+            ProductoText.Text = string.Join(Environment.NewLine, lista.Select(x => $"{x.CodigoProducto} - {x.NombreProducto}: {x.CantidadOperacion:N0} unidades desde {x.NombreArea}"));
             FechaDatePicker.SelectedDate = DateTime.Today.AddDays(7);
-            CantidadTextBox.Text = _maximo.ToString("0.##", CultureInfo.CurrentCulture);
+            CantidadTextBox.Text = _maximo.ToString("0", CultureInfo.CurrentCulture);
             Loaded += (_, _) => ProveedorTextBox.Focus();
         }
 
@@ -38,11 +38,11 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             _retorno = true;
             _maximo = detalle.SaldoExterno;
             TituloText.Text = "Registrar retorno de servicio externo";
-            ProductoText.Text = $"{detalle.CodigoProducto} - {detalle.NombreProducto}\nProveedor: {detalle.Proveedor}\nEnviado: {detalle.CantidadEnviada:N2} | Retornado: {detalle.CantidadRetornada:N2} | Saldo: {detalle.SaldoExterno:N2}";
+            ProductoText.Text = $"{detalle.CodigoProducto} - {detalle.NombreProducto}\nProveedor: {detalle.Proveedor}\nEnviado: {detalle.CantidadEnviada:N0} | Retornado: {detalle.CantidadRetornada:N0} | Saldo: {detalle.SaldoExterno:N0}";
             ProveedorPanel.Visibility = Visibility.Collapsed;
             FechaPanel.Visibility = Visibility.Collapsed;
             CantidadLabel.Text = "Cantidad retornada:";
-            CantidadTextBox.Text = _maximo.ToString("0.##", CultureInfo.CurrentCulture);
+            CantidadTextBox.Text = _maximo.ToString("0", CultureInfo.CurrentCulture);
             Loaded += (_, _) => CantidadTextBox.Focus();
         }
 
@@ -56,7 +56,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
 
             TituloText.Text = "Registrar retornos de servicio externo";
             ProductoText.Text = string.Join(Environment.NewLine,
-                _retornos.Select(x => $"{x.CodigoProducto} - {x.NombreProducto}: {x.SaldoExterno:N2} unidades | {x.Proveedor}"));
+                _retornos.Select(x => $"{x.CodigoProducto} - {x.NombreProducto}: {x.SaldoExterno:N0} unidades | {x.Proveedor}"));
             ProveedorPanel.Visibility = Visibility.Collapsed;
             FechaPanel.Visibility = Visibility.Collapsed;
             CantidadPanel.Visibility = Visibility.Collapsed;
@@ -76,7 +76,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             }
             if (!decimal.TryParse(CantidadTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal cantidad) || cantidad <= 0 || cantidad > _maximo)
             {
-                MessageBox.Show(this, $"Ingrese una cantidad mayor que cero y no mayor que {_maximo:N2}.", "Cantidad inválida", MessageBoxButton.OK, MessageBoxImage.Warning); return;
+                MessageBox.Show(this, $"Ingrese una cantidad entera mayor que cero y no mayor que {_maximo:N0}.", "Cantidad inválida", MessageBoxButton.OK, MessageBoxImage.Warning); return;
             }
             Cantidad = cantidad;
             DialogResult = true;

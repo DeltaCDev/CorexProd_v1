@@ -96,7 +96,7 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Codigo" Binding="{Binding CodigoProducto}" Width="90"/>
                                 <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" Width="360"/>
-                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N2}" Width="90"/>
+                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="90"/>
                                 <DataGridTextColumn Header="Unidad" Binding="{Binding NombreUnidad}" Width="100"/>
                                 <DataGridTextColumn Header="P. Unitario" Binding="{Binding PrecioUnitario, StringFormat=N2}" Width="90"/>
                                 <DataGridTextColumn Header="Descuento" Binding="{Binding Descuento, StringFormat=N2}" Width="90"/>

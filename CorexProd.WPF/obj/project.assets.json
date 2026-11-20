@@ -2660,7 +2660,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.0.7.261113",
+    "version": "1.0.11.261119",
     "restore": {
       "projectUniqueName": "D:\\CorexProd_v1\\CorexProd.WPF\\CorexProd.WPF.csproj",
       "projectName": "CorexProd.WPF",

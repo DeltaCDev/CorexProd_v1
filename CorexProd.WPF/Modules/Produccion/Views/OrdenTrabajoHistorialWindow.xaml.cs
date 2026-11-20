@@ -114,7 +114,7 @@ namespace CorexProd.WPF.Modules.Produccion.Views
             sb.AppendLine("Fecha/Hora;Codigo;Producto;Origen;Destino;Cantidad;Accion;Usuario");
             foreach (OrdenTrabajoMovimiento m in _filtrados)
             {
-                sb.AppendLine($"{m.FechaHora:dd/MM/yyyy HH:mm:ss};{Csv(m.CodigoProducto)};{Csv(m.NombreProducto)};{Csv(m.Origen)};{Csv(m.Destino)};{m.Cantidad:N3};{Csv(m.Accion)};{Csv(m.Usuario)}");
+                sb.AppendLine($"{m.FechaHora:dd/MM/yyyy HH:mm:ss};{Csv(m.CodigoProducto)};{Csv(m.NombreProducto)};{Csv(m.Origen)};{Csv(m.Destino)};{m.Cantidad:N0};{Csv(m.Accion)};{Csv(m.Usuario)}");
             }
             File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
             NotificationService.Success("Historial exportado correctamente.");

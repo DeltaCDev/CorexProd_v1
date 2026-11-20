@@ -72,7 +72,7 @@
                         <DataGridTextColumn Header="OT para regularizar" Binding="{Binding NumeroOT}" Width="135" ElementStyle="{StaticResource TextoCentro}"/>
                         <DataGridTextColumn Header="Nro OCI" Binding="{Binding NumeroOci}" Width="95" ElementStyle="{StaticResource TextoCentro}"/>
                         <DataGridTextColumn Header="Fecha" Binding="{Binding FechaRegistro, StringFormat=dd/MM/yyyy HH:mm}" Width="125" ElementStyle="{StaticResource TextoCentro}"/>
-                        <DataGridTextColumn Header="Pend." Binding="{Binding TotalPendiente, StringFormat=N2}" Width="75" ElementStyle="{StaticResource TextoCentro}"/>
+                        <DataGridTextColumn Header="Pend." Binding="{Binding TotalPendiente, StringFormat=N0}" Width="75" ElementStyle="{StaticResource TextoCentro}"/>
                         <DataGridTemplateColumn Header="Cliente" Width="*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -100,7 +100,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Faltante" Binding="{Binding CantidadRequerida, StringFormat=N3}" Width="90" ElementStyle="{StaticResource TextoCentro}"/>
+                        <DataGridTextColumn Header="Faltante" Binding="{Binding CantidadRequerida, StringFormat=N0}" Width="90" ElementStyle="{StaticResource TextoCentro}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </GroupBox>

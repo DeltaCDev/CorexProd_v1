@@ -330,7 +330,7 @@ public partial class ProformasPage : ContentPage
         Label nombre = new() { Text = detalle.NombreProducto, LineBreakMode = LineBreakMode.WordWrap, TextColor = Color.FromArgb("#344054") };
         Label importe = new() { Text = $"Importe: S/ {detalle.Importe:N2}", FontSize = 12, TextColor = Color.FromArgb("#667085") };
         grid.Add(new Label { Text = detalle.CodigoProducto, FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#10324A") }, 0, 0);
-        grid.Add(new Label { Text = $"x {detalle.Cantidad:N2}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") }, 1, 0);
+        grid.Add(new Label { Text = $"x {detalle.Cantidad:N0}", FontFamily = "OpenSansSemibold", TextColor = Color.FromArgb("#067647") }, 1, 0);
         grid.Add(nombre, 0, 1);
         grid.SetColumnSpan(nombre, 2);
         grid.Add(importe, 0, 2);

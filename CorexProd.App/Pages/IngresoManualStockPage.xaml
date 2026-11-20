@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:CorexProd.App.Behaviors"
              x:Class="CorexProd.App.Pages.IngresoManualStockPage"
              Title="Ingreso manual stock">
     <Grid BackgroundColor="#F4F6F8">
@@ -118,7 +119,7 @@
                                             <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                                             <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <Label Text="{Binding Producto.Codigo}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="#10324A" />
-                                                <Label Grid.Column="1" Text="{Binding Producto.StockActual, StringFormat='Stock {0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
+                                                <Label Grid.Column="1" Text="{Binding Producto.StockActual, StringFormat='Stock {0:N0}'}" FontFamily="OpenSansSemibold" TextColor="#067647" />
                                                 <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Producto.NombreProducto}" FontSize="13" TextColor="#344054" LineBreakMode="WordWrap" />
                                                 <Label Grid.Row="2" Text="{Binding EtiquetaTexto}" FontSize="12" TextColor="#7A4B12" />
                                                 <Label Grid.Row="2" Grid.Column="1" Text="{Binding SeleccionTexto}" FontSize="12" TextColor="#2563EB" />
@@ -127,7 +128,7 @@
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
-                            <Entry x:Name="CantidadEntry" Placeholder="Cantidad" Keyboard="Numeric" />
+                            <Entry x:Name="CantidadEntry" Placeholder="Cantidad" Keyboard="Numeric"><Entry.Behaviors><behaviors:IntegerEntryBehavior /></Entry.Behaviors></Entry>
                             <Button Text="Agregar" Clicked="OnAgregarClicked" />
                         </VerticalStackLayout>
                     </Border>
@@ -150,7 +151,7 @@
                                                 <Label Text="{Binding Producto.Codigo}" FontFamily="OpenSansSemibold" TextColor="#10324A" />
                                                 <Label Text="{Binding Producto.NombreProducto}" FontSize="13" TextColor="#344054" LineBreakMode="WordWrap" />
                                             </VerticalStackLayout>
-                                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N2}'}" FontFamily="OpenSansSemibold" TextColor="#067647" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='{0:N0}'}" FontFamily="OpenSansSemibold" TextColor="#067647" VerticalOptions="Center" />
                                         </Grid>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>

@@ -219,7 +219,7 @@ namespace CorexProd.WPF.Modules.Ventas.Views
                 unidades += fila.Cantidad;
             }
 
-            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {procesados}. Unidades agregadas: {unidades:N2}. Errores encontrados: {ventana.ErroresEncontrados}");
+            NotificationService.Success($"Carga masiva aplicada. Productos procesados: {procesados}. Unidades agregadas: {unidades:N0}. Errores encontrados: {ventana.ErroresEncontrados}");
         }
 
         private CargaMasivaProductoInfo? BuscarProductoCargaMasiva(string codigo)
