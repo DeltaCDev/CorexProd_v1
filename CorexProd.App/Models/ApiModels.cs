@@ -31,6 +31,25 @@ public sealed record HealthResponse(
     string Servidor,
     DateTime FechaHora);
 
+public sealed record ParametroMovil(
+    int IdParametro, string CodigoParametro, string NombreParametro,
+    string ValorParametro, string Descripcion, bool Estado, DateTime FechaRegistro);
+
+public sealed record RolMovil(
+    int IdRol, string NombreRol, bool Estado, DateTime FechaRegistro);
+
+public sealed record EmpleadoMovil(
+    int IdEmpleado, string TipoDocumento, string NumeroDocumento, string Nombre,
+    string Apellido, string Sexo, string Telefono, string Email, string Direccion,
+    int IdCargo, string NombreCargo, DateTime? FechaNacimiento, DateTime FechaRegistro, bool Estado)
+{
+    public string NombreCompleto => $"{Nombre} {Apellido}".Trim();
+};
+
+public sealed record UsuarioMovil(
+    int IdUsuario, int IdEmpleado, string NombreCompleto, string NombreUsuario,
+    int IdRol, string NombreRol, DateTime FechaRegistro, bool Estado);
+
 public sealed record AppUpdateInfo(
     string Version,
     int VersionCode,

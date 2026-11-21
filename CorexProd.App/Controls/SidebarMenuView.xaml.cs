@@ -150,6 +150,10 @@ public partial class SidebarMenuView : ContentView
             "Stock Productos" => nameof(StockProductosPage),
             "Stock Insumos" => nameof(StockInsumosPage),
             "Entrada Manual de Productos" => nameof(IngresoManualStockPage),
+            "Parámetros" => $"{nameof(SeguridadPage)}?modulo={Uri.EscapeDataString("Parámetros")}",
+            "Roles" => $"{nameof(SeguridadPage)}?modulo={Uri.EscapeDataString("Roles")}",
+            "Usuarios" => $"{nameof(SeguridadPage)}?modulo={Uri.EscapeDataString("Usuarios")}",
+            "Empleados" => $"{nameof(SeguridadPage)}?modulo={Uri.EscapeDataString("Empleados")}",
             _ => $"{nameof(ModuloPage)}?titulo={Uri.EscapeDataString(nombre + " (En desarrollo)")}"
         };
         await Shell.Current.GoToAsync(ruta);

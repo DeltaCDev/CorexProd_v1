@@ -1,4 +1,5 @@
 using CorexProd.Datos.Datos;
+using CorexProd.Api;
 using CorexProd.Entidad.Entidades;
 using CorexProd.Entidad.Utilidades;
 using Microsoft.Data.SqlClient;
@@ -3185,6 +3186,7 @@ app.MapGet("/api/fichas-tecnicas/{codigoProducto}", async (string codigoProducto
 });
 
 app.MapOrdenTrabajoManualEndpoints(connectionString);
+app.MapSeguridadEndpoints(connectionString);
 
 app.Run();
 

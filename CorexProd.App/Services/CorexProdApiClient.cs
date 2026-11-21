@@ -57,6 +57,18 @@ public sealed class CorexProdApiClient
         return await GetAsync<EmpresaInfo>("api/empresa/actual", cancellationToken);
     }
 
+    public Task<IReadOnlyList<ParametroMovil>> GetParametrosAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<ParametroMovil>>("api/seguridad/parametros", cancellationToken);
+
+    public Task<IReadOnlyList<RolMovil>> GetRolesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<RolMovil>>("api/seguridad/roles", cancellationToken);
+
+    public Task<IReadOnlyList<UsuarioMovil>> GetUsuariosAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<UsuarioMovil>>("api/seguridad/usuarios", cancellationToken);
+
+    public Task<IReadOnlyList<EmpleadoMovil>> GetEmpleadosAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<EmpleadoMovil>>("api/seguridad/empleados", cancellationToken);
+
     public async Task<LoginResponse> LoginAsync(string usuario, string clave, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
