@@ -10,6 +10,7 @@ public partial class SeguridadPage : ContentPage
     private readonly CorexProdApiClient _api;
     private readonly ObservableCollection<SeguridadItem> _items = [];
     private readonly string[] _modulos = ["Parámetros", "Roles", "Usuarios", "Empleados"];
+    private SeguridadItem? _seleccionado;
 
     public SeguridadPage(CorexProdApiClient api)
     {
@@ -34,6 +35,38 @@ public partial class SeguridadPage : ContentPage
     private async void OnModuloChanged(object? sender, EventArgs e) => await CargarAsync();
     private async void OnRefresh(object? sender, EventArgs e) => await CargarAsync();
     private async void OnBuscarChanged(object? sender, TextChangedEventArgs e) => Filtrar();
+
+    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        _seleccionado = e.CurrentSelection.FirstOrDefault() as SeguridadItem;
+        EditarButton.IsVisible = _seleccionado is not null && (ModuloPicker.SelectedIndex == 0 || ModuloPicker.SelectedIndex == 1);
+    }
+
+    private async void OnEditarClicked(object? sender, EventArgs e)
+    {
+        if (_seleccionado is null) return;
+        try
+        {
+            if (ModuloPicker.SelectedIndex == 1)
+            {
+                string? nombre = await DisplayPromptAsync("Editar rol", "Nombre del rol:", initialValue: _seleccionado.Titulo);
+                if (string.IsNullOrWhiteSpace(nombre)) return;
+                await _api.GuardarRolAsync(new(_seleccionado.Id, nombre.Trim(), true));
+            }
+            else
+            {
+                await DisplayAlertAsync("Parámetros", "La edición detallada de parámetros se habilitará con su formulario completo.", "OK");
+                return;
+            }
+
+            await DisplayAlertAsync("Seguridad", "Registro actualizado correctamente.", "OK");
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Seguridad", ex.Message, "OK");
+        }
+    }
 
     private async void OnNuevoClicked(object? sender, EventArgs e)
     {
@@ -145,24 +178,27 @@ public partial class SeguridadPage : ContentPage
         try
         {
             _items.Clear();
+            _seleccionado = null;
+            EditarButton.IsVisible = false;
+            Lista.SelectedItem = null;
             PermisosButton.IsVisible = ModuloPicker.SelectedIndex == 1;
             switch (ModuloPicker.SelectedIndex)
             {
                 case 0:
                     foreach (ParametroMovil x in await _api.GetParametrosAsync())
-                        _items.Add(new(x.NombreParametro, $"Código: {x.CodigoParametro} | Valor: {x.ValorParametro}", x.Estado ? "Activo" : "Inactivo"));
+                        _items.Add(new(x.IdParametro, x.NombreParametro, $"Código: {x.CodigoParametro} | Valor: {x.ValorParametro}", x.Estado ? "Activo" : "Inactivo"));
                     break;
                 case 1:
                     foreach (RolMovil x in await _api.GetRolesAsync())
-                        _items.Add(new(x.NombreRol, $"Registrado: {x.FechaRegistro:dd/MM/yyyy}", x.Estado ? "Activo" : "Inactivo"));
+                        _items.Add(new(x.IdRol, x.NombreRol, $"Registrado: {x.FechaRegistro:dd/MM/yyyy}", x.Estado ? "Activo" : "Inactivo"));
                     break;
                 case 2:
                     foreach (UsuarioMovil x in await _api.GetUsuariosAsync())
-                        _items.Add(new(x.NombreUsuario, $"{x.NombreCompleto} | Rol: {x.NombreRol}", x.Estado ? "Activo" : "Inactivo"));
+                        _items.Add(new(x.IdUsuario, x.NombreUsuario, $"{x.NombreCompleto} | Rol: {x.NombreRol}", x.Estado ? "Activo" : "Inactivo"));
                     break;
                 case 3:
                     foreach (EmpleadoMovil x in await _api.GetEmpleadosAsync())
-                        _items.Add(new(x.NombreCompleto, $"{x.TipoDocumento}: {x.NumeroDocumento} | Cargo: {x.NombreCargo}", x.Estado ? "Activo" : "Inactivo"));
+                        _items.Add(new(x.IdEmpleado, x.NombreCompleto, $"{x.TipoDocumento}: {x.NumeroDocumento} | Cargo: {x.NombreCargo}", x.Estado ? "Activo" : "Inactivo"));
                     break;
             }
             Filtrar();
@@ -187,5 +223,5 @@ public partial class SeguridadPage : ContentPage
             : _items.Where(x => $"{x.Titulo} {x.Detalle} {x.Estado}".Contains(texto, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
-    private sealed record SeguridadItem(string Titulo, string Detalle, string Estado);
+    private sealed record SeguridadItem(int Id, string Titulo, string Detalle, string Estado);
 }
