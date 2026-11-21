@@ -25,6 +25,16 @@ string connectionString = builder.Configuration.GetConnectionString("CorexProdDB
     ?? throw new InvalidOperationException("No se configuró ConnectionStrings:CorexProdDB.");
 string rutaFichas = builder.Configuration["FichasTecnicas:RutaBase"]
     ?? throw new InvalidOperationException("No se configuró FichasTecnicas:RutaBase.");
+string rutaActualizacionesConfigurada = builder.Configuration["ActualizacionesApp:RutaBase"]
+    ?? "updates";
+string rutaActualizaciones = Path.IsPathRooted(rutaActualizacionesConfigurada)
+    ? rutaActualizacionesConfigurada
+    : Path.Combine(AppContext.BaseDirectory, rutaActualizacionesConfigurada);
+string versionActualizacion = builder.Configuration["ActualizacionesApp:Version"] ?? "1.0.10.261118";
+int codigoActualizacion = int.TryParse(builder.Configuration["ActualizacionesApp:VersionCode"], out int codigo)
+    ? codigo
+    : 4;
+string archivoActualizacion = builder.Configuration["ActualizacionesApp:Archivo"] ?? "CorexProdv1.0.10.261118.apk";
 
 app.MapGet("/", () => Results.Ok(new
 {
@@ -93,10 +103,45 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
     {
         menus.Add(menusReader["NombreMenu"]?.ToString() ?? string.Empty);
     }
+    await menusReader.DisposeAsync();
+
+    List<MenuCatalogApi> catalogoMenus = [];
+    const string catalogoSql = """
+        SELECT
+            m.IdMenu,
+            m.NombreMenu,
+            m.IdMenuPadre,
+            m.Orden,
+            CAST(CASE WHEN ISNULL(pm.PuedeVer, 0) = 1 THEN 1 ELSE 0 END AS bit) AS TienePermiso
+        FROM dbo.Menu m
+        LEFT JOIN dbo.PermisosMenu pm
+            ON pm.IdMenu = m.IdMenu
+           AND pm.IdRol = @IdRol
+        WHERE m.Estado = 1
+        ORDER BY
+            CASE WHEN m.IdMenuPadre IS NULL THEN m.Orden ELSE 0 END,
+            m.IdMenuPadre,
+            m.Orden,
+            m.NombreMenu;
+        """;
+
+    await using SqlCommand catalogoCmd = new(catalogoSql, conexion);
+    catalogoCmd.Parameters.Add("@IdRol", SqlDbType.Int).Value = usuario.IdRol;
+    await using SqlDataReader catalogoReader = await catalogoCmd.ExecuteReaderAsync();
+    while (await catalogoReader.ReadAsync())
+    {
+        catalogoMenus.Add(new MenuCatalogApi(
+            Convert.ToInt32(catalogoReader["IdMenu"]),
+            catalogoReader["NombreMenu"]?.ToString() ?? string.Empty,
+            catalogoReader["IdMenuPadre"] == DBNull.Value ? null : Convert.ToInt32(catalogoReader["IdMenuPadre"]),
+            Convert.ToInt32(catalogoReader["Orden"]),
+            Convert.ToBoolean(catalogoReader["TienePermiso"])));
+    }
 
     return Results.Ok(new LoginResponse(
         usuario,
         menus,
+        catalogoMenus,
         DateTime.Now,
         "Inicio de sesión correcto."));
 });
@@ -122,6 +167,29 @@ app.MapGet("/api/health", async () =>
             detail: ex.Message,
             statusCode: StatusCodes.Status503ServiceUnavailable);
     }
+});
+
+app.MapGet("/api/app/version", () => Results.Ok(new
+{
+    version = versionActualizacion,
+    versionCode = codigoActualizacion,
+    apk = "/api/app/download",
+    obligatoria = false
+}));
+
+app.MapGet("/api/app/download", () =>
+{
+    string rutaApk = Path.Combine(rutaActualizaciones, archivoActualizacion);
+    if (!File.Exists(rutaApk))
+    {
+        return Results.NotFound(new { mensaje = "No hay una actualización móvil publicada." });
+    }
+
+    return Results.File(
+        rutaApk,
+        "application/vnd.android.package-archive",
+        archivoActualizacion,
+        enableRangeProcessing: true);
 });
 
 app.MapGet("/api/notificaciones", async (long? desdeId) =>
@@ -4353,6 +4421,7 @@ internal sealed record FichaDocumentoApi(
 
 internal sealed record LoginRequest(string? Usuario, string? Clave);
 internal sealed record OtAprobacionApiRequest(string? Usuario, string? Clave, string? Motivo = null, string? Observacion = null);
+internal sealed record AppUpdateInfo(string Version, int VersionCode, string Apk, bool Obligatoria);
 
 internal sealed record LoginUserResponse(
     int IdUsuario,
@@ -4361,9 +4430,17 @@ internal sealed record LoginUserResponse(
     int IdRol,
     string NombreRol);
 
+internal sealed record MenuCatalogApi(
+    int IdMenu,
+    string NombreMenu,
+    int? IdMenuPadre,
+    int Orden,
+    bool TienePermiso);
+
 internal sealed record LoginResponse(
     LoginUserResponse Usuario,
     IReadOnlyList<string> Menus,
+    IReadOnlyList<MenuCatalogApi> CatalogoMenus,
     DateTime FechaHora,
     string Mensaje);
 

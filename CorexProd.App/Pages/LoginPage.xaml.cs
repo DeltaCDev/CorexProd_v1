@@ -8,6 +8,7 @@ public partial class LoginPage : ContentPage
     private readonly SessionState _session;
     private int _apiLogoTapCount;
     private DateTime _lastApiLogoTap;
+    private bool _updateChecked;
 
     public LoginPage()
     {
@@ -16,6 +17,16 @@ public partial class LoginPage : ContentPage
         _session = ServiceHelper.GetRequiredService<SessionState>();
         ServerEntry.Text = _apiClient.BaseUrl;
         ApiPanel.IsVisible = string.IsNullOrWhiteSpace(ServerEntry.Text);
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (_updateChecked || string.IsNullOrWhiteSpace(_apiClient.BaseUrl))
+            return;
+
+        _updateChecked = true;
+        await ServiceHelper.GetRequiredService<MobileUpdateService>().CheckAndInstallAsync(this);
     }
 
     private async void OnTestConnectionClicked(object? sender, EventArgs e)
@@ -134,5 +145,7 @@ public partial class LoginPage : ContentPage
         MessageLabel.Text = string.Empty;
 
         await DisplayAlertAsync("Correcto", "La URL de la API fue guardada.", "Aceptar");
+        _updateChecked = true;
+        await ServiceHelper.GetRequiredService<MobileUpdateService>().CheckAndInstallAsync(this);
     }
 }

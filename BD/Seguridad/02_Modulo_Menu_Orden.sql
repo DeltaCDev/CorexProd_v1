@@ -25,11 +25,6 @@ WHERE NombreMenu LIKE 'Producci%'
 IF @IdVentas IS NOT NULL
 BEGIN
     UPDATE dbo.Menu
-    SET IdMenuPadre = @IdVentas,
-        Orden = 3
-    WHERE NombreMenu = 'Orden de Trabajo';
-
-    UPDATE dbo.Menu
     SET Orden = 1
     WHERE NombreMenu = 'Proformas'
       AND IdMenuPadre = @IdVentas;
@@ -48,12 +43,18 @@ END;
 IF @IdProduccion IS NOT NULL
 BEGIN
     UPDATE dbo.Menu
+    SET IdMenuPadre = @IdProduccion,
+        Orden = 2,
+        Estado = 1
+    WHERE NombreMenu = 'Orden de Trabajo';
+
+    UPDATE dbo.Menu
     SET Orden = 1
     WHERE NombreMenu = 'Áreas de Producción'
       AND IdMenuPadre = @IdProduccion;
 
     UPDATE dbo.Menu
-    SET Orden = 2
+    SET Estado = 0
     WHERE NombreMenu = 'Seguimiento OT'
       AND IdMenuPadre = @IdProduccion;
 END;

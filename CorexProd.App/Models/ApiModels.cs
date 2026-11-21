@@ -7,8 +7,16 @@ public sealed record LoginRequest(string Usuario, string Clave);
 public sealed record LoginResponse(
     LoginUser Usuario,
     IReadOnlyList<string> Menus,
+    IReadOnlyList<MenuCatalogItem> CatalogoMenus,
     DateTime FechaHora,
     string Mensaje);
+
+public sealed record MenuCatalogItem(
+    int IdMenu,
+    string NombreMenu,
+    int? IdMenuPadre,
+    int Orden,
+    bool TienePermiso);
 
 public sealed record LoginUser(
     int IdUsuario,
@@ -22,6 +30,12 @@ public sealed record HealthResponse(
     string BaseDatos,
     string Servidor,
     DateTime FechaHora);
+
+public sealed record AppUpdateInfo(
+    string Version,
+    int VersionCode,
+    string Apk,
+    bool Obligatoria);
 
 public sealed record EmpresaInfo(
     int IdEmpresa,

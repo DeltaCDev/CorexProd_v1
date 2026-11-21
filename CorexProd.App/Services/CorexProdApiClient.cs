@@ -37,6 +37,21 @@ public sealed class CorexProdApiClient
         return await GetAsync<HealthResponse>("api/health", cancellationToken);
     }
 
+    public async Task<AppUpdateInfo> GetAppUpdateInfoAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<AppUpdateInfo>("api/app/version", cancellationToken);
+    }
+
+    public async Task<byte[]> DownloadAppUpdateAsync(CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.GetAsync(BuildUrl("api/app/download"), HttpCompletionOption.ResponseHeadersRead, cancellationToken),
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     public async Task<EmpresaInfo> GetEmpresaAsync(CancellationToken cancellationToken = default)
     {
         return await GetAsync<EmpresaInfo>("api/empresa/actual", cancellationToken);

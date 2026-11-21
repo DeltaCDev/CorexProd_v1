@@ -22,6 +22,7 @@ public static class MauiProgram
             Timeout = TimeSpan.FromSeconds(20)
         });
         builder.Services.AddSingleton<CorexProdApiClient>();
+        builder.Services.AddSingleton<MobileUpdateService>();
         builder.Services.AddSingleton<SessionState>();
 
         builder.Services.AddTransient<SplashPage>();

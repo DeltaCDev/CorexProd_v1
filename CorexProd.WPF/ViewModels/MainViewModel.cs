@@ -245,15 +245,6 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
-            if (menusPermitidos.Contains("Orden de Trabajo"))
-            {
-                ventas.Hijos.Add(new MenuItemSistema
-                {
-                    Titulo = "Orden de Trabajo",
-                    Vista = "OT"
-                });
-            }
-
             if (menusPermitidos.Contains("Guía de Salida"))
             {
                 ventas.Hijos.Add(new MenuItemSistema
@@ -389,12 +380,12 @@ namespace CorexProd.WPF.ViewModels
                 });
             }
 
-            if (menusPermitidos.Contains("Seguimiento OT"))
+            if (menusPermitidos.Contains("Orden de Trabajo"))
             {
                 produccion.Hijos.Add(new MenuItemSistema
                 {
-                    Titulo = "Seguimiento OT",
-                    Vista = "SeguimientoOT"
+                    Titulo = "Órdenes de Trabajo",
+                    Vista = "OT"
                 });
             }
 
@@ -987,11 +978,6 @@ namespace CorexProd.WPF.ViewModels
                     Titulo = "Orden de Trabajo";
                     VistaActual = new ProduccionView();
                     break;
-                case "SeguimientoOT":
-                    Titulo = "Seguimiento OT";
-                    VistaActual = new ProduccionView();
-                    break;
-
                 // DESTAJO Y PAGOS
                 case "PanelDestajo":
                     Titulo = "Dashboard de Destajo y Pagos";

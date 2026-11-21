@@ -1,6 +1,9 @@
 .vs/
 bin/
 obj/
+publish*/
+api-limpia*/
+api-final*/
 *.user
 *.suo
 *.cache
