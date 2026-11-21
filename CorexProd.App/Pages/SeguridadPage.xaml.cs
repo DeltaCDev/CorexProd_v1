@@ -70,6 +70,29 @@ public partial class SeguridadPage : ContentPage
         }
     }
 
+    private async void OnPermisosClicked(object? sender, EventArgs e)
+    {
+        string? idTexto = await DisplayPromptAsync("Permisos", "Ingrese el Id del rol:");
+        if (!int.TryParse(idTexto, out int idRol) || idRol <= 0)
+            return;
+
+        try
+        {
+            IReadOnlyList<PermisoRolMovil> permisos = await _api.GetPermisosRolAsync(idRol);
+            string resumen = string.Join("\n", permisos.Select(x => $"{(x.PuedeVer ? "✓" : "✗")} {x.NombreMenu}"));
+            bool guardar = await DisplayAlertAsync("Permisos del rol", resumen, "Habilitar todos", "Cerrar");
+            if (guardar)
+            {
+                await _api.GuardarPermisosRolAsync(idRol, permisos.Select(x => new PermisoRolGuardar(x.IdMenu, true)).ToList());
+                await DisplayAlertAsync("Permisos", "Permisos actualizados correctamente.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Permisos", ex.Message, "OK");
+        }
+    }
+
     private async Task CargarAsync()
     {
         if (ModuloPicker.SelectedIndex < 0) return;
@@ -79,6 +102,7 @@ public partial class SeguridadPage : ContentPage
         try
         {
             _items.Clear();
+            PermisosButton.IsVisible = ModuloPicker.SelectedIndex == 1;
             switch (ModuloPicker.SelectedIndex)
             {
                 case 0:

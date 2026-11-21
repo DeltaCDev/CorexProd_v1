@@ -9,6 +9,7 @@
             <Picker x:Name="ModuloPicker" Title="Seleccione un módulo" SelectedIndexChanged="OnModuloChanged" />
             <SearchBar x:Name="BuscarEntry" Placeholder="Buscar" TextChanged="OnBuscarChanged" />
             <Button Text="Nuevo registro" Clicked="OnNuevoClicked" BackgroundColor="#4F2ACD" />
+            <Button Text="Administrar permisos del rol" Clicked="OnPermisosClicked" BackgroundColor="#0F766E" IsVisible="False" x:Name="PermisosButton" />
         </VerticalStackLayout>
         <RefreshView Grid.Row="1" x:Name="Refrescar" Refreshing="OnRefresh">
             <CollectionView x:Name="Lista" EmptyView="No hay registros para mostrar." SelectionMode="None" Margin="12,8">

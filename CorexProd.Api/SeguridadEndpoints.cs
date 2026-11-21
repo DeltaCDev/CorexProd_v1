@@ -103,14 +103,58 @@ public static class SeguridadEndpoints
             });
             return Results.Ok(new { id, mensaje = request.IdParametro == 0 ? "Parámetro registrado correctamente." : "Parámetro actualizado correctamente." });
         });
+
+        app.MapGet("/api/seguridad/roles/{idRol:int}/permisos", async (int idRol) =>
+            Results.Ok(await ConsultarAsync(connectionString, """
+                SELECT m.IdMenu, m.NombreMenu, m.IdMenuPadre, m.Orden,
+                       CAST(ISNULL(pm.PuedeVer, 0) AS bit) AS PuedeVer
+                FROM dbo.Menu m
+                LEFT JOIN dbo.PermisosMenu pm ON pm.IdMenu = m.IdMenu AND pm.IdRol = @IdRol
+                WHERE m.Estado = 1
+                ORDER BY CASE WHEN m.IdMenuPadre IS NULL THEN m.Orden ELSE 0 END,
+                         m.IdMenuPadre, m.Orden, m.NombreMenu;
+                """, dr => new PermisoRolMovilApi(
+                    dr.GetInt32(0), dr.GetString(1), dr.IsDBNull(2) ? null : dr.GetInt32(2),
+                    dr.GetInt32(3), dr.GetBoolean(4)), new("@IdRol", idRol))));
+
+        app.MapPost("/api/seguridad/roles/{idRol:int}/permisos", async (int idRol, List<PermisoRolGuardarApi> permisos) =>
+        {
+            await using SqlConnection cn = new(connectionString);
+            await cn.OpenAsync();
+            await using SqlTransaction tx = (SqlTransaction)await cn.BeginTransactionAsync();
+            try
+            {
+                foreach (PermisoRolGuardarApi permiso in permisos)
+                {
+                    await using SqlCommand cmd = new("""
+                        IF EXISTS (SELECT 1 FROM dbo.PermisosMenu WHERE IdRol=@IdRol AND IdMenu=@IdMenu)
+                            UPDATE dbo.PermisosMenu SET PuedeVer=@PuedeVer WHERE IdRol=@IdRol AND IdMenu=@IdMenu;
+                        ELSE
+                            INSERT dbo.PermisosMenu (IdRol, IdMenu, PuedeVer) VALUES (@IdRol, @IdMenu, @PuedeVer);
+                        """, cn, tx);
+                    cmd.Parameters.AddWithValue("@IdRol", idRol);
+                    cmd.Parameters.AddWithValue("@IdMenu", permiso.IdMenu);
+                    cmd.Parameters.AddWithValue("@PuedeVer", permiso.PuedeVer);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                await tx.CommitAsync();
+                return Results.Ok(new { mensaje = "Permisos actualizados correctamente." });
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        });
     }
 
-    private static async Task<List<T>> ConsultarAsync<T>(string connectionString, string sql, Func<SqlDataReader, T> map)
+    private static async Task<List<T>> ConsultarAsync<T>(string connectionString, string sql, Func<SqlDataReader, T> map, params SqlParameter[] parametros)
     {
         List<T> resultado = [];
         await using SqlConnection cn = new(connectionString);
         await cn.OpenAsync();
         await using SqlCommand cmd = new(sql, cn);
+        cmd.Parameters.AddRange(parametros);
         await using SqlDataReader dr = await cmd.ExecuteReaderAsync();
         while (await dr.ReadAsync())
             resultado.Add(map(dr));
@@ -139,3 +183,5 @@ public sealed record UsuarioMovilApi(int IdUsuario, int IdEmpleado, string Nombr
 public sealed record RolGuardarApi(int IdRol, string NombreRol, bool Estado);
 public sealed record ParametroGuardarApi(int IdParametro, string CodigoParametro, string NombreParametro,
     string ValorParametro, string? Descripcion, bool Estado);
+public sealed record PermisoRolMovilApi(int IdMenu, string NombreMenu, int? IdMenuPadre, int Orden, bool PuedeVer);
+public sealed record PermisoRolGuardarApi(int IdMenu, bool PuedeVer);

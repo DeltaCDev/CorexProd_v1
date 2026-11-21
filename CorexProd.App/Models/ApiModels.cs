@@ -54,6 +54,8 @@ public sealed record RolGuardar(int IdRol, string NombreRol, bool Estado);
 public sealed record ParametroGuardar(int IdParametro, string CodigoParametro, string NombreParametro,
     string ValorParametro, string Descripcion, bool Estado);
 public sealed record ApiActionResponse(int Id, string Mensaje);
+public sealed record PermisoRolMovil(int IdMenu, string NombreMenu, int? IdMenuPadre, int Orden, bool PuedeVer);
+public sealed record PermisoRolGuardar(int IdMenu, bool PuedeVer);
 
 public sealed record AppUpdateInfo(
     string Version,

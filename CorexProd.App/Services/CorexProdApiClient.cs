@@ -85,6 +85,17 @@ public sealed class CorexProdApiClient
         return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
     }
 
+    public Task<IReadOnlyList<PermisoRolMovil>> GetPermisosRolAsync(int idRol, CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<PermisoRolMovil>>($"api/seguridad/roles/{idRol}/permisos", cancellationToken);
+
+    public async Task<ApiActionResponse> GuardarPermisosRolAsync(int idRol, IReadOnlyList<PermisoRolGuardar> permisos, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl($"api/seguridad/roles/{idRol}/permisos"), permisos, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
+    }
+
     public async Task<LoginResponse> LoginAsync(string usuario, string clave, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(
