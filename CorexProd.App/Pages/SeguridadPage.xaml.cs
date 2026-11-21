@@ -61,20 +61,22 @@ public partial class SeguridadPage : ContentPage
                 string? documento = await DisplayPromptAsync("Nuevo empleado", "Número de documento:");
                 string? nombre = await DisplayPromptAsync("Nuevo empleado", "Nombres:");
                 string? apellido = await DisplayPromptAsync("Nuevo empleado", "Apellidos:");
-                string? cargoTexto = await DisplayPromptAsync("Nuevo empleado", "Id del cargo:");
+                IReadOnlyList<CargoMovil> cargos = await _api.GetCargosAsync();
+                CargoMovil? cargo = await SeleccionarCargoAsync(cargos);
                 if (string.IsNullOrWhiteSpace(documento) || string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido)
-                    || !int.TryParse(cargoTexto, out int idCargo) || idCargo <= 0) return;
-                await _api.GuardarEmpleadoAsync(new(0, tipo ?? "DNI", documento, nombre, apellido, "", "", "", "", idCargo, null, true));
+                    || cargo is null) return;
+                await _api.GuardarEmpleadoAsync(new(0, tipo ?? "DNI", documento, nombre, apellido, "", "", "", "", cargo.IdCargo, null, true));
             }
             else if (ModuloPicker.SelectedIndex == 2)
             {
-                string? empleadoTexto = await DisplayPromptAsync("Nuevo usuario", "Id del empleado:");
-                string? rolTexto = await DisplayPromptAsync("Nuevo usuario", "Id del rol:");
+                IReadOnlyList<EmpleadoMovil> empleados = await _api.GetEmpleadosAsync();
+                IReadOnlyList<RolMovil> roles = await _api.GetRolesAsync();
+                EmpleadoMovil? empleado = await SeleccionarEmpleadoAsync(empleados);
+                RolMovil? rol = await SeleccionarRolAsync(roles);
                 string? usuario = await DisplayPromptAsync("Nuevo usuario", "Nombre de usuario:");
                 string? clave = await DisplayPromptAsync("Nuevo usuario", "Contraseña:", keyboard: Keyboard.Text);
-                if (!int.TryParse(empleadoTexto, out int idEmpleado) || !int.TryParse(rolTexto, out int idRol)
-                    || idEmpleado <= 0 || idRol <= 0 || string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(clave)) return;
-                await _api.GuardarUsuarioAsync(new(0, idEmpleado, usuario, clave, idRol, true));
+                if (empleado is null || rol is null || string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(clave)) return;
+                await _api.GuardarUsuarioAsync(new(0, empleado.IdEmpleado, usuario, clave, rol.IdRol, true));
             }
             else
             {
@@ -88,6 +90,27 @@ public partial class SeguridadPage : ContentPage
         {
             await DisplayAlertAsync("Seguridad", ex.Message, "OK");
         }
+    }
+
+    private async Task<CargoMovil?> SeleccionarCargoAsync(IReadOnlyList<CargoMovil> cargos)
+    {
+        if (cargos.Count == 0) return null;
+        string? opcion = await DisplayActionSheetAsync("Seleccione el cargo", "Cancelar", null, cargos.Select(x => $"{x.IdCargo} - {x.NombreCargo}").ToArray());
+        return cargos.FirstOrDefault(x => $"{x.IdCargo} - {x.NombreCargo}" == opcion);
+    }
+
+    private async Task<EmpleadoMovil?> SeleccionarEmpleadoAsync(IReadOnlyList<EmpleadoMovil> empleados)
+    {
+        if (empleados.Count == 0) return null;
+        string? opcion = await DisplayActionSheetAsync("Seleccione el empleado", "Cancelar", null, empleados.Select(x => $"{x.IdEmpleado} - {x.NombreCompleto}").ToArray());
+        return empleados.FirstOrDefault(x => $"{x.IdEmpleado} - {x.NombreCompleto}" == opcion);
+    }
+
+    private async Task<RolMovil?> SeleccionarRolAsync(IReadOnlyList<RolMovil> roles)
+    {
+        if (roles.Count == 0) return null;
+        string? opcion = await DisplayActionSheetAsync("Seleccione el rol", "Cancelar", null, roles.Select(x => $"{x.IdRol} - {x.NombreRol}").ToArray());
+        return roles.FirstOrDefault(x => $"{x.IdRol} - {x.NombreRol}" == opcion);
     }
 
     private async void OnPermisosClicked(object? sender, EventArgs e)
