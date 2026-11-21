@@ -69,6 +69,22 @@ public sealed class CorexProdApiClient
     public Task<IReadOnlyList<EmpleadoMovil>> GetEmpleadosAsync(CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<EmpleadoMovil>>("api/seguridad/empleados", cancellationToken);
 
+    public async Task<ApiActionResponse> GuardarRolAsync(RolGuardar request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl("api/seguridad/roles"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
+    }
+
+    public async Task<ApiActionResponse> GuardarParametroAsync(ParametroGuardar request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(
+            client => client.PostAsJsonAsync(BuildUrl("api/seguridad/parametros"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
+    }
+
     public async Task<LoginResponse> LoginAsync(string usuario, string clave, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(

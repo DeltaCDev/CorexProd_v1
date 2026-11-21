@@ -50,6 +50,11 @@ public sealed record UsuarioMovil(
     int IdUsuario, int IdEmpleado, string NombreCompleto, string NombreUsuario,
     int IdRol, string NombreRol, DateTime FechaRegistro, bool Estado);
 
+public sealed record RolGuardar(int IdRol, string NombreRol, bool Estado);
+public sealed record ParametroGuardar(int IdParametro, string CodigoParametro, string NombreParametro,
+    string ValorParametro, string Descripcion, bool Estado);
+public sealed record ApiActionResponse(int Id, string Mensaje);
+
 public sealed record AppUpdateInfo(
     string Version,
     int VersionCode,

@@ -48,6 +48,61 @@ public static class SeguridadEndpoints
                 """, dr => new UsuarioMovilApi(
                     dr.GetInt32(0), dr.GetInt32(1), dr.GetString(2).Trim(), dr.GetString(3),
                     dr.GetInt32(4), dr.GetString(5), dr.GetDateTime(6), dr.GetBoolean(7))));
+
+        app.MapPost("/api/seguridad/roles", async (RolGuardarApi request) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.NombreRol))
+                return Results.BadRequest(new { mensaje = "El nombre del rol es obligatorio." });
+            int id = await EjecutarAsync(connectionString, """
+                IF @IdRol = 0
+                BEGIN
+                    INSERT dbo.Roles (NombreRol, Estado, FechaRegistro)
+                    VALUES (@NombreRol, @Estado, GETDATE());
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);
+                END
+                ELSE
+                BEGIN
+                    UPDATE dbo.Roles SET NombreRol=@NombreRol, Estado=@Estado WHERE IdRol=@IdRol;
+                    SELECT @IdRol;
+                END
+                """, c =>
+            {
+                c.Parameters.AddWithValue("@IdRol", request.IdRol);
+                c.Parameters.AddWithValue("@NombreRol", request.NombreRol.Trim());
+                c.Parameters.AddWithValue("@Estado", request.Estado);
+            });
+            return Results.Ok(new { id, mensaje = request.IdRol == 0 ? "Rol registrado correctamente." : "Rol actualizado correctamente." });
+        });
+
+        app.MapPost("/api/seguridad/parametros", async (ParametroGuardarApi request) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.CodigoParametro) || string.IsNullOrWhiteSpace(request.NombreParametro))
+                return Results.BadRequest(new { mensaje = "Código y nombre son obligatorios." });
+            int id = await EjecutarAsync(connectionString, """
+                IF @IdParametro = 0
+                BEGIN
+                    INSERT dbo.Parametros (CodigoParametro, NombreParametro, ValorParametro, Descripcion, Estado, FechaRegistro)
+                    VALUES (@Codigo, @Nombre, @Valor, @Descripcion, @Estado, GETDATE());
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);
+                END
+                ELSE
+                BEGIN
+                    UPDATE dbo.Parametros SET CodigoParametro=@Codigo, NombreParametro=@Nombre,
+                        ValorParametro=@Valor, Descripcion=@Descripcion, Estado=@Estado
+                    WHERE IdParametro=@IdParametro;
+                    SELECT @IdParametro;
+                END
+                """, c =>
+            {
+                c.Parameters.AddWithValue("@IdParametro", request.IdParametro);
+                c.Parameters.AddWithValue("@Codigo", request.CodigoParametro.Trim());
+                c.Parameters.AddWithValue("@Nombre", request.NombreParametro.Trim());
+                c.Parameters.AddWithValue("@Valor", request.ValorParametro?.Trim() ?? string.Empty);
+                c.Parameters.AddWithValue("@Descripcion", (object?)request.Descripcion?.Trim() ?? DBNull.Value);
+                c.Parameters.AddWithValue("@Estado", request.Estado);
+            });
+            return Results.Ok(new { id, mensaje = request.IdParametro == 0 ? "Parámetro registrado correctamente." : "Parámetro actualizado correctamente." });
+        });
     }
 
     private static async Task<List<T>> ConsultarAsync<T>(string connectionString, string sql, Func<SqlDataReader, T> map)
@@ -61,6 +116,16 @@ public static class SeguridadEndpoints
             resultado.Add(map(dr));
         return resultado;
     }
+
+    private static async Task<int> EjecutarAsync(string connectionString, string sql, Action<SqlCommand> configurar)
+    {
+        await using SqlConnection cn = new(connectionString);
+        await cn.OpenAsync();
+        await using SqlCommand cmd = new(sql, cn);
+        configurar(cmd);
+        object? value = await cmd.ExecuteScalarAsync();
+        return value is null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+    }
 }
 
 public sealed record ParametroMovilApi(int IdParametro, string CodigoParametro, string NombreParametro,
@@ -71,3 +136,6 @@ public sealed record EmpleadoMovilApi(int IdEmpleado, string TipoDocumento, stri
     int IdCargo, string NombreCargo, DateTime? FechaNacimiento, DateTime FechaRegistro, bool Estado);
 public sealed record UsuarioMovilApi(int IdUsuario, int IdEmpleado, string NombreCompleto,
     string NombreUsuario, int IdRol, string NombreRol, DateTime FechaRegistro, bool Estado);
+public sealed record RolGuardarApi(int IdRol, string NombreRol, bool Estado);
+public sealed record ParametroGuardarApi(int IdParametro, string CodigoParametro, string NombreParametro,
+    string ValorParametro, string? Descripcion, bool Estado);

@@ -35,6 +35,41 @@ public partial class SeguridadPage : ContentPage
     private async void OnRefresh(object? sender, EventArgs e) => await CargarAsync();
     private async void OnBuscarChanged(object? sender, TextChangedEventArgs e) => Filtrar();
 
+    private async void OnNuevoClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (ModuloPicker.SelectedIndex == 1)
+            {
+                string? nombre = await DisplayPromptAsync("Nuevo rol", "Nombre del rol:");
+                if (string.IsNullOrWhiteSpace(nombre)) return;
+                await _api.GuardarRolAsync(new(0, nombre.Trim(), true));
+            }
+            else if (ModuloPicker.SelectedIndex == 0)
+            {
+                string? codigo = await DisplayPromptAsync("Nuevo parámetro", "Código:");
+                if (string.IsNullOrWhiteSpace(codigo)) return;
+                string? nombre = await DisplayPromptAsync("Nuevo parámetro", "Nombre:");
+                if (string.IsNullOrWhiteSpace(nombre)) return;
+                string? valor = await DisplayPromptAsync("Nuevo parámetro", "Valor:");
+                if (valor is null) return;
+                await _api.GuardarParametroAsync(new(0, codigo.Trim(), nombre.Trim(), valor.Trim(), string.Empty, true));
+            }
+            else
+            {
+                await DisplayAlertAsync("Seguridad", "Este formulario se habilitará después de configurar roles y permisos.", "OK");
+                return;
+            }
+
+            await DisplayAlertAsync("Seguridad", "Registro guardado correctamente.", "OK");
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Seguridad", ex.Message, "OK");
+        }
+    }
+
     private async Task CargarAsync()
     {
         if (ModuloPicker.SelectedIndex < 0) return;
