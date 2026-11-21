@@ -56,6 +56,12 @@ public sealed record ParametroGuardar(int IdParametro, string CodigoParametro, s
 public sealed record ApiActionResponse(int Id, string Mensaje);
 public sealed record PermisoRolMovil(int IdMenu, string NombreMenu, int? IdMenuPadre, int Orden, bool PuedeVer);
 public sealed record PermisoRolGuardar(int IdMenu, bool PuedeVer);
+public sealed record CargoMovil(int IdCargo, string NombreCargo);
+public sealed record EmpleadoGuardar(int IdEmpleado, string TipoDocumento, string NumeroDocumento,
+    string Nombre, string Apellido, string Sexo, string Telefono, string Email, string Direccion,
+    int IdCargo, DateTime? FechaNacimiento, bool Estado);
+public sealed record UsuarioGuardar(int IdUsuario, int IdEmpleado, string NombreUsuario,
+    string Clave, int IdRol, bool Estado);
 
 public sealed record AppUpdateInfo(
     string Version,

@@ -55,9 +55,29 @@ public partial class SeguridadPage : ContentPage
                 if (valor is null) return;
                 await _api.GuardarParametroAsync(new(0, codigo.Trim(), nombre.Trim(), valor.Trim(), string.Empty, true));
             }
+            else if (ModuloPicker.SelectedIndex == 3)
+            {
+                string? tipo = await DisplayPromptAsync("Nuevo empleado", "Tipo de documento:", initialValue: "DNI");
+                string? documento = await DisplayPromptAsync("Nuevo empleado", "Número de documento:");
+                string? nombre = await DisplayPromptAsync("Nuevo empleado", "Nombres:");
+                string? apellido = await DisplayPromptAsync("Nuevo empleado", "Apellidos:");
+                string? cargoTexto = await DisplayPromptAsync("Nuevo empleado", "Id del cargo:");
+                if (string.IsNullOrWhiteSpace(documento) || string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido)
+                    || !int.TryParse(cargoTexto, out int idCargo) || idCargo <= 0) return;
+                await _api.GuardarEmpleadoAsync(new(0, tipo ?? "DNI", documento, nombre, apellido, "", "", "", "", idCargo, null, true));
+            }
+            else if (ModuloPicker.SelectedIndex == 2)
+            {
+                string? empleadoTexto = await DisplayPromptAsync("Nuevo usuario", "Id del empleado:");
+                string? rolTexto = await DisplayPromptAsync("Nuevo usuario", "Id del rol:");
+                string? usuario = await DisplayPromptAsync("Nuevo usuario", "Nombre de usuario:");
+                string? clave = await DisplayPromptAsync("Nuevo usuario", "Contraseña:", keyboard: Keyboard.Text);
+                if (!int.TryParse(empleadoTexto, out int idEmpleado) || !int.TryParse(rolTexto, out int idRol)
+                    || idEmpleado <= 0 || idRol <= 0 || string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(clave)) return;
+                await _api.GuardarUsuarioAsync(new(0, idEmpleado, usuario, clave, idRol, true));
+            }
             else
             {
-                await DisplayAlertAsync("Seguridad", "Este formulario se habilitará después de configurar roles y permisos.", "OK");
                 return;
             }
 

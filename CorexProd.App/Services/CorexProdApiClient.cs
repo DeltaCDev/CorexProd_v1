@@ -88,6 +88,23 @@ public sealed class CorexProdApiClient
     public Task<IReadOnlyList<PermisoRolMovil>> GetPermisosRolAsync(int idRol, CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<PermisoRolMovil>>($"api/seguridad/roles/{idRol}/permisos", cancellationToken);
 
+    public Task<IReadOnlyList<CargoMovil>> GetCargosAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<CargoMovil>>("api/seguridad/cargos", cancellationToken);
+
+    public async Task<ApiActionResponse> GuardarEmpleadoAsync(EmpleadoGuardar request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(client => client.PostAsJsonAsync(BuildUrl("api/seguridad/empleados"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
+    }
+
+    public async Task<ApiActionResponse> GuardarUsuarioAsync(UsuarioGuardar request, CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await SendAsync(client => client.PostAsJsonAsync(BuildUrl("api/seguridad/usuarios"), request, _jsonOptions, cancellationToken), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await ReadJsonAsync<ApiActionResponse>(response, cancellationToken);
+    }
+
     public async Task<ApiActionResponse> GuardarPermisosRolAsync(int idRol, IReadOnlyList<PermisoRolGuardar> permisos, CancellationToken cancellationToken = default)
     {
         using HttpResponseMessage response = await SendAsync(

@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using BCrypt.Net;
 
 namespace CorexProd.Api;
 
@@ -48,6 +49,80 @@ public static class SeguridadEndpoints
                 """, dr => new UsuarioMovilApi(
                     dr.GetInt32(0), dr.GetInt32(1), dr.GetString(2).Trim(), dr.GetString(3),
                     dr.GetInt32(4), dr.GetString(5), dr.GetDateTime(6), dr.GetBoolean(7))));
+
+        app.MapGet("/api/seguridad/cargos", async () =>
+            Results.Ok(await ConsultarAsync(connectionString, """
+                SELECT IdCargo, NombreCargo FROM dbo.Cargos WHERE Estado=1 ORDER BY NombreCargo;
+                """, dr => new CargoMovilApi(dr.GetInt32(0), dr.GetString(1))));
+
+        app.MapPost("/api/seguridad/empleados", async (EmpleadoGuardarApi request) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Nombre) || string.IsNullOrWhiteSpace(request.Apellido)
+                || string.IsNullOrWhiteSpace(request.NumeroDocumento) || request.IdCargo <= 0)
+                return Results.BadRequest(new { mensaje = "Nombre, apellido, documento y cargo son obligatorios." });
+            int id = await EjecutarAsync(connectionString, """
+                IF @IdEmpleado=0
+                BEGIN
+                    INSERT dbo.Empleados (TipoDocumento, NumeroDocumento, Nombre, Apellido, Sexo, Telefono, Email, Direccion, IdCargo, FechaNacimiento, FechaRegistro, Estado)
+                    VALUES (@TipoDocumento,@NumeroDocumento,@Nombre,@Apellido,@Sexo,@Telefono,@Email,@Direccion,@IdCargo,@FechaNacimiento,GETDATE(),1);
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);
+                END
+                ELSE
+                BEGIN
+                    UPDATE dbo.Empleados SET TipoDocumento=@TipoDocumento,NumeroDocumento=@NumeroDocumento,Nombre=@Nombre,Apellido=@Apellido,
+                        Sexo=@Sexo,Telefono=@Telefono,Email=@Email,Direccion=@Direccion,IdCargo=@IdCargo,FechaNacimiento=@FechaNacimiento,Estado=@Estado
+                    WHERE IdEmpleado=@IdEmpleado;
+                    SELECT @IdEmpleado;
+                END
+                """, c =>
+            {
+                c.Parameters.AddWithValue("@IdEmpleado", request.IdEmpleado);
+                c.Parameters.AddWithValue("@TipoDocumento", request.TipoDocumento?.Trim() ?? "DNI");
+                c.Parameters.AddWithValue("@NumeroDocumento", request.NumeroDocumento.Trim());
+                c.Parameters.AddWithValue("@Nombre", request.Nombre.Trim());
+                c.Parameters.AddWithValue("@Apellido", request.Apellido.Trim());
+                c.Parameters.AddWithValue("@Sexo", (object?)request.Sexo?.Trim() ?? DBNull.Value);
+                c.Parameters.AddWithValue("@Telefono", (object?)request.Telefono?.Trim() ?? DBNull.Value);
+                c.Parameters.AddWithValue("@Email", (object?)request.Email?.Trim() ?? DBNull.Value);
+                c.Parameters.AddWithValue("@Direccion", (object?)request.Direccion?.Trim() ?? DBNull.Value);
+                c.Parameters.AddWithValue("@IdCargo", request.IdCargo);
+                c.Parameters.AddWithValue("@FechaNacimiento", request.FechaNacimiento.HasValue ? request.FechaNacimiento.Value : DBNull.Value);
+                c.Parameters.AddWithValue("@Estado", request.Estado);
+            });
+            return Results.Ok(new { id, mensaje = request.IdEmpleado == 0 ? "Empleado registrado correctamente." : "Empleado actualizado correctamente." });
+        });
+
+        app.MapPost("/api/seguridad/usuarios", async (UsuarioGuardarApi request) =>
+        {
+            if (request.IdEmpleado <= 0 || request.IdRol <= 0 || string.IsNullOrWhiteSpace(request.NombreUsuario)
+                || (request.IdUsuario == 0 && string.IsNullOrWhiteSpace(request.Clave)))
+                return Results.BadRequest(new { mensaje = "Empleado, rol, usuario y clave son obligatorios." });
+            string? hash = string.IsNullOrWhiteSpace(request.Clave) ? null : BCrypt.Net.BCrypt.HashPassword(request.Clave.Trim());
+            int id = await EjecutarAsync(connectionString, """
+                IF @IdUsuario=0
+                BEGIN
+                    INSERT dbo.Usuarios (IdEmpleado,NombreUsuario,Clave,IdRol,FechaRegistro,Estado)
+                    VALUES (@IdEmpleado,@NombreUsuario,@Clave,@IdRol,GETDATE(),1);
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);
+                END
+                ELSE
+                BEGIN
+                    UPDATE dbo.Usuarios SET IdEmpleado=@IdEmpleado,NombreUsuario=@NombreUsuario,IdRol=@IdRol,Estado=@Estado
+                    WHERE IdUsuario=@IdUsuario;
+                    IF @Clave IS NOT NULL UPDATE dbo.Usuarios SET Clave=@Clave WHERE IdUsuario=@IdUsuario;
+                    SELECT @IdUsuario;
+                END
+                """, c =>
+            {
+                c.Parameters.AddWithValue("@IdUsuario", request.IdUsuario);
+                c.Parameters.AddWithValue("@IdEmpleado", request.IdEmpleado);
+                c.Parameters.AddWithValue("@NombreUsuario", request.NombreUsuario.Trim());
+                c.Parameters.AddWithValue("@Clave", (object?)hash ?? DBNull.Value);
+                c.Parameters.AddWithValue("@IdRol", request.IdRol);
+                c.Parameters.AddWithValue("@Estado", request.Estado);
+            });
+            return Results.Ok(new { id, mensaje = request.IdUsuario == 0 ? "Usuario registrado correctamente." : "Usuario actualizado correctamente." });
+        });
 
         app.MapPost("/api/seguridad/roles", async (RolGuardarApi request) =>
         {
@@ -185,3 +260,9 @@ public sealed record ParametroGuardarApi(int IdParametro, string CodigoParametro
     string ValorParametro, string? Descripcion, bool Estado);
 public sealed record PermisoRolMovilApi(int IdMenu, string NombreMenu, int? IdMenuPadre, int Orden, bool PuedeVer);
 public sealed record PermisoRolGuardarApi(int IdMenu, bool PuedeVer);
+public sealed record CargoMovilApi(int IdCargo, string NombreCargo);
+public sealed record EmpleadoGuardarApi(int IdEmpleado, string? TipoDocumento, string NumeroDocumento,
+    string Nombre, string Apellido, string? Sexo, string? Telefono, string? Email, string? Direccion,
+    int IdCargo, DateTime? FechaNacimiento, bool Estado);
+public sealed record UsuarioGuardarApi(int IdUsuario, int IdEmpleado, string NombreUsuario,
+    string? Clave, int IdRol, bool Estado);
