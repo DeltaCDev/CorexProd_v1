@@ -35,11 +35,11 @@
 		<ApplicationId>com.corexprod.app</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.11.261120</ApplicationDisplayVersion>
-		<ApplicationVersion>5</ApplicationVersion>
-		<Version>1.0.11</Version>
-		<AssemblyVersion>1.0.11.0</AssemblyVersion>
-		<FileVersion>1.0.11.0</FileVersion>
+		<ApplicationDisplayVersion>1.0.12.261121</ApplicationDisplayVersion>
+		<ApplicationVersion>6</ApplicationVersion>
+		<Version>1.0.12</Version>
+		<AssemblyVersion>1.0.12.0</AssemblyVersion>
+		<FileVersion>1.0.12.0</FileVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>

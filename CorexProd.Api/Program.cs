@@ -31,11 +31,11 @@ string rutaActualizacionesConfigurada = builder.Configuration["ActualizacionesAp
 string rutaActualizaciones = Path.IsPathRooted(rutaActualizacionesConfigurada)
     ? rutaActualizacionesConfigurada
     : Path.Combine(AppContext.BaseDirectory, rutaActualizacionesConfigurada);
-string versionActualizacion = builder.Configuration["ActualizacionesApp:Version"] ?? "1.0.10.261118";
+string versionActualizacion = builder.Configuration["ActualizacionesApp:Version"] ?? "1.0.12.261121";
 int codigoActualizacion = int.TryParse(builder.Configuration["ActualizacionesApp:VersionCode"], out int codigo)
     ? codigo
-    : 4;
-string archivoActualizacion = builder.Configuration["ActualizacionesApp:Archivo"] ?? "CorexProdv1.0.10.261118.apk";
+    : 6;
+string archivoActualizacion = builder.Configuration["ActualizacionesApp:Archivo"] ?? "CorexProdv1.0.12.261121.apk";
 
 app.MapGet("/", () => Results.Ok(new
 {

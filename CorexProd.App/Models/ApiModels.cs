@@ -61,7 +61,7 @@ public sealed record EmpleadoGuardar(int IdEmpleado, string TipoDocumento, strin
     string Nombre, string Apellido, string Sexo, string Telefono, string Email, string Direccion,
     int IdCargo, DateTime? FechaNacimiento, bool Estado);
 public sealed record UsuarioGuardar(int IdUsuario, int IdEmpleado, string NombreUsuario,
-    string Clave, int IdRol, bool Estado);
+    string? Clave, int IdRol, bool Estado);
 
 public sealed record AppUpdateInfo(
     string Version,

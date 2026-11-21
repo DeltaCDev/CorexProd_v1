@@ -14,14 +14,14 @@ public static class SeguridadEndpoints
                 FROM dbo.Parametros ORDER BY NombreParametro;
                 """, dr => new ParametroMovilApi(
                     dr.GetInt32(0), dr.GetString(1), dr.GetString(2), dr.GetString(3),
-                    dr.GetString(4), dr.GetBoolean(5), dr.GetDateTime(6))));
+                    dr.GetString(4), dr.GetBoolean(5), dr.GetDateTime(6)))));
 
         app.MapGet("/api/seguridad/roles", async () =>
             Results.Ok(await ConsultarAsync(connectionString, """
                 SELECT IdRol, NombreRol, Estado, FechaRegistro
                 FROM dbo.Roles ORDER BY NombreRol;
                 """, dr => new RolMovilApi(
-                    dr.GetInt32(0), dr.GetString(1), dr.GetBoolean(2), dr.GetDateTime(3))));
+                    dr.GetInt32(0), dr.GetString(1), dr.GetBoolean(2), dr.GetDateTime(3)))));
 
         app.MapGet("/api/seguridad/empleados", async () =>
             Results.Ok(await ConsultarAsync(connectionString, """
@@ -36,7 +36,7 @@ public static class SeguridadEndpoints
                     dr.GetInt32(0), dr.GetString(1), dr.GetString(2), dr.GetString(3),
                     dr.GetString(4), dr.GetString(5), dr.GetString(6), dr.GetString(7),
                     dr.GetString(8), dr.GetInt32(9), dr.GetString(10),
-                    dr.IsDBNull(11) ? null : dr.GetDateTime(11), dr.GetDateTime(12), dr.GetBoolean(13))));
+                    dr.IsDBNull(11) ? null : dr.GetDateTime(11), dr.GetDateTime(12), dr.GetBoolean(13)))));
 
         app.MapGet("/api/seguridad/usuarios", async () =>
             Results.Ok(await ConsultarAsync(connectionString, """
@@ -48,12 +48,12 @@ public static class SeguridadEndpoints
                 ORDER BY u.NombreUsuario;
                 """, dr => new UsuarioMovilApi(
                     dr.GetInt32(0), dr.GetInt32(1), dr.GetString(2).Trim(), dr.GetString(3),
-                    dr.GetInt32(4), dr.GetString(5), dr.GetDateTime(6), dr.GetBoolean(7))));
+                     dr.GetInt32(4), dr.GetString(5), dr.GetDateTime(6), dr.GetBoolean(7)))));
 
         app.MapGet("/api/seguridad/cargos", async () =>
             Results.Ok(await ConsultarAsync(connectionString, """
                 SELECT IdCargo, NombreCargo FROM dbo.Cargos WHERE Estado=1 ORDER BY NombreCargo;
-                """, dr => new CargoMovilApi(dr.GetInt32(0), dr.GetString(1))));
+                """, dr => new CargoMovilApi(dr.GetInt32(0), dr.GetString(1)))));
 
         app.MapPost("/api/seguridad/empleados", async (EmpleadoGuardarApi request) =>
         {
@@ -190,7 +190,7 @@ public static class SeguridadEndpoints
                          m.IdMenuPadre, m.Orden, m.NombreMenu;
                 """, dr => new PermisoRolMovilApi(
                     dr.GetInt32(0), dr.GetString(1), dr.IsDBNull(2) ? null : dr.GetInt32(2),
-                    dr.GetInt32(3), dr.GetBoolean(4)), new("@IdRol", idRol))));
+                     dr.GetInt32(3), dr.GetBoolean(4)), new SqlParameter("@IdRol", idRol))));
 
         app.MapPost("/api/seguridad/roles/{idRol:int}/permisos", async (int idRol, List<PermisoRolGuardarApi> permisos) =>
         {
